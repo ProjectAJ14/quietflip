@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen. `fromJson` falls back per field |
+| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -37,9 +37,11 @@ lib/
                                            LocalAlerts + SoundPlayer; syncAlert() on setting change
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
-  ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode), one-time
-                                           seconds hint, full screen reveal, keys, wake lock
-  ui/screens/settings_screen.dart          Display / Sound & alerts / Keep awake / shortcuts
+  ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode, quick-dim
+                                           in full screen), one-time seconds hint, full screen
+                                           reveal, keys, wake lock
+  ui/screens/settings_screen.dart          Display (incl. digit brightness slider) / Sound & alerts /
+                                           Keep awake / shortcuts
   ui/components/                           FlipDisplay, TimerInput, CompletionBanner,
                                            Reveal + RunControls
 ```
@@ -73,6 +75,12 @@ lib/
   Dismissing it or using the button/S sets `secondsHintSeen` and saves.
 - Hidden full-screen controls are offered to screen readers as a
   "show controls" button over the display.
+- Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`);
+  the background stays the theme surface and the top bar, run controls,
+  timer input and completion banner stay at full brightness. The quick-dim
+  button (top bar, full screen only) and the D key both call
+  `ClockSettings.nextDim` (100% -> 50% -> 20% -> 100%; a slider value in
+  between steps down to the next preset) and save.
 - No dependency on another feature; no account section in Settings.
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of

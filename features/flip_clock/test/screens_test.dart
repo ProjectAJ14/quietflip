@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc/bloc.dart' show Closable;
 import 'package:core/core.dart' as core;
@@ -443,6 +444,74 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('dim button and D key dim only the digits, and save', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    double digits() => tester
+        .widget<Opacity>(
+          find
+              .ancestor(
+                of: find.byType(FlipDisplay),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        )
+        .opacity;
+    final dim = find.byTooltip(strings.clock.dim_digits);
+    expect(digits(), 1.0);
+    expect(dim, findsNothing);
+
+    await key(tester, LogicalKeyboardKey.keyD);
+    expect(h.settings.state.digitBrightness, 0.5);
+    expect(digits(), 0.5);
+    final saved = h.store.data[SettingsRepositoryImp.settingsKey]!;
+    expect(
+      ClockSettings.fromJson(jsonDecode(saved) as Map<String, Object?>),
+      const ClockSettings(digitBrightness: 0.5),
+    );
+
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(revealOf(tester, dim).visible, isTrue);
+    await tester.tap(dim);
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 0.2);
+    // The top bar is never dimmed.
+    expect(
+      find.ancestor(of: dim, matching: find.byType(Opacity)),
+      findsNothing,
+    );
+    await tester.tap(dim);
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 1.0);
+
+    for (final mode in [ClockMode.timer, ClockMode.stopwatch]) {
+      await h.settings.update(
+        ClockSettings(lastMode: mode, digitBrightness: 0.2),
+      );
+      if (mode == ClockMode.timer) {
+        await h.countdown.start(const Duration(minutes: 1));
+      }
+      await tester.pump();
+      expect(digits(), 0.2, reason: '$mode');
+      expect(
+        find.ancestor(
+          of: find.byType(RunControls),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+        reason: '$mode',
+      );
+    }
+    await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
   testWidgets('compact windows show icon-only modes and never overflow', (
     tester,
   ) async {
@@ -508,6 +577,23 @@ void main() {
     expect(find.text(strings.clock.web_closed_tab_note), findsOne);
     expect(find.text(strings.clock.shortcut_full_screen), findsOne);
     expect(find.text(strings.clock.shortcut_seconds), findsOne);
+    expect(find.text(strings.clock.shortcut_dim), findsOne);
+    expect(find.text(strings.clock.percent('100')), findsOne);
+    final slider = find.byType(Slider);
+    expect(
+      tester.getSemantics(slider),
+      isSemantics(
+        label: strings.clock.digit_brightness,
+        value: strings.clock.percent('100'),
+        isSlider: true,
+      ),
+    );
+    await tester.drag(slider, const Offset(-2000, 0));
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 0.2);
+    expect(find.text(strings.clock.percent('20')), findsOne);
+    await h.settings.update(const ClockSettings());
+    await tester.pump();
 
     Future<void> tap(String label) async {
       await tester.tap(find.text(label));

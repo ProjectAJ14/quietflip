@@ -650,6 +650,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
       "Tap the seconds button (or press S) to show seconds.";
   String get dismiss_hint => "Dismiss hint";
   String get shortcut_seconds => "S: show or hide seconds";
+  String get digit_brightness => "Digit brightness";
+  String get dim_digits => "Dim the digits";
+  String percent(String value) => "$value%";
+  String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -753,6 +757,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return dismiss_hint;
       case 'shortcut_seconds':
         return shortcut_seconds;
+      case 'digit_brightness':
+        return digit_brightness;
+      case 'dim_digits':
+        return dim_digits;
+      case 'percent':
+        return percent;
+      case 'shortcut_dim':
+        return shortcut_dim;
       default:
         return key;
     }

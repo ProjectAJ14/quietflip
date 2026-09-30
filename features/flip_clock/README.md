@@ -28,4 +28,13 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 
 F full screen, Esc leave full screen, Space start/pause, 1 / 2 / 3 Clock /
 Timer / Stopwatch, S show or hide seconds (Clock mode; also a top-bar
-button, with a one-time hint until it is used or dismissed). See `CLAUDE.md` for rules and tests.
+button, with a one-time hint until it is used or dismissed), D dim the digits
+(100%, 50%, 20%).
+
+## Night dimming
+
+Settings > Display > Digit brightness (20% to 100%) dims only the digits; the
+background stays black and the controls stay readable. In full screen the
+top bar also has a quick-dim button that cycles 100%, 50%, 20%.
+
+See `CLAUDE.md` for rules and tests.

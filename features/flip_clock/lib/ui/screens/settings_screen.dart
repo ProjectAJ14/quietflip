@@ -31,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _update(ClockSettings next) => unawaited(widget.settings.update(next));
 
+  static String _percent(double v) => (v * 100).round().toString();
+
   Future<void> _setSystemAlerts(bool on) async {
     final granted = await widget.settings.setSystemAlerts(on);
     if (mounted) setState(() => _denied = !granted);
@@ -85,6 +87,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: s.showSeconds,
                   onChanged: (v) => _update(s.copyWith(showSeconds: v)),
                 ),
+                ListTile(
+                  title: Text(c.digit_brightness),
+                  trailing: Text(c.percent(_percent(s.digitBrightness))),
+                  // The slider itself is named for screen readers; the
+                  // percentage beside the title is the visible value.
+                  subtitle: MergeSemantics(
+                    child: Semantics(
+                      label: c.digit_brightness,
+                      child: Slider(
+                        value: s.digitBrightness,
+                        min: ClockSettings.minBrightness,
+                        max: ClockSettings.maxBrightness,
+                        divisions: 8,
+                        semanticFormatterCallback: (v) =>
+                            c.percent(_percent(v)),
+                        onChanged: (v) =>
+                            _update(s.copyWith(digitBrightness: v)),
+                      ),
+                    ),
+                  ),
+                ),
                 _Section(c.sound_and_alerts),
                 SwitchListTile(
                   title: Text(c.flip_sound),
@@ -121,6 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   c.shortcut_start_pause,
                   c.shortcut_modes,
                   c.shortcut_seconds,
+                  c.shortcut_dim,
                 ])
                   ListTile(dense: true, title: Text(line)),
               ],

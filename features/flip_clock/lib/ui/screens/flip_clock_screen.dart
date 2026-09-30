@@ -21,7 +21,7 @@ import 'package:timekeeping/timekeeping.dart';
 /// for [revealFor].
 ///
 /// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes,
-/// S seconds (Clock mode).
+/// S seconds (Clock mode), D dim the digits.
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -128,6 +128,15 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     );
   }
 
+  void _dim() {
+    final s = widget.settings.state;
+    unawaited(
+      widget.settings.update(
+        s.copyWith(digitBrightness: ClockSettings.nextDim(s.digitBrightness)),
+      ),
+    );
+  }
+
   void _dismissHint() => unawaited(
     widget.settings.update(
       widget.settings.state.copyWith(secondsHintSeen: true),
@@ -167,6 +176,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       _setMode(ClockMode.timer);
     } else if (key == LogicalKeyboardKey.digit3) {
       _setMode(ClockMode.stopwatch);
+    } else if (key == LogicalKeyboardKey.keyD) {
+      _dim();
     } else {
       return KeyEventResult.ignored;
     }
@@ -200,6 +211,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               onMode: _setMode,
               onFullScreen: () => unawaited(widget.fullScreen.toggle()),
               onSettings: widget.onOpenSettings,
+              onDim: _dim,
             );
             Widget content = _ModeView(
               screen: widget,
@@ -284,6 +296,7 @@ class _TopBar extends StatelessWidget {
     required this.onMode,
     required this.onFullScreen,
     required this.onSettings,
+    required this.onDim,
   });
 
   final ClockMode mode;
@@ -293,6 +306,7 @@ class _TopBar extends StatelessWidget {
   final ValueChanged<ClockMode> onMode;
   final VoidCallback onFullScreen;
   final VoidCallback onSettings;
+  final VoidCallback onDim;
 
   /// Below this width the mode segments show icons only.
   static const double compactWidth = 520;
@@ -352,6 +366,12 @@ class _TopBar extends StatelessWidget {
                 isSelected: showSeconds,
                 onPressed: onSeconds,
                 icon: const Icon(Icons.av_timer_rounded),
+              ),
+            if (fullScreen)
+              IconButton(
+                tooltip: strings.clock.dim_digits,
+                onPressed: onDim,
+                icon: const Icon(Icons.brightness_6_rounded),
               ),
             IconButton(
               tooltip: fullScreen
@@ -435,10 +455,13 @@ class _ModeView extends StatelessWidget {
               showSeconds: settings.showSeconds,
             );
             return Center(
-              child: FlipDisplay(
-                text: text,
-                semanticsLabel: strings.clock.current_time(text),
-                onFlip: flip,
+              child: Opacity(
+                opacity: settings.digitBrightness,
+                child: FlipDisplay(
+                  text: text,
+                  semanticsLabel: strings.clock.current_time(text),
+                  onFlip: flip,
+                ),
               ),
             );
           },
@@ -447,10 +470,12 @@ class _ModeView extends StatelessWidget {
           controller: screen.countdown,
           controlsVisible: controlsVisible,
           onFlip: flip,
+          brightness: settings.digitBrightness,
         ),
         ClockMode.stopwatch => _StopwatchView(
           controller: screen.stopwatch,
           controlsVisible: controlsVisible,
+          brightness: settings.digitBrightness,
         ),
       },
     );
@@ -462,11 +487,13 @@ class _TimerView extends StatelessWidget {
     required this.controller,
     required this.controlsVisible,
     required this.onFlip,
+    required this.brightness,
   });
 
   final CountdownController controller;
   final bool controlsVisible;
   final VoidCallback? onFlip;
+  final double brightness;
 
   @override
   Widget build(BuildContext context) =>
@@ -487,10 +514,13 @@ class _TimerView extends StatelessWidget {
             children: [
               Expanded(
                 child: Center(
-                  child: FlipDisplay(
-                    text: text,
-                    semanticsLabel: strings.clock.time_remaining(text),
-                    onFlip: onFlip,
+                  child: Opacity(
+                    opacity: brightness,
+                    child: FlipDisplay(
+                      text: text,
+                      semanticsLabel: strings.clock.time_remaining(text),
+                      onFlip: onFlip,
+                    ),
                   ),
                 ),
               ),
@@ -517,10 +547,12 @@ class _StopwatchView extends StatelessWidget {
   const _StopwatchView({
     required this.controller,
     required this.controlsVisible,
+    required this.brightness,
   });
 
   final StopwatchController controller;
   final bool controlsVisible;
+  final double brightness;
 
   @override
   Widget build(BuildContext context) =>
@@ -532,9 +564,12 @@ class _StopwatchView extends StatelessWidget {
             children: [
               Expanded(
                 child: Center(
-                  child: FlipDisplay(
-                    text: text,
-                    semanticsLabel: strings.clock.elapsed(text),
+                  child: Opacity(
+                    opacity: brightness,
+                    child: FlipDisplay(
+                      text: text,
+                      semanticsLabel: strings.clock.elapsed(text),
+                    ),
                   ),
                 ),
               ),

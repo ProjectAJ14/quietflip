@@ -13,6 +13,7 @@ void main() {
     expect(s.keepAwake, isFalse);
     expect(s.lastMode, ClockMode.clock);
     expect(s.secondsHintSeen, isFalse);
+    expect(s.digitBrightness, 1.0);
   });
 
   test('round-trips through json and copyWith', () {
@@ -26,6 +27,7 @@ void main() {
       keepAwake: true,
       lastMode: ClockMode.stopwatch,
       secondsHintSeen: true,
+      digitBrightness: 0.4,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -44,6 +46,34 @@ void main() {
       const ClockSettings(),
     );
   });
+
+  test('digit brightness clamps numbers and ignores non-numbers', () {
+    double read(Object? v) =>
+        ClockSettings.fromJson({'digitBrightness': v}).digitBrightness;
+    expect(read(0.6), 0.6);
+    expect(read(1), 1.0);
+    expect(read(0.05), 0.2);
+    expect(read(-3), 0.2);
+    expect(read(7.5), 1.0);
+    expect(read(double.nan), 1.0);
+    expect(read('0.5'), 1.0);
+    expect(read(null), 1.0);
+    expect(
+      const ClockSettings(digitBrightness: 0.5),
+      isNot(const ClockSettings()),
+    );
+  });
+
+  test(
+    'quick dim cycles 100 -> 50 -> 20 -> 100 and steps down from between',
+    () {
+      expect(ClockSettings.nextDim(1), 0.5);
+      expect(ClockSettings.nextDim(0.5), 0.2);
+      expect(ClockSettings.nextDim(0.2), 1.0);
+      expect(ClockSettings.nextDim(0.8), 0.5);
+      expect(ClockSettings.nextDim(0.3), 0.2);
+    },
+  );
 
   test('routes are fixed', () {
     expect(FlipClockRouter.home, '/clock');

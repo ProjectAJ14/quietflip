@@ -196,3 +196,7 @@ clock:
   seconds_hint: "Tap the seconds button (or press S) to show seconds."
   dismiss_hint: "Dismiss hint"
   shortcut_seconds: "S: show or hide seconds"
+  digit_brightness: "Digit brightness"
+  dim_digits: "Dim the digits"
+  percent(String value): "$value%"
+  shortcut_dim: "D: dim the digits (100%, 50%, 20%)"
