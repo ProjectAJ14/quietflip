@@ -98,10 +98,6 @@ class CountdownController extends Cubit<CountdownState> {
   /// The timer's own duration, restored when a pomodoro cycle ends.
   Duration _timerDuration = Countdown.defaultDuration;
 
-  /// False while the timer input holds an invalid or zero entry, so the
-  /// Space bar cannot start the last valid duration behind the user's back.
-  bool _entryValid = true;
-
   /// Restores the saved countdown. A timer that ended while the app was
   /// closed shows as finished (silently: the system alert already fired);
   /// a pomodoro phase too, waiting for [startNextPhase].
@@ -130,20 +126,6 @@ class CountdownController extends Cubit<CountdownState> {
     _publish();
   }
 
-  /// Remembers the entered [duration] while idle (or finished); ignored
-  /// when invalid or while running/paused. Null (or an invalid duration)
-  /// marks the entry invalid: [toggle] then does not start.
-  Future<void> setDuration(Duration? duration) async {
-    _entryValid = duration != null && Countdown.isValid(duration);
-    if (duration == null ||
-        _pomodoro != null ||
-        !_countdown.setDuration(duration)) {
-      return;
-    }
-    _publish();
-    await _persist();
-  }
-
   /// Starts a new countdown of [duration]. Ignored when invalid or when a
   /// countdown is already running or paused.
   Future<void> start(Duration duration) async {
@@ -152,10 +134,15 @@ class CountdownController extends Cubit<CountdownState> {
         _countdown.status == CountdownStatus.finished;
     if (!idle || !_countdown.setDuration(duration)) return;
     _pomodoro = null;
-    _entryValid = true;
     _countdown.start();
     await _running();
   }
+
+  /// Starts [preset]: the pomodoro cycle or a plain countdown.
+  Future<void> startPreset(TimerPreset preset) => switch (preset) {
+    PomodoroCycle() => startPomodoro(),
+    Minutes(:final duration) => start(duration),
+  };
 
   /// Starts a pomodoro cycle at focus, round 1. Ignored unless idle; the
   /// idle duration comes back when the cycle is [reset].
@@ -208,8 +195,6 @@ class CountdownController extends Cubit<CountdownState> {
       _countdown.setDuration(_timerDuration);
     }
     _chime?.cancel();
-    // The input reappears showing the (valid) duration.
-    _entryValid = true;
     _stopTicker();
     _publish();
     await _persist();
@@ -218,14 +203,13 @@ class CountdownController extends Cubit<CountdownState> {
   }
 
   /// Space bar: pause a running timer, resume a paused one, dismiss a
-  /// finished one (or start the next pomodoro phase). An idle timer is
-  /// started from its input instead.
+  /// finished one (or start the next pomodoro phase). An idle one starts
+  /// the default timer.
   Future<void> toggle() => switch (_countdown.status) {
     CountdownStatus.running => pause(),
     CountdownStatus.paused => resume(),
     CountdownStatus.finished => _pomodoro == null ? reset() : startNextPhase(),
-    CountdownStatus.idle =>
-      _entryValid ? start(_countdown.duration) : Future<void>.value(),
+    CountdownStatus.idle => startPreset(_settings().defaultTimer),
   };
 
   /// Recomputes from the wall clock (tick and app resume).

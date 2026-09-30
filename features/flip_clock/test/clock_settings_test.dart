@@ -1,5 +1,6 @@
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timekeeping/timekeeping.dart';
 
 void main() {
   test('defaults: black, 24h, no seconds, alert sound on', () {
@@ -163,5 +164,95 @@ void main() {
     expect(read('system'), ClockTheme.system);
     expect(read('neon'), ClockTheme.dark);
     expect(read(null), ClockTheme.dark);
+  });
+
+  group('timer presets', () {
+    const m = Duration(minutes: 1);
+
+    test('default: 5, 10, 15 min and the pomodoro cycle', () {
+      const s = ClockSettings();
+      expect(s.timerPresets, [m * 5, m * 10, m * 15]);
+      expect(s.defaultTimer, const PomodoroCycle());
+      expect(s.toJson()['defaultTimerMs'], isNull);
+    });
+
+    test('round trip through json, equality and hash', () {
+      final s = const ClockSettings().copyWith(
+        timerPresets: [m * 23, m * 5],
+        defaultTimer: Minutes(m * 23),
+      );
+      expect(s.timerPresets, [m * 5, m * 23]);
+      expect(s.defaultTimer, Minutes(m * 23));
+      final back = ClockSettings.fromJson(s.toJson());
+      expect(back, s);
+      expect(back.hashCode, s.hashCode);
+      expect(back, isNot(const ClockSettings()));
+      expect(Minutes(m * 5), isNot(Minutes(m * 6)));
+      expect(Minutes(m * 5).hashCode, Minutes(m * 5).hashCode);
+      expect(const PomodoroCycle(), isNot(Minutes(m)));
+      expect(const PomodoroCycle().hashCode, const PomodoroCycle().hashCode);
+    });
+
+    test('at most 6, no duplicates, valid only, ascending', () {
+      final s = const ClockSettings().copyWith(
+        timerPresets: [
+          for (var i = 8; i >= 1; i--) m * i,
+          m * 3,
+          Duration.zero,
+          Countdown.max + m,
+        ],
+      );
+      expect(s.timerPresets, [for (var i = 1; i <= 6; i++) m * i]);
+      expect(ClockSettings.maxTimerPresets, 6);
+    });
+
+    test('invalid json entries are dropped, not crashed on', () {
+      final s = ClockSettings.fromJson({
+        'timerPresetsMs': [60000, 'x', null, 0, 60000, 120000, -5],
+        'defaultTimerMs': 'soon',
+      });
+      expect(s.timerPresets, [m, m * 2]);
+      expect(s.defaultTimer, const PomodoroCycle());
+      expect(
+        ClockSettings.fromJson({'timerPresetsMs': 'x'}).timerPresets,
+        ClockSettings.defaultTimerPresets,
+      );
+      // A default that is not among the presets falls back to the cycle.
+      expect(
+        ClockSettings.fromJson({
+          'timerPresetsMs': [60000],
+          'defaultTimerMs': 120000,
+        }).defaultTimer,
+        const PomodoroCycle(),
+      );
+    });
+
+    test('deleting the default preset resets the default to the cycle', () {
+      final s = const ClockSettings().copyWith(defaultTimer: Minutes(m * 10));
+      expect(s.defaultTimer, Minutes(m * 10));
+      expect(
+        s.copyWith(timerPresets: [m * 5]).defaultTimer,
+        const PomodoroCycle(),
+      );
+      // Deleting another one keeps it.
+      expect(s.copyWith(timerPresets: [m * 10]).defaultTimer, Minutes(m * 10));
+      // A default that is not offered is refused.
+      expect(
+        s.copyWith(defaultTimer: Minutes(m * 7)).defaultTimer,
+        const PomodoroCycle(),
+      );
+    });
+
+    test('a saved Timer mode opens on Pomodoro', () {
+      expect(
+        ClockSettings.fromJson({'lastMode': 'timer'}).lastMode,
+        ClockMode.pomodoro,
+      );
+      expect(ClockMode.values, [
+        ClockMode.pomodoro,
+        ClockMode.clock,
+        ClockMode.stopwatch,
+      ]);
+    });
   });
 }

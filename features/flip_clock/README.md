@@ -1,15 +1,16 @@
 # flip_clock
 
-QuietFlip's whole first release: a split-flap clock, a countdown timer (1 s to
-99:59:59) with a Pomodoro preset (25 min focus, 5 min break, repeating, with
-a round count) and a stopwatch, plus Settings. The clock can show today's date
+QuietFlip's whole first release: a split-flap clock, a Pomodoro panel that
+runs the Pomodoro cycle (25 min focus, 5 min break, repeating, with a round
+count) or one of your timer presets (5, 10, 15 min by default, up to six),
+and a stopwatch, plus Settings. The clock can show today's date
 under the digits (Settings > Clock > Show date). No account, network or analytics.
 
 ## Routes
 
 | Path | Screen |
 |---|---|
-| `/clock` (`FlipClockRouter.home`) | Pomodoro / Clock / Timer / Stopwatch panels; the app launches here |
+| `/clock` (`FlipClockRouter.home`) | Pomodoro / Clock / Stopwatch panels; the app launches here |
 | `/clock/settings` (`FlipClockRouter.settings`) | Settings, stacked on the clock |
 
 ## Wiring
@@ -52,7 +53,7 @@ Everything is saved at once and restored on launch.
 ## Controls
 
 Only the digits show when nobody touches the screen. A tap shows the
-controls: the mode island at the top centre (on its own row under the corner buttons on phones; Pomodoro, Clock, Timer, Stopwatch)
+controls: the mode island at the top centre (on its own row under the corner buttons on phones; Pomodoro, Clock, Stopwatch)
 between the Skins (top left) and Settings (top right) buttons. After 4 seconds without
 input they shrink to dots, and 3 seconds later they are gone. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
@@ -65,13 +66,12 @@ whether a tap toggles them.
   and returns it to the system level when the app goes to the background
   or closes; on macOS, Windows and the web it dims the digits (20% to
   100%). The island shows the level.
-- **Swipe sideways**: previous or next mode (Pomodoro, Clock, Timer,
-  Stopwatch), no wrap-around. A quarter of the width or a quick fling
+- **Swipe sideways**: previous or next mode (Pomodoro, Clock, Stopwatch),
+  no wrap-around. A quarter of the width or a quick fling
   changes it; the island names the mode.
-- **Tap**: show or hide the controls. **Double tap** (desktop, web): full
+- **Tap or click**: show or hide the controls. **Double tap** (desktop, web): full
   screen.
-- Gestures are off while a sheet or Settings covers the clock and while
-  you type a timer duration. Swipes and brightness can each be turned off.
+- Gestures are off while a sheet or Settings covers the clock. Swipes and brightness can each be turned off.
 
 ## Skins
 

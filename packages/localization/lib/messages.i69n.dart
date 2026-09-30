@@ -597,7 +597,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   final Messages _parent;
   const ClockMessages(this._parent);
   String get clock => "Clock";
-  String get timer => "Timer";
   String get stopwatch => "Stopwatch";
   String get modes => "Mode";
   String get settings => "Settings";
@@ -606,14 +605,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get resume => "Resume";
   String get reset => "Reset";
   String get dismiss => "Dismiss";
-  String get hours => "Hours";
-  String get minutes => "Minutes";
-  String get seconds => "Seconds";
   String get times_up => "Time's up";
   String get timer_finished_title => "Time's up";
   String get timer_finished_body => "Your QuietFlip timer has finished.";
   String get alerts_channel => "Timer alerts";
-  String get invalid_duration => "Enter a time between 1 second and 99:59:59.";
   String get show_controls => "Tap or move the mouse to show controls";
   String get theme => "Theme";
   String get theme_light => "Light";
@@ -725,7 +720,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skin_minimal => "Minimal";
   String get mode_pomodoro => "Pomodoro";
   String get mode_clock => "Clock";
-  String get mode_timer => "Timer";
   String get mode_stopwatch => "Stopwatch";
   String brightness_value(String percent) => "$percent%";
   String get settings_appearance => "Appearance";
@@ -782,8 +776,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
     switch (key) {
       case 'clock':
         return clock;
-      case 'timer':
-        return timer;
       case 'stopwatch':
         return stopwatch;
       case 'modes':
@@ -800,12 +792,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return reset;
       case 'dismiss':
         return dismiss;
-      case 'hours':
-        return hours;
-      case 'minutes':
-        return minutes;
-      case 'seconds':
-        return seconds;
       case 'times_up':
         return times_up;
       case 'timer_finished_title':
@@ -814,8 +800,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return timer_finished_body;
       case 'alerts_channel':
         return alerts_channel;
-      case 'invalid_duration':
-        return invalid_duration;
       case 'show_controls':
         return show_controls;
       case 'theme':
@@ -1024,8 +1008,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return mode_pomodoro;
       case 'mode_clock':
         return mode_clock;
-      case 'mode_timer':
-        return mode_timer;
       case 'mode_stopwatch':
         return mode_stopwatch;
       case 'brightness_value':

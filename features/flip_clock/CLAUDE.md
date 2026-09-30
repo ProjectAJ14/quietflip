@@ -18,7 +18,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -26,7 +26,8 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
-  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation, CardSize
+  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, TimerPreset,
+                                           ClockOrientation, CardSize
   data/models/skin.dart                    Skin (face, digit/card/ground colour, seam, radius,
                                            seconds off (default)/badge/cards, AM/PM
                                            hidden/left/right, date, `themed`); JSON with ARGB
@@ -50,7 +51,9 @@ lib/
                                            throttle repeating timers), persists each transition
                                            (and each rebase after the clock is set back),
                                            LocalAlerts + SoundPlayer; syncAlert() on setting change;
-                                           Pomodoro cycle (startPomodoro/startNextPhase)
+                                           Pomodoro cycle (startPomodoro/startNextPhase),
+                                           startPreset (cycle or plain start); toggle
+                                           on idle starts settings' defaultTimer
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
   state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
@@ -80,7 +83,7 @@ lib/
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
                                            display_value (clock/duration/stopwatch -> cards),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
-                                           showSheet, SkinCustomizer (parseHex/hexOf), TimerInput (+ `secondary` beside Start),
+                                           showSheet, SkinCustomizer (parseHex/hexOf),
                                            CompletionBanner (+ optional `action`),
                                            Reveal + RunControls, SubtleMovement
 ```
@@ -143,9 +146,9 @@ lib/
   wrappers, never add or drop one conditionally. A wrapper coming or going
   rebuilds the `PageView`, whose new position starts on the launch mode, so
   the panels jumped back to Clock while the island still said Timer.
-- Space reaches the timer/stopwatch only when no control has focus, so a
-  focused button keeps its own Space activation. An invalid timer entry
-  (`TimerInput.onChanged(null)`) keeps Space from starting.
+- Space reaches the countdown/stopwatch only when no control has focus, so
+  a focused button keeps its own Space activation. On an idle Pomodoro panel
+  it starts `defaultTimer`.
 - Chrome: the screen owns a `ChromeController` (idle from
   `ClockSettings.controlsIdle`, updated on change). Launch is expanded; 4 s
   idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
@@ -187,13 +190,12 @@ lib/
   read as part of the display label (`current_time_and_date`). It dims with
   the digits (one `Opacity` around the digits and the date).
 - Panels: a `PageView` (NeverScrollableScrollPhysics) in `ClockMode` order
-  (Pomodoro, Clock, Timer, Stopwatch) under one `GestureLayer`: tap toggles
+  (Pomodoro, Clock, Stopwatch) under one `GestureLayer`: tap toggles
   the chrome, vertical drag -> `BrightnessControl.change(-dy / height)`
   (device 0..1 where `ScreenBrightness.supported`, else digitBrightness
   0.2..1; a `ScreenBrightnessException` falls back to in-app for good),
   horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
-  12 px. Off while the clock route is not current (sheets, Settings) or a
-  text field has focus. `gestureBrightness` / `gestureModes` switch each
+  12 px. Off while the clock route is not current (sheets, Settings). `gestureBrightness` / `gestureModes` switch each
   axis off. Double tap toggles full screen on desktop/web only (it delays
   taps). Island HUD: brightness while dragging / Up / Down, the mode name
   after a swipe or Left / Right; both release after `hudHold`. The device
@@ -206,11 +208,10 @@ lib/
   scheduled at `endsAt` on native, and shown at completion on web
   (`notifyOnFinish = kIsWeb`, because web cannot schedule). A timer that
   ended while the app was closed shows the banner silently on relaunch.
-  Finishing (or relaunching finished) switches to the Timer panel (the
-  Pomodoro panel for a pomodoro phase) so the banner is always seen.
-- Pomodoro (its own panel; the countdown engine is shared with the Timer:
-  idle, the Pomodoro panel offers 25:00 + Start and the Timer panel the
-  input; running, both show the countdown): 25 min focus / 5 min break from
+  Finishing (or relaunching finished) switches to the Pomodoro panel so
+  the banner is always seen.
+- Pomodoro (one panel for the cycle and the timer presets; idle, it shows
+  the default timer's duration + Start; running, the countdown): 25 min focus / 5 min break from
   `timekeeping`'s `Pomodoro`, run as one `Countdown` per phase. While the
   app is open a phase end chimes for `chimeFor` (5 s, only with Alert
   sound), shows the web notification like the timer, and starts the next
@@ -221,8 +222,7 @@ lib/
   `pomodoro: {phase, round}` and `timerMs`; corrupt fields load as a plain
   timer (or the default duration), an idle snapshot drops them. A phase
   that ended while the app was closed loads finished with Start break /
-  Start focus (autofocused) beside Dismiss; Space starts it. `setDuration`
-  is ignored during a cycle.
+  Start focus (autofocused) beside Dismiss; Space starts it.
 
 ## Common changes
 
@@ -286,7 +286,5 @@ widget tester's clock):
   is not detected: the end is only rebased once it lies more than a full
   duration away, so such a timer runs long by the set-back amount (a paused
   timer is unaffected).
-- Keyboard shortcuts are ignored while a text field has focus, so typing
-  digits into the timer does not switch modes.
-- Flip sound is wired for Clock and Timer only (the stopwatch's tenths would
+- Flip sound is wired for Clock and the countdown only (the stopwatch's tenths would
   click ten times a second).

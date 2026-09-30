@@ -539,7 +539,9 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       tester.view.devicePixelRatio = 1;
       final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9)));
-      await rig.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+      await rig.settings.update(
+        const ClockSettings(lastMode: ClockMode.pomodoro),
+      );
       await tester.pumpWidget(rig.screen());
       await rig.countdown.start(const Duration(minutes: 10));
       rig.stopwatch.start();

@@ -19,7 +19,6 @@ import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/gesture_layer.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
-import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +27,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
-/// Pomodoro / Clock / Timer / Stopwatch as swipeable panels under one
+/// Pomodoro / Clock / Stopwatch as swipeable panels under one
 /// [GestureLayer]: tap toggles the chrome (mode island at the top, Skins
 /// and Settings corner buttons), a vertical drag changes brightness, a
 /// sideways swipe changes mode. The chrome shrinks to dots after
@@ -102,9 +101,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   bool _visible = true;
   bool? _wakeOn;
 
-  /// A text field (the timer input) has focus: gestures are off.
-  bool _typing = false;
-
   /// The full-screen note, shown for [FlipClockScreen.noteFor] on entering
   /// full screen.
   bool _note = false;
@@ -117,14 +113,11 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     _resumed = state == null || state == AppLifecycleState.resumed;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
     widget.fullScreen.active.addListener(_onFullScreen);
-    FocusManager.instance.addListener(_onFocus);
     widget.clock.start();
     // A timer that finished while the app was closed shows its banner.
     final countdown = widget.countdown.state;
     if (countdown.status == CountdownStatus.finished) {
-      _setMode(
-        countdown.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro,
-      );
+      _setMode(ClockMode.pomodoro);
     }
   }
 
@@ -139,7 +132,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   void dispose() {
     _lifecycle.dispose();
     widget.fullScreen.active.removeListener(_onFullScreen);
-    FocusManager.instance.removeListener(_onFocus);
     // Never leave the device dim.
     unawaited(_brightness.reset());
     _pages.dispose();
@@ -187,16 +179,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     setState(() => _note = on);
   }
 
-  static bool _editing() =>
-      FocusManager.instance.primaryFocus?.context
-          ?.findAncestorStateOfType<EditableTextState>() !=
-      null;
-
-  void _onFocus() {
-    final typing = _editing();
-    if (typing != _typing && mounted) setState(() => _typing = typing);
-  }
-
   /// A tap or click on the clock toggles the chrome.
   void _onTap() => _chrome.tap();
 
@@ -206,13 +188,19 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   static List<String> get _modeNames {
     final c = strings.clock;
-    return [c.mode_pomodoro, c.mode_clock, c.mode_timer, c.mode_stopwatch];
+    return [c.mode_pomodoro, c.mode_clock, c.mode_stopwatch];
   }
 
   /// Shows [mode]'s name and page dots in the island for a moment.
   void _modeHud(ClockMode mode) {
     _chrome
-      ..showHud(IslandTitleHud(_modeNames[mode.index], mode.index, 4))
+      ..showHud(
+        IslandTitleHud(
+          _modeNames[mode.index],
+          mode.index,
+          ClockMode.values.length,
+        ),
+      )
       ..releaseHud();
   }
 
@@ -269,8 +257,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    // Typing into the timer must not switch modes.
-    if (_editing()) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final mode = widget.settings.state.lastMode;
     if (key == LogicalKeyboardKey.escape) {
@@ -290,7 +276,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
         mode != ClockMode.clock) {
       // Only when no control has focus: a focused button's own Space
       // activation must win.
-      if (mode == ClockMode.timer || mode == ClockMode.pomodoro) {
+      if (mode == ClockMode.pomodoro) {
         unawaited(widget.countdown.toggle());
       } else {
         widget.stopwatch.toggle();
@@ -319,15 +305,14 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Finishing while on Clock or Stopwatch switches to the Timer so the
+    // Finishing while on Clock or Stopwatch switches to Pomodoro so the
     // completion banner is seen even with the alert sound off.
     return BlocListener<CountdownController, CountdownState>(
       bloc: widget.countdown,
       listenWhen: (a, b) =>
           a.status != CountdownStatus.finished &&
           b.status == CountdownStatus.finished,
-      listener: (_, s) =>
-          _setMode(s.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro),
+      listener: (_, _) => _setMode(ClockMode.pomodoro),
       child: BlocConsumer<SettingsController, ClockSettings>(
         bloc: widget.settings,
         listenWhen: (a, b) =>
@@ -406,11 +391,11 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       child: content,
     );
     // A tap on the clock (a control keeps its own tap) toggles the chrome.
-    // Off while a sheet or route covers the clock or the timer is typed in.
+    // Off while a sheet or route covers the clock.
     content = GestureLayer(
       pages: _pages,
       pageCount: ClockMode.values.length,
-      enabled: _visible && !_typing,
+      enabled: _visible,
       brightness: settings.gestureBrightness,
       modes: settings.gestureModes,
       onTap: settings.tapToggleControls ? _onTap : null,
@@ -657,8 +642,8 @@ class _ModeView extends StatelessWidget {
             );
           },
         ),
-        ClockMode.pomodoro || ClockMode.timer => _TimerView(
-          pomodoroPanel: mode == ClockMode.pomodoro,
+        ClockMode.pomodoro => _TimerView(
+          defaultTimer: settings.defaultTimer,
           skin: skin,
           controller: screen.countdown,
           controlsVisible: controlsVisible,
@@ -678,12 +663,11 @@ class _ModeView extends StatelessWidget {
   }
 }
 
-/// The shared countdown. Idle, the Pomodoro panel offers a 25 min focus
-/// and the Timer panel the duration input; once running, both show the
-/// countdown (one engine).
+/// The countdown. Idle, it shows the default timer (a 25 min focus for the
+/// cycle) with Start; running, the time left.
 class _TimerView extends StatelessWidget {
   const _TimerView({
-    required this.pomodoroPanel,
+    required this.defaultTimer,
     required this.skin,
     required this.controller,
     required this.controlsVisible,
@@ -692,7 +676,8 @@ class _TimerView extends StatelessWidget {
     required this.size,
   });
 
-  final bool pomodoroPanel;
+  /// What Start runs.
+  final TimerPreset defaultTimer;
   final Skin skin;
   final CountdownController controller;
   final bool controlsVisible;
@@ -707,8 +692,11 @@ class _TimerView extends StatelessWidget {
       BlocBuilder<CountdownController, CountdownState>(
         bloc: controller,
         builder: (context, state) {
-          if (state.status == CountdownStatus.idle && pomodoroPanel) {
-            final focus = PomodoroPhase.focus.duration;
+          if (state.status == CountdownStatus.idle) {
+            final focus = switch (defaultTimer) {
+              PomodoroCycle() => PomodoroPhase.focus.duration,
+              Minutes(:final duration) => duration,
+            };
             return _WithControls(
               display: Opacity(
                 opacity: brightness,
@@ -724,19 +712,11 @@ class _TimerView extends StatelessWidget {
               controls: Reveal(
                 visible: controlsVisible,
                 child: FilledButton.tonalIcon(
-                  onPressed: () => unawaited(controller.startPomodoro()),
+                  onPressed: () =>
+                      unawaited(controller.startPreset(defaultTimer)),
                   icon: const Icon(Icons.play_arrow_rounded),
                   label: Text(strings.clock.start),
                 ),
-              ),
-            );
-          }
-          if (state.status == CountdownStatus.idle) {
-            return Center(
-              child: TimerInput(
-                initial: state.duration,
-                onChanged: (d) => unawaited(controller.setDuration(d)),
-                onStart: (d) => unawaited(controller.start(d)),
               ),
             );
           }
