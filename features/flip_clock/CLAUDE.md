@@ -33,7 +33,8 @@ lib/
                                            notifier; setSystemAlerts asks permission
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
-                                           throttle repeating timers), persists each transition,
+                                           throttle repeating timers), persists each transition
+                                           (and each rebase after the clock is set back),
                                            LocalAlerts + SoundPlayer; syncAlert() on setting change
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
@@ -116,6 +117,34 @@ lib/
 transition, repository corrupt data, each screen state, shortcuts and route
 navigation. `setUp(core.init)`, `tearDown(di.reset)`. Coverage stays 100%.
 
+## Edge cases
+
+Verified in `test/edge_cases_test.dart` (fake time via `fake_async` and the
+widget tester's clock):
+
+- **Daylight saving:** the clock shows 01:59:59 -> 03:00:00 (spring forward)
+  and repeats 1:00 AM (fall back) on the next tick, still on the second
+  boundary with one pending timer. A countdown runs its exact duration across
+  a jump because it compares instants, not wall fields (plus a check against
+  the machine's own zone, skipped when it has no DST). 12h/24h text at
+  00:xx / 12:xx / 23:59.
+- **Time-zone change while open:** the clock shows the new local time on the
+  next tick and on `refresh()` (resume); the countdown's end instant and alert
+  are unchanged; the stopwatch reading is untouched.
+- **Wall clock jumps:** forward past the end (device slept) finishes on the
+  next check; backward rebases the end to a full duration from now and
+  re-saves the snapshot and re-schedules the system alert at the new end
+  (`check()` and `load()`), so no stale alert fires later. Relaunch after a
+  jump past the end shows finished-while-away.
+- **Window size:** every mode and Settings lay out without overflow at
+  320x1024, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844, text scale 1
+  and 2, and while resized mid-run (timer, full screen, stopwatch). On very
+  short windows the run controls shrink to at most half the height.
+- **Hours on a charger:** 24 h of clock ticks keep exactly one timer, one
+  emission per second, all aligned; a 12 h countdown keeps exactly two
+  timers (ticker + end) and none after finishing; 3 h of the screen ticking
+  keeps the element count flat and the wake lock on (released on dispose).
+
 ## Gotchas
 
 - In `testWidgets`, do not `await cubit.close()` (or `di.reset()`) after a
@@ -123,6 +152,10 @@ navigation. `setUp(core.init)`, `tearDown(di.reset)`. Coverage stays 100%.
   never completes in fake time and the test hangs. Dispose the tree, call
   `close()` unawaited, then `pump()` (see `Harness.dispose` in
   `test/screens_test.dart`).
+- A clock set back by less than the time a running timer has already used
+  is not detected: the end is only rebased once it lies more than a full
+  duration away, so such a timer runs long by the set-back amount (a paused
+  timer is unaffected).
 - Keyboard shortcuts are ignored while a text field has focus, so typing
   digits into the timer does not switch modes.
 - Flip sound is wired for Clock and Timer only (the stopwatch's tenths would

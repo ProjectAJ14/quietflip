@@ -29,6 +29,7 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 Off by default (Settings > Display). When on, full screen shifts the display
 up to 8 px per axis once a minute, easing over 1 s (a jump with reduced
 motion). It lowers, but does not prevent, burn-in risk.
+
 ## Full screen
 
 Entering full screen shows the controls for three seconds with a plain note:
@@ -47,5 +48,13 @@ button, with a one-time hint until it is used or dismissed), D dim the digits
 Settings > Display > Digit brightness (20% to 100%) dims only the digits; the
 background stays black and the controls stay readable. In full screen the
 top bar also has a quick-dim button that cycles 100%, 50%, 20%.
+
+## Edge cases covered
+
+Daylight-saving jumps, time-zone changes while open, the wall clock jumping
+forward or back during a countdown (the end, saved snapshot and system alert
+move together), iPad split view / resized windows down to 200x100 at text
+scale 2, and hours of ticking on a charger (one aligned timer, wake lock
+held). Details in `CLAUDE.md`; tests in `test/edge_cases_test.dart`.
 
 See `CLAUDE.md` for rules and tests.

@@ -91,7 +91,9 @@ class CountdownController extends Cubit<CountdownState> {
       _logger.i('Countdown finished while the app was away');
       await _persist();
     } else if (_countdown.status == CountdownStatus.running) {
-      _startTicker();
+      // Restoring may have rebased the end (clock set back while closed):
+      // re-save it and move the system alert with it.
+      await _running();
     }
     _publish();
   }
@@ -159,9 +161,16 @@ class CountdownController extends Cubit<CountdownState> {
 
   /// Recomputes from the wall clock (tick and app resume).
   Future<void> check() async {
+    final endsAt = _countdown.endsAt;
     final finished = _countdown.checkFinished();
     _publish();
-    if (!finished) return;
+    if (!finished) {
+      // The wall clock went back: the countdown rebased its end to a full
+      // duration from now, so the end timer, snapshot and system alert
+      // (still at the old instant) follow it.
+      if (_countdown.endsAt != endsAt) await _running();
+      return;
+    }
     _stopTicker();
     await _persist();
     final settings = _settings();

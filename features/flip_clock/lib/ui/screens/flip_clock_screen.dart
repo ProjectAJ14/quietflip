@@ -577,34 +577,28 @@ class _TimerView extends StatelessWidget {
             );
           }
           final text = formatHms(state.remaining);
-          return Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Opacity(
-                    opacity: brightness,
-                    child: FlipDisplay(
-                      text: text,
-                      semanticsLabel: strings.clock.time_remaining(text),
-                      onFlip: onFlip,
+          return _WithControls(
+            display: Opacity(
+              opacity: brightness,
+              child: FlipDisplay(
+                text: text,
+                semanticsLabel: strings.clock.time_remaining(text),
+                onFlip: onFlip,
+              ),
+            ),
+            controls: state.status == CountdownStatus.finished
+                ? CompletionBanner(
+                    onDismiss: () => unawaited(controller.reset()),
+                  )
+                : Reveal(
+                    visible: controlsVisible,
+                    child: RunControls(
+                      running: state.status == CountdownStatus.running,
+                      started: true,
+                      onPrimary: () => unawaited(controller.toggle()),
+                      onReset: () => unawaited(controller.reset()),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (state.status == CountdownStatus.finished)
-                CompletionBanner(onDismiss: () => unawaited(controller.reset()))
-              else
-                Reveal(
-                  visible: controlsVisible,
-                  child: RunControls(
-                    running: state.status == CountdownStatus.running,
-                    started: true,
-                    onPrimary: () => unawaited(controller.toggle()),
-                    onReset: () => unawaited(controller.reset()),
-                  ),
-                ),
-            ],
           );
         },
       );
@@ -627,31 +621,52 @@ class _StopwatchView extends StatelessWidget {
         bloc: controller,
         builder: (context, state) {
           final text = formatStopwatch(state.elapsed);
-          return Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Opacity(
-                    opacity: brightness,
-                    child: FlipDisplay(
-                      text: text,
-                      semanticsLabel: strings.clock.elapsed(text),
-                    ),
-                  ),
-                ),
+          return _WithControls(
+            display: Opacity(
+              opacity: brightness,
+              child: FlipDisplay(
+                text: text,
+                semanticsLabel: strings.clock.elapsed(text),
               ),
-              const SizedBox(height: 16),
-              Reveal(
-                visible: controlsVisible,
-                child: RunControls(
-                  running: state.running,
-                  started: !state.isIdle,
-                  onPrimary: controller.toggle,
-                  onReset: controller.reset,
-                ),
+            ),
+            controls: Reveal(
+              visible: controlsVisible,
+              child: RunControls(
+                running: state.running,
+                started: !state.isIdle,
+                onPrimary: controller.toggle,
+                onReset: controller.reset,
               ),
-            ],
+            ),
           );
         },
       );
+}
+
+/// The display over its controls. On a very short window (a 100 px tall
+/// split view) the controls and the gap shrink to at most half the height
+/// instead of overflowing; `RunControls` and `CompletionBanner` scale down.
+class _WithControls extends StatelessWidget {
+  const _WithControls({required this.display, required this.controls});
+
+  final Widget display;
+  final Widget controls;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => Column(
+      children: [
+        Expanded(child: Center(child: display)),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: box.maxHeight / 2),
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: (box.maxHeight / 10).clamp(0.0, 16.0),
+            ),
+            child: controls,
+          ),
+        ),
+      ],
+    ),
+  );
 }
