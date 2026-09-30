@@ -657,6 +657,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get subtle_movement => "Subtle movement";
   String get subtle_movement_description =>
       "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+  String get full_screen_note =>
+      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -772,6 +774,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return subtle_movement;
       case 'subtle_movement_description':
         return subtle_movement_description;
+      case 'full_screen_note':
+        return full_screen_note;
       default:
         return key;
     }

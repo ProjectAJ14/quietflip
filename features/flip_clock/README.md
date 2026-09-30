@@ -29,6 +29,11 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 Off by default (Settings > Display). When on, full screen shifts the display
 up to 8 px per axis once a minute, easing over 1 s (a jump with reduced
 motion). It lowers, but does not prevent, burn-in risk.
+## Full screen
+
+Entering full screen shows the controls for three seconds with a plain note:
+full screen only hides the controls while the app stays open; it is not a
+lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 ## Keyboard
 

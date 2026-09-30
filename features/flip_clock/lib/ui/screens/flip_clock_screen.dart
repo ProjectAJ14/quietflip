@@ -58,6 +58,10 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   bool _visible = true;
   bool? _wakeOn;
   bool _revealed = false;
+
+  /// Shows the full-screen note with the controls revealed on entering full
+  /// screen, until they hide.
+  bool _hint = false;
   Timer? _hide;
 
   @override
@@ -66,6 +70,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final state = WidgetsBinding.instance.lifecycleState;
     _resumed = state == null || state == AppLifecycleState.resumed;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+    widget.fullScreen.active.addListener(_onFullScreen);
     widget.clock.start();
     // A timer that finished while the app was closed shows its banner.
     if (widget.countdown.state.status == CountdownStatus.finished) {
@@ -83,6 +88,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   @override
   void dispose() {
     _lifecycle.dispose();
+    widget.fullScreen.active.removeListener(_onFullScreen);
     _hide?.cancel();
     widget.clock.stop();
     if (_wakeOn ?? false) unawaited(widget.wake.setEnabled(false));
@@ -106,11 +112,27 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     unawaited(widget.wake.setEnabled(on));
   }
 
+  /// Entering full screen reveals the controls with the plain-words note
+  /// of what full screen does.
+  void _onFullScreen() {
+    if (!widget.fullScreen.active.value) {
+      _hint = false;
+      return;
+    }
+    _hint = true;
+    _reveal();
+  }
+
   void _reveal() {
     if (!widget.fullScreen.active.value) return;
     _hide?.cancel();
     _hide = Timer(FlipClockScreen.revealFor, () {
-      if (mounted) setState(() => _revealed = false);
+      if (mounted) {
+        setState(() {
+          _revealed = false;
+          _hint = false;
+        });
+      }
     });
     if (!_revealed) setState(() => _revealed = true);
   }
@@ -252,7 +274,20 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                                 Positioned.fill(child: content),
                                 Align(
                                   alignment: Alignment.topCenter,
-                                  child: Reveal(visible: _revealed, child: bar),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Reveal(visible: _revealed, child: bar),
+                                      // Flexible, so a tiny window squeezes the
+                                      // note instead of overflowing.
+                                      Flexible(
+                                        child: Reveal(
+                                          visible: _revealed && _hint,
+                                          child: const _FullScreenNote(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             )
@@ -285,6 +320,34 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// What full screen does, in plain words, shown briefly on entering it.
+/// A live region, so screen readers announce it too.
+class _FullScreenNote extends StatelessWidget {
+  const _FullScreenNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          child: Text(
+            strings.clock.full_screen_note,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium!.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

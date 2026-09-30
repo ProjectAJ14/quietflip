@@ -86,6 +86,11 @@ lib/
   button (top bar, full screen only) and the D key both call
   `ClockSettings.nextDim` (100% -> 50% -> 20% -> 100%; a slider value in
   between steps down to the next preset) and save.
+- Entering full screen reveals the controls for `revealFor` together with
+  `strings.clock.full_screen_note` (a live region, so screen readers hear
+  it); later reveals show the controls only. Settings shows the same note
+  under Keep screen awake. Full screen is not a lock screen or screensaver:
+  never word it as one.
 - No dependency on another feature; no account section in Settings.
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of

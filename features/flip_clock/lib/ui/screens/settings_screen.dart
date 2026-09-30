@@ -144,6 +144,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: s.keepAwake,
                   onChanged: (v) => _update(s.copyWith(keepAwake: v)),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  subtitle: Text(c.full_screen_note),
+                ),
                 _Section(c.keyboard_shortcuts),
                 for (final line in [
                   c.shortcut_full_screen,

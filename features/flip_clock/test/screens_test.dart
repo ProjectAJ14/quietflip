@@ -244,6 +244,7 @@ void main() {
     await tester.pumpWidget(h.screen());
     await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
     await tester.pump();
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
     final reveal = find.bySemanticsLabel(strings.clock.show_controls);
     expect(reveal, findsOne);
     tester.semantics.tap(find.semantics.byLabel(strings.clock.show_controls));
@@ -256,6 +257,69 @@ void main() {
     await tester.pumpAndSettle(FlipClockScreen.revealFor);
     semantics.dispose();
     await h.dispose(tester);
+  });
+
+  testWidgets('entering full screen shows what it does, then hides it', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    final note = find.text(strings.clock.full_screen_note);
+    expect(note, findsNothing);
+
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(revealOf(tester, note).visible, isTrue);
+    expect(
+      tester.getSemantics(note),
+      isSemantics(label: strings.clock.full_screen_note, isLiveRegion: true),
+    );
+
+    expect(find.semantics.byLabel(strings.clock.full_screen_note), findsOne);
+
+    // Hidden with the controls after revealFor.
+    await tester.pump(FlipClockScreen.revealFor);
+    expect(revealOf(tester, note).visible, isFalse);
+    expect(
+      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
+      isFalse,
+    );
+    await tester.pumpAndSettle();
+    // Faded out, so screen readers no longer see it either.
+    expect(
+      find.semantics.byLabel(strings.clock.full_screen_note),
+      findsNothing,
+    );
+
+    // A later reveal shows the controls only, not the note again.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(
+      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
+      isTrue,
+    );
+    expect(revealOf(tester, note).visible, isFalse);
+
+    // Leaving and re-entering shows it again; leaving clears it.
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(note, findsNothing);
+    await key(tester, LogicalKeyboardKey.keyF);
+    expect(revealOf(tester, note).visible, isTrue);
+    await key(tester, LogicalKeyboardKey.keyF);
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    semantics.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('the full-screen listener is removed on dispose', (tester) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await h.dispose(tester);
+    // No listener left: toggling after dispose must not touch the old state.
+    await h.full.toggle();
+    await tester.pump(FlipClockScreen.revealFor);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('timer input rejects out-of-range values', (tester) async {
@@ -418,6 +482,9 @@ void main() {
     expect(h.full.toggles, 1);
     final settingsButton = find.byTooltip(strings.clock.settings);
     final start = find.text(strings.clock.start);
+    // Entering shows the controls briefly, then hides them.
+    expect(revealOf(tester, settingsButton).visible, isTrue);
+    await tester.pump(FlipClockScreen.revealFor);
     expect(revealOf(tester, settingsButton).visible, isFalse);
     expect(revealOf(tester, start).visible, isFalse);
 
@@ -678,6 +745,7 @@ void main() {
     expect(find.text(strings.clock.percent('20')), findsOne);
     await h.settings.update(const ClockSettings());
     await tester.pump();
+    expect(find.text(strings.clock.full_screen_note), findsOne);
 
     Future<void> tap(String label) async {
       await tester.tap(find.text(label));
