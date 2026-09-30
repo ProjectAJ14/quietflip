@@ -78,6 +78,16 @@ lib/
 - **Startup work before the first screen:** `SplashScreen._redirect`, before `context.go`.
 - **Protect a new top-level route:** pass `auth.authRedirect()` (no
   `allowUnconfigured`) or use `auth.GoAuthRoute`.
+- **Change the launcher icon:** replace `assets/icon/quietflip-master.png`
+  (square, opaque, 1024px or larger), then from this directory run
+  `dart pub global activate flutter_launcher_icons 0.14.4` and
+  `dart pub global run flutter_launcher_icons`. Config is in
+  `flutter_launcher_icons.yaml`. Afterwards run
+  `git checkout ios/Runner.xcodeproj/project.pbxproj web/manifest.json`:
+  the tool rewrites `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS`
+  to `AppIcon` (it must stay `YES`) and strips the manifest's final newline.
+  It is not a `dev_dependency` because its `cli_util ^0.4.1` conflicts with
+  melos in the workspace lock.
 
 ## Tests
 

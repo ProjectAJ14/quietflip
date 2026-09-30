@@ -1,0 +1,31 @@
+# Launcher icons for every platform, generated from the approved master.
+#
+# flutter_launcher_icons 0.14.4 pins cli_util ^0.4.1, which conflicts with
+# melos in the workspace lock, so it runs as a global tool instead of a
+# dev_dependency. Regenerate from this directory after changing the master:
+#
+#   dart pub global activate flutter_launcher_icons 0.14.4
+#   dart pub global run flutter_launcher_icons
+#
+# The generated files are committed; never hand-edit them.
+flutter_launcher_icons:
+  image_path: "assets/icon/quietflip-master.png"
+  android: true
+  # Adaptive icon (Android 8+): the full-bleed master on its own corner
+  # color (#090B09), so no seam shows. A 20% inset keeps the card corners
+  # inside the circle mask.
+  adaptive_icon_background: "#090B09"
+  adaptive_icon_foreground: "assets/icon/quietflip-master.png"
+  adaptive_icon_foreground_inset: 20
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#000000"
+  web:
+    generate: true
+    background_color: "#000000"
+    theme_color: "#000000"
+  windows:
+    generate: true
+    icon_size: 256
+  macos:
+    generate: true
