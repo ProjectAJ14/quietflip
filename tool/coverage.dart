@@ -43,6 +43,8 @@ Future<void> main(List<String> args) async {
     tested.add(member);
   }
 
+  // Callers pass `--no-pub`: `dart run melos` has already resolved the
+  // workspace, so re-checking it in every package only adds time.
   Future<bool> run(String workingDirectory, List<String> arguments) async {
     final result = await Process.run(
       'flutter',
@@ -57,6 +59,11 @@ Future<void> main(List<String> args) async {
     stderr.write(result.stderr);
     return result.exitCode == 0;
   }
+
+  bool hasWebSources(({String area, String name, Directory package}) m) =>
+      Directory(
+        '${m.package.path}/lib',
+      ).listSync(recursive: true).any((f) => f.path.endsWith('_web.dart'));
 
   Future<void> test(({String area, String name, Directory package}) m) async {
     final package = m.package;
@@ -100,6 +107,7 @@ Future<void> main(List<String> args) async {
       if (report.existsSync()) report.deleteSync();
       if (!await run(package.path, [
         'test',
+        '--no-pub',
         '--coverage',
         '--coverage-package=$coveragePackages',
       ])) {
@@ -110,10 +118,7 @@ Future<void> main(List<String> args) async {
     }
     // The VM cannot measure web-only files, so each package that has one
     // must exercise it in Chrome from test/web/ (`@TestOn('browser')`).
-    final hasWebSources = Directory(
-      '${package.path}/lib',
-    ).listSync(recursive: true).any((f) => f.path.endsWith('_web.dart'));
-    if (hasWebSources) {
+    if (hasWebSources(m)) {
       final webTests = Directory('${testDirectory.path}/web');
       if (!webTests.existsSync()) {
         stderr.writeln(
@@ -122,6 +127,7 @@ Future<void> main(List<String> args) async {
         failed = true;
       } else if (!await run(package.path, [
         'test',
+        '--no-pub',
         '--platform',
         'chrome',
         'test/web',
@@ -133,7 +139,12 @@ Future<void> main(List<String> args) async {
 
   if (!reportOnly) {
     // Workers pull from one shared queue; Dart's single thread makes it safe.
-    final queue = tested.iterator;
+    // Packages with Chrome tests go first: starting Chrome is the slowest
+    // step, so it should overlap the other packages instead of trailing them.
+    final queue = [
+      ...tested.where(hasWebSources),
+      ...tested.where((m) => !hasWebSources(m)),
+    ].iterator;
     Future<void> worker() async {
       while (queue.moveNext()) {
         await test(queue.current);
