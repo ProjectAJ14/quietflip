@@ -310,6 +310,29 @@ void main() {
         semantics.dispose();
       });
 
+      testWidgets(
+        'two rows round to radius-lg so no corner clips; one is a pill',
+        (tester) async {
+          BorderRadiusGeometry? radius() =>
+              (tester
+                          .widget<DecoratedBox>(
+                            find
+                                .descendant(
+                                  of: find.byType(ds.Island),
+                                  matching: find.byType(DecoratedBox),
+                                )
+                                .first,
+                          )
+                          .decoration
+                      as BoxDecoration)
+                  .borderRadius;
+          await _pump(tester, mode, _island(actions: _actions()));
+          expect(radius(), BorderRadius.circular(ds.DesignRadius.lg));
+          await _pump(tester, mode, _island());
+          expect(radius(), BorderRadius.circular(ds.DesignRadius.pill));
+        },
+      );
+
       testWidgets('trailing alone has no rule; no tray keeps the tab height', (
         tester,
       ) async {

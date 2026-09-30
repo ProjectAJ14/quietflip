@@ -150,6 +150,9 @@ class Island extends StatelessWidget {
     final hud = this.hud;
     final expanded = hud == null && state == ChromeState.expanded;
     final visible = hud != null || state != ChromeState.hidden;
+    // Two rows are too tall for a stadium: its round ends would clip the
+    // outer tabs and actions.
+    final radius = expanded && _hasTray ? DesignRadius.lg : DesignRadius.pill;
 
     final Widget content = switch (hud) {
       IslandBrightnessHud() => _hud(hud.label, _brightness(hud, colors, text)),
@@ -205,11 +208,11 @@ class Island extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colors.island,
-                borderRadius: BorderRadius.circular(DesignRadius.pill),
+                borderRadius: BorderRadius.circular(radius),
                 boxShadow: colors.islandShadow,
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(DesignRadius.pill),
+                borderRadius: BorderRadius.circular(radius),
                 child: _reduceMotion(context)
                     // AnimatedSize cannot run for zero time (it re-dirties
                     // itself mid-layout), so reduced motion drops it.
