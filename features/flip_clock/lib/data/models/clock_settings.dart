@@ -18,6 +18,7 @@ class ClockSettings {
     this.secondsHintSeen = false,
     this.digitBrightness = maxBrightness,
     this.subtleMovement = false,
+    this.showDate = false,
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -62,6 +63,7 @@ class ClockSettings {
         _ => d.digitBrightness,
       },
       subtleMovement: flag('subtleMovement', d.subtleMovement),
+      showDate: flag('showDate', d.showDate),
     );
   }
 
@@ -84,6 +86,9 @@ class ClockSettings {
   /// In full screen, shift the display a few pixels each minute.
   final bool subtleMovement;
 
+  /// Shows today's date under the clock digits.
+  final bool showDate;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -96,6 +101,7 @@ class ClockSettings {
     'secondsHintSeen': secondsHintSeen,
     'digitBrightness': digitBrightness,
     'subtleMovement': subtleMovement,
+    'showDate': showDate,
   };
 
   ClockSettings copyWith({
@@ -110,6 +116,7 @@ class ClockSettings {
     bool? secondsHintSeen,
     double? digitBrightness,
     bool? subtleMovement,
+    bool? showDate,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -122,6 +129,7 @@ class ClockSettings {
     secondsHintSeen: secondsHintSeen ?? this.secondsHintSeen,
     digitBrightness: digitBrightness ?? this.digitBrightness,
     subtleMovement: subtleMovement ?? this.subtleMovement,
+    showDate: showDate ?? this.showDate,
   );
 
   @override
@@ -137,7 +145,8 @@ class ClockSettings {
       other.lastMode == lastMode &&
       other.secondsHintSeen == secondsHintSeen &&
       other.digitBrightness == digitBrightness &&
-      other.subtleMovement == subtleMovement;
+      other.subtleMovement == subtleMovement &&
+      other.showDate == showDate;
 
   @override
   int get hashCode => Object.hash(
@@ -152,5 +161,6 @@ class ClockSettings {
     secondsHintSeen,
     digitBrightness,
     subtleMovement,
+    showDate,
   );
 }

@@ -120,6 +120,41 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('date line shows under the clock and rolls over at midnight', (
+    tester,
+  ) async {
+    final h = Harness();
+    h.wall.now = DateTime(2026, 9, 29, 23, 59, 59);
+    await tester.pumpWidget(h.screen());
+    expect(find.text('Tuesday, September 29, 2026'), findsNothing);
+
+    await h.settings.update(h.settings.state.copyWith(showDate: true));
+    await tester.pump();
+    expect(find.text('Tuesday, September 29, 2026'), findsOne);
+    expect(
+      find.bySemanticsLabel(
+        strings.clock.current_time_and_date(
+          '23:59',
+          'Tuesday, September 29, 2026',
+        ),
+      ),
+      findsOne,
+    );
+
+    h.wall.advance(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Wednesday, September 30, 2026'), findsOne);
+
+    // A tiny window scales the date down instead of overflowing.
+    tester.view
+      ..physicalSize = const Size(200, 200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('flip sound plays on each change only when enabled', (
     tester,
   ) async {
@@ -755,6 +790,7 @@ void main() {
     await tap(strings.clock.theme_light);
     await tap(strings.clock.use_24h);
     await tap(strings.clock.show_seconds);
+    await tap(strings.clock.show_date);
     await tap(strings.clock.flip_sound);
     await tap(strings.clock.alert_sound);
     await tap(strings.clock.keep_screen_awake_description);
@@ -766,6 +802,7 @@ void main() {
         use24h: false,
         showSeconds: true,
         flipSound: true,
+        showDate: true,
         alertSound: false,
         keepAwake: true,
         subtleMovement: true,

@@ -203,3 +203,5 @@ clock:
   subtle_movement: "Subtle movement"
   subtle_movement_description: "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk."
   full_screen_note: "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver."
+  show_date: "Show date"
+  current_time_and_date(String time, String date): "Current time $time, $date"

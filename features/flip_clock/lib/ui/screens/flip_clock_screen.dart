@@ -521,14 +521,53 @@ class _ModeView extends StatelessWidget {
               use24h: settings.use24h,
               showSeconds: settings.showSeconds,
             );
-            return Center(
-              child: Opacity(
-                opacity: settings.digitBrightness,
-                child: FlipDisplay(
-                  text: text,
-                  semanticsLabel: strings.clock.current_time(text),
-                  onFlip: flip,
+            if (!settings.showDate) {
+              return Center(
+                child: Opacity(
+                  opacity: settings.digitBrightness,
+                  child: FlipDisplay(
+                    text: text,
+                    semanticsLabel: strings.clock.current_time(text),
+                    onFlip: flip,
+                  ),
                 ),
+              );
+            }
+            final date = MaterialLocalizations.of(context).formatFullDate(now);
+            final theme = Theme.of(context);
+            // The date dims with the digits, so it never outshines them.
+            return Opacity(
+              opacity: settings.digitBrightness,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: FlipDisplay(
+                        text: text,
+                        semanticsLabel: strings.clock.current_time_and_date(
+                          text,
+                          date,
+                        ),
+                        onFlip: flip,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Read as part of the display's label above.
+                  ExcludeSemantics(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        date,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },

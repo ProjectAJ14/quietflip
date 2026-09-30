@@ -1,7 +1,8 @@
 # flip_clock
 
 QuietFlip's whole first release: a split-flap clock, a countdown timer (1 s to
-99:59:59) and a stopwatch, plus Settings. No account, network or analytics.
+99:59:59) and a stopwatch, plus Settings. The clock can show today's date
+under the digits (Settings > Display > Show date). No account, network or analytics.
 
 ## Routes
 

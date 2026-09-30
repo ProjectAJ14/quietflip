@@ -115,6 +115,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: s.subtleMovement,
                   onChanged: (v) => _update(s.copyWith(subtleMovement: v)),
                 ),
+                SwitchListTile(
+                  title: Text(c.show_date),
+                  value: s.showDate,
+                  onChanged: (v) => _update(s.copyWith(showDate: v)),
+                ),
                 _Section(c.sound_and_alerts),
                 SwitchListTile(
                   title: Text(c.flip_sound),

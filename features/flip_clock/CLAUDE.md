@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -93,6 +93,11 @@ lib/
   under Keep screen awake. Full screen is not a lock screen or screensaver:
   never word it as one.
 - No dependency on another feature; no account section in Settings.
+- Show date puts `MaterialLocalizations.formatFullDate` under the Clock
+  digits (headlineSmall, onSurfaceVariant, scaled down, never wraps). It is
+  driven by the `ClockController` tick, so it rolls over at midnight, and is
+  read as part of the display label (`current_time_and_date`). It dims with
+  the digits (one `Opacity` around the digits and the date).
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of
   `/clock`, so the clock screen and its state stay underneath).

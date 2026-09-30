@@ -15,6 +15,7 @@ void main() {
     expect(s.secondsHintSeen, isFalse);
     expect(s.digitBrightness, 1.0);
     expect(s.subtleMovement, isFalse);
+    expect(s.showDate, isFalse);
   });
 
   test('round-trips through json and copyWith', () {
@@ -30,6 +31,7 @@ void main() {
       secondsHintSeen: true,
       digitBrightness: 0.4,
       subtleMovement: true,
+      showDate: true,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -45,6 +47,7 @@ void main() {
         'lastMode': 3,
         'secondsHintSeen': 'no',
         'subtleMovement': 'on',
+        'showDate': 'true',
       }),
       const ClockSettings(),
     );
