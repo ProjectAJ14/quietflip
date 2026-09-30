@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 // Values from the QuietFlip design system `tokens.json` (Mono Dark / Mono
 // Light). Change a value there first, then here; never invent one in a
@@ -250,4 +251,30 @@ abstract final class DesignMotion {
     stiffness: 320,
     damping: 26,
   );
+
+  /// [islandSpring] over [islandMorph] as a [Curve], for implicit animations
+  /// (`AnimatedSize`, `AnimatedContainer`). Overshoots slightly.
+  static const Curve islandCurve = SpringCurve(islandSpring, islandMorph);
+}
+
+/// A [Curve] that plays [spring] from 0 to 1 at rest over [duration]:
+/// `transform(t)` is the spring's position `t * duration` after release. It
+/// overshoots 1 when the spring is underdamped, and `transform(1)` is exactly
+/// 1 (the spring has all but settled by then).
+class SpringCurve extends Curve {
+  const SpringCurve(this.spring, this.duration);
+
+  /// The spring to play.
+  final SpringDescription spring;
+
+  /// How long the curve runs; `t` of 1 is this much time after release.
+  final Duration duration;
+
+  @override
+  double transformInternal(double t) => SpringSimulation(
+    spring,
+    0,
+    1,
+    0,
+  ).x(t * duration.inMicroseconds / Duration.microsecondsPerSecond);
 }

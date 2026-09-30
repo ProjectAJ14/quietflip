@@ -614,8 +614,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get timer_finished_body => "Your QuietFlip timer has finished.";
   String get alerts_channel => "Timer alerts";
   String get invalid_duration => "Enter a time between 1 second and 99:59:59.";
-  String get enter_full_screen => "Enter full screen";
-  String get exit_full_screen => "Exit full screen";
   String get show_controls => "Tap or move the mouse to show controls";
   String get display => "Display";
   String get theme => "Theme";
@@ -638,20 +636,16 @@ class ClockMessages implements i69n.I69nMessageBundle {
       "Stop the screen from sleeping while the clock is showing.";
   String get keyboard_shortcuts => "Keyboard shortcuts";
   String get shortcut_full_screen => "F: enter or leave full screen";
-  String get shortcut_exit_full_screen => "Esc: leave full screen";
+  String get shortcut_exit_full_screen =>
+      "Esc: leave full screen or hide the controls";
   String get shortcut_start_pause =>
       "Space: start or pause the timer or stopwatch";
   String get shortcut_modes => "1, 2, 3: Clock, Timer, Stopwatch";
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
-  String get hide_seconds => "Hide seconds";
-  String get seconds_hint =>
-      "Tap the seconds button (or press S) to show seconds.";
-  String get dismiss_hint => "Dismiss hint";
   String get shortcut_seconds => "S: show or hide seconds";
   String get digit_brightness => "Digit brightness";
-  String get dim_digits => "Dim the digits";
   String percent(String value) => "$value%";
   String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
   String get subtle_movement => "Subtle movement";
@@ -771,10 +765,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return alerts_channel;
       case 'invalid_duration':
         return invalid_duration;
-      case 'enter_full_screen':
-        return enter_full_screen;
-      case 'exit_full_screen':
-        return exit_full_screen;
       case 'show_controls':
         return show_controls;
       case 'display':
@@ -823,18 +813,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return time_remaining;
       case 'elapsed':
         return elapsed;
-      case 'hide_seconds':
-        return hide_seconds;
-      case 'seconds_hint':
-        return seconds_hint;
-      case 'dismiss_hint':
-        return dismiss_hint;
       case 'shortcut_seconds':
         return shortcut_seconds;
       case 'digit_brightness':
         return digit_brightness;
-      case 'dim_digits':
-        return dim_digits;
       case 'percent':
         return percent;
       case 'shortcut_dim':

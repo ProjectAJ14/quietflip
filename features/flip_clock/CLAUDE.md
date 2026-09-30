@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -48,10 +48,14 @@ lib/
                                            Pomodoro cycle (startPomodoro/startNextPhase)
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
-  ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode, quick-dim
-                                           in full screen), one-time seconds hint, date line,
-                                           full screen reveal + note, _WithControls (controls
-                                           at most half height), keys, wake lock
+  state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
+                                           `IslandHud`); starts expanded, -> dot after idle, -> hidden
+                                           after dotIdle; activity/wake/tap/hide, showHud/releaseHud
+                                           (hudHold), setIdle (zero = never)
+  ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs bottom centre, Skins /
+                                           Settings CornerButtons, owned ChromeController), tap
+                                           toggle, date line, full-screen note, _WithControls
+                                           (run controls at most half height), keys, wake lock
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
   ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
                                            date, orientation) / Sound & alerts / Keep awake
@@ -111,23 +115,28 @@ lib/
 - Space reaches the timer/stopwatch only when no control has focus, so a
   focused button keeps its own Space activation. An invalid timer entry
   (`TimerInput.onChanged(null)`) keeps Space from starting.
-- Seconds: the top-bar button (Clock mode only) and the S key toggle
-  `showSeconds`, as does the Settings switch. The one-time seconds hint shows
-  in Clock mode, not in full screen, while `secondsHintSeen` is false; it
-  overlays the display's top padding so the digits keep their size.
-  Dismissing it or using the button/S sets `secondsHintSeen` and saves.
-- Hidden full-screen controls are offered to screen readers as a
-  "show controls" button over the display.
+- Chrome: the screen owns a `ChromeController` (idle from
+  `ClockSettings.controlsIdle`, updated on change). Launch is expanded; 4 s
+  idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
+  mouse move or any key expands, Esc leaves full screen first, otherwise
+  hides. A tap on the clock toggles (when `tapToggleControls`); a tap on a
+  control is the control's (it wins the gesture arena). Run controls show
+  only while expanded (`Reveal`). The mode island sits `space-6` above the
+  safe area; corners `space-4` inside it (`space-6` from 600px shortest
+  side). The mode view reserves room for both (at most a quarter of the
+  height each), so the chrome never covers the digits. A hidden chrome makes
+  the whole clock one "show controls" button for screen readers.
+- Seconds: the S key (Clock mode only) and the Settings switch toggle
+  `showSeconds`.
 - Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
   and around the date line with the Clock digits);
-  the background stays the theme surface and the top bar, run controls,
-  timer input and completion banner stay at full brightness. The quick-dim
-  button (top bar, full screen only) and the D key both call
+  the background stays the skin's ground and the chrome, run controls,
+  timer input and completion banner stay at full brightness. The D key calls
   `ClockSettings.nextDim` (100% -> 50% -> 20% -> 100%; a slider value in
   between steps down to the next preset) and save.
-- Entering full screen reveals the controls for `revealFor` together with
-  `strings.clock.full_screen_note` (a live region, so screen readers hear
-  it); later reveals show the controls only. Settings shows the same note
+- Entering full screen expands the chrome and shows
+  `strings.clock.full_screen_note` for `noteFor` (3 s, a live region, so
+  screen readers hear it); leaving clears it. Settings shows the same note
   under Keep screen awake. Full screen is not a lock screen or screensaver:
   never word it as one.
 - No dependency on another feature; no account section in Settings.

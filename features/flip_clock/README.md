@@ -31,11 +31,10 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 
 Settings > Display, all saved and restored on launch:
 
-- **Show seconds**, also a top-bar button in Clock mode (S key), with a
-  one-time hint until it is used or dismissed.
+- **Show seconds**, also the S key in Clock mode.
 - **Digit brightness** (20% to 100%) dims only the digits (and the date line);
   the background (the skin's ground) stays as it is and the controls stay readable. In full screen
-  the top bar also has a quick-dim button that cycles 100%, 50%, 20% (D key).
+  the D key cycles 100%, 50%, 20%.
 - **Subtle movement**, off by default: full screen shifts the display up to
   8 px per axis once a minute, easing over 1 s (a jump with reduced motion).
   It lowers, but does not prevent, burn-in risk.
@@ -43,9 +42,18 @@ Settings > Display, all saved and restored on launch:
 - **Orientation** (Auto / Landscape / Portrait) locks the screen on phones
   and tablets. The control is hidden on web and desktop.
 
+## Controls
+
+Only the digits show when nobody touches the screen. A tap shows the
+controls: the mode island at the bottom (Clock, Timer, Stopwatch) and the
+Skins (top left) and Settings (top right) buttons. After 4 seconds without
+input they shrink to dots, and 3 seconds later they are gone. Any key or a
+mouse move shows them; Esc hides them. Settings sets the idle time and
+whether a tap toggles them.
+
 ## Skins
 
-The palette button opens the Skins sheet: live tiles of every skin, applied
+The Skins corner button opens the Skins sheet: live tiles of every skin, applied
 on tap. Classic is Mono (the default, white on near-black) plus nine colour
 variations; Type has one skin per bundled face (Bebas, Anton, Oswald,
 Shoulders, Poster, Terminal, Grotesk, Serif, Orbit). Every built-in skin is
@@ -69,10 +77,9 @@ lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 ## Keyboard
 
-F full screen, Esc leave full screen, Space start/pause (or start the next
+F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
 pomodoro phase after one ended while the app was closed), 1 / 2 / 3 Clock /
-Timer / Stopwatch, S show or hide seconds (Clock mode; also a top-bar
-button, with a one-time hint until it is used or dismissed), D dim the digits
+Timer / Stopwatch, S show or hide seconds (Clock mode), D dim the digits
 (100%, 50%, 20%).
 
 ## Edge cases covered

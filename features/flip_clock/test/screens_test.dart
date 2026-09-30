@@ -92,6 +92,9 @@ Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
   await tester.pump();
 }
 
+ChromeState chromeOf(WidgetTester tester) =>
+    tester.widget<Island>(find.byType(Island)).state;
+
 Reveal revealOf(WidgetTester tester, Finder f) => tester.widget<Reveal>(
   find.ancestor(of: f, matching: find.byType(Reveal)).first,
 );
@@ -351,25 +354,20 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('screen readers can reveal hidden full-screen controls', (
+  testWidgets('screen readers get "show controls" once the chrome hides', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
     final h = Harness();
     await tester.pumpWidget(h.screen());
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
-    await tester.pumpAndSettle(FlipClockScreen.revealFor);
-    final reveal = find.bySemanticsLabel(strings.clock.show_controls);
-    expect(reveal, findsOne);
-    tester.semantics.tap(find.semantics.byLabel(strings.clock.show_controls));
-    await tester.pump();
     expect(find.bySemanticsLabel(strings.clock.show_controls), findsNothing);
-    expect(
-      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
-      isTrue,
-    );
-    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(strings.clock.show_controls), findsOne);
+    tester.semantics.tap(find.semantics.byLabel(strings.clock.show_controls));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(strings.clock.show_controls), findsNothing);
+    expect(chromeOf(tester), ChromeState.expanded);
     semantics.dispose();
     await h.dispose(tester);
   });
@@ -383,46 +381,21 @@ void main() {
     final note = find.text(strings.clock.full_screen_note);
     expect(note, findsNothing);
 
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
-    expect(revealOf(tester, note).visible, isTrue);
+    await key(tester, LogicalKeyboardKey.keyF);
+    expect(note, findsOne);
     expect(
       tester.getSemantics(note),
       isSemantics(label: strings.clock.full_screen_note, isLiveRegion: true),
     );
+    expect(chromeOf(tester), ChromeState.expanded);
+    await tester.pump(FlipClockScreen.noteFor);
+    expect(note, findsNothing);
 
-    expect(find.semantics.byLabel(strings.clock.full_screen_note), findsOne);
-
-    // Hidden with the controls after revealFor.
-    await tester.pump(FlipClockScreen.revealFor);
-    expect(revealOf(tester, note).visible, isFalse);
-    expect(
-      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
-      isFalse,
-    );
-    await tester.pumpAndSettle();
-    // Faded out, so screen readers no longer see it either.
-    expect(
-      find.semantics.byLabel(strings.clock.full_screen_note),
-      findsNothing,
-    );
-
-    // A later reveal shows the controls only, not the note again.
-    await tester.tapAt(const Offset(400, 300));
-    await tester.pump();
-    expect(
-      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
-      isTrue,
-    );
-    expect(revealOf(tester, note).visible, isFalse);
-
-    // Leaving and re-entering shows it again; leaving clears it.
+    // Leaving clears it at once; re-entering shows it again.
+    await key(tester, LogicalKeyboardKey.keyF);
     await key(tester, LogicalKeyboardKey.escape);
     expect(note, findsNothing);
-    await key(tester, LogicalKeyboardKey.keyF);
-    expect(revealOf(tester, note).visible, isTrue);
-    await key(tester, LogicalKeyboardKey.keyF);
-    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    await tester.pumpAndSettle(FlipClockScreen.noteFor);
     semantics.dispose();
     await h.dispose(tester);
   });
@@ -433,7 +406,7 @@ void main() {
     await h.dispose(tester);
     // No listener left: toggling after dispose must not touch the old state.
     await h.full.toggle();
-    await tester.pump(FlipClockScreen.revealFor);
+    await tester.pump(FlipClockScreen.noteFor);
     expect(tester.takeException(), isNull);
   });
 
@@ -511,21 +484,12 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('seconds button and S toggle seconds and retire the hint', (
-    tester,
-  ) async {
+  testWidgets('S toggles seconds in Clock mode only', (tester) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await tester.pump();
-    final hint = find.text(strings.clock.seconds_hint);
-    expect(hint, findsOne);
-
-    await tester.tap(find.byTooltip(strings.clock.show_seconds));
-    await tester.pump();
+    await key(tester, LogicalKeyboardKey.keyS);
     expect(h.settings.state.showSeconds, isTrue);
-    expect(h.settings.state.secondsHintSeen, isTrue);
-    expect(hint, findsNothing);
-    expect(find.byTooltip(strings.clock.hide_seconds), findsOne);
     expect(
       find.bySemanticsLabel(strings.clock.current_time('09:41:00')),
       findsOne,
@@ -534,42 +498,14 @@ void main() {
       store: h.store,
       logger: di.get<Logger>(),
     ).load();
-    expect(saved.secondsHintSeen, isTrue);
-
+    expect(saved.showSeconds, isTrue);
     await key(tester, LogicalKeyboardKey.keyS);
     expect(h.settings.state.showSeconds, isFalse);
-    expect(find.byTooltip(strings.clock.show_seconds), findsOne);
 
-    // Not in other modes: no button, S ignored.
     await key(tester, LogicalKeyboardKey.digit3);
-    expect(find.byTooltip(strings.clock.show_seconds), findsNothing);
     await key(tester, LogicalKeyboardKey.keyS);
     expect(h.settings.state.showSeconds, isFalse);
     await tester.pumpAndSettle();
-    await h.dispose(tester);
-  });
-
-  testWidgets('seconds hint: dismiss saves; hidden in full screen', (
-    tester,
-  ) async {
-    final h = Harness();
-    await tester.pumpWidget(h.screen());
-    final hint = find.text(strings.clock.seconds_hint);
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
-    expect(hint, findsNothing);
-    await key(tester, LogicalKeyboardKey.escape);
-    expect(hint, findsOne);
-
-    await tester.tap(find.byTooltip(strings.clock.dismiss_hint));
-    await tester.pump();
-    expect(hint, findsNothing);
-    expect(h.settings.state.showSeconds, isFalse);
-    expect(
-      h.store.data[SettingsRepositoryImp.settingsKey],
-      contains('"secondsHintSeen":true'),
-    );
-    await tester.pumpAndSettle(FlipClockScreen.revealFor);
     await h.dispose(tester);
   });
 
@@ -586,50 +522,99 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('full screen hides controls until tap or mouse move', (
+  testWidgets('chrome: dots after 4 s, gone after 7 s, tap toggles', (
     tester,
   ) async {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
     await tester.pumpWidget(h.screen());
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
-    expect(h.full.toggles, 1);
-    final settingsButton = find.byTooltip(strings.clock.settings);
     final start = find.text(strings.clock.start);
-    // Entering shows the controls briefly, then hides them.
-    expect(revealOf(tester, settingsButton).visible, isTrue);
-    await tester.pump(FlipClockScreen.revealFor);
-    expect(revealOf(tester, settingsButton).visible, isFalse);
-    expect(revealOf(tester, start).visible, isFalse);
+    expect(chromeOf(tester), ChromeState.expanded);
+    expect(revealOf(tester, start).visible, isTrue);
 
+    await tester.pump(const Duration(seconds: 4));
+    expect(chromeOf(tester), ChromeState.dot);
+    expect(revealOf(tester, start).visible, isFalse);
+    await tester.pump(const Duration(seconds: 3));
+    expect(chromeOf(tester), ChromeState.hidden);
+    // Watched past the window: it stays hidden.
+    await tester.pump(const Duration(seconds: 10));
+    expect(chromeOf(tester), ChromeState.hidden);
+
+    // A tap on the clock shows the chrome; another hides it.
     await tester.tapAt(const Offset(400, 300));
     await tester.pump();
-    expect(revealOf(tester, settingsButton).visible, isTrue);
-    expect(revealOf(tester, start).visible, isTrue);
-    await tester.pump(const Duration(seconds: 2));
+    expect(chromeOf(tester), ChromeState.expanded);
     await tester.tapAt(const Offset(400, 300));
-    await tester.pump(const Duration(seconds: 2));
-    expect(revealOf(tester, start).visible, isTrue);
-    await tester.pump(FlipClockScreen.revealFor);
-    expect(revealOf(tester, start).visible, isFalse);
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.hidden);
 
+    // Any key shows it; Esc hides it (outside full screen).
+    await key(tester, LogicalKeyboardKey.keyQ);
+    expect(chromeOf(tester), ChromeState.expanded);
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(chromeOf(tester), ChromeState.hidden);
+
+    // A mouse move shows it.
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: const Offset(10, 10));
     await mouse.moveTo(const Offset(20, 20));
     await tester.pump();
-    expect(revealOf(tester, settingsButton).visible, isTrue);
-    await tester.tap(find.byTooltip(strings.clock.exit_full_screen));
-    await tester.pump();
-    expect(h.full.value.value, isFalse);
+    expect(chromeOf(tester), ChromeState.expanded);
     await mouse.removePointer();
+
+    // A tap on a control is the control's, not a toggle.
+    await tester.tap(start);
+    await tester.pump();
+    expect(h.stopwatch.state.running, isTrue);
+    expect(chromeOf(tester), ChromeState.expanded);
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });
 
-  testWidgets('dim button and D key dim only the digits, and save', (
+  testWidgets('tap-to-toggle off and a changed idle time are honoured', (
     tester,
   ) async {
+    final h = Harness();
+    await h.settings.update(
+      const ClockSettings(
+        tapToggleControls: false,
+        controlsIdle: Duration(seconds: 2),
+      ),
+    );
+    await tester.pumpWidget(h.screen());
+    await tester.pump(const Duration(seconds: 2));
+    expect(chromeOf(tester), ChromeState.dot);
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.dot);
+    // Never: stays expanded.
+    await h.settings.update(
+      h.settings.state.copyWith(controlsIdle: Duration.zero),
+    );
+    await key(tester, LogicalKeyboardKey.keyQ);
+    await tester.pump(const Duration(minutes: 1));
+    expect(chromeOf(tester), ChromeState.expanded);
+    await h.dispose(tester);
+  });
+
+  testWidgets('island tabs switch modes; corners open Skins and Settings', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.tap(find.text(strings.clock.stopwatch));
+    await tester.pump();
+    expect(h.settings.state.lastMode, ClockMode.stopwatch);
+    await tester.tap(find.byTooltip(strings.clock.settings));
+    expect(h.settingsOpened, 1);
+    await tester.tap(find.byTooltip(strings.clock.skins_change));
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinPicker), findsOne);
+    await h.dispose(tester);
+  });
+
+  testWidgets('D dims only the digits, and saves', (tester) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     double digits() => tester
@@ -642,9 +627,7 @@ void main() {
               .first,
         )
         .opacity;
-    final dim = find.byTooltip(strings.clock.dim_digits);
     expect(digits(), 1.0);
-    expect(dim, findsNothing);
 
     await key(tester, LogicalKeyboardKey.keyD);
     expect(h.settings.state.digitBrightness, 0.5);
@@ -654,23 +637,15 @@ void main() {
       ClockSettings.fromJson(jsonDecode(saved) as Map<String, Object?>),
       const ClockSettings(digitBrightness: 0.5),
     );
-
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
-    await tester.tapAt(const Offset(400, 300));
-    await tester.pump();
-    expect(revealOf(tester, dim).visible, isTrue);
-    await tester.tap(dim);
-    await tester.pump();
+    await key(tester, LogicalKeyboardKey.keyD);
     expect(h.settings.state.digitBrightness, 0.2);
-    // The top bar is never dimmed.
+    await key(tester, LogicalKeyboardKey.keyD);
+    expect(h.settings.state.digitBrightness, 1.0);
+    // The chrome is never dimmed.
     expect(
-      find.ancestor(of: dim, matching: find.byType(Opacity)),
+      find.ancestor(of: find.byType(Island), matching: find.byType(Opacity)),
       findsNothing,
     );
-    await tester.tap(dim);
-    await tester.pump();
-    expect(h.settings.state.digitBrightness, 1.0);
 
     for (final mode in [ClockMode.timer, ClockMode.stopwatch]) {
       await h.settings.update(
@@ -700,8 +675,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
-    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
-    await tester.pump();
+    await key(tester, LogicalKeyboardKey.keyF);
     expect(find.byType(SubtleMovement), findsNothing, reason: 'setting off');
 
     await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
@@ -778,7 +752,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('compact windows show icon-only modes and never overflow', (
+  testWidgets('compact windows keep every mode tab and never overflow', (
     tester,
   ) async {
     for (final size in const [Size(360, 640), Size(640, 360), Size(200, 100)]) {
@@ -788,13 +762,7 @@ void main() {
       final h = Harness();
       await tester.pumpWidget(h.screen());
       expect(tester.takeException(), isNull, reason: '$size');
-      expect(
-        size.width < 520
-            ? find.byTooltip(strings.clock.stopwatch)
-            : find.text(strings.clock.stopwatch),
-        findsOne,
-        reason: '$size',
-      );
+      expect(find.text(strings.clock.stopwatch), findsOne, reason: '$size');
       await h.dispose(tester);
     }
     tester.view.reset();

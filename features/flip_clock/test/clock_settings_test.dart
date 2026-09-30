@@ -12,11 +12,12 @@ void main() {
     expect(s.systemAlerts, isFalse);
     expect(s.keepAwake, isFalse);
     expect(s.lastMode, ClockMode.clock);
-    expect(s.secondsHintSeen, isFalse);
     expect(s.digitBrightness, 1.0);
     expect(s.subtleMovement, isFalse);
     expect(s.showDate, isFalse);
     expect(s.orientation, ClockOrientation.auto);
+    expect(s.tapToggleControls, isTrue);
+    expect(s.controlsIdle, const Duration(seconds: 4));
   });
 
   test('round-trips through json and copyWith', () {
@@ -29,11 +30,12 @@ void main() {
       systemAlerts: true,
       keepAwake: true,
       lastMode: ClockMode.stopwatch,
-      secondsHintSeen: true,
       digitBrightness: 0.4,
       subtleMovement: true,
       showDate: true,
       orientation: ClockOrientation.landscape,
+      tapToggleControls: false,
+      controlsIdle: Duration.zero,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -47,10 +49,11 @@ void main() {
         'theme': 'neon',
         'use24h': 'yes',
         'lastMode': 3,
-        'secondsHintSeen': 'no',
         'subtleMovement': 'on',
         'showDate': 'true',
         'orientation': 'sideways',
+        'tapToggleControls': 'off',
+        'controlsIdleMs': '2000',
       }),
       const ClockSettings(),
     );
@@ -69,6 +72,27 @@ void main() {
     expect(read(null), 1.0);
     expect(
       const ClockSettings(digitBrightness: 0.5),
+      isNot(const ClockSettings()),
+    );
+  });
+
+  test('controls idle reads only the offered choices', () {
+    Duration read(Object? v) =>
+        ClockSettings.fromJson({'controlsIdleMs': v}).controlsIdle;
+    expect(read(2000), const Duration(seconds: 2));
+    expect(read(8000), const Duration(seconds: 8));
+    expect(read(0), Duration.zero);
+    expect(read(3000), const Duration(seconds: 4));
+    expect(read(-1), const Duration(seconds: 4));
+    expect(read(null), const Duration(seconds: 4));
+    expect(
+      const ClockSettings(
+        controlsIdle: Duration.zero,
+      ).toJson()['controlsIdleMs'],
+      0,
+    );
+    expect(
+      const ClockSettings(tapToggleControls: false),
       isNot(const ClockSettings()),
     );
   });

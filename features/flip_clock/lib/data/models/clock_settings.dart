@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flutter/foundation.dart';
 
@@ -21,18 +22,31 @@ class ClockSettings {
     this.systemAlerts = false,
     this.keepAwake = false,
     this.lastMode = ClockMode.clock,
-    this.secondsHintSeen = false,
     this.digitBrightness = maxBrightness,
     this.subtleMovement = false,
     this.showDate = false,
     this.orientation = ClockOrientation.auto,
     this.skinId = 'mono',
     this.customSkins = const [],
+    this.tapToggleControls = true,
+    this.controlsIdle = defaultControlsIdle,
   });
 
   /// Dimmest and brightest [digitBrightness].
   static const double minBrightness = 0.2;
   static const double maxBrightness = 1;
+
+  /// How long the controls stay before collapsing, by default.
+  static const Duration defaultControlsIdle = DesignMotion.controlsIdle;
+
+  /// The [controlsIdle] values Settings offers; [Duration.zero] means Never
+  /// (the controls stay until hidden).
+  static const List<Duration> controlsIdleChoices = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 8),
+    Duration.zero,
+  ];
 
   /// The quick-dim step after [current]: 100% -> 50% -> 20% -> 100%.
   /// A slider value in between steps down to the next preset.
@@ -65,7 +79,6 @@ class ClockSettings {
       systemAlerts: flag('systemAlerts', d.systemAlerts),
       keepAwake: flag('keepAwake', d.keepAwake),
       lastMode: pick(ClockMode.values, 'lastMode', d.lastMode),
-      secondsHintSeen: flag('secondsHintSeen', d.secondsHintSeen),
       digitBrightness: switch (json['digitBrightness']) {
         final num v when !v.isNaN =>
           v.clamp(minBrightness, maxBrightness).toDouble(),
@@ -82,6 +95,13 @@ class ClockSettings {
                 ?Skin.fromJson(raw),
             ]
           : d.customSkins,
+      tapToggleControls: flag('tapToggleControls', d.tapToggleControls),
+      controlsIdle: switch (json['controlsIdleMs']) {
+        final int ms
+            when controlsIdleChoices.contains(Duration(milliseconds: ms)) =>
+          Duration(milliseconds: ms),
+        _ => d.controlsIdle,
+      },
     );
   }
 
@@ -94,9 +114,6 @@ class ClockSettings {
   final bool keepAwake;
   final ClockMode lastMode;
   final ClockOrientation orientation;
-
-  /// The one-time "tap the seconds button" hint was dismissed or acted on.
-  final bool secondsHintSeen;
 
   /// Opacity of the digits, [minBrightness]..[maxBrightness]; the background
   /// and controls are never dimmed.
@@ -114,6 +131,13 @@ class ClockSettings {
   /// Skins the user made, first in the picker.
   final List<Skin> customSkins;
 
+  /// A tap on the display shows or hides the controls.
+  final bool tapToggleControls;
+
+  /// Idle time before the controls collapse, one of [controlsIdleChoices];
+  /// [Duration.zero] means never.
+  final Duration controlsIdle;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -123,13 +147,14 @@ class ClockSettings {
     'systemAlerts': systemAlerts,
     'keepAwake': keepAwake,
     'lastMode': lastMode.name,
-    'secondsHintSeen': secondsHintSeen,
     'digitBrightness': digitBrightness,
     'subtleMovement': subtleMovement,
     'showDate': showDate,
     'orientation': orientation.name,
     'skinId': skinId,
     'customSkins': [for (final skin in customSkins) skin.toJson()],
+    'tapToggleControls': tapToggleControls,
+    'controlsIdleMs': controlsIdle.inMilliseconds,
   };
 
   ClockSettings copyWith({
@@ -141,13 +166,14 @@ class ClockSettings {
     bool? systemAlerts,
     bool? keepAwake,
     ClockMode? lastMode,
-    bool? secondsHintSeen,
     double? digitBrightness,
     bool? subtleMovement,
     bool? showDate,
     ClockOrientation? orientation,
     String? skinId,
     List<Skin>? customSkins,
+    bool? tapToggleControls,
+    Duration? controlsIdle,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -157,13 +183,14 @@ class ClockSettings {
     systemAlerts: systemAlerts ?? this.systemAlerts,
     keepAwake: keepAwake ?? this.keepAwake,
     lastMode: lastMode ?? this.lastMode,
-    secondsHintSeen: secondsHintSeen ?? this.secondsHintSeen,
     digitBrightness: digitBrightness ?? this.digitBrightness,
     subtleMovement: subtleMovement ?? this.subtleMovement,
     showDate: showDate ?? this.showDate,
     orientation: orientation ?? this.orientation,
     skinId: skinId ?? this.skinId,
     customSkins: customSkins ?? this.customSkins,
+    tapToggleControls: tapToggleControls ?? this.tapToggleControls,
+    controlsIdle: controlsIdle ?? this.controlsIdle,
   );
 
   @override
@@ -177,13 +204,14 @@ class ClockSettings {
       other.systemAlerts == systemAlerts &&
       other.keepAwake == keepAwake &&
       other.lastMode == lastMode &&
-      other.secondsHintSeen == secondsHintSeen &&
       other.digitBrightness == digitBrightness &&
       other.subtleMovement == subtleMovement &&
       other.showDate == showDate &&
       other.orientation == orientation &&
       other.skinId == skinId &&
-      listEquals(other.customSkins, customSkins);
+      listEquals(other.customSkins, customSkins) &&
+      other.tapToggleControls == tapToggleControls &&
+      other.controlsIdle == controlsIdle;
 
   @override
   int get hashCode => Object.hash(
@@ -195,12 +223,13 @@ class ClockSettings {
     systemAlerts,
     keepAwake,
     lastMode,
-    secondsHintSeen,
     digitBrightness,
     subtleMovement,
     showDate,
     orientation,
     skinId,
     Object.hashAll(customSkins),
+    tapToggleControls,
+    controlsIdle,
   );
 }

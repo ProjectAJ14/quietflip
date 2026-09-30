@@ -451,6 +451,9 @@ void main() {
       );
       await tester.pumpWidget(rig.screen());
       await tester.pump(const Duration(milliseconds: 500));
+      // Let the chrome settle to hidden (4 s + 3 s) before counting.
+      await tester.pump(const Duration(seconds: 8));
+      await tester.pump(const Duration(seconds: 1));
       final elements = tester.allElements.length;
       for (var m = 0; m < 3 * 60; m++) {
         await tester.pump(const Duration(minutes: 1));
@@ -458,7 +461,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(rig.clock.state.millisecond, 0);
       expect(
-        find.bySemanticsLabel(strings.clock.current_time('12:41:09')),
+        find.bySemanticsLabel(strings.clock.current_time('12:41:18')),
         findsOne,
       );
       expect(tester.allElements.length, elements);
