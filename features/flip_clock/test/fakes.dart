@@ -109,6 +109,44 @@ class FakeOrientation implements OrientationLock {
       calls.add(orientation);
 }
 
+/// Screen brightness whose [failing] operations throw.
+class FakeScreenBrightness implements ScreenBrightness {
+  FakeScreenBrightness({this.supported = true, this.level = 0.5});
+
+  @override
+  final bool supported;
+
+  double level;
+
+  /// Every call in order: `current`, `set`, `reset`.
+  final List<String> calls = [];
+
+  /// Operations (`current`, `set`, `reset`) that throw.
+  final Set<String> failing = {};
+
+  void _call(String operation) {
+    calls.add(operation);
+    if (failing.contains(operation)) {
+      throw ScreenBrightnessException(operation);
+    }
+  }
+
+  @override
+  Future<double> current() async {
+    _call('current');
+    return level;
+  }
+
+  @override
+  Future<void> set(double value) async {
+    _call('set');
+    level = value;
+  }
+
+  @override
+  Future<void> reset() async => _call('reset');
+}
+
 /// A wall clock tests move by hand.
 class FakeClock {
   FakeClock([DateTime? start]) : now = start ?? DateTime(2026, 9, 29, 9, 41);

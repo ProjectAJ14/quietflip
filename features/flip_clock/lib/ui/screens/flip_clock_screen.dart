@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
+import 'package:flip_clock/state/brightness_control.dart';
 import 'package:flip_clock/state/chrome_controller.dart';
 import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
@@ -15,22 +17,26 @@ import 'package:flip_clock/ui/components/completion_banner.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/gesture_layer.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
-/// Clock / Timer / Stopwatch. The active mode fills the screen; the chrome
-/// (mode island at the bottom, Skins and Settings corner buttons) shrinks to
-/// dots after `controlsIdle`, then disappears; a tap brings it back.
+/// Pomodoro / Clock / Timer / Stopwatch as swipeable panels under one
+/// [GestureLayer]: tap toggles the chrome (mode island at the bottom, Skins
+/// and Settings corner buttons), a vertical drag changes brightness, a
+/// sideways swipe changes mode. The chrome shrinks to dots after
+/// `controlsIdle`, then disappears.
 ///
-/// Keys: any key shows the chrome; F full screen, Esc leave full screen or
-/// hide the chrome, Space start/pause, 1/2/3 modes, S seconds (Clock mode),
-/// D dim the digits.
+/// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
+/// F full screen, Esc leave full screen or hide the chrome, Space
+/// start/pause, S seconds (Clock mode), D dim the digits.
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -41,7 +47,10 @@ class FlipClockScreen extends StatefulWidget {
     required this.fullScreen,
     required this.wake,
     required this.sound,
+    required this.brightness,
+    required this.logger,
     required this.onOpenSettings,
+    this.doubleTapFullScreen,
   });
 
   final SettingsController settings;
@@ -51,7 +60,20 @@ class FlipClockScreen extends StatefulWidget {
   final FullScreenController fullScreen;
   final ScreenWake wake;
   final SoundPlayer sound;
+  final ScreenBrightness brightness;
+  final Logger logger;
   final VoidCallback onOpenSettings;
+
+  /// Double tap toggles full screen. Null: on desktop and web only, since a
+  /// double tap recognizer delays every single tap.
+  final bool? doubleTapFullScreen;
+
+  bool get _doubleTap =>
+      doubleTapFullScreen ??
+      (kIsWeb ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux);
 
   /// How long the full-screen note shows after entering full screen.
   static const Duration noteFor = Duration(seconds: 3);
@@ -65,9 +87,20 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   late final ChromeController _chrome = ChromeController(
     idle: widget.settings.state.controlsIdle,
   );
+  late final BrightnessControl _brightness = BrightnessControl(
+    device: widget.brightness,
+    settings: widget.settings,
+    logger: widget.logger,
+  );
+  late final PageController _pages = PageController(
+    initialPage: widget.settings.state.lastMode.index,
+  );
   bool _resumed = true;
   bool _visible = true;
   bool? _wakeOn;
+
+  /// A text field (the timer input) has focus: gestures are off.
+  bool _typing = false;
 
   /// The full-screen note, shown for [FlipClockScreen.noteFor] on entering
   /// full screen.
@@ -81,10 +114,14 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     _resumed = state == null || state == AppLifecycleState.resumed;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
     widget.fullScreen.active.addListener(_onFullScreen);
+    FocusManager.instance.addListener(_onFocus);
     widget.clock.start();
     // A timer that finished while the app was closed shows its banner.
-    if (widget.countdown.state.status == CountdownStatus.finished) {
-      _setMode(ClockMode.timer);
+    final countdown = widget.countdown.state;
+    if (countdown.status == CountdownStatus.finished) {
+      _setMode(
+        countdown.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro,
+      );
     }
   }
 
@@ -99,6 +136,10 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   void dispose() {
     _lifecycle.dispose();
     widget.fullScreen.active.removeListener(_onFullScreen);
+    FocusManager.instance.removeListener(_onFocus);
+    // Never leave the device dim.
+    unawaited(_brightness.reset());
+    _pages.dispose();
     _noteTimer?.cancel();
     unawaited(_chrome.close());
     widget.clock.stop();
@@ -108,6 +149,11 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   void _onLifecycle(AppLifecycleState state) {
     _resumed = state == AppLifecycleState.resumed;
+    // Backgrounded or closing: the device returns to its own brightness.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(_brightness.reset());
+    }
     _syncWake();
     if (_resumed) {
       widget.clock.refresh();
@@ -137,9 +183,68 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     setState(() => _note = on);
   }
 
+  static bool _editing() =>
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorStateOfType<EditableTextState>() !=
+      null;
+
+  void _onFocus() {
+    final typing = _editing();
+    if (typing != _typing && mounted) setState(() => _typing = typing);
+  }
+
   void _setMode(ClockMode mode) => unawaited(
     widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
   );
+
+  static List<String> get _modeNames {
+    final c = strings.clock;
+    return [c.mode_pomodoro, c.mode_clock, c.mode_timer, c.mode_stopwatch];
+  }
+
+  /// Shows [mode]'s name and page dots in the island for a moment.
+  void _modeHud(ClockMode mode) {
+    _chrome
+      ..showHud(IslandTitleHud(_modeNames[mode.index], mode.index, 4))
+      ..releaseHud();
+  }
+
+  /// The mode [step] panels away, if there is one (no wrap-around).
+  void _stepMode(int step) {
+    final i = widget.settings.state.lastMode.index + step;
+    if (i < 0 || i >= ClockMode.values.length) return;
+    _setMode(ClockMode.values[i]);
+    _modeHud(ClockMode.values[i]);
+  }
+
+  /// Follows mode changes from tabs, keys and a finishing timer.
+  void _showPage(ClockMode mode) {
+    if (!_pages.hasClients || _pages.page?.round() == mode.index) return;
+    if (reducedMotion(context)) {
+      _pages.jumpToPage(mode.index);
+    } else {
+      unawaited(
+        _pages.animateToPage(
+          mode.index,
+          duration: DesignMotion.islandMorph,
+          curve: DesignMotion.islandCurve,
+        ),
+      );
+    }
+  }
+
+  /// Changes brightness by [delta] and shows it in the island.
+  Future<void> _brighten(double delta, {bool release = false}) async {
+    final value = await _brightness.change(delta);
+    if (!mounted) return;
+    _chrome.showHud(
+      IslandBrightnessHud(
+        value,
+        strings.clock.brightness_value('${(value * 100).round()}'),
+      ),
+    );
+    if (release) _chrome.releaseHud();
+  }
 
   void _toggleSeconds() {
     final s = widget.settings.state;
@@ -157,11 +262,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    // Typing digits into the timer must not switch modes.
-    final focused = FocusManager.instance.primaryFocus?.context;
-    if (focused?.findAncestorStateOfType<EditableTextState>() != null) {
-      return KeyEventResult.ignored;
-    }
+    // Typing into the timer must not switch modes.
+    if (_editing()) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final mode = widget.settings.state.lastMode;
     if (key == LogicalKeyboardKey.escape) {
@@ -181,19 +283,21 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
         mode != ClockMode.clock) {
       // Only when no control has focus: a focused button's own Space
       // activation must win.
-      if (mode == ClockMode.timer) {
+      if (mode == ClockMode.timer || mode == ClockMode.pomodoro) {
         unawaited(widget.countdown.toggle());
       } else {
         widget.stopwatch.toggle();
       }
     } else if (key == LogicalKeyboardKey.keyS && mode == ClockMode.clock) {
       _toggleSeconds();
-    } else if (key == LogicalKeyboardKey.digit1) {
-      _setMode(ClockMode.clock);
-    } else if (key == LogicalKeyboardKey.digit2) {
-      _setMode(ClockMode.timer);
-    } else if (key == LogicalKeyboardKey.digit3) {
-      _setMode(ClockMode.stopwatch);
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      _stepMode(-1);
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      _stepMode(1);
+    } else if (key == LogicalKeyboardKey.arrowUp) {
+      unawaited(_brighten(BrightnessControl.keyStep, release: true));
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      unawaited(_brighten(-BrightnessControl.keyStep, release: true));
     } else if (key == LogicalKeyboardKey.keyD) {
       _dim();
     } else {
@@ -215,14 +319,18 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       listenWhen: (a, b) =>
           a.status != CountdownStatus.finished &&
           b.status == CountdownStatus.finished,
-      listener: (_, _) => _setMode(ClockMode.timer),
+      listener: (_, s) =>
+          _setMode(s.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro),
       child: BlocConsumer<SettingsController, ClockSettings>(
         bloc: widget.settings,
         listenWhen: (a, b) =>
-            a.keepAwake != b.keepAwake || a.controlsIdle != b.controlsIdle,
+            a.keepAwake != b.keepAwake ||
+            a.controlsIdle != b.controlsIdle ||
+            a.lastMode != b.lastMode,
         listener: (_, s) {
           _syncWake();
           _chrome.setIdle(s.controlsIdle);
+          _showPage(s.lastMode);
         },
         builder: (context, settings) => ValueListenableBuilder<bool>(
           valueListenable: widget.fullScreen.active,
@@ -245,20 +353,43 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   ) {
     final skin = Skins.resolve(settings.skinId, settings.customSkins);
     final c = strings.clock;
-    Widget content = _ModeView(
-      screen: widget,
-      settings: settings,
-      skin: skin,
-      controlsVisible: chrome == ChromeState.expanded,
+    Widget content = PageView(
+      controller: _pages,
+      // The gesture layer is the only thing that moves the panels.
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (final mode in ClockMode.values)
+          _ModeView(
+            mode: mode,
+            screen: widget,
+            settings: settings,
+            skin: skin,
+            controlsVisible: chrome == ChromeState.expanded,
+          ),
+      ],
     );
     if (full && settings.subtleMovement) {
       content = SubtleMovement(clock: widget.clock, child: content);
     }
-    // A tap on the clock (not on a control, which wins the tap) toggles the
-    // chrome.
-    content = GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    // A tap on the clock (a control keeps its own tap) toggles the chrome.
+    // Off while a sheet or route covers the clock or the timer is typed in.
+    content = GestureLayer(
+      pages: _pages,
+      pageCount: ClockMode.values.length,
+      enabled: _visible && !_typing,
+      brightness: settings.gestureBrightness,
+      modes: settings.gestureModes,
       onTap: settings.tapToggleControls ? _chrome.tap : null,
+      onDoubleTap: widget._doubleTap
+          ? () => unawaited(widget.fullScreen.toggle())
+          : null,
+      onGestureStart: _chrome.activity,
+      onBrightness: (delta) => unawaited(_brighten(delta)),
+      onBrightnessEnd: _chrome.releaseHud,
+      onPage: (i) {
+        _setMode(ClockMode.values[i]);
+        _modeHud(ClockMode.values[i]);
+      },
       child: content,
     );
     // Screen readers cannot tap "anywhere", so a hidden chrome makes the
@@ -322,7 +453,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                       child: Island(
                         state: chrome,
                         hud: hud,
-                        tabs: [c.clock, c.timer, c.stopwatch],
+                        tabs: _modeNames,
                         selected: settings.lastMode.index,
                         onSelect: (i) => _setMode(ClockMode.values[i]),
                         tabsLabel: c.modes,
@@ -376,12 +507,14 @@ class _FullScreenNote extends StatelessWidget {
 /// windows.
 class _ModeView extends StatelessWidget {
   const _ModeView({
+    required this.mode,
     required this.screen,
     required this.settings,
     required this.skin,
     required this.controlsVisible,
   });
 
+  final ClockMode mode;
   final FlipClockScreen screen;
   final ClockSettings settings;
   final Skin skin;
@@ -405,7 +538,7 @@ class _ModeView extends StatelessWidget {
     final flip = settings.flipSound ? screen.sound.playFlip : null;
     return Padding(
       padding: EdgeInsets.fromLTRB(side, top, side, bottom),
-      child: switch (settings.lastMode) {
+      child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,
           builder: (context, now) {
@@ -470,7 +603,8 @@ class _ModeView extends StatelessWidget {
             );
           },
         ),
-        ClockMode.timer => _TimerView(
+        ClockMode.pomodoro || ClockMode.timer => _TimerView(
+          pomodoroPanel: mode == ClockMode.pomodoro,
           skin: skin,
           controller: screen.countdown,
           controlsVisible: controlsVisible,
@@ -488,8 +622,12 @@ class _ModeView extends StatelessWidget {
   }
 }
 
+/// The shared countdown. Idle, the Pomodoro panel offers a 25 min focus
+/// and the Timer panel the duration input; once running, both show the
+/// countdown (one engine).
 class _TimerView extends StatelessWidget {
   const _TimerView({
+    required this.pomodoroPanel,
     required this.skin,
     required this.controller,
     required this.controlsVisible,
@@ -497,6 +635,7 @@ class _TimerView extends StatelessWidget {
     required this.brightness,
   });
 
+  final bool pomodoroPanel;
   final Skin skin;
   final CountdownController controller;
   final bool controlsVisible;
@@ -508,23 +647,42 @@ class _TimerView extends StatelessWidget {
       BlocBuilder<CountdownController, CountdownState>(
         bloc: controller,
         builder: (context, state) {
+          if (state.status == CountdownStatus.idle && pomodoroPanel) {
+            final focus = PomodoroPhase.focus.duration;
+            return _WithControls(
+              display: Opacity(
+                opacity: brightness,
+                child: FlipDisplay(
+                  cards: durationValue(focus).cards,
+                  skin: skin,
+                  semanticsLabel: strings.clock.time_remaining(
+                    formatHms(focus),
+                  ),
+                ),
+              ),
+              controls: Reveal(
+                visible: controlsVisible,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => unawaited(controller.startPomodoro()),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(strings.clock.start),
+                ),
+              ),
+            );
+          }
           if (state.status == CountdownStatus.idle) {
             return Center(
               child: TimerInput(
                 initial: state.duration,
                 onChanged: (d) => unawaited(controller.setDuration(d)),
                 onStart: (d) => unawaited(controller.start(d)),
-                secondary: FilledButton.tonalIcon(
-                  onPressed: () => unawaited(controller.startPomodoro()),
-                  icon: const Icon(Icons.repeat_rounded),
-                  label: Text(strings.clock.pomodoro),
-                ),
               ),
             );
           }
           final text = formatHms(state.remaining);
           final pomodoro = state.pomodoro;
           final theme = Theme.of(context);
+          final label = skin.digitColor.withValues(alpha: 0.7);
           return _WithControls(
             display: Column(
               children: [
@@ -536,9 +694,7 @@ class _TimerView extends StatelessWidget {
                       pomodoro.phase == PomodoroPhase.focus
                           ? strings.clock.pomodoro_focus(pomodoro.round)
                           : strings.clock.pomodoro_break(pomodoro.round),
-                      style: theme.textTheme.titleLarge!.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
+                      style: theme.textTheme.titleLarge!.copyWith(color: label),
                     ),
                   ),
                 Expanded(

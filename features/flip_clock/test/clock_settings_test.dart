@@ -18,6 +18,8 @@ void main() {
     expect(s.orientation, ClockOrientation.auto);
     expect(s.tapToggleControls, isTrue);
     expect(s.controlsIdle, const Duration(seconds: 4));
+    expect(s.gestureBrightness, isTrue);
+    expect(s.gestureModes, isTrue);
   });
 
   test('round-trips through json and copyWith', () {
@@ -36,6 +38,8 @@ void main() {
       orientation: ClockOrientation.landscape,
       tapToggleControls: false,
       controlsIdle: Duration.zero,
+      gestureBrightness: false,
+      gestureModes: false,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -54,6 +58,8 @@ void main() {
         'orientation': 'sideways',
         'tapToggleControls': 'off',
         'controlsIdleMs': '2000',
+        'gestureBrightness': 'no',
+        'gestureModes': 0,
       }),
       const ClockSettings(),
     );
@@ -107,6 +113,24 @@ void main() {
       expect(ClockSettings.nextDim(0.3), 0.2);
     },
   );
+
+  test('gesture flags read their own keys and compare', () {
+    final json = const ClockSettings(gestureBrightness: false).toJson();
+    expect(json['gestureBrightness'], isFalse);
+    expect(json['gestureModes'], isTrue);
+    expect(
+      ClockSettings.fromJson({'gestureModes': false}),
+      const ClockSettings(gestureModes: false),
+    );
+    expect(
+      const ClockSettings(gestureBrightness: false),
+      isNot(const ClockSettings()),
+    );
+    expect(
+      const ClockSettings(gestureModes: false),
+      isNot(const ClockSettings()),
+    );
+  });
 
   test('routes are fixed', () {
     expect(FlipClockRouter.home, '/clock');

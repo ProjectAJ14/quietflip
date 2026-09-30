@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -52,6 +52,11 @@ lib/
                                            `IslandHud`); starts expanded, -> dot after idle, -> hidden
                                            after dotIdle; activity/wake/tap/hide, showHud/releaseHud
                                            (hudHold), setIdle (zero = never)
+  state/brightness_control.dart            BrightnessControl (plain class): drag/Up-Down keys drive
+                                           ScreenBrightness 0..1 where supported, else
+                                           digitBrightness 0.2..1 (saved); first
+                                           ScreenBrightnessException -> in-app for good (logged);
+                                           reset() restores system level, never throws
   ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs bottom centre, Skins /
                                            Settings CornerButtons, owned ChromeController), tap
                                            toggle, date line, full-screen note, _WithControls
@@ -60,7 +65,9 @@ lib/
   ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
                                            date, orientation) / Sound & alerts / Keep awake
                                            (+ full-screen note) / shortcuts
-  ui/components/                           FlipDisplay (cards + badge + AM/PM, styled by a Skin),
+  ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
+                                           axis-locked brightness drag and page swipe),
+                                           FlipDisplay (cards + badge + AM/PM, styled by a Skin),
                                            display_value (clock/duration/stopwatch -> cards),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
                                            showSheet, SkinCustomizer (parseHex/hexOf), TimerInput (+ `secondary` beside Start),
@@ -145,6 +152,19 @@ lib/
   driven by the `ClockController` tick, so it rolls over at midnight, and is
   read as part of the display label (`current_time_and_date`). It dims with
   the digits (one `Opacity` around the digits and the date).
+- Panels: a `PageView` (NeverScrollableScrollPhysics) in `ClockMode` order
+  (Pomodoro, Clock, Timer, Stopwatch) under one `GestureLayer`: tap toggles
+  the chrome, vertical drag -> `BrightnessControl.change(-dy / height)`
+  (device 0..1 where `ScreenBrightness.supported`, else digitBrightness
+  0.2..1; a `ScreenBrightnessException` falls back to in-app for good),
+  horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
+  12 px. Off while the clock route is not current (sheets, Settings) or a
+  text field has focus. `gestureBrightness` / `gestureModes` switch each
+  axis off. Double tap toggles full screen on desktop/web only (it delays
+  taps). Island HUD: brightness while dragging / Up / Down, the mode name
+  after a swipe or Left / Right; both release after `hudHold`. The device
+  brightness is reset on pause, detach and dispose. A mode change from tabs
+  or keys slides the panel (jumps with reduced motion).
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of
   `/clock`, so the clock screen and its state stay underneath).
@@ -152,9 +172,11 @@ lib/
   scheduled at `endsAt` on native, and shown at completion on web
   (`notifyOnFinish = kIsWeb`, because web cannot schedule). A timer that
   ended while the app was closed shows the banner silently on relaunch.
-  Finishing (or relaunching finished) switches to the Timer mode so the
-  banner is always seen.
-- Pomodoro (Timer mode, idle only): 25 min focus / 5 min break from
+  Finishing (or relaunching finished) switches to the Timer panel (the
+  Pomodoro panel for a pomodoro phase) so the banner is always seen.
+- Pomodoro (its own panel; the countdown engine is shared with the Timer:
+  idle, the Pomodoro panel offers 25:00 + Start and the Timer panel the
+  input; running, both show the countdown): 25 min focus / 5 min break from
   `timekeeping`'s `Pomodoro`, run as one `Countdown` per phase. While the
   app is open a phase end chimes for `chimeFor` (5 s, only with Alert
   sound), shows the web notification like the timer, and starts the next

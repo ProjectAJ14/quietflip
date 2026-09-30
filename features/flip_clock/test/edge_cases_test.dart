@@ -46,6 +46,7 @@ class Rig {
   final sound = FakeSound();
   final full = FakeFullScreen();
   final wake = FakeWake();
+  final brightness = FakeScreenBrightness();
   final watch = FakeStopwatch();
   late final SettingsController settings;
   late final CountdownController countdown;
@@ -62,6 +63,9 @@ class Rig {
       fullScreen: full,
       wake: wake,
       sound: sound,
+      brightness: brightness,
+      logger: di.get<Logger>(),
+      doubleTapFullScreen: false,
       onOpenSettings: () {},
     ),
   );

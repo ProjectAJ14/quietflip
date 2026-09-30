@@ -5,8 +5,9 @@ import 'package:flutter/foundation.dart';
 /// Theme the user picked in Settings.
 enum ClockTheme { black, light }
 
-/// The screen mode shown on launch (the last one used).
-enum ClockMode { clock, timer, stopwatch }
+/// The screen modes in panel order; the one shown on launch is the last
+/// one used.
+enum ClockMode { pomodoro, clock, timer, stopwatch }
 
 /// Screen orientation lock (phones and tablets only).
 enum ClockOrientation { auto, landscape, portrait }
@@ -30,6 +31,8 @@ class ClockSettings {
     this.customSkins = const [],
     this.tapToggleControls = true,
     this.controlsIdle = defaultControlsIdle,
+    this.gestureBrightness = true,
+    this.gestureModes = true,
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -102,6 +105,8 @@ class ClockSettings {
           Duration(milliseconds: ms),
         _ => d.controlsIdle,
       },
+      gestureBrightness: flag('gestureBrightness', d.gestureBrightness),
+      gestureModes: flag('gestureModes', d.gestureModes),
     );
   }
 
@@ -138,6 +143,13 @@ class ClockSettings {
   /// [Duration.zero] means never.
   final Duration controlsIdle;
 
+  /// A vertical drag on the display (and the Up/Down keys) changes the
+  /// brightness.
+  final bool gestureBrightness;
+
+  /// A horizontal swipe on the display switches between modes.
+  final bool gestureModes;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -155,6 +167,8 @@ class ClockSettings {
     'customSkins': [for (final skin in customSkins) skin.toJson()],
     'tapToggleControls': tapToggleControls,
     'controlsIdleMs': controlsIdle.inMilliseconds,
+    'gestureBrightness': gestureBrightness,
+    'gestureModes': gestureModes,
   };
 
   ClockSettings copyWith({
@@ -174,6 +188,8 @@ class ClockSettings {
     List<Skin>? customSkins,
     bool? tapToggleControls,
     Duration? controlsIdle,
+    bool? gestureBrightness,
+    bool? gestureModes,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -191,6 +207,8 @@ class ClockSettings {
     customSkins: customSkins ?? this.customSkins,
     tapToggleControls: tapToggleControls ?? this.tapToggleControls,
     controlsIdle: controlsIdle ?? this.controlsIdle,
+    gestureBrightness: gestureBrightness ?? this.gestureBrightness,
+    gestureModes: gestureModes ?? this.gestureModes,
   );
 
   @override
@@ -211,7 +229,9 @@ class ClockSettings {
       other.skinId == skinId &&
       listEquals(other.customSkins, customSkins) &&
       other.tapToggleControls == tapToggleControls &&
-      other.controlsIdle == controlsIdle;
+      other.controlsIdle == controlsIdle &&
+      other.gestureBrightness == gestureBrightness &&
+      other.gestureModes == gestureModes;
 
   @override
   int get hashCode => Object.hash(
@@ -231,5 +251,7 @@ class ClockSettings {
     Object.hashAll(customSkins),
     tapToggleControls,
     controlsIdle,
+    gestureBrightness,
+    gestureModes,
   );
 }

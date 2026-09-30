@@ -30,6 +30,8 @@ class FlipClockRouter implements CoreRouter {
         fullScreen: di.get<FullScreenController>(),
         wake: di.get<ScreenWake>(),
         sound: di.get<SoundPlayer>(),
+        brightness: di.get<ScreenBrightness>(),
+        logger: di.get<Logger>(),
         onOpenSettings: () => context.go(settings),
       ),
       routes: [

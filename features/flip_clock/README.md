@@ -9,7 +9,7 @@ under the digits (Settings > Display > Show date). No account, network or analyt
 
 | Path | Screen |
 |---|---|
-| `/clock` (`FlipClockRouter.home`) | Clock / Timer / Stopwatch; the app launches here |
+| `/clock` (`FlipClockRouter.home`) | Pomodoro / Clock / Timer / Stopwatch panels; the app launches here |
 | `/clock/settings` (`FlipClockRouter.settings`) | Settings, stacked on the clock |
 
 ## Wiring
@@ -25,7 +25,7 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 
 `init()` needs `Logger`, `KeyValueStore`, `LocalAlerts`, `SoundPlayer` and
 `OrientationLock` in `di`; the clock route also resolves
-`FullScreenController` and `ScreenWake`.
+`FullScreenController`, `ScreenWake` and `ScreenBrightness`.
 
 ## Display settings
 
@@ -45,11 +45,26 @@ Settings > Display, all saved and restored on launch:
 ## Controls
 
 Only the digits show when nobody touches the screen. A tap shows the
-controls: the mode island at the bottom (Clock, Timer, Stopwatch) and the
+controls: the mode island at the bottom (Pomodoro, Clock, Timer, Stopwatch) and the
 Skins (top left) and Settings (top right) buttons. After 4 seconds without
 input they shrink to dots, and 3 seconds later they are gone. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
 whether a tap toggles them.
+
+## Gestures
+
+- **Swipe up or down** anywhere: brightness (full screen height = 100%).
+  On iOS and Android it changes the screen brightness for QuietFlip only
+  and returns it to the system level when the app goes to the background
+  or closes; on macOS, Windows and the web it dims the digits (20% to
+  100%). The island shows the level.
+- **Swipe sideways**: previous or next mode (Pomodoro, Clock, Timer,
+  Stopwatch), no wrap-around. A quarter of the width or a quick fling
+  changes it; the island names the mode.
+- **Tap**: show or hide the controls. **Double tap** (desktop, web): full
+  screen.
+- Gestures are off while a sheet or Settings covers the clock and while
+  you type a timer duration. Swipes and brightness can each be turned off.
 
 ## Skins
 
@@ -78,8 +93,8 @@ lock screen or screensaver. Settings repeats the note under Keep screen awake.
 ## Keyboard
 
 F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
-pomodoro phase after one ended while the app was closed), 1 / 2 / 3 Clock /
-Timer / Stopwatch, S show or hide seconds (Clock mode), D dim the digits
+pomodoro phase after one ended while the app was closed), Left / Right
+change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mode), D dim the digits
 (100%, 50%, 20%).
 
 ## Edge cases covered

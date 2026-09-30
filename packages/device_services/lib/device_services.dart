@@ -1,9 +1,10 @@
 /// Platform adapters behind small contracts: full screen, screen wake,
-/// orientation lock, local alerts, sounds and key-value storage.
+/// orientation lock, screen brightness, local alerts, sounds and key-value storage.
 library;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:core/core.dart';
+import 'package:device_services/src/brightness/plugin_screen_brightness.dart';
 import 'package:device_services/src/contracts/index.dart';
 import 'package:device_services/src/full_screen/browser_full_screen.dart'
     if (dart.library.js_interop) 'package:device_services/src/full_screen/browser_full_screen_web.dart'
@@ -21,6 +22,7 @@ import 'package:di/di.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:screen_brightness/screen_brightness.dart' as plugin;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
@@ -47,9 +49,15 @@ Future<void> init({
   AudioPlayer Function() audioPlayer = AudioPlayer.new,
   Future<void> Function(List<DeviceOrientation>) orientations =
       SystemChrome.setPreferredOrientations,
+  Future<double> Function()? readBrightness,
+  Future<void> Function(double)? writeBrightness,
+  Future<void> Function()? restoreBrightness,
 }) async {
   final logger = di.get<Logger>();
   final target = platform ?? defaultTargetPlatform;
+  final mobile =
+      !isWeb &&
+      (target == TargetPlatform.android || target == TargetPlatform.iOS);
 
   await _registerFullScreen(
     logger,
@@ -62,10 +70,22 @@ Future<void> init({
   di.register<OrientationLock>(
     SystemOrientationLock(
       logger: logger,
-      supported:
-          !isWeb &&
-          (target == TargetPlatform.android || target == TargetPlatform.iOS),
+      supported: mobile,
       apply: orientations,
+    ),
+  );
+  di.register<ScreenBrightness>(
+    PluginScreenBrightness(
+      logger: logger,
+      supported: mobile,
+      read:
+          readBrightness ?? () => plugin.ScreenBrightness.instance.application,
+      write:
+          writeBrightness ??
+          plugin.ScreenBrightness.instance.setApplicationScreenBrightness,
+      restore:
+          restoreBrightness ??
+          plugin.ScreenBrightness.instance.resetApplicationScreenBrightness,
     ),
   );
   di.register<LocalAlerts>(

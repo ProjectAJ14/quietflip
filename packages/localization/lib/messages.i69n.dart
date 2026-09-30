@@ -640,7 +640,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
       "Esc: leave full screen or hide the controls";
   String get shortcut_start_pause =>
       "Space: start or pause the timer or stopwatch";
-  String get shortcut_modes => "1, 2, 3: Clock, Timer, Stopwatch";
+  String get shortcut_modes => "Left, Right: change mode";
+  String get shortcut_brightness => "Up, Down: brightness in 10% steps";
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
@@ -722,6 +723,11 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skin_grotesk => "Grotesk";
   String get skin_serif => "Serif";
   String get skin_orbit => "Orbit";
+  String get mode_pomodoro => "Pomodoro";
+  String get mode_clock => "Clock";
+  String get mode_timer => "Timer";
+  String get mode_stopwatch => "Stopwatch";
+  String brightness_value(String percent) => "$percent%";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -807,6 +813,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return shortcut_start_pause;
       case 'shortcut_modes':
         return shortcut_modes;
+      case 'shortcut_brightness':
+        return shortcut_brightness;
       case 'current_time':
         return current_time;
       case 'time_remaining':
@@ -963,6 +971,16 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skin_serif;
       case 'skin_orbit':
         return skin_orbit;
+      case 'mode_pomodoro':
+        return mode_pomodoro;
+      case 'mode_clock':
+        return mode_clock;
+      case 'mode_timer':
+        return mode_timer;
+      case 'mode_stopwatch':
+        return mode_stopwatch;
+      case 'brightness_value':
+        return brightness_value;
       default:
         return key;
     }

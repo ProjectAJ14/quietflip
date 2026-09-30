@@ -18,6 +18,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/gesture_layer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
@@ -35,7 +36,8 @@ import 'fakes.dart';
 final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
 
 class Harness {
-  Harness() {
+  Harness({FakeScreenBrightness? brightness})
+    : brightness = brightness ?? FakeScreenBrightness() {
     final repo = SettingsRepositoryImp(store: store, logger: di.get<Logger>());
     settings = SettingsController(repository: repo, alerts: alerts);
     countdown = CountdownController(
@@ -55,6 +57,7 @@ class Harness {
   final sound = FakeSound();
   final full = FakeFullScreen();
   final wake = FakeWake();
+  final FakeScreenBrightness brightness;
   final wall = FakeClock();
   final watch = FakeStopwatch();
   late final SettingsController settings;
@@ -63,19 +66,29 @@ class Harness {
   late final StopwatchController stopwatch;
   int settingsOpened = 0;
 
-  Widget screen() => MaterialApp(
-    theme: theme,
-    home: FlipClockScreen(
-      settings: settings,
-      clock: clock,
-      countdown: countdown,
-      stopwatch: stopwatch,
-      fullScreen: full,
-      wake: wake,
-      sound: sound,
-      onOpenSettings: () => settingsOpened++,
-    ),
-  );
+  Widget screen({bool doubleTap = false, bool reduceMotion = false}) =>
+      MaterialApp(
+        theme: theme,
+        builder: reduceMotion
+            ? (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: child!,
+              )
+            : null,
+        home: FlipClockScreen(
+          settings: settings,
+          clock: clock,
+          countdown: countdown,
+          stopwatch: stopwatch,
+          fullScreen: full,
+          wake: wake,
+          sound: sound,
+          brightness: brightness,
+          logger: di.get<Logger>(),
+          doubleTapFullScreen: doubleTap,
+          onOpenSettings: () => settingsOpened++,
+        ),
+      );
 
   Future<void> dispose(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
@@ -89,6 +102,21 @@ class Harness {
 
 Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
   await tester.sendKeyEvent(k);
+  await tester.pump();
+}
+
+/// Presses Left/Right and waits for the panel to slide in.
+Future<void> modeKey(WidgetTester tester, LogicalKeyboardKey k) async {
+  await key(tester, k);
+  await tester.pump(DesignMotion.islandMorph);
+  await tester.pump();
+}
+
+/// Taps a mode tab and waits for the panel to slide in.
+Future<void> modeTab(WidgetTester tester, String name) async {
+  await tester.tap(find.text(name));
+  await tester.pump();
+  await tester.pump(DesignMotion.islandMorph);
   await tester.pump();
 }
 
@@ -183,8 +211,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
-    await tester.tap(find.text(strings.clock.timer));
-    await tester.pump();
+    await modeTab(tester, strings.clock.timer);
     expect(h.settings.state.lastMode, ClockMode.timer);
     expect(find.byType(TimerInput), findsOne);
 
@@ -194,6 +221,8 @@ void main() {
     await tester.enterText(fields.at(2), '30');
     await tester.pump();
     expect(h.countdown.state.duration, const Duration(seconds: 30));
+    // Focusing a field scrolls it into view; a scrolling page ignores taps.
+    await tester.pumpAndSettle();
     await tester.tap(find.text(strings.clock.start));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.running);
@@ -233,11 +262,13 @@ void main() {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await h.countdown.start(const Duration(seconds: 2));
-    await key(tester, LogicalKeyboardKey.digit3);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
     expect(h.settings.state.lastMode, ClockMode.stopwatch);
     h.wall.advance(const Duration(seconds: 2));
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pump();
+    await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.timer);
     expect(find.text(strings.clock.times_up), findsOne);
     await h.countdown.reset();
@@ -266,10 +297,14 @@ void main() {
     tester,
   ) async {
     final h = Harness();
-    await h.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.pomodoro));
     await tester.pumpWidget(h.screen());
     await tester.pump();
-    await tester.tap(find.text(strings.clock.pomodoro));
+    expect(
+      find.bySemanticsLabel(strings.clock.time_remaining('00:25:00')),
+      findsOne,
+    );
+    await tester.tap(find.text(strings.clock.start));
     await tester.pump();
     expect(find.text(strings.clock.pomodoro_focus(1)), findsOne);
     expect(
@@ -290,7 +325,8 @@ void main() {
     expect(h.countdown.state.status, CountdownStatus.paused);
     await tester.tap(find.text(strings.clock.reset));
     await tester.pump();
-    expect(find.byType(TimerInput), findsOne);
+    // Back to the idle Pomodoro panel.
+    expect(find.text(strings.clock.start), findsOne);
     expect(find.text(strings.clock.pomodoro_break(1)), findsNothing);
     expect(h.countdown.state.duration, Countdown.defaultDuration);
     await tester.pumpAndSettle();
@@ -310,7 +346,8 @@ void main() {
     await h.countdown.load();
     await tester.pumpWidget(h.screen());
     await tester.pump();
-    expect(h.settings.state.lastMode, ClockMode.timer);
+    await tester.pump(DesignMotion.islandMorph);
+    expect(h.settings.state.lastMode, ClockMode.pomodoro);
     expect(find.text(strings.clock.times_up), findsOne);
     expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
     await tester.tap(find.text(strings.clock.start_focus));
@@ -333,9 +370,11 @@ void main() {
     await tester.pumpWidget(h.screen());
     await tester.pump();
     expect(find.text(strings.clock.start_break), findsOne);
+    expect(h.settings.state.lastMode, ClockMode.pomodoro);
     await tester.tap(find.text(strings.clock.dismiss));
     await tester.pump();
-    expect(find.byType(TimerInput), findsOne);
+    // The idle Pomodoro panel offers a new focus.
+    expect(find.text(strings.clock.start), findsOne);
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });
@@ -439,14 +478,15 @@ void main() {
     expect(started, const Duration(hours: 1, minutes: 5, seconds: 3));
   });
 
-  testWidgets('keyboard: 1/2/3 modes, Space start/pause, F and Esc', (
+  testWidgets('keyboard: Left/Right modes, Space start/pause, F and Esc', (
     tester,
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await tester.pump();
 
-    await key(tester, LogicalKeyboardKey.digit3);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
     expect(h.settings.state.lastMode, ClockMode.stopwatch);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.stopwatch.state.running, isTrue);
@@ -460,14 +500,14 @@ void main() {
     await tester.pump();
     expect(h.stopwatch.state.isIdle, isTrue);
 
-    await key(tester, LogicalKeyboardKey.digit2);
+    await modeKey(tester, LogicalKeyboardKey.arrowLeft);
     expect(h.settings.state.lastMode, ClockMode.timer);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.countdown.state.status, CountdownStatus.running);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.countdown.state.status, CountdownStatus.paused);
 
-    await key(tester, LogicalKeyboardKey.digit1);
+    await modeKey(tester, LogicalKeyboardKey.arrowLeft);
     expect(h.settings.state.lastMode, ClockMode.clock);
     await key(tester, LogicalKeyboardKey.space);
     await key(tester, LogicalKeyboardKey.escape);
@@ -502,22 +542,21 @@ void main() {
     await key(tester, LogicalKeyboardKey.keyS);
     expect(h.settings.state.showSeconds, isFalse);
 
-    await key(tester, LogicalKeyboardKey.digit3);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
+    await modeKey(tester, LogicalKeyboardKey.arrowRight);
     await key(tester, LogicalKeyboardKey.keyS);
     expect(h.settings.state.showSeconds, isFalse);
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });
 
-  testWidgets('digits typed into the timer do not switch modes', (
-    tester,
-  ) async {
+  testWidgets('keys typed into the timer do not switch modes', (tester) async {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.timer));
     await tester.pumpWidget(h.screen());
     await tester.tap(find.byType(TextField).first);
     await tester.pump();
-    await key(tester, LogicalKeyboardKey.digit1);
+    await modeKey(tester, LogicalKeyboardKey.arrowLeft);
     expect(h.settings.state.lastMode, ClockMode.timer);
     await h.dispose(tester);
   });
@@ -603,8 +642,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
-    await tester.tap(find.text(strings.clock.stopwatch));
-    await tester.pump();
+    await modeTab(tester, strings.clock.stopwatch);
     expect(h.settings.state.lastMode, ClockMode.stopwatch);
     await tester.tap(find.byTooltip(strings.clock.settings));
     expect(h.settingsOpened, 1);
@@ -742,6 +780,7 @@ void main() {
     final before = tester.getTopLeft(find.byType(FlipDisplay));
     h.wall.now = DateTime(2026, 9, 29, 9, 42);
     await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
     await tester.pump();
     expect(tester.takeException(), isNull);
     expect(
@@ -903,7 +942,8 @@ void main() {
       ..register<SoundPlayer>(FakeSound())
       ..register<FullScreenController>(FakeFullScreen())
       ..register<ScreenWake>(FakeWake())
-      ..register<OrientationLock>(orientation);
+      ..register<OrientationLock>(orientation)
+      ..register<ScreenBrightness>(FakeScreenBrightness());
     await flip_clock.init();
     expect(di.has<SettingsRepository>(), isTrue);
     expect(di.has<CountdownController>(), isTrue);
@@ -998,5 +1038,172 @@ void main() {
     ).formatFullDate(h.wall.now);
     expect(find.text(date), findsOne);
     await h.dispose(tester);
+  });
+
+  group('gestures', () {
+    IslandHud? hudOf(WidgetTester tester) =>
+        tester.widget<Island>(find.byType(Island)).hud;
+
+    testWidgets('Up/Down change the device brightness in 10% steps', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(h.brightness.level, closeTo(0.6, 1e-9));
+      final hud = hudOf(tester)! as IslandBrightnessHud;
+      expect(hud.label, strings.clock.brightness_value('60'));
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(h.brightness.level, closeTo(0.4, 1e-9));
+      // In-app dimming untouched while the device is driven.
+      expect(h.settings.state.digitBrightness, 1.0);
+      // The HUD goes 1.2 s after the last change.
+      await tester.pump(DesignMotion.hudHold);
+      expect(hudOf(tester), isNull);
+      await h.dispose(tester);
+      expect(h.brightness.calls.last, 'reset');
+    });
+
+    testWidgets('a vertical drag changes the device brightness', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+      await tester.pump();
+      // Down by half the 600px height: 0.5 - 0.5.
+      expect(h.brightness.level, closeTo(0.0, 0.02));
+      expect(hudOf(tester), isA<IslandBrightnessHud>());
+      await tester.pump(DesignMotion.hudHold);
+      expect(hudOf(tester), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('where the device cannot, the drag dims the digits', (
+      tester,
+    ) async {
+      final h = Harness(brightness: FakeScreenBrightness(supported: false));
+      await tester.pumpWidget(h.screen());
+      // Down by most of the height: clamps at the 20% floor.
+      await tester.dragFrom(const Offset(400, 50), const Offset(0, 500));
+      await tester.pump();
+      expect(h.settings.state.digitBrightness, ClockSettings.minBrightness);
+      expect(h.brightness.calls, isEmpty);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('a sideways swipe changes mode and names it in the island', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
+      await tester.pump();
+      expect(h.settings.state.lastMode, ClockMode.timer);
+      final hud = hudOf(tester)! as IslandTitleHud;
+      expect(hud.title, strings.clock.mode_timer);
+      expect(hud.index, ClockMode.timer.index);
+      await tester.pumpAndSettle();
+      expect(find.byType(TimerInput), findsOne);
+      await h.dispose(tester);
+    });
+
+    testWidgets('swipes and drags can be switched off', (tester) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(gestureModes: false, gestureBrightness: false),
+      );
+      await tester.pumpWidget(h.screen());
+      await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
+      await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+      await tester.pumpAndSettle();
+      expect(h.settings.state.lastMode, ClockMode.clock);
+      expect(h.brightness.calls, isEmpty);
+      await h.dispose(tester);
+    });
+
+    testWidgets('gestures are off while a sheet covers the clock', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.pumpAndSettle();
+      final layer = tester.widget<GestureLayer>(find.byType(GestureLayer));
+      expect(layer.enabled, isFalse);
+      await h.dispose(tester);
+    });
+
+    testWidgets('typing a timer duration turns gestures off', (tester) async {
+      final h = Harness();
+      await h.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+      await tester.pumpWidget(h.screen());
+      GestureLayer layer() =>
+          tester.widget<GestureLayer>(find.byType(GestureLayer));
+      expect(layer().enabled, isTrue);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pump();
+      expect(layer().enabled, isFalse);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('double tap toggles full screen where offered', (tester) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(doubleTap: true));
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pumpAndSettle();
+      expect(h.full.toggles, 1);
+      await h.dispose(tester);
+    });
+
+    testWidgets('with reduced motion the panel jumps', (tester) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(reduceMotion: true));
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(find.byType(TimerInput), findsOne);
+      await h.dispose(tester);
+    });
+
+    testWidgets('Left/Right stop at the ends: no wrap', (tester) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.pomodoro),
+      );
+      await tester.pumpWidget(h.screen());
+      await modeKey(tester, LogicalKeyboardKey.arrowLeft);
+      expect(h.settings.state.lastMode, ClockMode.pomodoro);
+      for (var i = 0; i < 5; i++) {
+        await modeKey(tester, LogicalKeyboardKey.arrowRight);
+      }
+      expect(h.settings.state.lastMode, ClockMode.stopwatch);
+      await h.dispose(tester);
+    });
+
+    testWidgets('backgrounding returns the device to its brightness', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      expect(h.brightness.calls, contains('reset'));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
   });
 }

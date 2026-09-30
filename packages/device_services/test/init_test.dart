@@ -43,8 +43,15 @@ void main() {
     BrowserFullScreen? browser,
     bool Function()? wakeCalled,
     Future<void> Function(List<DeviceOrientation>)? orientations,
+    List<String>? brightness,
   }) => init(
     orientations: orientations ?? (_) async {},
+    readBrightness: () async {
+      brightness?.add('read');
+      return 0.5;
+    },
+    writeBrightness: (value) async => brightness?.add('write $value'),
+    restoreBrightness: () async => brightness?.add('restore'),
     isWeb: isWeb,
     platform: platform,
     browserFullScreen: () => browser,
@@ -67,6 +74,7 @@ void main() {
     expect(di.get<SoundPlayer>(), isNotNull);
     expect(di.get<KeyValueStore>(), isNotNull);
     expect(di.get<OrientationLock>(), isNotNull);
+    expect(di.get<ScreenBrightness>(), isNotNull);
     await di.get<ScreenWake>().setEnabled(true);
     await di.reset();
     di.register<Logger>(logger);
@@ -97,6 +105,29 @@ void main() {
     expect(applied, hasLength(2));
   });
 
+  test('screen brightness is supported only on Android and iOS', () async {
+    final calls = <String>[];
+    for (final (web, platform, supported) in [
+      (false, TargetPlatform.android, true),
+      (false, TargetPlatform.iOS, true),
+      (false, TargetPlatform.windows, false),
+      (true, TargetPlatform.iOS, false),
+    ]) {
+      await run(isWeb: web, platform: platform, brightness: calls);
+      final brightness = di.get<ScreenBrightness>();
+      expect(brightness.supported, supported, reason: '$platform web=$web');
+      expect(await brightness.current(), supported ? 0.5 : 1.0);
+      await brightness.set(0.2);
+      await brightness.reset();
+      await di.reset();
+      di.register<Logger>(logger);
+    }
+    expect(calls, [
+      ...['read', 'write 0.2', 'restore'],
+      ...['read', 'write 0.2', 'restore'],
+    ]);
+  });
+
   test('defaults to the real SDK objects', () async {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
@@ -104,6 +135,11 @@ void main() {
     final store = di.get<KeyValueStore>();
     await store.write('k', 'v');
     expect(await store.read('k'), 'v');
+    // The real brightness plugin has no native side in tests: typed failure.
+    await expectLater(
+      di.get<ScreenBrightness>().current(),
+      throwsA(isA<ScreenBrightnessException>()),
+    );
   });
 
   test('mobile full screen uses immersive system UI', () async {

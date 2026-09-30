@@ -1,5 +1,5 @@
 name: device_services
-description: "Full screen, screen wake, local alerts, sounds and key-value storage behind small contracts for Quietflip."
+description: "Full screen, screen wake, screen brightness, local alerts, sounds and key-value storage behind small contracts for Quietflip."
 version: 0.1.0
 publish_to: 'none'
 
@@ -21,6 +21,7 @@ dependencies:
   timezone: ^0.11.1
   audioplayers: ^6.8.1
   web: ^1.1.1
+  screen_brightness: ^2.1.11
 
 dev_dependencies:
   mocktail: ^1.0.4
