@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keeps the notification icon from being stripped by R8 resource shrinking
+     (flutter_local_notifications uses @mipmap/ic_launcher). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@mipmap/ic_launcher" />

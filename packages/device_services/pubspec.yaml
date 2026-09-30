@@ -1,0 +1,36 @@
+name: device_services
+description: "Full screen, screen wake, local alerts, sounds and key-value storage behind small contracts for Quietflip."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.47.5"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+    path: ../core
+  di:
+    path: ../di
+  shared_preferences: ^2.5.5
+  wakelock_plus: ^1.8.0
+  window_manager: ^0.5.2
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.1
+  audioplayers: ^6.8.1
+  web: ^1.1.1
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  shared_preferences_platform_interface: ^2.4.1
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  assets:
+    - assets/sounds/
+
+resolution: workspace

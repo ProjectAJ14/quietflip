@@ -1,0 +1,54 @@
+import 'package:device_services/device_services.dart';
+import 'package:di/di.dart';
+import 'package:flip_clock/ui/screens/index.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:network/network.dart';
+
+import 'package:quietflip/main.dart' as entrypoint;
+
+import 'clock_support.dart';
+
+void main() {
+  tearDown(di.reset);
+  testWidgets('real entrypoint starts offline without Firebase credentials', (
+    tester,
+  ) async {
+    useInMemoryStorage();
+    // Real async: cubits created in fake time never finish closing in
+    // tearDown (see features/flip_clock/CLAUDE.md).
+    await tester.runAsync(entrypoint.main);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(di.has<NetworkClient>(), isTrue);
+    expect(di.has<FullScreenController>(), isTrue);
+    expect(di.has<LocalAlerts>(), isTrue);
+    expect(di.has<GoRouter>(), isTrue);
+
+    // Launches straight into the clock, Black even though the OS is light.
+    final clock = find.byType(FlipClockScreen);
+    expect(clock, findsOneWidget);
+    final theme = Theme.of(tester.element(clock));
+    expect(theme.colorScheme.surface, Colors.black);
+
+    final router = di.get<GoRouter>();
+    router.go('/home');
+    await tester.pumpAndSettle();
+    expect(find.byType(FlipClockScreen), findsOneWidget);
+
+    router.go('/unknown');
+    await tester.pumpAndSettle();
+    expect(find.byType(OutlinedButton), findsOneWidget);
+    await tester.tap(find.byType(OutlinedButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(FlipClockScreen), findsOneWidget);
+    router.go('/error?title=Test&message=Try%20later&error=Details');
+    await tester.pumpAndSettle();
+    expect(find.text('Try later'), findsOneWidget);
+    await tester.tap(find.byType(OutlinedButton));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+}

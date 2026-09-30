@@ -1,0 +1,48 @@
+# QuietFlip
+
+An ad-free flip clock, countdown timer and stopwatch for Android, iOS, web,
+macOS and Windows. It opens straight onto the clock: no sign-in, no ads, no
+tracking.
+
+This folder is the composition root. The clock itself lives in
+`features/flip_clock`; platform services (full screen, wake lock, local
+notifications, sounds, storage) live in `packages/device_services`.
+
+## Run
+
+From the repository root, once: `dart pub get && dart run melos bootstrap`.
+Then from this folder:
+
+| Platform | Run | Build |
+|---|---|---|
+| Android | `flutter run -d android` | `flutter build appbundle` |
+| iOS | `flutter run -d ios` | `flutter build ipa` (macOS + Xcode) |
+| Web | `flutter run -d chrome` | `flutter build web` |
+| macOS | `flutter run -d macos` | `flutter build macos` |
+| Windows | `flutter run -d windows` | `flutter build windows` (only on a Windows machine) |
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `F` | Enter or leave full screen |
+| `Esc` | Leave full screen |
+| `Space` | Start or pause the timer or stopwatch |
+| `1` / `2` / `3` | Clock / Timer / Stopwatch |
+
+Shortcuts are ignored while typing in the timer fields.
+
+## Known limitations
+
+- **Web, closed tab:** a browser cannot alert once the tab is closed. While the
+  tab is open, the in-app alert and a browser notification (if allowed) fire.
+- **iPhone Safari:** the browser has no full-screen API, so full screen hides
+  the app's own controls and fills the viewport instead.
+- **Force-closed app:** Android and iOS may drop scheduled notifications for an
+  app the user force-stopped (and some Android vendors kill background alarms).
+  The timer itself is based on wall-clock time, so reopening the app shows the
+  correct remaining time or "Time's up".
+- **Windows** builds need a Windows machine; they cannot be cross-compiled.
+- **Firebase modules are dormant.** Auth, analytics, crashlytics, feature flags
+  and push notifications stay in the workspace for future use but are skipped at
+  startup until `flutterfire configure` is run. The clock never uses them.

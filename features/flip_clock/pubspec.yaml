@@ -1,0 +1,37 @@
+name: flip_clock
+description: "Flip clock, countdown timer and stopwatch screens with local settings for Quietflip."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.47.5"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  bloc: ^9.0.0
+  flutter_bloc: ^9.1.1
+  go_router: ^18.0.1
+  core:
+    path: ../../packages/core
+  design_system:
+    path: ../../packages/design_system
+  device_services:
+    path: ../../packages/device_services
+  di:
+    path: ../../packages/di
+  localization:
+    path: ../../packages/localization
+  timekeeping:
+    path: ../../packages/timekeeping
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+
+resolution: workspace

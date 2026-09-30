@@ -1,0 +1,14 @@
+name: timekeeping
+description: "Pure-Dart countdown state machine and time formatting for Quietflip."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+resolution: workspace
