@@ -524,7 +524,8 @@ void main() {
         await tester.pumpWidget(rig.settingsScreen());
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: '$size x$scale');
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        // The last list is the category detail (phone root or split pane).
+        await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: '$size x$scale end');
         await rig.dispose(tester);

@@ -29,3 +29,7 @@ dart pub add design_system
 ## Chrome: island and corner buttons
 
 `Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState` and morphing on `DesignMotion.islandCurve`. `CornerButton` is a 44px round button that collapses to a dot toward its `corner`. Both are dark in every theme, take all their text as parameters, and only cross-fade when the platform asks for reduced motion.
+
+## Settings shell
+
+`SettingsShell` lays out one list of `SettingsCategory` (icon, label, `SettingsGroup`s) three ways: a phone stack under 600px (large-title root; a category opens its detail, and back returns to the root), a split view from 600px with a 300px sidebar, and desktop density from 1100px or with `desktop: true` (230px sidebar, 36px rows). Fill groups with `SettingsSwitchRow`, `SettingsValueRow`, `SettingsSegmentedRow`, `SettingsSliderRow`, `SettingsKeyRow` and `SettingsNoteRow`; every visible string is a parameter.

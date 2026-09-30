@@ -87,8 +87,9 @@ class SettingsController extends Cubit<ClockSettings> {
   void onChange(Change<ClockSettings> change) {
     super.onChange(change);
     _appearance.value = switch (change.nextState.theme) {
-      ClockTheme.black => AppearanceMode.black,
+      ClockTheme.dark => AppearanceMode.black,
       ClockTheme.light => AppearanceMode.light,
+      ClockTheme.system => AppearanceMode.system,
     };
   }
 

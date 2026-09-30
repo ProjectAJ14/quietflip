@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
@@ -6,6 +8,7 @@ import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/screens/index.dart';
+import 'package:flip_clock/ui/screens/skins_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 /// Routes of the clock feature. The app spreads [routes] into its router.
@@ -37,9 +40,17 @@ class FlipClockRouter implements CoreRouter {
       routes: [
         GoRoute(
           path: 'settings',
-          builder: (_, _) => SettingsScreen(
+          builder: (context, _) => SettingsScreen(
             settings: di.get<SettingsController>(),
             orientationSupported: di.get<OrientationLock>().supported,
+            onDone: () => context.go(home),
+            onSkins: () => unawaited(
+              showSkins(
+                context,
+                settings: di.get<SettingsController>(),
+                now: di.get<ClockController>().state,
+              ),
+            ),
           ),
         ),
       ],

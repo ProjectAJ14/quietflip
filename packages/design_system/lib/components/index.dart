@@ -6,3 +6,4 @@ export 'header.dart';
 export 'island.dart';
 export 'loaders.dart';
 export 'network_url_image.dart';
+export 'settings_shell.dart';

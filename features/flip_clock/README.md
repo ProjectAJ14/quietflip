@@ -3,7 +3,7 @@
 QuietFlip's whole first release: a split-flap clock, a countdown timer (1 s to
 99:59:59) with a Pomodoro preset (25 min focus, 5 min break, repeating, with
 a round count) and a stopwatch, plus Settings. The clock can show today's date
-under the digits (Settings > Display > Show date). No account, network or analytics.
+under the digits (Settings > Clock > Show date). No account, network or analytics.
 
 ## Routes
 
@@ -27,20 +27,27 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 `OrientationLock` in `di`; the clock route also resolves
 `FullScreenController`, `ScreenWake` and `ScreenBrightness`.
 
-## Display settings
+## Settings
 
-Settings > Display, all saved and restored on launch:
+Settings opens from the top-right corner button. It adapts: a list you tap
+into on phones, a sidebar and detail pane on tablets, and a denser sidebar
+window on desktop and the web (a narrow browser window gets the phone list).
+Everything is saved at once and restored on launch.
 
-- **Show seconds**, also the S key in Clock mode.
-- **Digit brightness** (20% to 100%) dims only the digits (and the date line);
-  the background (the skin's ground) stays as it is and the controls stay readable. In full screen
-  the D key cycles 100%, 50%, 20%.
-- **Subtle movement**, off by default: full screen shifts the display up to
-  8 px per axis once a minute, easing over 1 s (a jump with reduced motion).
-  It lowers, but does not prevent, burn-in risk.
-- **Show date**, off by default: today's full date under the clock digits.
-- **Orientation** (Auto / Landscape / Portrait) locks the screen on phones
-  and tablets. The control is hidden on web and desktop.
+- **Appearance:** Skin (opens the Skins sheet), Theme (Dark, the default
+  even when the OS is light; Light; Match system), Digit brightness (20% to
+  100%; dims only the digits and the date line, never the controls; the D
+  key cycles 100%, 50%, 20%).
+- **Clock:** 24-hour time, Show seconds (also the S key), Show date,
+  Orientation (Auto / Landscape / Portrait; phones and tablets only).
+- **Gestures:** swipe up or down for brightness, swipe sideways to change
+  mode, tap to show controls, hide controls after 2 s / 4 s / 8 s / Never.
+- **Timers:** the Pomodoro lengths (25 min focus, 5 min break).
+- **Sound & alerts:** flip sound, alert sound, system notifications.
+- **Keep awake:** keep the screen awake; subtle movement (full screen
+  shifts the display up to 8 px per axis once a minute, easing over 1 s, a
+  jump with reduced motion; it lowers, but does not prevent, burn-in risk).
+- **Shortcuts** and **About** (licences, privacy).
 
 ## Controls
 

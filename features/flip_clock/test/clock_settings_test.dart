@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('defaults: black, 24h, no seconds, alert sound on', () {
     const s = ClockSettings();
-    expect(s.theme, ClockTheme.black);
+    expect(s.theme, ClockTheme.dark);
     expect(s.use24h, isTrue);
     expect(s.showSeconds, isFalse);
     expect(s.flipSound, isFalse);
@@ -135,5 +135,15 @@ void main() {
   test('routes are fixed', () {
     expect(FlipClockRouter.home, '/clock');
     expect(FlipClockRouter.settings, '/clock/settings');
+  });
+
+  test('theme migrates black to Dark and reads Light and System', () {
+    ClockTheme read(Object? v) => ClockSettings.fromJson({'theme': v}).theme;
+    expect(read('black'), ClockTheme.dark);
+    expect(read('dark'), ClockTheme.dark);
+    expect(read('light'), ClockTheme.light);
+    expect(read('system'), ClockTheme.system);
+    expect(read('neon'), ClockTheme.dark);
+    expect(read(null), ClockTheme.dark);
   });
 }

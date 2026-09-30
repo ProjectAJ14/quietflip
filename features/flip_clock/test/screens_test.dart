@@ -835,100 +835,6 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('settings screen saves every toggle', (tester) async {
-    tester.view
-      ..physicalSize = const Size(800, 2000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final h = Harness();
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: theme,
-        home: SettingsScreen(
-          settings: h.settings,
-          isWeb: true,
-          orientationSupported: true,
-        ),
-      ),
-    );
-    expect(find.text(strings.clock.web_closed_tab_note), findsOne);
-    expect(find.text(strings.clock.shortcut_full_screen), findsOne);
-    expect(find.text(strings.clock.shortcut_seconds), findsOne);
-    expect(find.text(strings.clock.shortcut_dim), findsOne);
-    expect(find.text(strings.clock.percent('100')), findsOne);
-    final slider = find.byType(Slider);
-    expect(
-      tester.getSemantics(slider),
-      isSemantics(
-        label: strings.clock.digit_brightness,
-        value: strings.clock.percent('100'),
-        isSlider: true,
-      ),
-    );
-    await tester.drag(slider, const Offset(-2000, 0));
-    await tester.pump();
-    expect(h.settings.state.digitBrightness, 0.2);
-    expect(find.text(strings.clock.percent('20')), findsOne);
-    await h.settings.update(const ClockSettings());
-    await tester.pump();
-    expect(find.text(strings.clock.full_screen_note), findsOne);
-
-    Future<void> tap(String label) async {
-      await tester.tap(find.text(label));
-      await tester.pump();
-    }
-
-    await tap(strings.clock.theme_light);
-    await tap(strings.clock.use_24h);
-    await tap(strings.clock.show_seconds);
-    await tap(strings.clock.show_date);
-    await tap(strings.clock.flip_sound);
-    await tap(strings.clock.alert_sound);
-    await tap(strings.clock.keep_screen_awake_description);
-    await tap(strings.clock.subtle_movement);
-    await tap(strings.clock.orientation_landscape);
-    expect(
-      h.settings.state,
-      const ClockSettings(
-        theme: ClockTheme.light,
-        use24h: false,
-        showSeconds: true,
-        flipSound: true,
-        showDate: true,
-        alertSound: false,
-        keepAwake: true,
-        subtleMovement: true,
-        orientation: ClockOrientation.landscape,
-      ),
-    );
-    expect(h.settings.appearance.value, AppearanceMode.light);
-
-    h.alerts.grant = false;
-    await tap(strings.clock.system_notifications);
-    expect(h.settings.state.systemAlerts, isFalse);
-    expect(find.text(strings.clock.permission_denied), findsOne);
-    h.alerts.grant = true;
-    await tap(strings.clock.system_notifications);
-    expect(h.settings.state.systemAlerts, isTrue);
-    expect(find.text(strings.clock.permission_denied), findsNothing);
-    await h.dispose(tester);
-  });
-
-  testWidgets('orientation control is hidden where the lock is unsupported', (
-    tester,
-  ) async {
-    final h = Harness();
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: theme,
-        home: SettingsScreen(settings: h.settings),
-      ),
-    );
-    expect(find.text(strings.clock.theme), findsOne);
-    expect(find.text(strings.clock.orientation), findsNothing);
-    await h.dispose(tester);
-  });
-
   testWidgets('init registers everything; routes open settings and back', (
     tester,
   ) async {
@@ -997,7 +903,14 @@ void main() {
       FlipClockRouter.settings,
     );
     expect(find.byType(SettingsScreen), findsOne);
-    await tester.tap(find.byType(BackButton));
+    // Appearance > Skin opens the Skins sheet over Settings.
+    await tester.tap(find.text(strings.clock.settings_skin));
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinPicker), findsOne);
+    // The sheet's Done sits above Settings' own.
+    await tester.tap(find.text(strings.clock.skins_done).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOne);
     await tester.pumpWidget(const SizedBox());

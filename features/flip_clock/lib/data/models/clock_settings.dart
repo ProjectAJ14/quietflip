@@ -2,8 +2,9 @@ import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flutter/foundation.dart';
 
-/// Theme the user picked in Settings.
-enum ClockTheme { black, light }
+/// The chrome theme picked in Settings: Mono Dark (the default, even when
+/// the OS is light), Mono Light, or following the OS.
+enum ClockTheme { dark, light, system }
 
 /// The screen modes in panel order; the one shown on launch is the last
 /// one used.
@@ -15,7 +16,7 @@ enum ClockOrientation { auto, landscape, portrait }
 /// Local display, sound and alert preferences.
 class ClockSettings {
   const ClockSettings({
-    this.theme = ClockTheme.black,
+    this.theme = ClockTheme.dark,
     this.use24h = true,
     this.showSeconds = false,
     this.flipSound = false,
@@ -74,7 +75,10 @@ class ClockSettings {
     }
 
     return ClockSettings(
-      theme: pick(ClockTheme.values, 'theme', d.theme),
+      // Earlier releases saved the dark theme as 'black'.
+      theme: json['theme'] == 'black'
+          ? ClockTheme.dark
+          : pick(ClockTheme.values, 'theme', d.theme),
       use24h: flag('use24h', d.use24h),
       showSeconds: flag('showSeconds', d.showSeconds),
       flipSound: flag('flipSound', d.flipSound),

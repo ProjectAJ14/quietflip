@@ -615,9 +615,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get alerts_channel => "Timer alerts";
   String get invalid_duration => "Enter a time between 1 second and 99:59:59.";
   String get show_controls => "Tap or move the mouse to show controls";
-  String get display => "Display";
   String get theme => "Theme";
-  String get theme_black => "Black";
   String get theme_light => "Light";
   String get use_24h => "24-hour time";
   String get show_seconds => "Show seconds";
@@ -634,21 +632,11 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keep_screen_awake => "Keep screen awake";
   String get keep_screen_awake_description =>
       "Stop the screen from sleeping while the clock is showing.";
-  String get keyboard_shortcuts => "Keyboard shortcuts";
-  String get shortcut_full_screen => "F: enter or leave full screen";
-  String get shortcut_exit_full_screen =>
-      "Esc: leave full screen or hide the controls";
-  String get shortcut_start_pause =>
-      "Space: start or pause the timer or stopwatch";
-  String get shortcut_modes => "Left, Right: change mode";
-  String get shortcut_brightness => "Up, Down: brightness in 10% steps";
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
-  String get shortcut_seconds => "S: show or hide seconds";
   String get digit_brightness => "Digit brightness";
   String percent(String value) => "$value%";
-  String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
   String get subtle_movement => "Subtle movement";
   String get subtle_movement_description =>
       "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
@@ -728,6 +716,51 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get mode_timer => "Timer";
   String get mode_stopwatch => "Stopwatch";
   String brightness_value(String percent) => "$percent%";
+  String get settings_appearance => "Appearance";
+  String get settings_clock => "Clock";
+  String get settings_gestures => "Gestures";
+  String get settings_timers => "Timers";
+  String get settings_sound => "Sound & alerts";
+  String get settings_awake => "Keep awake";
+  String get settings_shortcuts => "Shortcuts";
+  String get settings_about => "About";
+  String get settings_skin => "Skin";
+  String get theme_dark => "Dark";
+  String get theme_system => "Match system";
+  String get gesture_swipes => "Swipes";
+  String get gesture_brightness => "Swipe up or down for brightness";
+  String get gesture_modes => "Swipe sideways to change mode";
+  String get gesture_footer =>
+      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
+  String get gesture_controls => "Controls";
+  String get gesture_tap => "Tap to show controls";
+  String get gesture_idle => "Hide controls after";
+  String gesture_idle_seconds(int seconds) => "${seconds}s";
+  String get gesture_idle_never => "Never";
+  String get gesture_controls_footer =>
+      "Controls shrink to a dot, then disappear.";
+  String get timers_pomodoro_focus => "Focus";
+  String get timers_pomodoro_break => "Break";
+  String timers_minutes(int minutes) => "$minutes min";
+  String get sound_footer =>
+      "The in-app alert always plays, even with notifications off.";
+  String get key_start_pause => "Start or pause";
+  String get key_change_mode => "Change mode";
+  String get key_brightness => "Brightness";
+  String get key_show_seconds => "Show seconds";
+  String get key_full_screen => "Full screen";
+  String get key_hide_controls => "Hide controls";
+  String get key_dim => "Dim the digits";
+  String get keycap_space => "Space";
+  String get keycap_left_right => "← →";
+  String get keycap_up_down => "↑ ↓";
+  String get keycap_s => "S";
+  String get keycap_f => "F";
+  String get keycap_esc => "Esc";
+  String get keycap_d => "D";
+  String get about_licenses => "Licenses";
+  String get about_privacy => "Privacy";
+  String get about_privacy_value => "No ads. No tracking.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -773,12 +806,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return invalid_duration;
       case 'show_controls':
         return show_controls;
-      case 'display':
-        return display;
       case 'theme':
         return theme;
-      case 'theme_black':
-        return theme_black;
       case 'theme_light':
         return theme_light;
       case 'use_24h':
@@ -803,32 +832,16 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return keep_screen_awake;
       case 'keep_screen_awake_description':
         return keep_screen_awake_description;
-      case 'keyboard_shortcuts':
-        return keyboard_shortcuts;
-      case 'shortcut_full_screen':
-        return shortcut_full_screen;
-      case 'shortcut_exit_full_screen':
-        return shortcut_exit_full_screen;
-      case 'shortcut_start_pause':
-        return shortcut_start_pause;
-      case 'shortcut_modes':
-        return shortcut_modes;
-      case 'shortcut_brightness':
-        return shortcut_brightness;
       case 'current_time':
         return current_time;
       case 'time_remaining':
         return time_remaining;
       case 'elapsed':
         return elapsed;
-      case 'shortcut_seconds':
-        return shortcut_seconds;
       case 'digit_brightness':
         return digit_brightness;
       case 'percent':
         return percent;
-      case 'shortcut_dim':
-        return shortcut_dim;
       case 'subtle_movement':
         return subtle_movement;
       case 'subtle_movement_description':
@@ -981,6 +994,90 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return mode_stopwatch;
       case 'brightness_value':
         return brightness_value;
+      case 'settings_appearance':
+        return settings_appearance;
+      case 'settings_clock':
+        return settings_clock;
+      case 'settings_gestures':
+        return settings_gestures;
+      case 'settings_timers':
+        return settings_timers;
+      case 'settings_sound':
+        return settings_sound;
+      case 'settings_awake':
+        return settings_awake;
+      case 'settings_shortcuts':
+        return settings_shortcuts;
+      case 'settings_about':
+        return settings_about;
+      case 'settings_skin':
+        return settings_skin;
+      case 'theme_dark':
+        return theme_dark;
+      case 'theme_system':
+        return theme_system;
+      case 'gesture_swipes':
+        return gesture_swipes;
+      case 'gesture_brightness':
+        return gesture_brightness;
+      case 'gesture_modes':
+        return gesture_modes;
+      case 'gesture_footer':
+        return gesture_footer;
+      case 'gesture_controls':
+        return gesture_controls;
+      case 'gesture_tap':
+        return gesture_tap;
+      case 'gesture_idle':
+        return gesture_idle;
+      case 'gesture_idle_seconds':
+        return gesture_idle_seconds;
+      case 'gesture_idle_never':
+        return gesture_idle_never;
+      case 'gesture_controls_footer':
+        return gesture_controls_footer;
+      case 'timers_pomodoro_focus':
+        return timers_pomodoro_focus;
+      case 'timers_pomodoro_break':
+        return timers_pomodoro_break;
+      case 'timers_minutes':
+        return timers_minutes;
+      case 'sound_footer':
+        return sound_footer;
+      case 'key_start_pause':
+        return key_start_pause;
+      case 'key_change_mode':
+        return key_change_mode;
+      case 'key_brightness':
+        return key_brightness;
+      case 'key_show_seconds':
+        return key_show_seconds;
+      case 'key_full_screen':
+        return key_full_screen;
+      case 'key_hide_controls':
+        return key_hide_controls;
+      case 'key_dim':
+        return key_dim;
+      case 'keycap_space':
+        return keycap_space;
+      case 'keycap_left_right':
+        return keycap_left_right;
+      case 'keycap_up_down':
+        return keycap_up_down;
+      case 'keycap_s':
+        return keycap_s;
+      case 'keycap_f':
+        return keycap_f;
+      case 'keycap_esc':
+        return keycap_esc;
+      case 'keycap_d':
+        return keycap_d;
+      case 'about_licenses':
+        return about_licenses;
+      case 'about_privacy':
+        return about_privacy;
+      case 'about_privacy_value':
+        return about_privacy_value;
       default:
         return key;
     }

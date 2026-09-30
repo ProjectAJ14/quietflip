@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -62,9 +62,12 @@ lib/
                                            toggle, date line, full-screen note, _WithControls
                                            (run controls at most half height), keys, wake lock
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
-  ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
-                                           date, orientation) / Sound & alerts / Keep awake
-                                           (+ full-screen note) / shortcuts
+  ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skin -> Skins sheet,
+                                           theme Dark/Light/Match system, digit brightness) /
+                                           Clock (24h, seconds, date, orientation) / Gestures
+                                           (swipes, tap, hide-after) / Timers (pomodoro lengths) /
+                                           Sound & alerts / Keep awake (+ full-screen note) /
+                                           Shortcuts (keycaps) / About (licences, privacy); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
@@ -90,7 +93,7 @@ lib/
   requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
-  distinct change. Settings > Display shows the Orientation control only when
+  distinct change. Settings > Clock shows the Orientation control only when
   `OrientationLock.supported` (Android/iOS), passed in by the router.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
@@ -193,9 +196,11 @@ lib/
 ## Common changes
 
 - **Add a setting:** field + default + JSON key in `ClockSettings` (and its
-  test), a tile in `SettingsScreen`, the key in `strings.clock`.
+  test), a `Settings*Row` in the right category of `SettingsScreen` (and
+  `test/settings_screen_test.dart`), the key in `strings.clock`.
 - **Add a keyboard shortcut:** the handler in `FlipClockScreen`, a
-  `strings.clock.shortcut_*` line in Settings, a widget test sending the key.
+  `key_*` label and `keycap_*` row in Settings > Shortcuts, a widget test
+  sending the key.
 
 ## Tests
 
