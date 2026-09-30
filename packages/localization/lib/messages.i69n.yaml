@@ -200,3 +200,5 @@ clock:
   dim_digits: "Dim the digits"
   percent(String value): "$value%"
   shortcut_dim: "D: dim the digits (100%, 50%, 20%)"
+  subtle_movement: "Subtle movement"
+  subtle_movement_description: "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk."

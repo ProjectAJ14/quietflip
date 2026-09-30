@@ -654,6 +654,9 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get dim_digits => "Dim the digits";
   String percent(String value) => "$value%";
   String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
+  String get subtle_movement => "Subtle movement";
+  String get subtle_movement_description =>
+      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -765,6 +768,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return percent;
       case 'shortcut_dim':
         return shortcut_dim;
+      case 'subtle_movement':
+        return subtle_movement;
+      case 'subtle_movement_description':
+        return subtle_movement_description;
       default:
         return key;
     }

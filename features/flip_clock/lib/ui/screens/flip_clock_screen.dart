@@ -9,6 +9,7 @@ import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/completion_banner.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -218,6 +219,9 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               settings: settings,
               controlsVisible: controlsVisible,
             );
+            if (full && settings.subtleMovement) {
+              content = SubtleMovement(clock: widget.clock, child: content);
+            }
             // Screen readers cannot send the pointer events that reveal hidden
             // controls, so the display itself offers "show controls".
             if (full && !_revealed) {

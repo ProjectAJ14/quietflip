@@ -24,6 +24,12 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 `init()` needs `Logger`, `KeyValueStore`, `LocalAlerts` and `SoundPlayer` in
 `di`; the clock route also resolves `FullScreenController` and `ScreenWake`.
 
+## Subtle movement
+
+Off by default (Settings > Display). When on, full screen shifts the display
+up to 8 px per axis once a minute, easing over 1 s (a jump with reduced
+motion). It lowers, but does not prevent, burn-in risk.
+
 ## Keyboard
 
 F full screen, Esc leave full screen, Space start/pause, 1 / 2 / 3 Clock /

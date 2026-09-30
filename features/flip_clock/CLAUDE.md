@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -43,7 +43,7 @@ lib/
   ui/screens/settings_screen.dart          Display (incl. digit brightness slider) / Sound & alerts /
                                            Keep awake / shortcuts
   ui/components/                           FlipDisplay, TimerInput, CompletionBanner,
-                                           Reveal + RunControls
+                                           Reveal + RunControls, SubtleMovement
 ```
 
 ## Rules
@@ -65,6 +65,11 @@ lib/
   `FlipDisplay` and `Reveal` honour `reducedMotion(context)`
   (`disableAnimations` or iOS `reduceMotion`) and never clip; only digits are
   cards (AM/PM letters are plain text).
+- Subtle movement (burn-in) wraps the display only while full screen and the
+  setting are both on. It is driven by the screen's `ClockController` (no
+  timer of its own), steps through a fixed offset table indexed by minute of
+  day (max 8 px per axis), and shifts via padding that always sums to 16 px,
+  so it never clips or overflows. Never describe it as preventing burn-in.
 - Space reaches the timer/stopwatch only when no control has focus, so a
   focused button keeps its own Space activation. An invalid timer entry
   (`TimerInput.onChanged(null)`) keeps Space from starting.

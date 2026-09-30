@@ -108,6 +108,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
+                SwitchListTile(
+                  title: Text(c.subtle_movement),
+                  subtitle: Text(c.subtle_movement_description),
+                  isThreeLine: true,
+                  value: s.subtleMovement,
+                  onChanged: (v) => _update(s.copyWith(subtleMovement: v)),
+                ),
                 _Section(c.sound_and_alerts),
                 SwitchListTile(
                   title: Text(c.flip_sound),

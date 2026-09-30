@@ -17,6 +17,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/gestures.dart';
@@ -512,6 +513,89 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('subtle movement shifts the display each minute in full screen', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing, reason: 'setting off');
+
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
+    await tester.pump();
+    Offset shift() => tester.getTopLeft(find.byType(FlipDisplay));
+    final first = shift();
+    expect(SubtleMovement.offsetAt(h.wall.now), isNot(Offset.zero));
+
+    // Same minute: no movement.
+    h.wall.advance(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(shift(), first);
+
+    // Next minute: moves gently over about a second.
+    final from = SubtleMovement.offsetAt(h.wall.now);
+    h.wall.now = DateTime(2026, 9, 29, 9, 42);
+    await tester.pump(const Duration(seconds: 1));
+    final to = SubtleMovement.offsetAt(h.wall.now);
+    expect(to, isNot(from));
+    await tester.pump(const Duration(milliseconds: 500));
+    final mid = shift();
+    expect(mid, isNot(first));
+    await tester.pump(const Duration(seconds: 1));
+    expect(shift() - first, to - from);
+    for (var m = 0; m < 24 * 60; m++) {
+      final o = SubtleMovement.offsetAt(DateTime(2026, 1, 1, 0, m));
+      expect(o.dx.abs() <= SubtleMovement.maxShift, isTrue);
+      expect(o.dy.abs() <= SubtleMovement.maxShift, isTrue);
+    }
+
+    // Turning it off, or leaving full screen, removes it.
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: false));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing);
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsOne);
+    await h.full.exit();
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('subtle movement jumps with reduced motion and never overflows', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(200, 100)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = Harness();
+    await h.settings.update(const ClockSettings(subtleMovement: true));
+    h.full.value.value = true;
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: h.screen(),
+      ),
+    );
+    expect(find.byType(SubtleMovement), findsOne);
+    expect(tester.takeException(), isNull);
+    final before = tester.getTopLeft(find.byType(FlipDisplay));
+    h.wall.now = DateTime(2026, 9, 29, 9, 42);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getTopLeft(find.byType(FlipDisplay)),
+      isNot(before),
+      reason: 'jumped without animating',
+    );
+    await h.dispose(tester);
+  });
+
   testWidgets('compact windows show icon-only modes and never overflow', (
     tester,
   ) async {
@@ -606,6 +690,7 @@ void main() {
     await tap(strings.clock.flip_sound);
     await tap(strings.clock.alert_sound);
     await tap(strings.clock.keep_screen_awake_description);
+    await tap(strings.clock.subtle_movement);
     expect(
       h.settings.state,
       const ClockSettings(
@@ -615,6 +700,7 @@ void main() {
         flipSound: true,
         alertSound: false,
         keepAwake: true,
+        subtleMovement: true,
       ),
     );
     expect(h.settings.appearance.value, AppearanceMode.light);

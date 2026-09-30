@@ -17,6 +17,7 @@ class ClockSettings {
     this.lastMode = ClockMode.clock,
     this.secondsHintSeen = false,
     this.digitBrightness = maxBrightness,
+    this.subtleMovement = false,
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -60,6 +61,7 @@ class ClockSettings {
           v.clamp(minBrightness, maxBrightness).toDouble(),
         _ => d.digitBrightness,
       },
+      subtleMovement: flag('subtleMovement', d.subtleMovement),
     );
   }
 
@@ -79,6 +81,9 @@ class ClockSettings {
   /// and controls are never dimmed.
   final double digitBrightness;
 
+  /// In full screen, shift the display a few pixels each minute.
+  final bool subtleMovement;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -90,6 +95,7 @@ class ClockSettings {
     'lastMode': lastMode.name,
     'secondsHintSeen': secondsHintSeen,
     'digitBrightness': digitBrightness,
+    'subtleMovement': subtleMovement,
   };
 
   ClockSettings copyWith({
@@ -103,6 +109,7 @@ class ClockSettings {
     ClockMode? lastMode,
     bool? secondsHintSeen,
     double? digitBrightness,
+    bool? subtleMovement,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -114,6 +121,7 @@ class ClockSettings {
     lastMode: lastMode ?? this.lastMode,
     secondsHintSeen: secondsHintSeen ?? this.secondsHintSeen,
     digitBrightness: digitBrightness ?? this.digitBrightness,
+    subtleMovement: subtleMovement ?? this.subtleMovement,
   );
 
   @override
@@ -128,7 +136,8 @@ class ClockSettings {
       other.keepAwake == keepAwake &&
       other.lastMode == lastMode &&
       other.secondsHintSeen == secondsHintSeen &&
-      other.digitBrightness == digitBrightness;
+      other.digitBrightness == digitBrightness &&
+      other.subtleMovement == subtleMovement;
 
   @override
   int get hashCode => Object.hash(
@@ -142,5 +151,6 @@ class ClockSettings {
     lastMode,
     secondsHintSeen,
     digitBrightness,
+    subtleMovement,
   );
 }
