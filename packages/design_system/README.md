@@ -18,4 +18,10 @@ dart pub add design_system
 [flutter_install_link]: https://docs.flutter.dev/get-started/install
 ## Appearance override
 
-`DesignSystemWrapper(mode: ...)` takes an `AppearanceMode`: `system` (default, follows OS brightness), `light`, `dark`, or `black` (true-black surface/background, neutral-grey `surfaceContainer*` roles for cards, white `onSurface`; built with `copyWith` over the generated dark scheme in `DesignSystem.blackScheme()`).
+`DesignSystemWrapper(mode: ...)` takes an `AppearanceMode`: `system` (default, follows OS brightness), `light` (Mono Light) or `black` (Mono Dark: true-black ground, white ink and accent). Both are the QuietFlip Mono themes from the design system's `tokens.json`: `DesignSystem.blackScheme()` / `monoLightScheme()` map the tokens onto Material roles, and `DesignColors.of(context)` gives every token by name (including the island colours, which are the same in both themes).
+
+## Tokens and fonts
+
+- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
+- Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.

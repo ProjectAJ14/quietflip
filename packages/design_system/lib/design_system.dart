@@ -1,12 +1,15 @@
 import 'package:design_system/generated/theme.dart';
-import 'package:design_system/generated/util.dart';
+import 'package:design_system/constants/design_fonts.dart';
+import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 export 'components/index.dart';
+export 'constants/design_fonts.dart';
+export 'constants/design_tokens.dart';
 export 'constants/navigation_icons.dart';
 export 'dialogs/index.dart';
 export 'generated/theme.dart';
-export 'generated/util.dart';
 export 'loader/loader.dart';
 export 'screens/index.dart';
 export 'toast/toasts.dart';
@@ -17,8 +20,8 @@ class DesignSystem {
 
   DesignSystem(
     BuildContext context, {
-    String bodyFont = "Open Sans",
-    String displayFont = "Open Sans",
+    String bodyFont = DesignFonts.ui,
+    String displayFont = DesignFonts.ui,
   }) : theme = buildTheme(
          context,
          bodyFont: bodyFont,
@@ -27,15 +30,90 @@ class DesignSystem {
 
   static MaterialTheme buildTheme(
     BuildContext context, {
-    String bodyFont = "Open Sans",
-    String displayFont = "Open Sans",
+    String bodyFont = DesignFonts.ui,
+    String displayFont = DesignFonts.ui,
+  }) => MaterialTheme(
+    monoTextTheme(
+      Theme.of(context).textTheme,
+      bodyFont: bodyFont,
+      displayFont: displayFont,
+    ),
+  );
+
+  /// The interface type styles of the design system on Material roles:
+  ///
+  /// | Role | Token |
+  /// |---|---|
+  /// | `displaySmall` | large-title |
+  /// | `headlineSmall` | title |
+  /// | `titleLarge`, `titleMedium` | headline |
+  /// | `titleSmall` | meridiem |
+  /// | `bodyLarge` | body |
+  /// | `bodyMedium` | body-desktop |
+  /// | `bodySmall` | footnote |
+  /// | `labelLarge` | callout |
+  /// | `labelMedium` | hud, seconds-badge (tabular figures) |
+  /// | `labelSmall` | section |
+  ///
+  /// The other roles keep [base]'s sizes in [bodyFont].
+  static TextTheme monoTextTheme(
+    TextTheme base, {
+    String bodyFont = DesignFonts.ui,
+    String displayFont = DesignFonts.ui,
   }) {
-    final textTheme = createTextTheme(context, bodyFont, displayFont);
-    return MaterialTheme(textTheme);
+    // Sizes and line heights in px, letter spacing in em, as in tokens.json.
+    TextStyle style(
+      double size,
+      double line,
+      FontWeight weight, {
+      double em = 0,
+      String? family,
+      List<FontFeature>? features,
+    }) => GoogleFonts.getFont(
+      family ?? bodyFont,
+      fontSize: size,
+      height: line / size,
+      fontWeight: weight,
+      letterSpacing: em * size,
+      fontFeatures: features,
+    );
+    final headline = style(17, 22, FontWeight.w600);
+    return GoogleFonts.getTextTheme(bodyFont, base).copyWith(
+      displaySmall: style(
+        34,
+        41,
+        FontWeight.w700,
+        em: -0.02,
+        family: displayFont,
+      ),
+      headlineSmall: style(
+        24,
+        30,
+        // Token weight; google_fonts renders the nearest bundled file (600).
+        const FontWeight(650),
+        em: -0.01,
+        family: displayFont,
+      ),
+      titleLarge: headline,
+      titleMedium: headline,
+      titleSmall: style(18, 20, FontWeight.w700, em: 0.04),
+      bodyLarge: style(17, 22, FontWeight.w400),
+      bodyMedium: style(14, 20, FontWeight.w400),
+      bodySmall: style(13, 18, FontWeight.w400),
+      labelLarge: style(15, 20, FontWeight.w500),
+      labelMedium: style(
+        13,
+        16,
+        FontWeight.w600,
+        features: const [FontFeature.tabularFigures()],
+      ),
+      labelSmall: style(12, 16, FontWeight.w600, em: 0.06),
+    );
   }
 
-  ThemeData _baseTheme(ThemeData base) {
+  ThemeData _baseTheme(ThemeData base, DesignColors colors) {
     return base.copyWith(
+      extensions: [colors],
       inputDecorationTheme: base.inputDecorationTheme.copyWith(
         border: UnderlineInputBorder(
           borderSide: BorderSide(color: base.colorScheme.outlineVariant),
@@ -132,26 +210,47 @@ class DesignSystem {
     );
   }
 
-  ThemeData light() => _baseTheme(theme.light());
+  /// Mono Light.
+  ThemeData light() =>
+      _baseTheme(theme.theme(monoLightScheme()), DesignColors.light);
 
-  ThemeData dark() => _baseTheme(theme.dark());
+  /// Mono Dark: true-black ground, white ink and accent. The default.
+  ThemeData black() =>
+      _baseTheme(theme.theme(blackScheme()), DesignColors.dark);
 
-  /// True-black surfaces with white foreground, derived from the dark scheme.
-  ThemeData black() => _baseTheme(theme.theme(blackScheme()));
+  /// The Mono Dark roles on Material's colour scheme.
+  static ColorScheme blackScheme() =>
+      _mono(MaterialTheme.darkScheme(), DesignColors.dark);
 
-  /// The generated dark scheme with black surfaces and white text on them.
-  static ColorScheme blackScheme() => MaterialTheme.darkScheme().copyWith(
-    surface: Colors.black,
-    surfaceDim: Colors.black,
-    surfaceContainerLowest: Colors.black,
-    // Neutral greys (not the dark palette's tinted ones) for cards on black.
-    surfaceContainerLow: const Color(0xff121212),
-    surfaceContainer: const Color(0xff1a1a1a),
-    surfaceContainerHigh: const Color(0xff242424),
-    surfaceContainerHighest: const Color(0xff2e2e2e),
-    surfaceBright: const Color(0xff2e2e2e),
-    onSurface: Colors.white,
-    onSurfaceVariant: Colors.white70,
+  /// The Mono Light roles on Material's colour scheme.
+  static ColorScheme monoLightScheme() =>
+      _mono(MaterialTheme.lightScheme(), DesignColors.light);
+
+  /// Maps the design tokens onto the Material roles that stock widgets
+  /// (switches, sliders, buttons) read, so they look the same as the
+  /// design-system components.
+  static ColorScheme _mono(ColorScheme base, DesignColors c) => base.copyWith(
+    primary: c.accent,
+    onPrimary: c.onAccent,
+    primaryContainer: c.surfaceRaised,
+    onPrimaryContainer: c.ink,
+    secondary: c.accent,
+    onSecondary: c.onAccent,
+    secondaryContainer: c.controlOff,
+    onSecondaryContainer: c.ink,
+    error: c.danger,
+    surface: c.bg,
+    onSurface: c.ink,
+    onSurfaceVariant: c.inkMuted,
+    outline: c.inkSubtle,
+    outlineVariant: c.hairline,
+    surfaceDim: c.bg,
+    surfaceBright: c.surfaceRaised,
+    surfaceContainerLowest: c.bg,
+    surfaceContainerLow: c.surfaceSidebar,
+    surfaceContainer: c.surface,
+    surfaceContainerHigh: c.surfaceRaised,
+    surfaceContainerHighest: c.controlOff,
   );
 
   /// The theme for [mode]; [platformBrightness] decides only for
@@ -159,13 +258,12 @@ class DesignSystem {
   ThemeData forMode(AppearanceMode mode, Brightness platformBrightness) =>
       switch (mode) {
         AppearanceMode.system =>
-          platformBrightness == Brightness.dark ? dark() : light(),
+          platformBrightness == Brightness.dark ? black() : light(),
         AppearanceMode.light => light(),
-        AppearanceMode.dark => dark(),
         AppearanceMode.black => black(),
       };
 }
 
-/// Which theme `DesignSystemWrapper` applies, regardless of the OS setting
-/// except for [system].
-enum AppearanceMode { system, light, dark, black }
+/// Which theme `DesignSystemWrapper` applies: [black] is Mono Dark, [light]
+/// Mono Light, and [system] follows the platform brightness.
+enum AppearanceMode { system, light, black }

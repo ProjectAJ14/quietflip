@@ -118,7 +118,7 @@ void main() {
           home: Builder(
             builder: (context) {
               final design = ds.DesignSystem(context);
-              for (final theme in [design.light(), design.dark()]) {
+              for (final theme in [design.light(), design.black()]) {
                 expect(
                   theme.navigationBarTheme.iconTheme!.resolve({
                     WidgetState.selected,
@@ -216,16 +216,126 @@ void main() {
       );
     }
     expect(seen[ds.AppearanceMode.system]!.brightness, Brightness.light);
-    expect(seen[ds.AppearanceMode.light]!.brightness, Brightness.light);
-    expect(seen[ds.AppearanceMode.dark]!.brightness, Brightness.dark);
+    final light = seen[ds.AppearanceMode.light]!;
+    expect(light.brightness, Brightness.light);
+    expect(light.colorScheme.surface, const Color(0xfff2f2f4));
+    expect(light.colorScheme.primary, const Color(0xff0a0a0a));
+    expect(light.extension<ds.DesignColors>(), ds.DesignColors.light);
     final black = seen[ds.AppearanceMode.black]!;
     expect(black.brightness, Brightness.dark);
-    expect(black.colorScheme.surface, Colors.black);
-    expect(black.colorScheme.onSurface, Colors.white);
-    expect(black.colorScheme.surfaceContainerHigh, const Color(0xff242424));
-    expect(black.colorScheme.primary, ds.MaterialTheme.darkScheme().primary);
-    expect(black.scaffoldBackgroundColor, Colors.black);
-    expect(black.appBarTheme.backgroundColor, Colors.black);
+    expect(black.colorScheme.surface, const Color(0xff000000));
+    expect(black.colorScheme.onSurface, const Color(0xffffffff));
+    expect(black.colorScheme.onSurfaceVariant, const Color(0xffa1a1a1));
+    expect(black.colorScheme.surfaceContainerHigh, const Color(0xff1c1c1e));
+    expect(black.colorScheme.outlineVariant, const Color(0xff2c2c2e));
+    expect(black.colorScheme.primary, const Color(0xffffffff));
+    expect(black.colorScheme.onPrimary, const Color(0xff000000));
+    expect(black.scaffoldBackgroundColor, const Color(0xff000000));
+    expect(black.appBarTheme.backgroundColor, const Color(0xff000000));
+    expect(black.extension<ds.DesignColors>(), ds.DesignColors.dark);
+  });
+
+  testWidgets('system mode follows the platform to Mono Dark', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    late ThemeData seen;
+    await tester.pumpWidget(
+      ds.DesignSystemWrapper(
+        builder: (_, theme) {
+          seen = theme;
+          return const SizedBox();
+        },
+      ),
+    );
+    expect(seen.extension<ds.DesignColors>(), ds.DesignColors.dark);
+  });
+
+  testWidgets('interface text uses Geist at the token sizes', (tester) async {
+    late ThemeData theme;
+    await tester.pumpWidget(
+      ds.DesignSystemWrapper(
+        mode: ds.AppearanceMode.black,
+        builder: (_, t) {
+          theme = t;
+          return const SizedBox();
+        },
+      ),
+    );
+    final text = theme.textTheme;
+    for (final style in [
+      text.displaySmall,
+      text.headlineSmall,
+      text.titleMedium,
+      text.bodyLarge,
+      text.labelSmall,
+    ]) {
+      expect(style!.fontFamily, startsWith('Geist'));
+    }
+    expect(text.displaySmall!.fontSize, 34);
+    expect(text.displaySmall!.height, 41 / 34);
+    // Title is 650; the nearest bundled Geist file is SemiBold.
+    expect(text.headlineSmall!.fontWeight, FontWeight.w600);
+    expect(text.titleMedium!.fontSize, 17);
+    expect(text.titleSmall!.fontSize, 18);
+    expect(text.bodyLarge!.fontSize, 17);
+    expect(text.bodyMedium!.fontSize, 14);
+    expect(text.bodySmall!.fontSize, 13);
+    expect(text.labelLarge!.fontSize, 15);
+    expect(text.labelMedium!.fontFeatures, [
+      const FontFeature.tabularFigures(),
+    ]);
+    expect(text.labelSmall!.letterSpacing, closeTo(0.72, 1e-9));
+    expect(text.bodyLarge!.color, const Color(0xffffffff));
+  });
+
+  testWidgets('DesignColors falls back to Mono Dark and never blends', (
+    tester,
+  ) async {
+    late ds.DesignColors colors;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            colors = ds.DesignColors.of(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    const dark = ds.DesignColors.dark;
+    const light = ds.DesignColors.light;
+    expect(colors, dark);
+    expect(dark.copyWith(), dark);
+    expect(dark.lerp(light, 0.4), dark);
+    expect(dark.lerp(light, 0.5), light);
+    expect(dark.lerp(null, 1), dark);
+    for (final c in [dark, light]) {
+      expect(c.islandInk, const Color(0xffffffff));
+      expect(c.islandInkMuted, const Color(0xff9a9a9a));
+      expect(c.islandActive, const Color(0xffffffff));
+      expect(c.islandOnActive, const Color(0xff000000));
+    }
+    expect(dark.islandShadow.single.spreadRadius, 1);
+    expect(light.sheetShadow.single.blurRadius, 48);
+  });
+
+  test('size and motion tokens match tokens.json', () {
+    expect(ds.DesignSize.islandDot, 10);
+    expect(ds.DesignSize.islandPillHeight, 36);
+    expect(ds.DesignSize.islandExpandedHeight, 52);
+    expect(ds.DesignSize.cornerButton, 44);
+    expect(ds.DesignSize.cornerDot, 6);
+    expect(ds.DesignSize.sidebarWidth, 300);
+    expect(ds.DesignMotion.flip, const Duration(milliseconds: 360));
+    expect(ds.DesignMotion.islandMorph, const Duration(milliseconds: 460));
+    expect(ds.DesignMotion.fade, const Duration(milliseconds: 180));
+    expect(ds.DesignMotion.fadeDelay, const Duration(milliseconds: 60));
+    expect(ds.DesignMotion.controlsIdle, const Duration(seconds: 4));
+    expect(ds.DesignMotion.dotIdle, const Duration(seconds: 3));
+    expect(ds.DesignMotion.hudHold, const Duration(milliseconds: 1200));
+    expect(ds.DesignMotion.islandSpring.stiffness, 320);
+    expect(ds.DesignRadius.md, 14);
+    expect(ds.DesignSpace.s6, 24);
   });
 
   test('nullable string helpers preserve nonempty text', () {

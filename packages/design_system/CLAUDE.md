@@ -16,10 +16,12 @@ Everything, including `Toast`, is exported from
 | Symbol | Kind | Use |
 |---|---|---|
 | `DesignSystemWrapper({builder, mode})` | widget | Wraps `MaterialApp`; `mode: AppearanceMode.system` (default) picks light/dark from platform brightness, other modes force a theme; installs `GlobalLoaderOverlay` and `ToastificationWrapper` |
-| `AppearanceMode` | enum | `system`, `light`, `dark`, `black` (true-black surface/background, neutral-grey `surfaceContainer*` for cards, white foreground; primaries from the dark palette) |
-| `DesignSystem` | theme builder | `light()` / `dark()` / `black()` `ThemeData`, `forMode(mode, platformBrightness)`, static `blackScheme()`; `bodyFont` / `displayFont` (default "Open Sans") |
+| `AppearanceMode` | enum | `system` (platform brightness picks Mono Dark or Mono Light), `light` (Mono Light), `black` (Mono Dark, the QuietFlip default) |
+| `DesignSystem` | theme builder | `light()` / `black()` `ThemeData`, `forMode(mode, platformBrightness)`, static `blackScheme()` / `monoLightScheme()` (tokens on Material roles), static `monoTextTheme()`; `bodyFont` / `displayFont` (default Geist) |
+| `DesignColors` | `ThemeExtension` | Every Mono colour token by name (`bg`, `surface`, `surfaceRaised`, `ink`, `inkMuted`, `hairline`, `island*`, `accent`, `danger`, shadows ...); `DesignColors.of(context)`; `.dark` / `.light` |
+| `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion` | constants | `skin-*`, `space-*`, `radius-*`, `size-*`, `dur-*` and the island spring, exactly as in `tokens.json` |
+| `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; the ten bundled digit faces (family, weight, `style()`, `assetName`) |
 | `MaterialTheme` | generated | Color schemes (light, dark, contrast variants) |
-| `createTextTheme` | generated | Merges Google Fonts body + display text themes |
 | `NavigationIcons` | constants | Every navigation icon; one edit re-skins the shell |
 | `Toast` | static API | `notification`, `error`, `success`, `warning` |
 | `Loader` / `DefaultLoader` | overlay / widget | Blocking overlay; inline adaptive spinner |
@@ -34,12 +36,13 @@ Everything, including `Toast`, is exported from
 | Path | Responsibility |
 |---|---|
 | `lib/design_system.dart` | `DesignSystem`: component theme overrides on top of `MaterialTheme` |
-| `lib/generated/` | Material Theme Builder export (`theme.dart`, `util.dart`). Never hand-edit |
+| `lib/generated/` | Material Theme Builder export (`theme.dart`; its `util.dart` text-theme helper was replaced by `DesignSystem.monoTextTheme`). Never hand-edit |
 | `lib/components/` | Reusable widgets (`app_asset_image.dart`, ...), hand-maintained `index.dart` barrel |
 | `lib/screens/`, `lib/dialogs/` | Full screens and dialogs |
 | `lib/toast/`, `lib/loader/` | Toast and overlay APIs |
 | `lib/wrapper/wrappers.dart` | `DesignSystemWrapper` |
 | `lib/constants/navigation_icons.dart` | Navigation icon set |
+| `lib/constants/design_tokens.dart`, `design_fonts.dart` | Mono tokens and bundled faces |
 | `lib/utils/extensions/` | Package-private string helpers |
 
 ## Rules
@@ -62,7 +65,7 @@ Everything, including `Toast`, is exported from
 
 - **Rebrand the palette:** export from Material Theme Builder, replace
   `lib/generated/theme.dart` wholesale, then check both brightnesses.
-- **Change the black theme:** edit `DesignSystem.blackScheme()` (a `copyWith` over the generated dark scheme); never edit `lib/generated/`. The test `wrapper mode forces a theme regardless of platform` asserts its surfaces.
+- **Change a Mono colour:** edit `DesignColors.dark` / `.light` in `lib/constants/design_tokens.dart` to the new `tokens.json` value; `blackScheme()` / `monoLightScheme()` map them onto Material roles. Never edit `lib/generated/`. The test `wrapper mode forces a theme regardless of platform` asserts the surfaces.
 - **Change fonts:** pass `bodyFont` / `displayFont` to `DesignSystem` in
   `DesignSystemWrapper` (any Google Fonts family name) and bundle its files
   (see Gotchas).
@@ -77,7 +80,8 @@ Everything, including `Toast`, is exported from
 | File | Covers |
 |---|---|
 | `design_system_test.dart` | Wrapper hands the builder a themed context |
-| `components_test.dart` | Theme building, loaders, error view/screen, asset fallbacks, network image, wrapper brightness + loader, string helpers |
+| `fonts_test.dart` | Every Geist weight and `DisplayFace` has its `.ttf` and OFL licence in `assets/google_fonts/`, declared in `pubspec.yaml` |
+| `components_test.dart` | Mono themes and tokens, Geist text styles, loaders, error view/screen, asset fallbacks, network image, wrapper brightness + loader, string helpers |
 | `integration_test.dart` | Image adapters, `AuthHeadersBuilder` (missing provider, failures, rebuilds), dialogs, toast variants |
 
 Run `dart run melos exec --scope=design_system -- flutter test`. Keep
@@ -85,11 +89,16 @@ Run `dart run melos exec --scope=design_system -- flutter test`. Keep
 
 ## Gotchas
 
-- Open Sans Regular/Medium/SemiBold/Bold (OFL, `OFL.txt` alongside) are
-  bundled in `assets/google_fonts/` and the app sets
-  `GoogleFonts.config.allowRuntimeFetching = false`, so nothing is fetched at
-  launch. Changing `bodyFont` / `displayFont`, or using another weight, means
-  bundling that family's `<Family>-<Weight>.ttf` files there too.
+- Geist 400/500/600/700 and one weight of each `DisplayFace` (OFL,
+  `OFL-<Family>.txt` alongside) are bundled in `assets/google_fonts/` and the
+  app sets `GoogleFonts.config.allowRuntimeFetching = false`, so nothing is
+  fetched at launch. Changing `bodyFont` / `displayFont`, adding a face, or
+  using another weight means bundling that family's `<Family>-<Weight>.ttf`
+  (google_fonts' file name) there too; `fonts_test.dart` fails otherwise.
+- google_fonts renders the nearest bundled weight: the `title` token's 650
+  draws Geist SemiBold.
+- "Big Shoulders Display" is now the "Big Shoulders" family on Google Fonts
+  (same design); the face bundles `BigShoulders-ExtraBold.ttf`.
 - `FileInfoDialog` takes a `dart:io` `File`, so it does not work on web. Its
   labels ("File Information", "File Name", ...) are still raw English
   literals, not `strings.*`.
