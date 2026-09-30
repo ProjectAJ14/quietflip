@@ -213,6 +213,26 @@ void main() {
       await c.close();
     });
 
+    testWidgets('restart runs a finished timer again; ignored otherwise', (
+      tester,
+    ) async {
+      final c = countdown();
+      await c.restart();
+      expect(c.state.status, CountdownStatus.idle);
+      await c.start(const Duration(seconds: 3));
+      await c.restart();
+      expect(c.state.status, CountdownStatus.running);
+      expect(sound.stops, 0);
+      clock.advance(const Duration(seconds: 3));
+      await c.check();
+      expect(c.state.status, CountdownStatus.finished);
+      await c.restart();
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.remaining, const Duration(seconds: 3));
+      expect(sound.stops, 1);
+      await c.close();
+    });
+
     testWidgets('Space on idle starts the default timer; presets start', (
       tester,
     ) async {

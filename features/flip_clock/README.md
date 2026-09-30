@@ -30,7 +30,7 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 
 ## Settings
 
-Settings opens from the top-right corner button. It adapts: a list you tap
+Settings opens from the island's Settings action. It adapts: a list you tap
 into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
@@ -52,10 +52,16 @@ Everything is saved at once and restored on launch.
 
 ## Controls
 
-Only the digits show when nobody touches the screen. A tap shows the
-controls: the mode island at the top centre (on its own row under the corner buttons on phones; Pomodoro, Clock, Stopwatch)
-between the Skins (top left) and Settings (top right) buttons. After 4 seconds without
-input they shrink to dots, and 3 seconds later they are gone. Any key or a
+Only the digits show when nobody touches the screen. A tap or click shows
+the island at the top centre, the only control on the screen: the mode tabs
+(Pomodoro, Clock, Stopwatch) over the actions of the current mode, then Skins
+and Settings. Pomodoro offers Start (your default timer), a Pomodoro chip,
+one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
+the timer settings; running it offers Pause/Resume and Reset; finished,
+Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
+Pause, Resume and Reset. After 4 seconds without input the island shrinks
+to a dot, and 3 seconds later it is gone; a timer that finishes brings it
+back. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
 whether a tap toggles them.
 
@@ -75,7 +81,7 @@ whether a tap toggles them.
 
 ## Skins
 
-The Skins corner button opens the Skins sheet: live tiles of every skin, applied
+The island's Skins action opens the Skins sheet: live tiles of every skin, applied
 on tap. Classic is Mono (the default, white on near-black; black on white in
 the Light theme) plus nine colour variations; Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type

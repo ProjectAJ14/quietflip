@@ -44,6 +44,9 @@ ds.Island _island({
   ds.IslandHud? hud,
   List<String> tabs = _tabs,
   ValueChanged<int>? onSelect,
+  List<ds.IslandAction> actions = const [],
+  List<ds.IslandAction> trailing = const [],
+  String? status,
 }) => ds.Island(
   state: state,
   hud: hud,
@@ -51,7 +54,64 @@ ds.Island _island({
   selected: 1,
   onSelect: onSelect ?? (_) {},
   tabsLabel: 'Modes',
+  actions: actions,
+  trailing: trailing,
+  status: status,
 );
+
+/// Start (primary), a disabled Reset, two chips and a tune icon.
+List<ds.IslandAction> _actions([List<String>? log]) => [
+  ds.IslandAction(
+    label: 'Start',
+    icon: Icons.play_arrow_rounded,
+    primary: true,
+    onPressed: () => log?.add('Start'),
+  ),
+  const ds.IslandAction(label: 'Reset', icon: Icons.restart_alt_rounded),
+  ds.IslandAction(label: '5m', onPressed: () => log?.add('5m')),
+  ds.IslandAction(label: '10m', onPressed: () => log?.add('10m')),
+  ds.IslandAction(
+    label: 'Timers',
+    icon: Icons.tune_rounded,
+    onPressed: () => log?.add('Timers'),
+  ),
+];
+
+List<ds.IslandAction> _trailing([List<String>? log]) => [
+  ds.IslandAction(
+    label: 'Settings',
+    icon: Icons.settings_outlined,
+    onPressed: () => log?.add('Settings'),
+  ),
+];
+
+final _rule = find.byWidgetPredicate(
+  (w) => w is SizedBox && w.width == 1 && w.child is ColoredBox,
+);
+
+/// WCAG contrast of two opaque colours, 1..21.
+double _contrast(Color a, Color b) {
+  final x = a.computeLuminance();
+  final y = b.computeLuminance();
+  return (x > y ? x + 0.05 : y + 0.05) / (x > y ? y + 0.05 : x + 0.05);
+}
+
+/// The nearest filled box behind [e].
+Color _backdrop(Element e) {
+  Color? found;
+  e.visitAncestorElements((a) {
+    final w = a.widget;
+    if (w is DecoratedBox) {
+      final c = (w.decoration as BoxDecoration).color;
+      if (c != null && c.a > 0) {
+        found = c;
+        return false;
+      }
+    }
+    return true;
+  });
+  return found!;
+}
 
 double _opacity(WidgetTester tester, Type type) => tester
     .widget<AnimatedOpacity>(
@@ -209,6 +269,120 @@ void main() {
         semantics.dispose();
       });
 
+      testWidgets('the tray lays out actions, chips, a rule and a status', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        final log = <String>[];
+        await _pump(
+          tester,
+          mode,
+          _island(
+            actions: _actions(log),
+            trailing: _trailing(log),
+            status: "Time's up",
+          ),
+          width: 800,
+        );
+        expect(
+          tester.getSize(find.byType(ds.Island)).height,
+          ds.Island.trayHeight,
+        );
+        for (final label in ['Start', 'Reset', 'Timers', 'Settings']) {
+          expect(find.byTooltip(label), findsOneWidget, reason: label);
+        }
+        expect(find.text('5m'), findsOneWidget);
+        expect(_rule, findsOneWidget);
+        final status = tester.getSemantics(find.bySemanticsLabel("Time's up"));
+        expect(status.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
+
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        await tester.tap(find.text('10m'));
+        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.tap(find.byIcon(Icons.settings_outlined));
+        await tester.tap(find.byIcon(Icons.restart_alt_rounded));
+        expect(log, ['Start', '10m', 'Timers', 'Settings']);
+        final reset = tester
+            .getSemantics(find.bySemanticsLabel('Reset'))
+            .getSemanticsData();
+        expect(reset.flagsCollection.isButton, isTrue);
+        expect(reset.flagsCollection.isEnabled, Tristate.isFalse);
+        semantics.dispose();
+      });
+
+      testWidgets('trailing alone has no rule; no tray keeps the tab height', (
+        tester,
+      ) async {
+        await _pump(tester, mode, _island(trailing: _trailing()));
+        expect(_rule, findsNothing);
+        expect(
+          tester.getSize(find.byType(ds.Island)).height,
+          ds.Island.trayHeight,
+        );
+        await _pump(tester, mode, _island());
+        expect(tester.getSize(find.byType(ds.Island)).height, 52);
+      });
+
+      testWidgets('every tray action is legible on the island', (tester) async {
+        await _pump(
+          tester,
+          mode,
+          _island(actions: _actions(), trailing: _trailing(), status: 'Done'),
+        );
+        final tray = find.byType(SingleChildScrollView);
+        final icons = find.descendant(of: tray, matching: find.byType(Icon));
+        final texts = find.descendant(of: tray, matching: find.byType(Text));
+        expect(icons, findsNWidgets(4));
+        expect(texts, findsNWidgets(3));
+        for (final e in [...icons.evaluate(), ...texts.evaluate()]) {
+          final w = e.widget;
+          final ink = w is Icon ? w.color! : (w as Text).style!.color!;
+          expect(
+            _contrast(ink, _backdrop(e)),
+            greaterThanOrEqualTo(4.5),
+            reason: '$w',
+          );
+        }
+      });
+
+      testWidgets('the tray scrolls at 320px and text scale 2', (tester) async {
+        final log = <String>[];
+        await _pump(
+          tester,
+          mode,
+          _island(
+            actions: [
+              ..._actions(log),
+              for (var m = 20; m < 25; m++)
+                ds.IslandAction(label: '${m}m', onPressed: () {}),
+            ],
+            trailing: _trailing(log),
+          ),
+          width: 320,
+          textScale: 2,
+        );
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.getSize(find.byType(ds.Island)).width,
+          lessThanOrEqualTo(320 - 2 * ds.DesignSpace.s4),
+        );
+        // The primary action comes first and is on screen.
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        expect(log, ['Start']);
+        // Settings is past the end until the tray is scrolled.
+        expect(
+          find.byIcon(Icons.settings_outlined).hitTestable(),
+          findsNothing,
+        );
+        await tester.drag(
+          find.byType(SingleChildScrollView),
+          const Offset(-2000, 0),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.settings_outlined));
+        expect(log, ['Start', 'Settings']);
+      });
+
       testWidgets('four long tabs fit 320px at text scale 2', (tester) async {
         await _pump(
           tester,
@@ -222,45 +396,6 @@ void main() {
           tester.getSize(find.byType(ds.Island)).width,
           lessThanOrEqualTo(320 - 2 * ds.DesignSpace.s4),
         );
-      });
-
-      testWidgets('corner button taps only when expanded', (tester) async {
-        var presses = 0;
-        Widget corner(ds.ChromeState state) => ds.CornerButton(
-          state: state,
-          icon: Icons.settings_outlined,
-          tooltip: 'Settings',
-          onPressed: () => presses++,
-          corner: Alignment.topRight,
-        );
-        final circle = find.descendant(
-          of: find.byType(ds.CornerButton),
-          matching: find.byType(AnimatedContainer),
-        );
-
-        await _pump(tester, mode, corner(ds.ChromeState.expanded));
-        expect(tester.getSize(circle), const Size(44, 44));
-        expect(find.byTooltip('Settings'), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.settings_outlined));
-        expect(presses, 1);
-
-        await _pump(tester, mode, corner(ds.ChromeState.dot));
-        expect(
-          tester.getSize(find.byType(ds.CornerButton)),
-          const Size(44, 44),
-        );
-        expect(tester.getSize(circle), const Size(6, 6));
-        expect(
-          tester.getTopRight(circle),
-          tester.getTopRight(find.byType(ds.CornerButton)),
-        );
-        await tester.tap(circle, warnIfMissed: false);
-        expect(presses, 1);
-
-        await _pump(tester, mode, corner(ds.ChromeState.hidden));
-        expect(_opacity(tester, ds.CornerButton), 0);
-        await tester.tap(circle, warnIfMissed: false);
-        expect(presses, 1);
       });
     });
   }
@@ -285,60 +420,22 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(reduceMotion: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await _pump(
-      tester,
-      ds.AppearanceMode.black,
-      ds.CornerButton(
-        state: ds.ChromeState.dot,
-        icon: Icons.settings_outlined,
-        tooltip: 'Settings',
-        onPressed: () {},
-        corner: Alignment.topLeft,
-      ),
-    );
+    await _pump(tester, ds.AppearanceMode.black, _island(actions: _actions()));
+    // The tray still cross-fades; only the spring goes.
+    expect(find.byType(AnimatedSize), findsNothing);
     expect(
-      tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).duration,
-      Duration.zero,
+      tester
+          .widget<AnimatedSwitcher>(
+            find
+                .ancestor(
+                  of: find.byType(SingleChildScrollView),
+                  matching: find.byType(AnimatedSwitcher),
+                )
+                .first,
+          )
+          .duration,
+      ds.DesignMotion.fade,
     );
-  });
-
-  testWidgets('a theme switch mid-morph never lerps a shadow past 1', (
-    tester,
-  ) async {
-    Widget corner(ds.AppearanceMode mode, ds.ChromeState state) =>
-        ds.DesignSystemWrapper(
-          mode: mode,
-          builder: (_, theme) => MaterialApp(
-            theme: theme,
-            home: Scaffold(
-              body: Center(
-                child: ds.CornerButton(
-                  state: state,
-                  icon: Icons.settings_outlined,
-                  tooltip: 'Settings',
-                  onPressed: () {},
-                  corner: Alignment.topRight,
-                ),
-              ),
-            ),
-          ),
-        );
-    await tester.pumpWidget(
-      corner(ds.AppearanceMode.light, ds.ChromeState.dot),
-    );
-    // Start the spring toward expanded, then switch theme while it
-    // overshoots.
-    await tester.pumpWidget(
-      corner(ds.AppearanceMode.light, ds.ChromeState.expanded),
-    );
-    await tester.pump(const Duration(milliseconds: 150));
-    // Light's blurred shadow to Dark's ring: past 1 the blur goes negative.
-    await tester.pumpWidget(
-      corner(ds.AppearanceMode.black, ds.ChromeState.expanded),
-    );
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(tester.takeException(), isNull);
-    }
+    expect(tester.getSize(find.byType(ds.Island)).height, ds.Island.trayHeight);
   });
 }

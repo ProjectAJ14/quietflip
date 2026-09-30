@@ -66,10 +66,10 @@ lib/
                                            digitBrightness 0.2..1 (saved); first
                                            ScreenBrightnessException -> in-app for good (logged);
                                            reset() restores system level, never throws
-  ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs top centre, Skins /
-                                           Settings CornerButtons, owned ChromeController), tap
-                                           toggle, date line, full-screen note, _WithControls
-                                           (run controls at most half height), keys, wake lock
+  ui/screens/flip_clock_screen.dart        modes, chrome (the Island top centre: tabs over the
+                                           current mode's action tray plus Skins / Settings;
+                                           owned ChromeController), tap toggle, date line,
+                                           full-screen note, keys, wake lock
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
   ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skin -> Skins sheet,
                                            theme Dark/Light/Match system, card size, digit
@@ -84,8 +84,7 @@ lib/
                                            display_value (clock/duration/stopwatch -> cards),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
                                            showSheet, SkinCustomizer (parseHex/hexOf),
-                                           CompletionBanner (+ optional `action`),
-                                           Reveal + RunControls, SubtleMovement
+                                           SubtleMovement
 ```
 
 ## Rules
@@ -117,7 +116,7 @@ lib/
   (1.3 x for a monospaced face), `space-6` between cards, the 2px seam at
   half height in the ground colour, `radius-md` becoming `radius-lg` once
   digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
-  ease-in, then bottom half ease-out. It and `Reveal` honour
+  ease-in, then bottom half ease-out. It honours
   `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
   never clip; AM/PM and small seconds are plain text in the skin's face at
   70% of the digit colour, never cards, sized 0.12 x card height (AM/PM)
@@ -155,22 +154,35 @@ lib/
   mouse move or any key expands, Esc leaves full screen first, otherwise
   hides. A tap or mouse click on the clock toggles (when
   `tapToggleControls`); hovering still shows a hidden chrome. A tap on a
-  control is the control's (it wins the gesture arena). Run controls sit on
-  the island's dark pill in island tokens, never on the skin's ground. Run controls show
-  only while expanded (`Reveal`). The mode island sits top centre between
-  the corner buttons, at the same inset as the corners: `space-4` inside the
-  safe area (`space-6` from 600px shortest side); below
-  `stackedChromeWidth` (600px wide) it takes its own row under the corners
-  so the tabs keep their full size. The full-screen note sits under the island.
-  The mode view reserves that top row (at most a quarter of the height) and
-  only side padding below, so the chrome never covers the digits. A hidden chrome makes
+  tray action is the action's (the island sits above the gesture layer).
+- The island is the only control on the clock screen. It sits top centre,
+  `space-4` inside the safe area (`space-6` from 600px shortest side).
+  Expanded, it shows the mode tabs over the tray (`IslandAction`s, drawn in
+  island tokens on its dark pill, never on the skin's ground, so they are
+  legible on every skin in both themes), then Skins and Settings after a
+  hairline on every mode:
+
+  | Mode / state | Tray |
+  |---|---|
+  | Clock | (Skins, Settings only) |
+  | Pomodoro idle | Start (`defaultTimer`), chips Pomodoro + each preset (`5m`, `1:30`), tune -> `onOpenTimerSettings` |
+  | Pomodoro running / paused | Pause or Resume, Reset |
+  | Pomodoro finished | "Time's up" (live region); Restart (same duration, `restart()`) or Start break / Start focus; Done |
+  | Stopwatch idle / running / paused | Start / Pause / Resume + Reset |
+
+  The island rebuilds on countdown/stopwatch state changes, not on ticks.
+  A countdown that finishes while the chrome is hidden wakes it on the
+  finished tray; the idle collapse still applies. The full-screen note
+  sits under the island. The mode view reserves `Island.trayHeight` plus
+  the inset above (at most a quarter of the height) and only side padding
+  below, so the chrome never covers the digits. A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
 - Seconds: the S key (Clock mode only) and the Settings switch toggle
   `showSeconds`.
 - Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
   and around the date line with the Clock digits);
-  the background stays the skin's ground and the chrome, run controls,
-  timer input and completion banner stay at full brightness. The D key calls
+  the background stays the skin's ground and the island stays at full
+  brightness. The D key calls
   `ClockSettings.nextDim` (100% -> 50% -> 20% -> 100%; a slider value in
   between steps down to the next preset) and save.
 - Entering full screen expands the chrome and shows
@@ -204,12 +216,12 @@ lib/
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of
   `/clock`, so the clock screen and its state stay underneath).
-- Completion: the in-app banner and chime always; the system notification is
+- Completion: the finished tray and chime always; the system notification is
   scheduled at `endsAt` on native, and shown at completion on web
   (`notifyOnFinish = kIsWeb`, because web cannot schedule). A timer that
-  ended while the app was closed shows the banner silently on relaunch.
-  Finishing (or relaunching finished) switches to the Pomodoro panel so
-  the banner is always seen.
+  ended while the app was closed shows the finished tray silently on
+  relaunch. Finishing (or relaunching finished) switches to the Pomodoro
+  panel so the finished tray is always seen.
 - Pomodoro (one panel for the cycle and the timer presets; idle, it shows
   the default timer's duration + Start; running, the countdown): 25 min focus / 5 min break from
   `timekeeping`'s `Pomodoro`, run as one `Countdown` per phase. While the
@@ -222,7 +234,7 @@ lib/
   `pomodoro: {phase, round}` and `timerMs`; corrupt fields load as a plain
   timer (or the default duration), an idle snapshot drops them. A phase
   that ended while the app was closed loads finished with Start break /
-  Start focus (autofocused) beside Dismiss; Space starts it.
+  Start focus beside Done; Space starts it.
 
 ## Common changes
 
@@ -262,7 +274,7 @@ widget tester's clock):
 - **Window size:** every mode and Settings lay out without overflow at
   320x1024, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844, text scale 1
   and 2, and while resized mid-run (timer, full screen, stopwatch). On very
-  short windows the run controls shrink to at most half the height.
+  short windows the island's reserve is at most a quarter of the height.
 - **Hours on a charger:** 24 h of clock ticks keep exactly one timer, one
   emission per second, all aligned; a 12 h countdown keeps exactly two
   timers (ticker + end) and none after finishing; 3 h of the screen ticking

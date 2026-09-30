@@ -600,11 +600,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get stopwatch => "Stopwatch";
   String get modes => "Mode";
   String get settings => "Settings";
-  String get start => "Start";
-  String get pause => "Pause";
-  String get resume => "Resume";
-  String get reset => "Reset";
-  String get dismiss => "Dismiss";
   String get times_up => "Time's up";
   String get timer_finished_title => "Time's up";
   String get timer_finished_body => "Your QuietFlip timer has finished.";
@@ -664,7 +659,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skins_type => "Type";
   String get skins_new => "New skin";
   String get skins_from_current => "From current";
-  String get skins_change => "Change skin";
   String get customize_title => "Customize skin";
   String get customize_name => "Name";
   String customize_copy_name(String name) => "$name copy";
@@ -721,6 +715,19 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get mode_pomodoro => "Pomodoro";
   String get mode_clock => "Clock";
   String get mode_stopwatch => "Stopwatch";
+  String get action_start => "Start";
+  String get action_pause => "Pause";
+  String get action_resume => "Resume";
+  String get action_reset => "Reset";
+  String get action_restart => "Restart";
+  String get action_done => "Done";
+  String get action_skins => "Skins";
+  String get action_settings => "Settings";
+  String get action_timer_settings => "Timer settings";
+  String preset_minutes(int minutes) => "${minutes}m";
+  String preset_minutes_seconds(int minutes, String seconds) =>
+      "$minutes:$seconds";
+  String get preset_pomodoro => "Pomodoro";
   String brightness_value(String percent) => "$percent%";
   String get settings_appearance => "Appearance";
   String get settings_clock => "Clock";
@@ -782,16 +789,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return modes;
       case 'settings':
         return settings;
-      case 'start':
-        return start;
-      case 'pause':
-        return pause;
-      case 'resume':
-        return resume;
-      case 'reset':
-        return reset;
-      case 'dismiss':
-        return dismiss;
       case 'times_up':
         return times_up;
       case 'timer_finished_title':
@@ -896,8 +893,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skins_new;
       case 'skins_from_current':
         return skins_from_current;
-      case 'skins_change':
-        return skins_change;
       case 'customize_title':
         return customize_title;
       case 'customize_name':
@@ -1010,6 +1005,30 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return mode_clock;
       case 'mode_stopwatch':
         return mode_stopwatch;
+      case 'action_start':
+        return action_start;
+      case 'action_pause':
+        return action_pause;
+      case 'action_resume':
+        return action_resume;
+      case 'action_reset':
+        return action_reset;
+      case 'action_restart':
+        return action_restart;
+      case 'action_done':
+        return action_done;
+      case 'action_skins':
+        return action_skins;
+      case 'action_settings':
+        return action_settings;
+      case 'action_timer_settings':
+        return action_timer_settings;
+      case 'preset_minutes':
+        return preset_minutes;
+      case 'preset_minutes_seconds':
+        return preset_minutes_seconds;
+      case 'preset_pomodoro':
+        return preset_pomodoro;
       case 'brightness_value':
         return brightness_value;
       case 'settings_appearance':

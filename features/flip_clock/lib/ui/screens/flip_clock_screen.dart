@@ -13,8 +13,6 @@ import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
-import 'package:flip_clock/ui/components/completion_banner.dart';
-import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/gesture_layer.dart';
@@ -28,10 +26,11 @@ import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
 /// Pomodoro / Clock / Stopwatch as swipeable panels under one
-/// [GestureLayer]: tap toggles the chrome (mode island at the top, Skins
-/// and Settings corner buttons), a vertical drag changes brightness, a
-/// sideways swipe changes mode. The chrome shrinks to dots after
-/// `controlsIdle`, then disappears.
+/// [GestureLayer]: tap toggles the chrome (the island at the top: mode
+/// tabs over the current mode's actions, Skins and Settings), a vertical
+/// drag changes brightness, a sideways swipe changes mode. The chrome
+/// shrinks to a dot after `controlsIdle`, then disappears. The island is
+/// the only control on the screen.
 ///
 /// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
 /// F full screen, Esc leave full screen or hide the chrome, Space
@@ -49,6 +48,7 @@ class FlipClockScreen extends StatefulWidget {
     required this.brightness,
     required this.logger,
     required this.onOpenSettings,
+    required this.onOpenTimerSettings,
     this.doubleTapFullScreen,
   });
 
@@ -63,6 +63,9 @@ class FlipClockScreen extends StatefulWidget {
   final Logger logger;
   final VoidCallback onOpenSettings;
 
+  /// Opens Settings on the Timers category (the tray's tune icon).
+  final VoidCallback onOpenTimerSettings;
+
   /// Double tap toggles full screen. Null: on desktop and web only, since a
   /// double tap recognizer delays every single tap.
   final bool? doubleTapFullScreen;
@@ -73,9 +76,6 @@ class FlipClockScreen extends StatefulWidget {
           defaultTargetPlatform == TargetPlatform.macOS ||
           defaultTargetPlatform == TargetPlatform.windows ||
           defaultTargetPlatform == TargetPlatform.linux);
-
-  /// Below this width the island sits on its own row under the corners.
-  static const double stackedChromeWidth = 600;
 
   /// How long the full-screen note shows after entering full screen.
   static const Duration noteFor = Duration(seconds: 3);
@@ -303,6 +303,167 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     showSkins(context, settings: widget.settings, now: widget.clock.state),
   );
 
+  /// The island, rebuilt when the countdown or stopwatch changes state
+  /// (not on every tick).
+  Widget _island(ClockSettings settings, ChromeState chrome, IslandHud? hud) =>
+      BlocBuilder<CountdownController, CountdownState>(
+        bloc: widget.countdown,
+        buildWhen: (a, b) =>
+            a.status != b.status ||
+            a.pomodoro != b.pomodoro ||
+            a.duration != b.duration,
+        builder: (context, countdown) =>
+            BlocBuilder<StopwatchController, StopwatchState>(
+              bloc: widget.stopwatch,
+              buildWhen: (a, b) =>
+                  a.running != b.running || a.isIdle != b.isIdle,
+              builder: (context, stopwatch) {
+                final c = strings.clock;
+                final mode = settings.lastMode;
+                return Island(
+                  state: chrome,
+                  hud: hud,
+                  tabs: _modeNames,
+                  selected: mode.index,
+                  onSelect: (i) => _setMode(ClockMode.values[i]),
+                  tabsLabel: c.modes,
+                  status:
+                      mode == ClockMode.pomodoro &&
+                          countdown.status == CountdownStatus.finished
+                      ? c.times_up
+                      : null,
+                  actions: _tray(mode, settings, countdown, stopwatch),
+                  trailing: [
+                    IslandAction(
+                      label: c.action_skins,
+                      icon: Icons.palette_outlined,
+                      onPressed: _openSkins,
+                    ),
+                    IslandAction(
+                      label: c.action_settings,
+                      icon: Icons.settings_outlined,
+                      onPressed: widget.onOpenSettings,
+                    ),
+                  ],
+                );
+              },
+            ),
+      );
+
+  /// What [mode]'s panel can do right now, primary action first.
+  List<IslandAction> _tray(
+    ClockMode mode,
+    ClockSettings settings,
+    CountdownState countdown,
+    StopwatchState stopwatch,
+  ) {
+    final c = strings.clock;
+    final down = widget.countdown;
+    final watch = widget.stopwatch;
+    IslandAction act(
+      String label,
+      IconData icon,
+      VoidCallback onPressed, {
+      bool primary = false,
+    }) => IslandAction(
+      label: label,
+      icon: icon,
+      onPressed: onPressed,
+      primary: primary,
+    );
+    final reset = act(
+      c.action_reset,
+      Icons.restart_alt_rounded,
+      () => unawaited(down.reset()),
+    );
+    return switch (mode) {
+      ClockMode.clock => const [],
+      ClockMode.pomodoro => switch (countdown.status) {
+        CountdownStatus.idle => [
+          act(
+            c.action_start,
+            Icons.play_arrow_rounded,
+            () => unawaited(down.startPreset(settings.defaultTimer)),
+            primary: true,
+          ),
+          IslandAction(
+            label: c.preset_pomodoro,
+            onPressed: () => unawaited(down.startPomodoro()),
+          ),
+          for (final preset in settings.timerPresets)
+            IslandAction(
+              label: _presetLabel(preset),
+              onPressed: () => unawaited(down.start(preset)),
+            ),
+          act(
+            c.action_timer_settings,
+            Icons.tune_rounded,
+            widget.onOpenTimerSettings,
+          ),
+        ],
+        CountdownStatus.running => [
+          act(
+            c.action_pause,
+            Icons.pause_rounded,
+            () => unawaited(down.pause()),
+            primary: true,
+          ),
+          reset,
+        ],
+        CountdownStatus.paused => [
+          act(
+            c.action_resume,
+            Icons.play_arrow_rounded,
+            () => unawaited(down.resume()),
+            primary: true,
+          ),
+          reset,
+        ],
+        CountdownStatus.finished => [
+          switch (countdown.pomodoro?.phase) {
+            null => act(
+              c.action_restart,
+              Icons.replay_rounded,
+              () => unawaited(down.restart()),
+              primary: true,
+            ),
+            final phase => act(
+              phase == PomodoroPhase.focus ? c.start_break : c.start_focus,
+              Icons.skip_next_rounded,
+              () => unawaited(down.startNextPhase()),
+              primary: true,
+            ),
+          },
+          act(
+            c.action_done,
+            Icons.check_rounded,
+            () => unawaited(down.reset()),
+          ),
+        ],
+      },
+      ClockMode.stopwatch => [
+        if (stopwatch.running)
+          act(c.action_pause, Icons.pause_rounded, watch.pause, primary: true)
+        else if (stopwatch.isIdle)
+          act(
+            c.action_start,
+            Icons.play_arrow_rounded,
+            watch.start,
+            primary: true,
+          )
+        else ...[
+          act(
+            c.action_resume,
+            Icons.play_arrow_rounded,
+            watch.start,
+            primary: true,
+          ),
+          act(c.action_reset, Icons.restart_alt_rounded, watch.reset),
+        ],
+      ],
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     // Finishing while on Clock or Stopwatch switches to Pomodoro so the
@@ -312,7 +473,12 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       listenWhen: (a, b) =>
           a.status != CountdownStatus.finished &&
           b.status == CountdownStatus.finished,
-      listener: (_, _) => _setMode(ClockMode.pomodoro),
+      // The island opens on the finished tray, even if it was hidden; it
+      // still collapses after the idle time.
+      listener: (_, _) {
+        _setMode(ClockMode.pomodoro);
+        _chrome.wake();
+      },
       child: BlocConsumer<SettingsController, ClockSettings>(
         bloc: widget.settings,
         listenWhen: (a, b) =>
@@ -353,13 +519,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final inset = MediaQuery.sizeOf(context).shortestSide >= 600
         ? DesignSpace.s6
         : DesignSpace.s4;
-    // Narrow windows have no room for the tabs between the corner buttons:
-    // the island takes its own row just under them.
-    final stacked =
-        MediaQuery.sizeOf(context).width < FlipClockScreen.stackedChromeWidth;
-    final islandTop = stacked
-        ? inset + DesignSize.cornerButton + DesignSpace.s2
-        : inset;
     // Never while a sheet or route covers the clock or the app is away.
     final flip = settings.flipSound && _visible && _resumed
         ? widget.sound.playFlip
@@ -379,9 +538,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
             settings: settings,
             skin: skin,
             inset: inset,
-            chromeTop: islandTop,
             onFlip: flip,
-            controlsVisible: chrome == ChromeState.expanded,
           ),
       ],
     );
@@ -438,58 +595,17 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                 children: [
                   Positioned.fill(child: content),
                   Positioned(
-                    top: inset,
                     left: inset,
-                    child: CornerButton(
-                      state: chrome,
-                      icon: Icons.palette_outlined,
-                      tooltip: c.skins_change,
-                      onPressed: _openSkins,
-                      corner: Alignment.topLeft,
-                    ),
-                  ),
-                  Positioned(
-                    top: inset,
                     right: inset,
-                    child: CornerButton(
-                      state: chrome,
-                      icon: Icons.settings_outlined,
-                      tooltip: c.settings,
-                      onPressed: widget.onOpenSettings,
-                      corner: Alignment.topRight,
-                    ),
-                  ),
-                  // Top centre: between the corner buttons, or on its own
-                  // row under them when narrow; tabs scale down rather than
-                  // run under anything.
-                  Positioned(
-                    left: stacked
-                        ? inset
-                        : inset + DesignSize.cornerButton + DesignSpace.s2,
-                    right: stacked
-                        ? inset
-                        : inset + DesignSize.cornerButton + DesignSpace.s2,
-                    top: islandTop,
-                    child: Center(
-                      child: Island(
-                        state: chrome,
-                        hud: hud,
-                        tabs: _modeNames,
-                        selected: settings.lastMode.index,
-                        onSelect: (i) => _setMode(ClockMode.values[i]),
-                        tabsLabel: c.modes,
-                      ),
-                    ),
+                    top: inset,
+                    child: Center(child: _island(settings, chrome, hud)),
                   ),
                   // Under the island.
                   if (_note)
                     Positioned(
                       left: 0,
                       right: 0,
-                      top:
-                          islandTop +
-                          DesignSize.islandExpandedHeight +
-                          DesignSpace.s2,
+                      top: inset + Island.trayHeight + DesignSpace.s2,
                       child: const Center(child: _FullScreenNote()),
                     ),
                 ],
@@ -500,6 +616,17 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       ),
     );
   }
+}
+
+/// A preset's chip text: `5m` for whole minutes, else `1:30`.
+String _presetLabel(Duration preset) {
+  final seconds = preset.inSeconds.remainder(60);
+  return seconds == 0
+      ? strings.clock.preset_minutes(preset.inMinutes)
+      : strings.clock.preset_minutes_seconds(
+          preset.inMinutes,
+          seconds.toString().padLeft(2, '0'),
+        );
 }
 
 /// What full screen does, in plain words, shown briefly on entering it.
@@ -539,9 +666,7 @@ class _ModeView extends StatelessWidget {
     required this.settings,
     required this.skin,
     required this.inset,
-    required this.chromeTop,
     required this.onFlip,
-    required this.controlsVisible,
   });
 
   final ClockMode mode;
@@ -549,29 +674,19 @@ class _ModeView extends StatelessWidget {
   final ClockSettings settings;
   final Skin skin;
 
-  /// The corner buttons' and island's distance from the safe area.
+  /// The island's distance from the safe area.
   final double inset;
-
-  /// Where the island starts; the digits begin below it.
-  final double chromeTop;
 
   /// The flip sound, or null while it must not play.
   final VoidCallback? onFlip;
-  final bool controlsVisible;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
-    // Room for the chrome row (corner buttons and island) above, so it
-    // never covers the digits; a tiny window gives up at most a quarter of
-    // its height.
-    final top = math.min(
-      chromeTop +
-          math.max(DesignSize.cornerButton, DesignSize.islandExpandedHeight) +
-          inset,
-      size.height / 4,
-    );
+    // Room for the expanded island above, so it never covers the digits; a
+    // tiny window gives up at most a quarter of its height.
+    final top = math.min(inset + Island.trayHeight + inset, size.height / 4);
     final flip = onFlip;
     return Padding(
       padding: EdgeInsets.fromLTRB(side, top, side, side),
@@ -646,7 +761,6 @@ class _ModeView extends StatelessWidget {
           defaultTimer: settings.defaultTimer,
           skin: skin,
           controller: screen.countdown,
-          controlsVisible: controlsVisible,
           onFlip: flip,
           brightness: settings.digitBrightness,
           size: settings.cardSize.factor,
@@ -654,7 +768,6 @@ class _ModeView extends StatelessWidget {
         ClockMode.stopwatch => _StopwatchView(
           skin: skin,
           controller: screen.stopwatch,
-          controlsVisible: controlsVisible,
           brightness: settings.digitBrightness,
           size: settings.cardSize.factor,
         ),
@@ -663,24 +776,22 @@ class _ModeView extends StatelessWidget {
   }
 }
 
-/// The countdown. Idle, it shows the default timer (a 25 min focus for the
-/// cycle) with Start; running, the time left.
+/// The countdown: idle, the default timer's length (a 25 min focus for
+/// the cycle); running, the time left under the pomodoro round label.
 class _TimerView extends StatelessWidget {
   const _TimerView({
     required this.defaultTimer,
     required this.skin,
     required this.controller,
-    required this.controlsVisible,
     required this.onFlip,
     required this.brightness,
     required this.size,
   });
 
-  /// What Start runs.
+  /// What Start runs, shown while idle.
   final TimerPreset defaultTimer;
   final Skin skin;
   final CountdownController controller;
-  final bool controlsVisible;
   final VoidCallback? onFlip;
   final double brightness;
 
@@ -692,96 +803,49 @@ class _TimerView extends StatelessWidget {
       BlocBuilder<CountdownController, CountdownState>(
         bloc: controller,
         builder: (context, state) {
-          if (state.status == CountdownStatus.idle) {
-            final focus = switch (defaultTimer) {
-              PomodoroCycle() => PomodoroPhase.focus.duration,
-              Minutes(:final duration) => duration,
-            };
-            return _WithControls(
-              display: Opacity(
-                opacity: brightness,
-                child: FlipDisplay(
-                  cards: durationValue(focus).cards,
-                  skin: skin,
-                  size: size,
-                  semanticsLabel: strings.clock.time_remaining(
-                    formatHms(focus),
-                  ),
-                ),
-              ),
-              controls: Reveal(
-                visible: controlsVisible,
-                child: FilledButton.tonalIcon(
-                  onPressed: () =>
-                      unawaited(controller.startPreset(defaultTimer)),
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(strings.clock.start),
-                ),
-              ),
-            );
-          }
-          final text = formatHms(state.remaining);
-          final pomodoro = state.pomodoro;
+          final shown = state.status == CountdownStatus.idle
+              ? switch (defaultTimer) {
+                  PomodoroCycle() => PomodoroPhase.focus.duration,
+                  Minutes(:final duration) => duration,
+                }
+              : state.remaining;
+          final pomodoro = state.status == CountdownStatus.idle
+              ? null
+              : state.pomodoro;
           final theme = Theme.of(context);
-          final label = skin.digitColor.withValues(alpha: 0.7);
-          return _WithControls(
-            display: Column(
-              children: [
-                if (pomodoro != null)
-                  // Announced as each phase starts.
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      pomodoro.phase == PomodoroPhase.focus
-                          ? strings.clock.pomodoro_focus(pomodoro.round)
-                          : strings.clock.pomodoro_break(pomodoro.round),
-                      style: skin.face.style(
-                        color: label,
-                        fontSize: theme.textTheme.titleLarge!.fontSize!,
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  child: Center(
-                    child: Opacity(
-                      opacity: brightness,
-                      child: FlipDisplay(
-                        cards: durationValue(state.remaining).cards,
-                        skin: skin,
-                        size: size,
-                        semanticsLabel: strings.clock.time_remaining(text),
-                        onFlip: onFlip,
-                      ),
+          return Column(
+            children: [
+              if (pomodoro != null)
+                // Announced as each phase starts.
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    pomodoro.phase == PomodoroPhase.focus
+                        ? strings.clock.pomodoro_focus(pomodoro.round)
+                        : strings.clock.pomodoro_break(pomodoro.round),
+                    style: skin.face.style(
+                      color: skin.digitColor.withValues(alpha: 0.7),
+                      fontSize: theme.textTheme.titleLarge!.fontSize!,
                     ),
                   ),
                 ),
-              ],
-            ),
-            controls: state.status == CountdownStatus.finished
-                ? CompletionBanner(
-                    onDismiss: () => unawaited(controller.reset()),
-                    action: pomodoro == null
-                        ? null
-                        : FilledButton.tonal(
-                            autofocus: true,
-                            onPressed: () =>
-                                unawaited(controller.startNextPhase()),
-                            child: Text(
-                              pomodoro.phase == PomodoroPhase.focus
-                                  ? strings.clock.start_break
-                                  : strings.clock.start_focus,
-                            ),
-                          ),
-                  )
-                : Reveal(
-                    visible: controlsVisible,
-                    child: RunControls(
-                      running: state.status == CountdownStatus.running,
-                      started: true,
-                      onPrimary: () => unawaited(controller.toggle()),
-                      onReset: () => unawaited(controller.reset()),
+              Expanded(
+                child: Center(
+                  child: Opacity(
+                    opacity: brightness,
+                    child: FlipDisplay(
+                      cards: durationValue(shown).cards,
+                      skin: skin,
+                      size: size,
+                      semanticsLabel: strings.clock.time_remaining(
+                        formatHms(shown),
+                      ),
+                      onFlip: onFlip,
                     ),
                   ),
+                ),
+              ),
+            ],
           );
         },
       );
@@ -791,14 +855,12 @@ class _StopwatchView extends StatelessWidget {
   const _StopwatchView({
     required this.skin,
     required this.controller,
-    required this.controlsVisible,
     required this.brightness,
     required this.size,
   });
 
   final Skin skin;
   final StopwatchController controller;
-  final bool controlsVisible;
   final double brightness;
 
   /// `FlipDisplay.size`: the chosen card size.
@@ -809,57 +871,21 @@ class _StopwatchView extends StatelessWidget {
       BlocBuilder<StopwatchController, StopwatchState>(
         bloc: controller,
         builder: (context, state) {
-          final text = formatStopwatch(state.elapsed);
           final value = stopwatchValue(state.elapsed);
-          return _WithControls(
-            display: Opacity(
+          return Center(
+            child: Opacity(
               opacity: brightness,
               child: FlipDisplay(
                 cards: value.cards,
                 badge: value.badge,
                 skin: skin,
                 size: size,
-                semanticsLabel: strings.clock.elapsed(text),
-              ),
-            ),
-            controls: Reveal(
-              visible: controlsVisible,
-              child: RunControls(
-                running: state.running,
-                started: !state.isIdle,
-                onPrimary: controller.toggle,
-                onReset: controller.reset,
+                semanticsLabel: strings.clock.elapsed(
+                  formatStopwatch(state.elapsed),
+                ),
               ),
             ),
           );
         },
       );
-}
-
-/// The display over its controls. On a very short window (a 100 px tall
-/// split view) the controls and the gap shrink to at most half the height
-/// instead of overflowing; `RunControls` and `CompletionBanner` scale down.
-class _WithControls extends StatelessWidget {
-  const _WithControls({required this.display, required this.controls});
-
-  final Widget display;
-  final Widget controls;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) => Column(
-      children: [
-        Expanded(child: Center(child: display)),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: box.maxHeight / 2),
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: (box.maxHeight / 10).clamp(0.0, 16.0),
-            ),
-            child: controls,
-          ),
-        ),
-      ],
-    ),
-  );
 }

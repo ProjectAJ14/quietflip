@@ -67,6 +67,7 @@ class Rig {
       logger: di.get<Logger>(),
       doubleTapFullScreen: false,
       onOpenSettings: () {},
+      onOpenTimerSettings: () {},
     ),
   );
 

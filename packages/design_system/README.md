@@ -26,9 +26,9 @@ dart pub add design_system
 - Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
 - Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.
 
-## Chrome: island and corner buttons
+## Chrome: the island
 
-`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState` and morphing on `DesignMotion.islandCurve`. `CornerButton` is a 44px round button that collapses to a dot toward its `corner`. Both are dark in every theme, take all their text as parameters, and only cross-fade when the platform asks for reduced motion.
+`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) over an action tray, or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState` and morphing on `DesignMotion.islandCurve`. The tray takes `actions` and `trailing` (after a hairline) as `IslandAction(label:, icon:, onPressed:, primary:)`: an icon button, a filled primary, or a text chip when `icon` is null; an optional `status` line is announced. It scrolls sideways rather than overflow. The island is dark in every theme, takes all its text as parameters, and only cross-fades when the platform asks for reduced motion.
 
 ## Settings shell
 

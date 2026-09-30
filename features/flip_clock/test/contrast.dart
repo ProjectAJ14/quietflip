@@ -19,9 +19,13 @@ Color inkOf(WidgetTester tester, Finder text) {
 
 /// The nearest opaque fill behind [f]: a Material, DecoratedBox,
 /// ColoredBox or Scaffold ancestor with a visible colour.
-Color backdropOf(WidgetTester tester, Finder f) {
+Color backdropOf(WidgetTester tester, Finder f) =>
+    backdropOfElement(tester.element(f.first));
+
+/// [backdropOf] for an element.
+Color backdropOfElement(Element element) {
   Color? found;
-  tester.element(f.first).visitAncestorElements((e) {
+  element.visitAncestorElements((e) {
     final w = e.widget;
     final Color? c = switch (w) {
       Material(type: final t, :final color)

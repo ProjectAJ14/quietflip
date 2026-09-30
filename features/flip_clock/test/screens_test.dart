@@ -17,7 +17,6 @@ import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
-import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/gesture_layer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
@@ -67,6 +66,7 @@ class Harness {
   late final ClockController clock;
   late final StopwatchController stopwatch;
   int settingsOpened = 0;
+  int timerSettingsOpened = 0;
 
   Widget screen({
     bool doubleTap = false,
@@ -92,6 +92,7 @@ class Harness {
       logger: di.get<Logger>(),
       doubleTapFullScreen: doubleTap,
       onOpenSettings: () => settingsOpened++,
+      onOpenTimerSettings: () => timerSettingsOpened++,
     ),
   );
 
@@ -125,12 +126,36 @@ Future<void> modeTab(WidgetTester tester, String name) async {
   await tester.pump();
 }
 
+/// The stopwatch panel at zero.
+String get stopwatchZero => strings.clock.elapsed('0:00:00.0');
+
 ChromeState chromeOf(WidgetTester tester) =>
     tester.widget<Island>(find.byType(Island)).state;
 
-Reveal revealOf(WidgetTester tester, Finder f) => tester.widget<Reveal>(
-  find.ancestor(of: f, matching: find.byType(Reveal)).first,
-);
+/// An island tray action by its label (tooltip).
+Finder action(String label) => find.byTooltip(label);
+
+/// Taps the tray action [label].
+Future<void> tapAction(WidgetTester tester, String label) async {
+  await tester.tap(action(label));
+  await tester.pump();
+}
+
+/// Lets the tray cross-fade finish frame by frame (a running stopwatch
+/// never settles).
+Future<void> crossFade(WidgetTester tester) async {
+  for (var i = 0; i < 6; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Tooltips of the tray actions the island shows now.
+List<String> trayOf(WidgetTester tester) => [
+  for (final t in tester.widgetList<Tooltip>(
+    find.descendant(of: find.byType(Island), matching: find.byType(Tooltip)),
+  ))
+    t.message!,
+];
 
 void main() {
   setUp(core.init);
@@ -153,7 +178,7 @@ void main() {
       find.bySemanticsLabel(strings.clock.current_time('9:41:00 AM')),
       findsOne,
     );
-    await tester.tap(find.byTooltip(strings.clock.settings));
+    await tester.tap(action(strings.clock.action_settings));
     expect(h.settingsOpened, 1);
     await h.dispose(tester);
   });
@@ -231,7 +256,7 @@ void main() {
       findsOne,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.clock.start));
+    await tester.tap(action(strings.clock.action_start));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.running);
     expect(
@@ -239,24 +264,24 @@ void main() {
       findsOne,
     );
 
-    await tester.tap(find.text(strings.clock.pause));
+    await tester.tap(action(strings.clock.action_pause));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.paused);
-    await tester.tap(find.text(strings.clock.resume));
+    await tester.tap(action(strings.clock.action_resume));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.running);
-    await tester.tap(find.text(strings.clock.reset));
+    await tester.tap(action(strings.clock.action_reset));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.idle);
 
-    await tester.tap(find.text(strings.clock.start));
+    await tester.tap(action(strings.clock.action_start));
     await tester.pump();
     h.wall.advance(const Duration(seconds: 30));
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pump();
     expect(find.text(strings.clock.times_up), findsOne);
     expect(h.sound.alarms, 1);
-    await tester.tap(find.text(strings.clock.dismiss));
+    await tester.tap(action(strings.clock.action_done));
     await tester.pump();
     expect(h.countdown.state.status, CountdownStatus.idle);
     expect(h.sound.stops, 2, reason: "reset and dismiss both silence");
@@ -277,6 +302,8 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
+    // Once any mode name has gone, the finished tray shows.
+    await tester.pump(DesignMotion.hudHold);
     expect(find.text(strings.clock.times_up), findsOne);
     await h.countdown.reset();
     await tester.pumpAndSettle();
@@ -311,7 +338,7 @@ void main() {
       find.bySemanticsLabel(strings.clock.time_remaining('00:25:00')),
       findsOne,
     );
-    await tester.tap(find.text(strings.clock.start));
+    await tester.tap(action(strings.clock.action_start));
     await tester.pump();
     expect(find.text(strings.clock.pomodoro_focus(1)), findsOne);
     expect(
@@ -330,10 +357,10 @@ void main() {
 
     await key(tester, LogicalKeyboardKey.space);
     expect(h.countdown.state.status, CountdownStatus.paused);
-    await tester.tap(find.text(strings.clock.reset));
+    await tester.tap(action(strings.clock.action_reset));
     await tester.pump();
     // Back to the idle Pomodoro panel.
-    expect(find.text(strings.clock.start), findsOne);
+    expect(action(strings.clock.action_start), findsOne);
     expect(find.text(strings.clock.pomodoro_break(1)), findsNothing);
     expect(h.countdown.state.duration, Countdown.defaultDuration);
     await tester.pumpAndSettle();
@@ -355,9 +382,11 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
+    // Once any mode name has gone, the finished tray shows.
+    await tester.pump(DesignMotion.hudHold);
     expect(find.text(strings.clock.times_up), findsOne);
     expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
-    await tester.tap(find.text(strings.clock.start_focus));
+    await tester.tap(action(strings.clock.start_focus));
     await tester.pump();
     expect(find.text(strings.clock.pomodoro_focus(3)), findsOne);
     expect(h.countdown.state.status, CountdownStatus.running);
@@ -376,12 +405,12 @@ void main() {
     await h.countdown.load();
     await tester.pumpWidget(h.screen());
     await tester.pump();
-    expect(find.text(strings.clock.start_break), findsOne);
+    expect(action(strings.clock.start_break), findsOne);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
-    await tester.tap(find.text(strings.clock.dismiss));
+    await tester.tap(action(strings.clock.action_done));
     await tester.pump();
     // The idle Pomodoro panel offers a new focus.
-    expect(find.text(strings.clock.start), findsOne);
+    expect(action(strings.clock.action_start), findsOne);
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });
@@ -472,8 +501,11 @@ void main() {
     expect(find.bySemanticsLabel(strings.clock.elapsed('0:00:02.0')), findsOne);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.stopwatch.state.running, isFalse);
-    expect(find.text(strings.clock.resume), findsOne);
-    await tester.tap(find.text(strings.clock.reset));
+    // The mode name from the key gives way to the tray.
+    await tester.pump(DesignMotion.hudHold);
+    await tester.pumpAndSettle();
+    expect(action(strings.clock.action_resume), findsOne);
+    await tester.tap(action(strings.clock.action_reset));
     await tester.pump();
     expect(h.stopwatch.state.isIdle, isTrue);
 
@@ -535,13 +567,14 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
     await tester.pumpWidget(h.screen());
-    final start = find.text(strings.clock.start);
+    final start = action(strings.clock.action_start);
     expect(chromeOf(tester), ChromeState.expanded);
-    expect(revealOf(tester, start).visible, isTrue);
+    expect(start, findsOne);
 
     await tester.pump(const Duration(seconds: 4));
     expect(chromeOf(tester), ChromeState.dot);
-    expect(revealOf(tester, start).visible, isFalse);
+    await tester.pumpAndSettle();
+    expect(start, findsNothing);
     await tester.pump(const Duration(seconds: 3));
     expect(chromeOf(tester), ChromeState.hidden);
     // Watched past the window: it stays hidden.
@@ -605,16 +638,16 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('island tabs switch modes; corners open Skins and Settings', (
+  testWidgets('island tabs switch modes; the tray opens Skins and Settings', (
     tester,
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await modeTab(tester, strings.clock.stopwatch);
     expect(h.settings.state.lastMode, ClockMode.stopwatch);
-    await tester.tap(find.byTooltip(strings.clock.settings));
+    await tester.tap(action(strings.clock.action_settings));
     expect(h.settingsOpened, 1);
-    await tester.tap(find.byTooltip(strings.clock.skins_change));
+    await tester.tap(action(strings.clock.action_skins));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsOne);
     await h.dispose(tester);
@@ -662,14 +695,6 @@ void main() {
       }
       await tester.pump();
       expect(digits(), 0.2, reason: '$mode');
-      expect(
-        find.ancestor(
-          of: find.byType(RunControls),
-          matching: find.byType(Opacity),
-        ),
-        findsNothing,
-        reason: '$mode',
-      );
     }
     await h.countdown.reset();
     await tester.pumpAndSettle();
@@ -882,7 +907,7 @@ void main() {
       MaterialApp.router(theme: theme, routerConfig: router),
     );
     expect(find.byType(FlipDisplay), findsOne);
-    await tester.tap(find.byTooltip(strings.clock.settings));
+    await tester.tap(action(strings.clock.action_settings));
     await tester.pumpAndSettle();
     expect(
       router.routeInformationProvider.value.uri.path,
@@ -899,6 +924,14 @@ void main() {
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOne);
+    // The Pomodoro tray's tune icon opens Settings too.
+    await modeTab(tester, strings.clock.mode_pomodoro);
+    await tester.pumpAndSettle();
+    await tester.tap(action(strings.clock.action_timer_settings));
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsOne);
+    await tester.tap(find.text(strings.generic.done));
+    await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
     unawaited(di.reset());
     await tester.pump();
@@ -912,7 +945,7 @@ void main() {
     Color ground() =>
         tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor!;
     expect(ground(), DesignSkinColors.bgInk);
-    await tester.tap(find.byTooltip(strings.clock.skins_change));
+    await tester.tap(action(strings.clock.action_skins));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsOne);
     await tester.tap(find.widgetWithText(SkinTile, strings.clock.skin_paper));
@@ -971,7 +1004,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
-      await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+      await tester.dragFrom(const Offset(100, 100), const Offset(0, 300));
       await tester.pump();
       // Down by half the 600px height: 0.5 - 0.5.
       expect(h.brightness.level, closeTo(0.0, 0.02));
@@ -986,7 +1019,7 @@ void main() {
       (tester) async {
         final h = Harness()..brightness.hold = Completer<void>();
         await tester.pumpWidget(h.screen());
-        await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+        await tester.dragFrom(const Offset(100, 100), const Offset(0, 300));
         await tester.pump();
         // The finger is up; the platform answers only now.
         h.brightness.hold!.complete();
@@ -1006,7 +1039,7 @@ void main() {
       final h = Harness(brightness: FakeScreenBrightness(supported: false));
       await tester.pumpWidget(h.screen());
       // Down by most of the height: clamps at the 20% floor.
-      await tester.dragFrom(const Offset(400, 100), const Offset(0, 490));
+      await tester.dragFrom(const Offset(100, 100), const Offset(0, 490));
       await tester.pump();
       expect(h.settings.state.digitBrightness, ClockSettings.minBrightness);
       expect(h.brightness.calls, isEmpty);
@@ -1027,7 +1060,7 @@ void main() {
       expect(hud.index, ClockMode.stopwatch.index);
       expect(hud.count, 3);
       await tester.pumpAndSettle();
-      expect(find.text(strings.clock.start), findsOne);
+      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
       await h.dispose(tester);
     });
 
@@ -1038,7 +1071,7 @@ void main() {
       );
       await tester.pumpWidget(h.screen());
       await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
-      await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+      await tester.dragFrom(const Offset(100, 100), const Offset(0, 300));
       await tester.pumpAndSettle();
       expect(h.settings.state.lastMode, ClockMode.clock);
       expect(h.brightness.calls, isEmpty);
@@ -1050,7 +1083,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
-      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.tap(action(strings.clock.action_skins));
       await tester.pumpAndSettle();
       final layer = tester.widget<GestureLayer>(find.byType(GestureLayer));
       expect(layer.enabled, isFalse);
@@ -1073,7 +1106,7 @@ void main() {
       await tester.pumpWidget(h.screen(reduceMotion: true));
       await key(tester, LogicalKeyboardKey.arrowRight);
       await tester.pump();
-      expect(find.text(strings.clock.start), findsOne);
+      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
       await h.dispose(tester);
     });
 
@@ -1160,7 +1193,7 @@ void main() {
         await idle(tester);
         expect(chromeOf(tester), ChromeState.hidden, reason: way);
         expectMode(tester, h, ClockMode.stopwatch);
-        expect(find.text(strings.clock.start), findsOne, reason: way);
+        expect(find.bySemanticsLabel(stopwatchZero), findsOne, reason: way);
         await h.dispose(tester);
       }
     });
@@ -1175,7 +1208,10 @@ void main() {
       await tester.pump();
       await idle(tester);
       expectMode(tester, h, ClockMode.pomodoro);
-      expect(find.byType(RunControls), findsOne);
+      expect(
+        find.bySemanticsLabel(strings.clock.time_remaining('00:05:00')),
+        findsOne,
+      );
       await h.countdown.reset();
       await tester.pumpAndSettle();
       await h.dispose(tester);
@@ -1201,7 +1237,7 @@ void main() {
       expectMode(tester, h, ClockMode.stopwatch);
       await idle(tester);
       expectMode(tester, h, ClockMode.stopwatch);
-      expect(find.text(strings.clock.start), findsOne);
+      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
       await tester.pumpAndSettle();
       await h.dispose(tester);
     });
@@ -1210,14 +1246,14 @@ void main() {
       final h = Harness();
       await tester.pumpWidget(h.screen());
       await tabTo(tester, ClockMode.stopwatch);
-      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.tap(action(strings.clock.action_skins));
       await tester.pumpAndSettle();
       await tester.tap(find.text(strings.clock.skins_done));
       await tester.pumpAndSettle();
       expectMode(tester, h, ClockMode.stopwatch);
       await idle(tester);
       expectMode(tester, h, ClockMode.stopwatch);
-      expect(find.text(strings.clock.start), findsOne);
+      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
       await h.dispose(tester);
     });
 
@@ -1230,7 +1266,7 @@ void main() {
         expectMode(tester, h, mode);
         // Its own content, not the Clock's.
         expect(
-          find.byType(RunControls),
+          find.bySemanticsLabel(stopwatchZero),
           findsExactly(mode == ClockMode.stopwatch ? 1 : 0),
         );
         expect(
@@ -1274,7 +1310,7 @@ void main() {
       // Idle for a minute: any key brings the corner buttons back.
       await key(tester, LogicalKeyboardKey.keyQ);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.tap(action(strings.clock.action_skins));
       await tester.pumpAndSettle();
       await minute(tester, h);
       expect(h.sound.flips, 1);
@@ -1333,8 +1369,8 @@ void main() {
     });
   });
 
-  for (final width in [390.0, 1280.0]) {
-    testWidgets('the island sits top centre, clear of the corners ($width)', (
+  for (final width in [375.0, 1280.0]) {
+    testWidgets('the island is the only control, top centre ($width)', (
       tester,
     ) async {
       tester.view
@@ -1342,23 +1378,26 @@ void main() {
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.stopwatch),
+      );
       await tester.pumpWidget(h.screen());
       await tester.pumpAndSettle();
       final island = tester.getRect(find.byType(Island));
       expect(island.center.dy, lessThan(844 / 4));
       expect(island.center.dx, closeTo(width / 2, 0.5));
-      final corners = find.byType(CornerButton);
-      expect(corners, findsExactly(2));
-      for (var i = 0; i < 2; i++) {
-        final corner = tester.getRect(corners.at(i));
-        expect(corner.overlaps(island), isFalse, reason: 'corner $i');
-        if (width < FlipClockScreen.stackedChromeWidth) {
-          // Its own row under the corners.
-          expect(island.top, greaterThanOrEqualTo(corner.bottom));
-        } else {
-          // Between them, at the same top inset.
-          expect(island.top, corner.top, reason: 'corner $i');
-        }
+      // Every button on the screen is inside the island.
+      for (final type in [InkWell, ButtonStyleButton, IconButton]) {
+        final all = find.byType(type);
+        final inIsland = find.descendant(
+          of: find.byType(Island),
+          matching: find.byType(type),
+        );
+        expect(
+          all.evaluate().length,
+          inIsland.evaluate().length,
+          reason: '$type',
+        );
       }
       // Tabs keep their full size (the callout line is 20px), never shrunk.
       expect(
@@ -1489,7 +1528,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('run controls are legible on every skin in both themes', (
+  testWidgets('island actions are legible on every skin in both themes', (
     tester,
   ) async {
     final themes = {
@@ -1504,28 +1543,192 @@ void main() {
       for (final skin in Skins.builtIn()) {
         final h = Harness();
         await h.settings.update(
-          ClockSettings(skinId: skin.id, lastMode: ClockMode.stopwatch),
+          ClockSettings(skinId: skin.id, lastMode: ClockMode.pomodoro),
         );
         await tester.pumpWidget(h.screen(appTheme: t));
-        void check(List<String> labels) {
-          for (final label in labels) {
-            final f = find.text(label);
-            final ratio = contrastOf(inkOf(tester, f), backdropOf(tester, f));
-            if (ratio < 4.5) {
-              failures.add('$name/${skin.id}/$label $ratio');
-            }
+        void check(String state) {
+          final island = find.byType(Island);
+          for (final e in [
+            ...find
+                .descendant(of: island, matching: find.byType(Icon))
+                .evaluate(),
+            ...find
+                .descendant(of: island, matching: find.byType(Text))
+                .evaluate(),
+          ]) {
+            final w = e.widget;
+            final ink = w is Icon ? w.color! : (w as Text).style!.color!;
+            final ratio = contrastOf(ink, backdropOfElement(e));
+            if (ratio < 4.5) failures.add('$name/${skin.id}/$state $w $ratio');
           }
         }
 
-        // Idle (Reset disabled), then running.
-        check([strings.clock.start, strings.clock.reset]);
-        h.stopwatch.toggle();
-        await tester.pump();
-        check([strings.clock.pause, strings.clock.reset]);
-        h.stopwatch.reset();
+        check('idle');
+        await h.countdown.start(const Duration(minutes: 1));
+        await tester.pumpAndSettle();
+        check('running');
+        await h.countdown.pause();
+        await tester.pumpAndSettle();
+        check('paused');
+        await h.countdown.reset();
+        await tester.pumpAndSettle();
         await h.dispose(tester);
       }
     }
     expect(failures, isEmpty);
+  });
+
+  group('island tray', () {
+    final c = strings.clock;
+    List<String> withChrome(List<String> actions) => [
+      ...actions,
+      c.action_skins,
+      c.action_settings,
+    ];
+
+    testWidgets('each mode and state offers its own actions', (tester) async {
+      final h = Harness();
+      const ninety = Duration(seconds: 90);
+      await h.settings.update(
+        const ClockSettings().copyWith(
+          timerPresets: [...ClockSettings.defaultTimerPresets, ninety],
+        ),
+      );
+      await tester.pumpWidget(h.screen());
+      expect(trayOf(tester), withChrome([]), reason: 'clock');
+
+      await h.settings.update(
+        h.settings.state.copyWith(lastMode: ClockMode.pomodoro),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        trayOf(tester),
+        withChrome([
+          c.action_start,
+          c.preset_pomodoro,
+          // Ascending: 90 s first.
+          '1:30',
+          '5m',
+          '10m',
+          '15m',
+          c.action_timer_settings,
+        ]),
+      );
+      await h.countdown.start(ninety);
+      await tester.pumpAndSettle();
+      expect(trayOf(tester), withChrome([c.action_pause, c.action_reset]));
+      await h.countdown.pause();
+      await tester.pumpAndSettle();
+      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      await h.countdown.reset();
+
+      await h.settings.update(
+        h.settings.state.copyWith(lastMode: ClockMode.stopwatch),
+      );
+      await tester.pumpAndSettle();
+      expect(trayOf(tester), withChrome([c.action_start]));
+      h.stopwatch.start();
+      await tester.pump();
+      await crossFade(tester);
+      expect(trayOf(tester), withChrome([c.action_pause]));
+      h.watch.reading = const Duration(seconds: 2);
+      h.stopwatch.pause();
+      await tester.pumpAndSettle();
+      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      await tapAction(tester, c.action_reset);
+      expect(h.stopwatch.state.isIdle, isTrue);
+      await tapAction(tester, c.action_start);
+      expect(h.stopwatch.state.running, isTrue);
+      await crossFade(tester);
+      h.watch.reading = const Duration(seconds: 3);
+      await tapAction(tester, c.action_pause);
+      expect(h.stopwatch.state.running, isFalse);
+      await tester.pumpAndSettle();
+      await tapAction(tester, c.action_resume);
+      expect(h.stopwatch.state.running, isTrue);
+      h.stopwatch.reset();
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('one tap on 10m starts a 10 minute countdown', (tester) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.pomodoro),
+      );
+      await tester.pumpWidget(h.screen());
+      await tapAction(tester, '10m');
+      expect(h.countdown.state.status, CountdownStatus.running);
+      expect(h.countdown.state.duration, const Duration(minutes: 10));
+      expect(h.countdown.state.pomodoro, isNull);
+      await h.countdown.reset();
+      await tester.pumpAndSettle();
+      // The Pomodoro chip starts the cycle.
+      await tapAction(tester, c.preset_pomodoro);
+      expect(h.countdown.state.pomodoro, isNotNull);
+      await h.countdown.reset();
+      await tester.pumpAndSettle();
+      // The tune icon opens the timer settings.
+      await tapAction(tester, c.action_timer_settings);
+      expect(h.timerSettingsOpened, 1);
+      expect(chromeOf(tester), ChromeState.expanded);
+      await h.dispose(tester);
+    });
+
+    testWidgets('Start runs the default timer', (tester) async {
+      final h = Harness();
+      const m = Duration(minutes: 15);
+      await h.settings.update(
+        const ClockSettings(
+          lastMode: ClockMode.pomodoro,
+        ).copyWith(defaultTimer: const Minutes(m)),
+      );
+      await tester.pumpWidget(h.screen());
+      expect(find.bySemanticsLabel(c.time_remaining('00:15:00')), findsOne);
+      await tapAction(tester, c.action_start);
+      expect(h.countdown.state.duration, m);
+      expect(h.countdown.state.pomodoro, isNull);
+      await h.countdown.reset();
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('finishing while hidden opens the finished tray; Restart', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await h.countdown.start(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 8));
+      expect(chromeOf(tester), ChromeState.hidden);
+      h.wall.advance(const Duration(seconds: 5));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.expanded);
+      expect(h.settings.state.lastMode, ClockMode.pomodoro);
+      expect(find.text(c.times_up), findsOne);
+      expect(trayOf(tester), withChrome([c.action_restart, c.action_done]));
+      expect(h.sound.alarms, 1);
+
+      await tapAction(tester, c.action_restart);
+      expect(h.countdown.state.status, CountdownStatus.running);
+      expect(h.countdown.state.duration, const Duration(seconds: 5));
+      expect(h.sound.stops, 1, reason: 'Restart silences the alarm');
+
+      // The idle collapse still applies to the finished tray.
+      h.wall.advance(const Duration(seconds: 5));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.expanded);
+      await tester.pump(const Duration(seconds: 8));
+      expect(chromeOf(tester), ChromeState.hidden);
+      // A tap shows it again; Done ends it.
+      await tester.tapAt(const Offset(100, 300));
+      await tester.pumpAndSettle();
+      await tapAction(tester, c.action_done);
+      expect(h.countdown.state.status, CountdownStatus.idle);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
   });
 }

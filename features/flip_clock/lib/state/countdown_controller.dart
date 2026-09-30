@@ -138,6 +138,16 @@ class CountdownController extends Cubit<CountdownState> {
     await _running();
   }
 
+  /// Runs a finished plain timer again for the same duration, silencing
+  /// its alarm. Ignored otherwise (a finished phase has [startNextPhase]).
+  Future<void> restart() async {
+    if (_countdown.status != CountdownStatus.finished || _pomodoro != null) {
+      return;
+    }
+    await _sound.stopAlarm();
+    await start(_countdown.duration);
+  }
+
   /// Starts [preset]: the pomodoro cycle or a plain countdown.
   Future<void> startPreset(TimerPreset preset) => switch (preset) {
     PomodoroCycle() => startPomodoro(),
