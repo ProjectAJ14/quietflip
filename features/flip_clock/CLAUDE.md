@@ -136,6 +136,8 @@ lib/
   fitted card height; everything inside follows. It draws
   `skin.forTheme(DesignColors.of(context))`, as do SkinTile and the
   customizer preview.
+- The hour card is always two digits, in 12-hour time too (`09 41 AM`), so
+  it never sits half empty; the text label keeps `9:41 AM`.
 - Seconds show when `showSeconds` is on, in the skin's style (a skin with
   `off` shows them as cards, so the switch always shows something).
   Selecting a skin applies its preset: Show seconds on unless the skin's

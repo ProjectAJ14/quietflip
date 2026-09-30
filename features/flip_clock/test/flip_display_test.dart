@@ -359,26 +359,27 @@ void main() {
       expect(fontSizeOf(tester, '07'), greaterThanOrEqualTo(13));
     });
 
-    testWidgets('12h drops the leading zero and shows AM/PM; 24h does not; '
+    testWidgets('both clocks show two-digit hours; only 12h shows AM/PM; '
         'switching at runtime updates the display', (tester) async {
-      final t = DateTime(2026, 9, 30, 9, 5);
+      final t = DateTime(2026, 9, 30, 21, 5);
       Widget show({required bool use24h}) {
         final v = clockValue(t, use24h: use24h, showSeconds: false, skin: mono);
         return host(display(v.cards, meridiem: v.meridiem, badge: v.badge));
       }
 
       await tester.pumpWidget(show(use24h: false));
-      expect(find.text('9'), findsWidgets);
-      expect(find.text('AM'), findsOne);
-      await tester.pumpWidget(show(use24h: true));
-      await tester.pumpAndSettle();
+      // Padded like the minutes, so the hour card is never half empty.
       expect(find.text('09'), findsWidgets);
       expect(find.text('9'), findsNothing);
-      expect(find.text('AM'), findsNothing);
+      expect(find.text('PM'), findsOne);
+      await tester.pumpWidget(show(use24h: true));
+      await tester.pumpAndSettle();
+      expect(find.text('21'), findsWidgets);
+      expect(find.text('PM'), findsNothing);
       await tester.pumpWidget(show(use24h: false));
       await tester.pumpAndSettle();
-      expect(find.text('AM'), findsOne);
-      expect(find.text('09'), findsNothing);
+      expect(find.text('PM'), findsOne);
+      expect(find.text('21'), findsNothing);
     });
   });
 
@@ -439,7 +440,7 @@ void main() {
         showSeconds: true,
         skin: mono.copyWith(seconds: SkinSeconds.badge),
       );
-      expect(badge.cards, ['9', '05']);
+      expect(badge.cards, ['09', '05']);
       expect(badge.badge, '07');
       expect(badge.meridiem, 'PM');
       final cards = clockValue(

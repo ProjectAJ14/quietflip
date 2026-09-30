@@ -16,7 +16,8 @@ String presetLabel(Duration preset) {
 
 /// The clock at [t]: hour and minute cards, seconds in [skin]'s style when
 /// [showSeconds] (their own cards when the skin has none, so Show seconds
-/// always shows them), AM/PM in 12-hour time.
+/// always shows them), AM/PM in 12-hour time. The hour is two digits in
+/// both (`09`), so its card is never half empty.
 DisplayValue clockValue(
   DateTime t, {
   required bool use24h,
@@ -32,7 +33,7 @@ DisplayValue clockValue(
       : SkinSeconds.cards;
   return (
     cards: [
-      use24h ? _two(t.hour) : '$hour12',
+      _two(use24h ? t.hour : hour12),
       _two(t.minute),
       if (style == SkinSeconds.cards) seconds,
     ],
