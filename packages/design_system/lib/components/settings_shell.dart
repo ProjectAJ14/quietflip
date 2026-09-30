@@ -535,13 +535,43 @@ class _Cell extends StatelessWidget {
             children: [
               ?leading,
               Expanded(child: child),
-              if (trailing != null) Flexible(child: trailing!),
+              // Values and switches sit at the row's end.
+              if (trailing != null)
+                Flexible(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: trailing,
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+/// A label over a control: [DesignSpace.s2] between them and
+/// [DesignSpace.s2] under the control, on top of the cell padding, so the
+/// control never sits on the cell's bottom edge in either density.
+class _ControlBlock extends StatelessWidget {
+  const _ControlBlock({
+    required this.crossAxisAlignment,
+    required this.children,
+  });
+
+  final CrossAxisAlignment crossAxisAlignment;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: DesignSpace.s2),
+    child: Column(
+      crossAxisAlignment: crossAxisAlignment,
+      spacing: DesignSpace.s2,
+      children: children,
+    ),
+  );
 }
 
 /// A label with an accent switch; tapping anywhere on the row toggles it.
@@ -629,9 +659,8 @@ class SettingsSegmentedRow<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _Cell(
-    child: Column(
+    child: _ControlBlock(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: DesignSpace.s2,
       children: [
         _Label(label),
         // Shrinks instead of overflowing on narrow screens and large text.
@@ -678,7 +707,7 @@ class SettingsSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _Cell(
-    child: Column(
+    child: _ControlBlock(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(

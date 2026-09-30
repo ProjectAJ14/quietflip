@@ -69,7 +69,7 @@ flutterfire configure
 ```sh
 cd apps/quietflip
 flutter run -d chrome          # or -d macos, -d windows, an Android/iOS device
-flutter build web              # also: appbundle, ipa, macos, windows
+flutter build web --no-web-resources-cdn   # bundle the renderer; also: appbundle, ipa, macos, windows
 ```
 
 Windows builds only run on a Windows machine; iOS and macOS need Xcode.

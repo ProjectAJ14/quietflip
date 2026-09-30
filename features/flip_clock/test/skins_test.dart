@@ -28,6 +28,7 @@ void main() {
       seconds: SkinSeconds.cards,
       meridiem: SkinMeridiem.right,
       showDate: true,
+      themed: true,
     );
 
     test('round-trips through json with ARGB int colours', () {
@@ -38,6 +39,8 @@ void main() {
       expect(Skin.fromJson(json).hashCode, full.hashCode);
       expect(full.copyWith(), full);
       expect(full, isNot(full.copyWith(name: 'Day shift')));
+      expect(json['themed'], isTrue);
+      expect(full, isNot(full.copyWith(themed: false)));
     });
 
     test('unknown face, bad colour and missing fields keep defaults', () {
@@ -51,10 +54,33 @@ void main() {
         'meridiem': 'top',
         'seam': 'yes',
         'showDate': 1,
+        'themed': 'yes',
       })!;
       expect(skin, const Skin(id: 'custom-2', name: ''));
       expect(skin.face, DisplayFace.barlowCondensed);
       expect(skin.digitColor, DesignSkinColors.mono);
+      expect(skin.seconds, SkinSeconds.off);
+      expect(skin.themed, isFalse);
+    });
+
+    test('forTheme: themed skins take the light tokens in Mono Light only', () {
+      const light = DesignColors.light;
+      final mono = Skins.classic().first;
+      expect(mono.themed, isTrue);
+      final inLight = mono.forTheme(light);
+      expect(inLight.digitColor, light.ink);
+      expect(inLight.cardColor, light.card);
+      expect(inLight.groundColor, light.bg);
+      expect(inLight.contrast, greaterThanOrEqualTo(4.5));
+      final inDark = mono.forTheme(DesignColors.dark);
+      expect(inDark, mono);
+      expect(inDark.digitColor, DesignSkinColors.mono);
+      expect(inDark.cardColor, DesignSkinColors.cardInk);
+      expect(inDark.groundColor, DesignSkinColors.bgInk);
+      expect(inDark.contrast, greaterThanOrEqualTo(4.5));
+      final paper = Skins.resolve('paper', const []);
+      expect(paper.forTheme(light), same(paper));
+      expect(paper.forTheme(DesignColors.dark), same(paper));
     });
 
     test('radius clamps to 0..32', () {
@@ -98,11 +124,32 @@ void main() {
       expect(all.map((s) => s.id).toSet(), hasLength(all.length));
       expect(all.where(Skins.isCustom), isEmpty);
       expect(Skins.classic(), hasLength(10));
+      expect(Skins.builtIn().where((s) => s.themed).map((s) => s.id), [
+        Skins.monoId,
+      ]);
       // One skin per bundled face besides the default.
       expect(
         Skins.type().map((s) => s.face).toSet(),
         DisplayFace.values.toSet()..remove(DisplayFace.barlowCondensed),
       );
+    });
+
+    test('Bold presets each show a different mix of options', () {
+      final bold = Skins.bold();
+      expect(bold.length, greaterThanOrEqualTo(6));
+      expect(Skins.builtIn(), containsAll(bold));
+      String mix(Skin s) =>
+          '${s.face}|${s.seconds}|${s.meridiem}|${s.seam}|${s.cardRadius}|'
+          '${s.showDate}|${s.digitColor}|${s.cardColor}';
+      expect(bold.map(mix).toSet(), hasLength(bold.length));
+      // Between them they show off every seconds style and the date.
+      expect(bold.map((s) => s.seconds).toSet(), SkinSeconds.values.toSet());
+      expect(bold.where((s) => s.showDate), isNotEmpty);
+      expect(bold.where((s) => !s.seam), isNotEmpty);
+      expect(bold.every((s) => s.name.isNotEmpty), isTrue);
+      final minimal = bold.firstWhere((s) => s.id == 'minimal');
+      expect(minimal.cardRadius, 0);
+      expect(minimal.seconds, SkinSeconds.off);
     });
 
     test('Mono is skin-mono on skin-card-ink over black', () {
@@ -194,6 +241,16 @@ void main() {
       await di.reset();
     });
 
+    test('the app face follows the skin; Barlow keeps Geist', () async {
+      expect(c.face.value, isNull);
+      await c.selectSkin('orbit');
+      expect(c.face.value, DisplayFace.orbitron);
+      await c.selectSkin('rose');
+      expect(c.face.value, isNull);
+      await c.selectSkin('terminal');
+      expect(c.face.value, DisplayFace.jetBrainsMono);
+    });
+
     test('selects, and an unknown saved id shows Mono', () async {
       expect(c.skin.id, Skins.monoId);
       await c.selectSkin('paper');
@@ -201,6 +258,33 @@ void main() {
       expect(c.skin.id, 'paper');
       await c.selectSkin('deleted');
       expect(c.skin.id, Skins.monoId);
+    });
+
+    test('selecting a skin applies its seconds preset', () async {
+      await c.selectSkin('nightstand');
+      expect(c.state.showSeconds, isTrue);
+      await c.selectSkin('desk');
+      expect(c.state.showSeconds, isTrue);
+      await c.selectSkin(Skins.monoId);
+      expect(c.state.showSeconds, isFalse);
+      // The user can still toggle it after.
+      await c.update(c.state.copyWith(showSeconds: true));
+      expect(c.state.skinId, Skins.monoId);
+      expect(c.state.showSeconds, isTrue);
+      await c.selectSkin('gone');
+      expect(c.state.showSeconds, isFalse);
+    });
+
+    test('saving sets Show seconds from the skin; custom skins are never '
+        'themed', () async {
+      final mono = Skins.classic().first;
+      await c.saveSkin(mono.copyWith(id: '', seconds: SkinSeconds.cards));
+      expect(c.state.showSeconds, isTrue);
+      expect(c.state.customSkins.single.themed, isFalse);
+      await c.saveSkin(c.state.customSkins.single.copyWith(themed: true));
+      expect(c.state.customSkins.single.themed, isFalse);
+      await c.saveSkin(mono.copyWith(id: ''));
+      expect(c.state.showSeconds, isFalse);
     });
 
     test('saving a built-in adds a copy first and selects it', () async {

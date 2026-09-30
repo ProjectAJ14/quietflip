@@ -649,6 +649,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get orientation_auto => "Auto";
   String get orientation_landscape => "Landscape";
   String get orientation_portrait => "Portrait";
+  String get settings_card_size => "Card size";
+  String get card_size_small => "Small";
+  String get card_size_medium => "Medium";
+  String get card_size_large => "Large";
   String get pomodoro => "Pomodoro";
   String pomodoro_focus(int round) => "Focus · Round $round";
   String pomodoro_break(int round) => "Break · Round $round";
@@ -661,6 +665,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skins_done => "Done";
   String get skins_yours => "Your skins";
   String get skins_classic => "Classic";
+  String get skins_bold => "Bold";
   String get skins_type => "Type";
   String get skins_new => "New skin";
   String get skins_from_current => "From current";
@@ -711,6 +716,13 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skin_grotesk => "Grotesk";
   String get skin_serif => "Serif";
   String get skin_orbit => "Orbit";
+  String get skin_nightstand => "Nightstand";
+  String get skin_studio => "Studio";
+  String get skin_arcade => "Arcade";
+  String get skin_railway => "Railway";
+  String get skin_desk => "Desk";
+  String get skin_neon => "Neon";
+  String get skin_minimal => "Minimal";
   String get mode_pomodoro => "Pomodoro";
   String get mode_clock => "Clock";
   String get mode_timer => "Timer";
@@ -860,6 +872,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return orientation_landscape;
       case 'orientation_portrait':
         return orientation_portrait;
+      case 'settings_card_size':
+        return settings_card_size;
+      case 'card_size_small':
+        return card_size_small;
+      case 'card_size_medium':
+        return card_size_medium;
+      case 'card_size_large':
+        return card_size_large;
       case 'pomodoro':
         return pomodoro;
       case 'pomodoro_focus':
@@ -884,6 +904,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skins_yours;
       case 'skins_classic':
         return skins_classic;
+      case 'skins_bold':
+        return skins_bold;
       case 'skins_type':
         return skins_type;
       case 'skins_new':
@@ -984,6 +1006,20 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skin_serif;
       case 'skin_orbit':
         return skin_orbit;
+      case 'skin_nightstand':
+        return skin_nightstand;
+      case 'skin_studio':
+        return skin_studio;
+      case 'skin_arcade':
+        return skin_arcade;
+      case 'skin_railway':
+        return skin_railway;
+      case 'skin_desk':
+        return skin_desk;
+      case 'skin_neon':
+        return skin_neon;
+      case 'skin_minimal':
+        return skin_minimal;
       case 'mode_pomodoro':
         return mode_pomodoro;
       case 'mode_clock':

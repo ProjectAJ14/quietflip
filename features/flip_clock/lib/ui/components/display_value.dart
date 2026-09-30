@@ -6,7 +6,8 @@ typedef DisplayValue = ({List<String> cards, String? badge, String? meridiem});
 String _two(int n) => n.toString().padLeft(2, '0');
 
 /// The clock at [t]: hour and minute cards, seconds in [skin]'s style when
-/// [showSeconds] (none when the skin turns them off), AM/PM in 12-hour time.
+/// [showSeconds] (their own cards when the skin has none, so Show seconds
+/// always shows them), AM/PM in 12-hour time.
 DisplayValue clockValue(
   DateTime t, {
   required bool use24h,
@@ -15,7 +16,11 @@ DisplayValue clockValue(
 }) {
   final hour12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
   final seconds = _two(t.second);
-  final style = showSeconds ? skin.seconds : SkinSeconds.off;
+  final style = !showSeconds
+      ? SkinSeconds.off
+      : skin.seconds == SkinSeconds.badge
+      ? SkinSeconds.badge
+      : SkinSeconds.cards;
   return (
     cards: [
       use24h ? _two(t.hour) : '$hour12',

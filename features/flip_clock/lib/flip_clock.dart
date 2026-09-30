@@ -79,3 +79,7 @@ Future<void> _close(Object? cubit) async => (cubit! as Closable).close();
 /// `DesignSystemWrapper(mode:)`. Valid after [init].
 ValueListenable<AppearanceMode> appearance() =>
     di.get<SettingsController>().appearance;
+
+/// The face the whole app is set in, following the selected skin (null keeps
+/// Geist), for `DesignSystemWrapper(face:)`. Valid after [init].
+ValueListenable<DisplayFace?> appFace() => di.get<SettingsController>().face;

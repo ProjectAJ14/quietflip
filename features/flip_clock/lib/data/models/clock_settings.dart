@@ -13,6 +13,18 @@ enum ClockMode { pomodoro, clock, timer, stopwatch }
 /// Screen orientation lock (phones and tablets only).
 enum ClockOrientation { auto, landscape, portrait }
 
+/// How much of the space the flip cards fill.
+enum CardSize {
+  small(0.6),
+  medium(0.8),
+  large(1);
+
+  const CardSize(this.factor);
+
+  /// Card height relative to the largest card that fits.
+  final double factor;
+}
+
 /// Local display, sound and alert preferences.
 class ClockSettings {
   const ClockSettings({
@@ -34,6 +46,7 @@ class ClockSettings {
     this.controlsIdle = defaultControlsIdle,
     this.gestureBrightness = true,
     this.gestureModes = true,
+    this.cardSize = CardSize.large,
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -111,6 +124,7 @@ class ClockSettings {
       },
       gestureBrightness: flag('gestureBrightness', d.gestureBrightness),
       gestureModes: flag('gestureModes', d.gestureModes),
+      cardSize: pick(CardSize.values, 'cardSize', d.cardSize),
     );
   }
 
@@ -154,6 +168,9 @@ class ClockSettings {
   /// A horizontal swipe on the display switches between modes.
   final bool gestureModes;
 
+  /// How large the flip cards are.
+  final CardSize cardSize;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -173,6 +190,7 @@ class ClockSettings {
     'controlsIdleMs': controlsIdle.inMilliseconds,
     'gestureBrightness': gestureBrightness,
     'gestureModes': gestureModes,
+    'cardSize': cardSize.name,
   };
 
   ClockSettings copyWith({
@@ -194,6 +212,7 @@ class ClockSettings {
     Duration? controlsIdle,
     bool? gestureBrightness,
     bool? gestureModes,
+    CardSize? cardSize,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -213,6 +232,7 @@ class ClockSettings {
     controlsIdle: controlsIdle ?? this.controlsIdle,
     gestureBrightness: gestureBrightness ?? this.gestureBrightness,
     gestureModes: gestureModes ?? this.gestureModes,
+    cardSize: cardSize ?? this.cardSize,
   );
 
   @override
@@ -235,7 +255,8 @@ class ClockSettings {
       other.tapToggleControls == tapToggleControls &&
       other.controlsIdle == controlsIdle &&
       other.gestureBrightness == gestureBrightness &&
-      other.gestureModes == gestureModes;
+      other.gestureModes == gestureModes &&
+      other.cardSize == cardSize;
 
   @override
   int get hashCode => Object.hash(
@@ -257,5 +278,6 @@ class ClockSettings {
     controlsIdle,
     gestureBrightness,
     gestureModes,
+    cardSize,
   );
 }

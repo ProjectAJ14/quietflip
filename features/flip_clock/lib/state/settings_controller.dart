@@ -25,6 +25,13 @@ class SettingsController extends Cubit<ClockSettings> {
   /// The theme to force on the app, following [ClockSettings.theme].
   ValueListenable<AppearanceMode> get appearance => _appearance;
 
+  final ValueNotifier<DisplayFace?> _face = ValueNotifier(null);
+
+  /// The face the whole app is set in, following the selected skin: null
+  /// (Geist) for the default Barlow Condensed face, so Mono and the Classic
+  /// skins keep the design system's interface font.
+  ValueListenable<DisplayFace?> get face => _face;
+
   /// Restores saved settings (defaults when none).
   Future<void> load() async {
     final saved = await _repository.load();
@@ -40,21 +47,31 @@ class SettingsController extends Cubit<ClockSettings> {
   /// The selected skin (Mono when the saved id is unknown).
   Skin get skin => Skins.resolve(state.skinId, state.customSkins);
 
-  /// Applies the skin [id].
-  Future<void> selectSkin(String id) => update(state.copyWith(skinId: id));
+  /// Applies the skin [id] and its seconds preset: Show seconds turns on
+  /// when the skin shows seconds, off when it does not (the user can still
+  /// toggle it after).
+  Future<void> selectSkin(String id) {
+    final skin = Skins.resolve(id, state.customSkins);
+    return update(
+      state.copyWith(skinId: id, showSeconds: skin.seconds != SkinSeconds.off),
+    );
+  }
 
   /// Saves [skin] and selects it. A custom skin is replaced in place; any
   /// other skin (a built-in, or a new copy) is added under a fresh id, so
-  /// built-ins never change.
+  /// built-ins never change. Custom skins keep their explicit colours in
+  /// every theme (never `themed`); Show seconds follows the saved skin.
   Future<void> saveSkin(Skin skin) {
     final custom = state.customSkins;
     final replaces = custom.any((s) => s.id == skin.id);
-    final saved = replaces
-        ? skin
-        : skin.copyWith(id: Skins.nextCustomId(custom));
+    final saved = skin.copyWith(
+      id: replaces ? skin.id : Skins.nextCustomId(custom),
+      themed: false,
+    );
     return update(
       state.copyWith(
         skinId: saved.id,
+        showSeconds: saved.seconds != SkinSeconds.off,
         customSkins: replaces
             ? [for (final s in custom) s.id == skin.id ? saved : s]
             : [saved, ...custom],
@@ -91,11 +108,17 @@ class SettingsController extends Cubit<ClockSettings> {
       ClockTheme.light => AppearanceMode.light,
       ClockTheme.system => AppearanceMode.system,
     };
+    final face = Skins.resolve(
+      change.nextState.skinId,
+      change.nextState.customSkins,
+    ).face;
+    _face.value = face == DisplayFace.barlowCondensed ? null : face;
   }
 
   @override
   Future<void> close() {
     _appearance.dispose();
+    _face.dispose();
     return super.close();
   }
 }

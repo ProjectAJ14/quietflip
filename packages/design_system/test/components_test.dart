@@ -347,4 +347,46 @@ void main() {
     expect(ds.HeaderType.image.ratio, 4);
     expect(ds.HeaderType.asset.ratio, 1);
   });
+
+  testWidgets('a face sets every text role, at its one bundled weight', (
+    tester,
+  ) async {
+    late ThemeData theme;
+    await tester.pumpWidget(
+      ds.DesignSystemWrapper(
+        mode: ds.AppearanceMode.black,
+        face: ds.DisplayFace.orbitron,
+        builder: (_, t) {
+          theme = t;
+          return const SizedBox();
+        },
+      ),
+    );
+    final text = theme.textTheme;
+    final roles = [
+      text.displayLarge,
+      text.displayMedium,
+      text.displaySmall,
+      text.headlineLarge,
+      text.headlineMedium,
+      text.headlineSmall,
+      text.titleLarge,
+      text.titleMedium,
+      text.titleSmall,
+      text.bodyLarge,
+      text.bodyMedium,
+      text.bodySmall,
+      text.labelLarge,
+      text.labelMedium,
+      text.labelSmall,
+    ];
+    for (final style in roles) {
+      expect(style!.fontFamily, startsWith('Orbitron'));
+      expect(style.fontWeight, FontWeight.w700);
+    }
+    // Sizes stay the design system's.
+    expect(text.bodyLarge!.fontSize, 17);
+    expect(text.displaySmall!.fontSize, 34);
+    expect(text.bodyLarge!.color, const Color(0xffffffff));
+  });
 }

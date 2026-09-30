@@ -3,7 +3,7 @@ import 'package:flutter/painting.dart';
 
 /// How a skin shows seconds when "Show seconds" is on.
 enum SkinSeconds {
-  /// This skin never shows seconds.
+  /// No seconds of its own: with Show seconds on they get their own cards.
   off,
 
   /// Small `seconds-badge` text in the last card's bottom-right corner.
@@ -38,9 +38,10 @@ class Skin {
     this.groundColor = DesignSkinColors.bgInk,
     this.seam = true,
     this.cardRadius = DesignRadius.md,
-    this.seconds = SkinSeconds.badge,
+    this.seconds = SkinSeconds.off,
     this.meridiem = SkinMeridiem.left,
     this.showDate = false,
+    this.themed = false,
   });
 
   /// Smallest and largest [cardRadius].
@@ -66,6 +67,21 @@ class Skin {
 
   /// Shows today's date under the clock, whatever the Show date setting.
   final bool showDate;
+
+  /// Follows the app theme: in Mono Light it draws `ink` on `card` over
+  /// `bg` instead of its own colours (see [forTheme]).
+  final bool themed;
+
+  /// This skin as drawn under [colors]: a [themed] skin takes the light
+  /// tokens in Mono Light and keeps its own colours otherwise; any other
+  /// skin is unchanged.
+  Skin forTheme(DesignColors colors) => themed && colors == DesignColors.light
+      ? copyWith(
+          digitColor: colors.ink,
+          cardColor: colors.card,
+          groundColor: colors.bg,
+        )
+      : this;
 
   /// Restores a saved skin. Returns null without an [id] (the skin cannot be
   /// selected); any other missing or mistyped field keeps its default.
@@ -100,6 +116,7 @@ class Skin {
       showDate: json['showDate'] is bool
           ? json['showDate']! as bool
           : d.showDate,
+      themed: json['themed'] is bool ? json['themed']! as bool : d.themed,
     );
   }
 
@@ -116,6 +133,7 @@ class Skin {
     'seconds': seconds.name,
     'meridiem': meridiem.name,
     'showDate': showDate,
+    'themed': themed,
   };
 
   Skin copyWith({
@@ -130,6 +148,7 @@ class Skin {
     SkinSeconds? seconds,
     SkinMeridiem? meridiem,
     bool? showDate,
+    bool? themed,
   }) => Skin(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -142,6 +161,7 @@ class Skin {
     seconds: seconds ?? this.seconds,
     meridiem: meridiem ?? this.meridiem,
     showDate: showDate ?? this.showDate,
+    themed: themed ?? this.themed,
   );
 
   /// WCAG contrast of the digits on the card, 1..21.
@@ -164,7 +184,8 @@ class Skin {
       other.cardRadius == cardRadius &&
       other.seconds == seconds &&
       other.meridiem == meridiem &&
-      other.showDate == showDate;
+      other.showDate == showDate &&
+      other.themed == themed;
 
   @override
   int get hashCode => Object.hash(
@@ -179,5 +200,6 @@ class Skin {
     seconds,
     meridiem,
     showDate,
+    themed,
   );
 }

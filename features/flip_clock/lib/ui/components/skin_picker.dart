@@ -96,6 +96,8 @@ class SkinPicker extends StatelessWidget {
                   ]),
                   SectionHeader(c.skins_classic),
                   grid(Skins.classic().map(tile).toList()),
+                  SectionHeader(c.skins_bold),
+                  grid(Skins.bold().map(tile).toList()),
                   SectionHeader(c.skins_type),
                   grid(Skins.type().map(tile).toList()),
                 ],
@@ -144,7 +146,9 @@ class SheetHeader extends StatelessWidget {
                 child: leading,
               ),
             ),
-            Flexible(
+            // Expanded (not Flexible), so both side slots get equal width
+            // and the title sits in the true centre.
+            Expanded(
               flex: 2,
               child: Semantics(
                 header: true,
@@ -213,6 +217,7 @@ class SkinTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
+    final skin = this.skin.forTheme(colors);
     final text = Theme.of(context).textTheme.bodySmall!;
     final value = clockValue(
       now,

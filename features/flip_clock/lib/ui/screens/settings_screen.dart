@@ -111,6 +111,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               selected: s.theme,
               onChanged: (v) => _update(s.copyWith(theme: v)),
             ),
+            SettingsSegmentedRow<CardSize>(
+              label: c.settings_card_size,
+              options: [
+                (CardSize.small, c.card_size_small),
+                (CardSize.medium, c.card_size_medium),
+                (CardSize.large, c.card_size_large),
+              ],
+              selected: s.cardSize,
+              onChanged: (v) => _update(s.copyWith(cardSize: v)),
+            ),
             SettingsSliderRow(
               label: c.digit_brightness,
               value: s.digitBrightness,

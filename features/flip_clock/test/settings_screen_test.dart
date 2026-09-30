@@ -99,6 +99,16 @@ void main() {
     expect(settings.appearance.value, AppearanceMode.system);
     await tap(tester, c.theme_light);
     expect(settings.appearance.value, AppearanceMode.light);
+    // Card size, after Theme; starts Large, so each tap is a change.
+    expect(find.text(c.settings_card_size), findsOne);
+    for (final (size, label) in [
+      (CardSize.small, c.card_size_small),
+      (CardSize.medium, c.card_size_medium),
+      (CardSize.large, c.card_size_large),
+    ]) {
+      await tap(tester, label);
+      expect(settings.state.cardSize, size);
+    }
     await tester.drag(find.byType(Slider), const Offset(-2000, 0));
     await tester.pumpAndSettle();
     expect(settings.state.digitBrightness, ClockSettings.minBrightness);
@@ -170,6 +180,55 @@ void main() {
 
     await tap(tester, strings.generic.done);
     expect(done, 1);
+    await close(tester);
+  });
+
+  testWidgets('Theme Light repaints the settings page on the light bg', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1280, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    // Wired like apps/quietflip/lib/app.dart: the saved theme drives the
+    // wrapper, so the page follows the choice without a restart.
+    await tester.pumpWidget(
+      ValueListenableBuilder<AppearanceMode>(
+        valueListenable: settings.appearance,
+        builder: (context, mode, _) => DesignSystemWrapper(
+          mode: mode,
+          builder: (context, theme) => MaterialApp(
+            theme: theme,
+            home: SettingsScreen(settings: settings, desktop: true),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.runAsync(GoogleFonts.pendingFonts);
+    await tester.pumpAndSettle();
+    Color? page() => tester
+        .widget<Material>(
+          find
+              .descendant(
+                of: find.byType(SettingsShell),
+                matching: find.byType(Material),
+              )
+              .first,
+        )
+        .color;
+    expect(page(), DesignColors.dark.bg);
+
+    await tap(tester, strings.clock.theme_light);
+    await tester.runAsync(GoogleFonts.pendingFonts);
+    await tester.pumpAndSettle();
+    expect(settings.state.theme, ClockTheme.light);
+    expect(settings.appearance.value, AppearanceMode.light);
+    expect(page(), DesignColors.light.bg);
+
+    await tap(tester, strings.clock.theme_dark);
+    expect(settings.appearance.value, AppearanceMode.black);
+    expect(page(), DesignColors.dark.bg);
     await close(tester);
   });
 

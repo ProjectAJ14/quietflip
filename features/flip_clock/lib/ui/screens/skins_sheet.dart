@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
@@ -27,15 +28,16 @@ Future<void> showSkins(
       use24h: s.use24h,
       onSelect: (skin) => unawaited(settings.selectSkin(skin.id)),
       onDone: () => Navigator.of(context).pop(),
-      onCustomize: () =>
-          unawaited(_customize(context, settings, now, settings.skin)),
+      onCustomize: () => unawaited(
+        _customize(context, settings, now, _asDrawn(context, settings)),
+      ),
       onNew: () => unawaited(
         _customize(
           context,
           settings,
           now,
           // A copy: saving adds it under Your skins.
-          settings.skin.copyWith(
+          _asDrawn(context, settings).copyWith(
             id: '',
             name: strings.clock.customize_copy_name(settings.skin.name),
           ),
@@ -44,6 +46,12 @@ Future<void> showSkins(
     ),
   ),
 );
+
+/// The selected skin in the colours it shows now, as explicit colours: a
+/// custom skin made from Mono in Mono Light keeps the light look it was
+/// made from.
+Skin _asDrawn(BuildContext context, SettingsController settings) =>
+    settings.skin.forTheme(DesignColors.of(context)).copyWith(themed: false);
 
 Future<void> _customize(
   BuildContext context,

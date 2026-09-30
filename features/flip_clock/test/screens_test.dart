@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
@@ -66,29 +67,32 @@ class Harness {
   late final StopwatchController stopwatch;
   int settingsOpened = 0;
 
-  Widget screen({bool doubleTap = false, bool reduceMotion = false}) =>
-      MaterialApp(
-        theme: theme,
-        builder: reduceMotion
-            ? (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: child!,
-              )
-            : null,
-        home: FlipClockScreen(
-          settings: settings,
-          clock: clock,
-          countdown: countdown,
-          stopwatch: stopwatch,
-          fullScreen: full,
-          wake: wake,
-          sound: sound,
-          brightness: brightness,
-          logger: di.get<Logger>(),
-          doubleTapFullScreen: doubleTap,
-          onOpenSettings: () => settingsOpened++,
-        ),
-      );
+  Widget screen({
+    bool doubleTap = false,
+    bool reduceMotion = false,
+    ThemeData? appTheme,
+  }) => MaterialApp(
+    theme: appTheme ?? theme,
+    builder: reduceMotion
+        ? (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!,
+          )
+        : null,
+    home: FlipClockScreen(
+      settings: settings,
+      clock: clock,
+      countdown: countdown,
+      stopwatch: stopwatch,
+      fullScreen: full,
+      wake: wake,
+      sound: sound,
+      brightness: brightness,
+      logger: di.get<Logger>(),
+      doubleTapFullScreen: doubleTap,
+      onOpenSettings: () => settingsOpened++,
+    ),
+  );
 
   Future<void> dispose(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
@@ -713,14 +717,21 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
+    bool moving() =>
+        tester.widget<SubtleMovement>(find.byType(SubtleMovement)).enabled;
+    Offset shift() => tester.getTopLeft(find.byType(FlipDisplay));
+    final still = shift();
     await key(tester, LogicalKeyboardKey.keyF);
-    expect(find.byType(SubtleMovement), findsNothing, reason: 'setting off');
+    expect(moving(), isFalse, reason: 'setting off');
+    expect(shift(), still, reason: 'off: centred, same padding');
 
+    // Turning it on eases to this minute's offset.
     await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
     await tester.pump();
-    Offset shift() => tester.getTopLeft(find.byType(FlipDisplay));
+    await tester.pump(const Duration(seconds: 1));
     final first = shift();
     expect(SubtleMovement.offsetAt(h.wall.now), isNot(Offset.zero));
+    expect(first - still, SubtleMovement.offsetAt(h.wall.now));
 
     // Same minute: no movement.
     h.wall.advance(const Duration(seconds: 1));
@@ -745,16 +756,23 @@ void main() {
       expect(o.dy.abs() <= SubtleMovement.maxShift, isTrue);
     }
 
-    // Turning it off, or leaving full screen, removes it.
+    // Turning it off, or leaving full screen, stops it and re-centres at
+    // once; the clock does not move again in later minutes.
     await h.settings.update(h.settings.state.copyWith(subtleMovement: false));
     await tester.pump();
-    expect(find.byType(SubtleMovement), findsNothing);
+    expect(moving(), isFalse);
+    expect(shift(), still);
     await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
     await tester.pump();
-    expect(find.byType(SubtleMovement), findsOne);
+    expect(moving(), isTrue);
     await h.full.exit();
     await tester.pump();
-    expect(find.byType(SubtleMovement), findsNothing);
+    expect(moving(), isFalse);
+    expect(shift(), still);
+    h.wall.now = DateTime(2026, 9, 29, 9, 43);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(shift(), still);
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });
@@ -775,7 +793,10 @@ void main() {
         child: h.screen(),
       ),
     );
-    expect(find.byType(SubtleMovement), findsOne);
+    expect(
+      tester.widget<SubtleMovement>(find.byType(SubtleMovement)).enabled,
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
     final before = tester.getTopLeft(find.byType(FlipDisplay));
     h.wall.now = DateTime(2026, 9, 29, 9, 42);
@@ -854,6 +875,7 @@ void main() {
     expect(di.has<SettingsRepository>(), isTrue);
     expect(di.has<CountdownController>(), isTrue);
     expect(flip_clock.appearance().value, AppearanceMode.light);
+    expect(flip_clock.appFace().value, isNull);
 
     // The saved orientation applies at start, then follows each change.
     expect(orientation.calls, [ScreenOrientation.landscape]);
@@ -1001,7 +1023,7 @@ void main() {
       final h = Harness(brightness: FakeScreenBrightness(supported: false));
       await tester.pumpWidget(h.screen());
       // Down by most of the height: clamps at the 20% floor.
-      await tester.dragFrom(const Offset(400, 50), const Offset(0, 500));
+      await tester.dragFrom(const Offset(400, 100), const Offset(0, 490));
       await tester.pump();
       expect(h.settings.state.digitBrightness, ClockSettings.minBrightness);
       expect(h.brightness.calls, isEmpty);
@@ -1118,5 +1140,381 @@ void main() {
       await tester.pumpAndSettle();
       await h.dispose(tester);
     });
+  });
+
+  group('mode stays put', () {
+    /// Watches the clock long enough for the chrome to go dot, then hidden.
+    Future<void> idle(WidgetTester tester) async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+    }
+
+    /// The panel on screen and the island's tab agree on [mode].
+    void expectMode(WidgetTester tester, Harness h, ClockMode mode) {
+      final pages = tester.widget<PageView>(find.byType(PageView)).controller!;
+      expect(pages.page!.round(), mode.index, reason: 'panel');
+      expect(h.settings.state.lastMode, mode, reason: 'saved mode');
+      expect(
+        tester.widget<Island>(find.byType(Island)).selected,
+        mode.index,
+        reason: 'island',
+      );
+    }
+
+    Future<void> tabTo(WidgetTester tester, ClockMode mode) async {
+      final c = strings.clock;
+      final names = [
+        c.mode_pomodoro,
+        c.mode_clock,
+        c.mode_timer,
+        c.mode_stopwatch,
+      ];
+      await tester.tap(find.text(names[mode.index]));
+      await tester.pump();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Timer by tab, Right key and swipe stays after idling', (
+      tester,
+    ) async {
+      final ways = <String, Future<void> Function()>{
+        'tab': () => tabTo(tester, ClockMode.timer),
+        'key': () => modeKey(tester, LogicalKeyboardKey.arrowRight),
+        'swipe': () async {
+          await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
+          await tester.pumpAndSettle();
+        },
+      };
+      for (final MapEntry(key: way, value: go) in ways.entries) {
+        final h = Harness();
+        await tester.pumpWidget(h.screen());
+        expectMode(tester, h, ClockMode.clock);
+        await go();
+        expectMode(tester, h, ClockMode.timer);
+        await idle(tester);
+        expect(chromeOf(tester), ChromeState.hidden, reason: way);
+        expectMode(tester, h, ClockMode.timer);
+        expect(find.byType(TimerInput), findsOne, reason: way);
+        await h.dispose(tester);
+      }
+    });
+
+    testWidgets('a running countdown stays on Timer after idling', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tabTo(tester, ClockMode.timer);
+      await h.countdown.start(const Duration(minutes: 5));
+      await tester.pump();
+      await idle(tester);
+      expectMode(tester, h, ClockMode.timer);
+      expect(find.byType(RunControls), findsOne);
+      await h.countdown.reset();
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('full screen with subtle movement, in and out, stays', (
+      tester,
+    ) async {
+      final h = Harness();
+      await h.settings.update(const ClockSettings(subtleMovement: true));
+      await tester.pumpWidget(h.screen());
+      await tabTo(tester, ClockMode.timer);
+      await key(tester, LogicalKeyboardKey.keyF);
+      expect(
+        tester.widget<SubtleMovement>(find.byType(SubtleMovement)).enabled,
+        isTrue,
+      );
+      expectMode(tester, h, ClockMode.timer);
+      await idle(tester);
+      expectMode(tester, h, ClockMode.timer);
+      await key(tester, LogicalKeyboardKey.escape);
+      expect(h.full.value.value, isFalse);
+      expectMode(tester, h, ClockMode.timer);
+      await idle(tester);
+      expectMode(tester, h, ClockMode.timer);
+      expect(find.byType(TimerInput), findsOne);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('opening and closing the Skins sheet stays', (tester) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tabTo(tester, ClockMode.timer);
+      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(strings.clock.skins_done));
+      await tester.pumpAndSettle();
+      expectMode(tester, h, ClockMode.timer);
+      await idle(tester);
+      expectMode(tester, h, ClockMode.timer);
+      expect(find.byType(TimerInput), findsOne);
+      await h.dispose(tester);
+    });
+
+    testWidgets('Pomodoro and Stopwatch stay after idling too', (tester) async {
+      for (final mode in [ClockMode.pomodoro, ClockMode.stopwatch]) {
+        final h = Harness();
+        await tester.pumpWidget(h.screen());
+        await tabTo(tester, mode);
+        await idle(tester);
+        expectMode(tester, h, mode);
+        // Its own content, not the Clock's.
+        expect(find.byType(RunControls), findsExactly(mode.index == 3 ? 1 : 0));
+        expect(
+          find.bySemanticsLabel(strings.clock.current_time('09:41')),
+          findsNothing,
+        );
+        await h.dispose(tester);
+      }
+    });
+  });
+
+  group('flip sound only while the clock is seen', () {
+    Future<void> minute(WidgetTester tester, Harness h) async {
+      h.wall.advance(const Duration(minutes: 1));
+      await tester.pump(const Duration(minutes: 1));
+    }
+
+    Future<Harness> withSound(WidgetTester tester) async {
+      final h = Harness();
+      await h.settings.update(const ClockSettings(flipSound: true));
+      await tester.pumpWidget(h.screen());
+      await minute(tester, h);
+      expect(h.sound.flips, 1, reason: 'on screen: flips');
+      return h;
+    }
+
+    testWidgets('off by default', (tester) async {
+      expect(const ClockSettings().flipSound, isFalse);
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await minute(tester, h);
+      expect(h.sound.flips, 0);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('silent under the Skins sheet, flips again once closed', (
+      tester,
+    ) async {
+      final h = await withSound(tester);
+      // Idle for a minute: any key brings the corner buttons back.
+      await key(tester, LogicalKeyboardKey.keyQ);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(strings.clock.skins_change));
+      await tester.pumpAndSettle();
+      await minute(tester, h);
+      expect(h.sound.flips, 1);
+      await tester.tap(find.text(strings.clock.skins_done));
+      await tester.pumpAndSettle();
+      await minute(tester, h);
+      expect(h.sound.flips, 2);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('silent under a pushed route, flips again once popped', (
+      tester,
+    ) async {
+      final h = await withSound(tester);
+      final nav = Navigator.of(tester.element(find.byType(FlipClockScreen)));
+      unawaited(
+        nav.push(MaterialPageRoute<void>(builder: (_) => const SizedBox())),
+      );
+      await tester.pumpAndSettle();
+      await minute(tester, h);
+      expect(h.sound.flips, 1);
+      nav.pop();
+      await tester.pumpAndSettle();
+      await minute(tester, h);
+      expect(h.sound.flips, 2);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('silent while the app is away, flips again on resume', (
+      tester,
+    ) async {
+      final h = await withSound(tester);
+      for (final s in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await minute(tester, h);
+      expect(h.sound.flips, 1);
+      for (final s in const [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await tester.pump();
+      await minute(tester, h);
+      expect(h.sound.flips, 2);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+  });
+
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('the island sits top centre, clear of the corners ($width)', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = Size(width, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      final island = tester.getRect(find.byType(Island));
+      expect(island.center.dy, lessThan(844 / 4));
+      expect(island.center.dx, closeTo(width / 2, 0.5));
+      final corners = find.byType(CornerButton);
+      expect(corners, findsExactly(2));
+      for (var i = 0; i < 2; i++) {
+        final corner = tester.getRect(corners.at(i));
+        expect(corner.overlaps(island), isFalse, reason: 'corner $i');
+        if (width < FlipClockScreen.stackedChromeWidth) {
+          // Its own row under the corners.
+          expect(island.top, greaterThanOrEqualTo(corner.bottom));
+        } else {
+          // Between them, at the same top inset.
+          expect(island.top, corner.top, reason: 'corner $i');
+        }
+      }
+      // Tabs keep their full size (the callout line is 20px), never shrunk.
+      expect(
+        tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
+        closeTo(20, 0.5),
+      );
+      // The digits start below the chrome.
+      expect(
+        tester.getRect(find.byType(FlipDisplay)).top,
+        greaterThanOrEqualTo(island.bottom),
+      );
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('the date and round label use the skin face', (tester) async {
+    final h = Harness();
+    await h.settings.saveSkin(
+      const Skin(id: '', name: 'Orb', face: DisplayFace.orbitron),
+    );
+    await h.settings.update(h.settings.state.copyWith(showDate: true));
+    await tester.pumpWidget(h.screen());
+    await tester.runAsync(GoogleFonts.pendingFonts);
+    await tester.pump();
+    final date = MaterialLocalizations.of(
+      tester.element(find.byType(FlipClockScreen)),
+    ).formatFullDate(h.wall.now);
+    TextStyle styleOf(String text) =>
+        tester.widget<Text>(find.text(text)).style!;
+    expect(styleOf(date).fontFamily, startsWith('Orbitron'));
+    final text = Theme.of(tester.element(find.byType(FlipDisplay))).textTheme;
+    expect(styleOf(date).fontSize, text.headlineSmall!.fontSize);
+
+    await h.settings.update(
+      h.settings.state.copyWith(lastMode: ClockMode.pomodoro),
+    );
+    await h.countdown.startPomodoro();
+    await tester.pumpAndSettle();
+    final round = styleOf(strings.clock.pomodoro_focus(1));
+    expect(round.fontFamily, startsWith('Orbitron'));
+    expect(round.fontSize, text.titleLarge!.fontSize);
+    await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('Mono ground follows the theme; Paper keeps its own', (
+    tester,
+  ) async {
+    Color ground() =>
+        tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor!;
+    final light = theme.copyWith(extensions: const [DesignColors.light]);
+    final black = theme.copyWith(extensions: const [DesignColors.dark]);
+    for (final (skin, want) in [
+      ('mono', (DesignColors.light.bg, DesignColors.dark.bg)),
+      ('paper', (DesignSkinColors.bgPaper, DesignSkinColors.bgPaper)),
+    ]) {
+      final h = Harness();
+      await h.settings.selectSkin(skin);
+      await tester.pumpWidget(h.screen(appTheme: light));
+      expect(ground(), want.$1, reason: '$skin light');
+      // A fresh tree: the design system's corner buttons cannot animate
+      // their shadow between two themes mid-flight.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(h.screen(appTheme: black));
+      expect(ground(), want.$2, reason: '$skin black');
+      await h.dispose(tester);
+    }
+  });
+
+  testWidgets('card size scales every display on the screen', (tester) async {
+    for (final mode in ClockMode.values) {
+      final heights = <CardSize, double>{};
+      for (final size in [CardSize.large, CardSize.medium]) {
+        final h = Harness();
+        await h.settings.update(ClockSettings(lastMode: mode, cardSize: size));
+        if (mode == ClockMode.timer) {
+          await h.countdown.start(const Duration(minutes: 5));
+        }
+        await tester.pumpWidget(h.screen());
+        await tester.pump();
+        final display = find.byType(FlipDisplay);
+        expect(tester.widget<FlipDisplay>(display).size, size.factor);
+        final card = find.descendant(
+          of: display,
+          matching: find.byWidgetPredicate(
+            (w) => w.runtimeType.toString() == '_FlipCard',
+          ),
+        );
+        heights[size] = tester.getSize(card.first).height;
+        await h.countdown.reset();
+        await tester.pumpAndSettle();
+        await h.dispose(tester);
+      }
+      expect(
+        heights[CardSize.medium]! / heights[CardSize.large]!,
+        closeTo(0.8, 0.01),
+        reason: '$mode',
+      );
+    }
+  });
+
+  testWidgets('a mouse click shows the chrome and never hides it', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.pump(const Duration(seconds: 8));
+    expect(chromeOf(tester), ChromeState.hidden);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: const Offset(400, 350));
+    // Moving there shows it (the hover), the click keeps it shown.
+    await mouse.moveTo(const Offset(410, 360));
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.expanded);
+    await mouse.down(const Offset(410, 360));
+    await mouse.up();
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.expanded);
+    // A touch tap still toggles.
+    await tester.tapAt(const Offset(400, 350));
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.hidden);
+    await mouse.removePointer();
+    await h.dispose(tester);
   });
 }

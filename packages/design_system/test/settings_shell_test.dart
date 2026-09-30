@@ -176,6 +176,34 @@ void main() {
         expect(label.style?.fontSize, 14);
       });
 
+      testWidgets('shell colours come from the theme', (tester) async {
+        await _pump(tester, _shell(), mode: mode, width: 820);
+        final colors = mode == ds.AppearanceMode.black
+            ? ds.DesignColors.dark
+            : ds.DesignColors.light;
+        final page = tester.widget<Material>(
+          find.ancestor(of: _sidebar, matching: find.byType(Material)).first,
+        );
+        expect(page.color, colors.bg);
+        final sidebar = tester.widget<ColoredBox>(
+          find.ancestor(of: _sidebar, matching: find.byType(ColoredBox)).first,
+        );
+        expect(sidebar.color, colors.surfaceSidebar);
+        final cell = tester.widget<Material>(
+          find
+              .ancestor(
+                of: find.text('Version'),
+                matching: find.byType(Material),
+              )
+              .first,
+        );
+        expect(cell.color, colors.surfaceRaised);
+        expect(
+          tester.widget<Text>(find.text('Version')).style?.color,
+          colors.ink,
+        );
+      });
+
       testWidgets('the selected sidebar row is an accent pill', (tester) async {
         await _pump(tester, _shell(), mode: mode, width: 820);
         final colors = mode == ds.AppearanceMode.black
@@ -193,6 +221,45 @@ void main() {
           colors.onAccent,
         );
       });
+    });
+  }
+
+  for (final desktop in [false, true]) {
+    testWidgets('segmented and slider rows keep s2 under the control '
+        '(desktop $desktop)', (tester) async {
+      await _pump(
+        tester,
+        ds.SettingsShell(
+          title: 'Settings',
+          desktop: desktop,
+          categories: _everything(),
+        ),
+        width: 820,
+      );
+      for (final (row, control) in [
+        (ds.SettingsSegmentedRow<int>, SegmentedButton<int>),
+        (ds.SettingsSliderRow, Slider),
+      ]) {
+        final cell = tester.getRect(find.byType(row));
+        final box = tester.getRect(find.byType(control));
+        expect(
+          cell.bottom - box.bottom,
+          greaterThanOrEqualTo(ds.DesignSpace.s2),
+          reason: '$control bottom gap',
+        );
+      }
+      // s2 between the segmented label and its control.
+      final label = tester.getRect(
+        find.descendant(
+          of: find.byType(ds.SettingsSegmentedRow<int>),
+          matching: find.text(_long),
+        ),
+      );
+      final segmented = tester.getRect(find.byType(SegmentedButton<int>));
+      expect(
+        segmented.top - label.bottom,
+        greaterThanOrEqualTo(ds.DesignSpace.s2),
+      );
     });
   }
 
@@ -385,4 +452,51 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('switches and values sit at the row end', (tester) async {
+    await _pump(
+      tester,
+      Scaffold(
+        body: Column(
+          children: [
+            ds.SettingsSwitchRow(label: 'On', value: true, onChanged: (_) {}),
+            ds.SettingsValueRow(label: 'Skin', value: 'Mono', onTap: () {}),
+          ],
+        ),
+      ),
+      width: 1200,
+    );
+    // Row padding is space-4 on phone density.
+    expect(
+      tester.getRect(find.byType(Switch)).right,
+      closeTo(1200 - ds.DesignSpace.s4, 1),
+    );
+    expect(
+      tester.getRect(find.byIcon(Icons.chevron_right_rounded)).right,
+      closeTo(1200 - ds.DesignSpace.s4, 1),
+    );
+  });
+
+  testWidgets('the selected segment is an accent pill', (tester) async {
+    late ThemeData theme;
+    await _pump(
+      tester,
+      Builder(
+        builder: (context) {
+          theme = Theme.of(context);
+          return const SizedBox();
+        },
+      ),
+    );
+    final style = theme.segmentedButtonTheme.style!;
+    expect(
+      style.backgroundColor!.resolve({WidgetState.selected}),
+      theme.colorScheme.primary,
+    );
+    expect(
+      style.foregroundColor!.resolve({WidgetState.selected}),
+      theme.colorScheme.onPrimary,
+    );
+    expect(style.foregroundColor!.resolve({}), theme.colorScheme.onSurface);
+  });
 }

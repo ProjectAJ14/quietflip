@@ -17,7 +17,7 @@ Then from this folder:
 |---|---|---|
 | Android | `flutter run -d android` | `flutter build appbundle` |
 | iOS | `flutter run -d ios` | `flutter build ipa` (macOS + Xcode) |
-| Web | `flutter run -d chrome` | `flutter build web` |
+| Web | `flutter run -d chrome` | `flutter build web --no-web-resources-cdn` (bundles the renderer; nothing loads from a CDN) |
 | macOS | `flutter run -d macos` | `flutter build macos` |
 | Windows | `flutter run -d windows` | `flutter build windows` (only on a Windows machine) |
 

@@ -17,7 +17,8 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -25,12 +26,14 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
-  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation
+  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation, CardSize
   data/models/skin.dart                    Skin (face, digit/card/ground colour, seam, radius,
-                                           seconds off/badge/cards, AM/PM hidden/left/right,
-                                           date); JSON with ARGB ints, per-field fallback,
-                                           no id -> dropped; WCAG `contrast`
-  data/skins.dart                          Skins: built-in catalogue (Classic, Type) from
+                                           seconds off (default)/badge/cards, AM/PM
+                                           hidden/left/right, date, `themed`); JSON with ARGB
+                                           ints, per-field fallback, no id -> dropped; WCAG
+                                           `contrast`; `forTheme(colors)`: a themed skin (Mono)
+                                           is `ink` on `card` over `bg` in Mono Light
+  data/skins.dart                          Skins: built-in catalogue (Classic, Bold, Type) from
                                            `DesignSkinColors`, `resolve` (unknown -> Mono),
                                            custom ids `custom-<n>`
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
@@ -38,8 +41,10 @@ lib/
                                            corrupt/failed read -> defaults, failed write logged)
   state/settings_controller.dart           Cubit<ClockSettings>; saves every change; `appearance`
                                            notifier; setSystemAlerts asks permission; `skin`,
-                                           selectSkin, saveSkin (built-in -> new copy first),
-                                           deleteSkin (selected -> Mono)
+                                           selectSkin (also sets showSeconds from the skin's
+                                           preset), saveSkin (built-in -> new copy first;
+                                           never themed; sets showSeconds), deleteSkin
+                                           (selected -> Mono)
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
@@ -57,13 +62,14 @@ lib/
                                            digitBrightness 0.2..1 (saved); first
                                            ScreenBrightnessException -> in-app for good (logged);
                                            reset() restores system level, never throws
-  ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs bottom centre, Skins /
+  ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs top centre, Skins /
                                            Settings CornerButtons, owned ChromeController), tap
                                            toggle, date line, full-screen note, _WithControls
                                            (run controls at most half height), keys, wake lock
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
   ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skin -> Skins sheet,
-                                           theme Dark/Light/Match system, digit brightness) /
+                                           theme Dark/Light/Match system, card size, digit
+                                           brightness) /
                                            Clock (24h, seconds, date, orientation) / Gestures
                                            (swipes, tap, hide-after) / Timers (pomodoro lengths) /
                                            Sound & alerts / Keep awake (+ full-screen note) /
@@ -109,19 +115,33 @@ lib/
   digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
   ease-in, then bottom half ease-out. It and `Reveal` honour
   `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
-  never clip; AM/PM and small seconds are plain text at 70% of the digit
-  colour, never cards.
-- Seconds show when `showSeconds` is on, in the skin's style (`off` hides
-  them for that skin). The date line shows when Show date is on or the skin
+  never clip; AM/PM and small seconds are plain text in the skin's face at
+  70% of the digit colour, never cards, sized 0.12 x card height (AM/PM)
+  and 0.1 x (badge) with 0.05 x corner padding, so they stay in the card's
+  bottom margin at every size (18px / 13px, the tokens, from 150 / 130px
+  cards; small skin tiles never have them over the digits). `size` (`CardSize.factor`, clamped 0.1..1) scales the
+  fitted card height; everything inside follows. It draws
+  `skin.forTheme(DesignColors.of(context))`, as do SkinTile and the
+  customizer preview.
+- Seconds show when `showSeconds` is on, in the skin's style (a skin with
+  `off` shows them as cards, so the switch always shows something).
+  Selecting a skin applies its preset: Show seconds on unless the skin's
+  seconds are `off` (Mono), and the user can toggle it after. The date line shows when Show date is on or the skin
   asks for it. AM/PM placement is the skin's.
 - Sheets (`showSheet`) use `surface`, `radius-lg` top corners and a
   hairline, full width (Material's 640px cap is lifted). Skin tiles are at
   least 196px wide.
-- Subtle movement (burn-in) wraps the display only while full screen and the
-  setting are both on. It is driven by the screen's `ClockController` (no
+- Subtle movement (burn-in) always wraps the panels and moves only while
+  full screen and the setting are both on (`enabled`; off it sits centred
+  with the same padding). It is driven by the screen's `ClockController` (no
   timer of its own), steps through a fixed offset table indexed by minute of
   day (max 8 px per axis), and shifts via padding that always sums to 16 px,
   so it never clips or overflows. Never describe it as preventing burn-in.
+- Keep the widget tree above the panels' `PageView` the same shape in every
+  state (chrome hidden or not, full screen, subtle movement): pass flags to
+  wrappers, never add or drop one conditionally. A wrapper coming or going
+  rebuilds the `PageView`, whose new position starts on the launch mode, so
+  the panels jumped back to Clock while the island still said Timer.
 - Space reaches the timer/stopwatch only when no control has focus, so a
   focused button keeps its own Space activation. An invalid timer entry
   (`TimerInput.onChanged(null)`) keeps Space from starting.
@@ -131,10 +151,13 @@ lib/
   mouse move or any key expands, Esc leaves full screen first, otherwise
   hides. A tap on the clock toggles (when `tapToggleControls`); a tap on a
   control is the control's (it wins the gesture arena). Run controls show
-  only while expanded (`Reveal`). The mode island sits `space-6` above the
-  safe area; corners `space-4` inside it (`space-6` from 600px shortest
-  side). The mode view reserves room for both (at most a quarter of the
-  height each), so the chrome never covers the digits. A hidden chrome makes
+  only while expanded (`Reveal`). The mode island sits top centre between
+  the corner buttons, at the same inset as the corners: `space-4` inside the
+  safe area (`space-6` from 600px shortest side); below
+  `stackedChromeWidth` (600px wide) it takes its own row under the corners
+  so the tabs keep their full size. The full-screen note sits under the island.
+  The mode view reserves that top row (at most a quarter of the height) and
+  only side padding below, so the chrome never covers the digits. A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
 - Seconds: the S key (Clock mode only) and the Settings switch toggle
   `showSeconds`.
@@ -151,7 +174,12 @@ lib/
   never word it as one.
 - No dependency on another feature; no account section in Settings.
 - Show date puts `MaterialLocalizations.formatFullDate` under the Clock
-  digits (headlineSmall, onSurfaceVariant, scaled down, never wraps). It is
+  digits (the skin's face at the headlineSmall size, 70% of the digit
+  colour, scaled down, never wraps; the pomodoro round label is the skin's
+  face at the titleLarge size). Every `FlipDisplay` on the clock screen gets
+  `size: settings.cardSize.factor`, and the screen draws
+  `skin.forTheme(DesignColors.of(context))`, so Mono's ground follows Light
+  or Black. It is
   driven by the `ClockController` tick, so it rolls over at midnight, and is
   read as part of the display label (`current_time_and_date`). It dims with
   the digits (one `Opacity` around the digits and the date).
@@ -242,7 +270,9 @@ widget tester's clock):
 - Customizer controls apply each edit to the current draft (a function of
   the draft), so two taps before a rebuild both stick.
 - The flip sound follows card flips: with seconds as a badge, the minute
-  card is the first to flip.
+  card is the first to flip. It plays only while the clock is on screen:
+  never under Settings, a sheet or another route, nor while the app is not
+  resumed.
 
 - In `testWidgets`, do not `await cubit.close()` (or `di.reset()`) after a
   widget or listener subscribed to the cubit: the broadcast stream's close

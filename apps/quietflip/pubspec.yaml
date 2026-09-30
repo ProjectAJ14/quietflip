@@ -69,6 +69,13 @@ flutter:
     - family: SocialIcons
       fonts:
         - asset: packages/firebase_ui_auth/fonts/SocialIcons.ttf
+    # The web engine downloads Roboto from fonts.gstatic.com as its default
+    # font unless the app bundles a family by that name. QuietFlip never
+    # downloads fonts, so the name is a bundled copy of Geist (OFL,
+    # assets/fonts/OFL-Geist.txt).
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
 
 
 resolution: workspace

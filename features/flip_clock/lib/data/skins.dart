@@ -14,7 +14,8 @@ abstract final class Skins {
     Skin tint(String id, String name, Color digits) =>
         Skin(id: id, name: name, digitColor: digits);
     return [
-      Skin(id: monoId, name: c.skin_mono),
+      // Follows the app theme: ink on card in Mono Light.
+      Skin(id: monoId, name: c.skin_mono, themed: true),
       Skin(
         id: 'paper',
         name: c.skin_paper,
@@ -30,6 +31,66 @@ abstract final class Skins {
       tint('mint', c.skin_mint, DesignSkinColors.mint),
       tint('cyan', c.skin_cyan, DesignSkinColors.cyan),
       tint('taxi', c.skin_taxi, DesignSkinColors.yellow),
+    ];
+  }
+
+  /// Presets that each show off a different mix of options (the Bold
+  /// section, between Classic and Type).
+  static List<Skin> bold() {
+    final c = strings.clock;
+    return [
+      Skin(
+        id: 'nightstand',
+        name: c.skin_nightstand,
+        digitColor: DesignSkinColors.amber,
+        seconds: SkinSeconds.cards,
+        showDate: true,
+      ),
+      Skin(
+        id: 'studio',
+        name: c.skin_studio,
+        digitColor: DesignSkinColors.inkPaper,
+        cardColor: DesignSkinColors.cardPaper,
+        groundColor: DesignSkinColors.bgPaper,
+        seconds: SkinSeconds.cards,
+        meridiem: SkinMeridiem.right,
+      ),
+      Skin(
+        id: 'arcade',
+        name: c.skin_arcade,
+        face: DisplayFace.orbitron,
+        digitColor: DesignSkinColors.cyan,
+        cardRadius: DesignRadius.lg,
+        seconds: SkinSeconds.cards,
+      ),
+      Skin(
+        id: 'railway',
+        name: c.skin_railway,
+        face: DisplayFace.bebasNeue,
+        digitColor: DesignSkinColors.yellow,
+        seam: false,
+        seconds: SkinSeconds.cards,
+      ),
+      Skin(
+        id: 'desk',
+        name: c.skin_desk,
+        seconds: SkinSeconds.badge,
+        showDate: true,
+      ),
+      Skin(
+        id: 'neon',
+        name: c.skin_neon,
+        face: DisplayFace.jetBrainsMono,
+        digitColor: DesignSkinColors.rose,
+        cardRadius: DesignRadius.xs,
+        seconds: SkinSeconds.cards,
+      ),
+      Skin(
+        id: 'minimal',
+        name: c.skin_minimal,
+        seam: false,
+        cardRadius: Skin.minRadius,
+      ),
     ];
   }
 
@@ -93,7 +154,7 @@ abstract final class Skins {
   }
 
   /// Every built-in skin.
-  static List<Skin> builtIn() => [...classic(), ...type()];
+  static List<Skin> builtIn() => [...classic(), ...bold(), ...type()];
 
   /// The skin [id] among [custom] and the built-ins; Mono when it is
   /// missing or unknown.

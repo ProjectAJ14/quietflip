@@ -163,10 +163,12 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = this.skin.forTheme(DesignColors.of(context));
+    // The preview shows the skin's own seconds preset.
     final value = clockValue(
       now,
       use24h: use24h,
-      showSeconds: true,
+      showSeconds: skin.seconds != SkinSeconds.off,
       skin: skin,
     );
     final date = MaterialLocalizations.of(context).formatFullDate(now);

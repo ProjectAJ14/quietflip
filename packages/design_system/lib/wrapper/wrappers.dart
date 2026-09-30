@@ -8,12 +8,17 @@ class DesignSystemWrapper extends StatefulWidget {
     super.key,
     required this.builder,
     this.mode = AppearanceMode.system,
+    this.face,
   });
 
   final Widget Function(BuildContext context, ThemeData theme) builder;
 
   /// Forces a theme; [AppearanceMode.system] follows platform brightness.
   final AppearanceMode mode;
+
+  /// Sets every text style in this face (the app following a skin); null
+  /// keeps Geist.
+  final DisplayFace? face;
 
   @override
   State<DesignSystemWrapper> createState() => _DesignSystemWrapperState();
@@ -41,7 +46,10 @@ class _DesignSystemWrapperState extends State<DesignSystemWrapper>
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.platformBrightnessOf(context);
-    final theme = DesignSystem(context).forMode(widget.mode, brightness);
+    final theme = DesignSystem(
+      context,
+      face: widget.face,
+    ).forMode(widget.mode, brightness);
 
     return Theme(
       data: theme,

@@ -301,4 +301,44 @@ void main() {
       Duration.zero,
     );
   });
+
+  testWidgets('a theme switch mid-morph never lerps a shadow past 1', (
+    tester,
+  ) async {
+    Widget corner(ds.AppearanceMode mode, ds.ChromeState state) =>
+        ds.DesignSystemWrapper(
+          mode: mode,
+          builder: (_, theme) => MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: Center(
+                child: ds.CornerButton(
+                  state: state,
+                  icon: Icons.settings_outlined,
+                  tooltip: 'Settings',
+                  onPressed: () {},
+                  corner: Alignment.topRight,
+                ),
+              ),
+            ),
+          ),
+        );
+    await tester.pumpWidget(
+      corner(ds.AppearanceMode.light, ds.ChromeState.dot),
+    );
+    // Start the spring toward expanded, then switch theme while it
+    // overshoots.
+    await tester.pumpWidget(
+      corner(ds.AppearanceMode.light, ds.ChromeState.expanded),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+    // Light's blurred shadow to Dark's ring: past 1 the blur goes negative.
+    await tester.pumpWidget(
+      corner(ds.AppearanceMode.black, ds.ChromeState.expanded),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(tester.takeException(), isNull);
+    }
+  });
 }

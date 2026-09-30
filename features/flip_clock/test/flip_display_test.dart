@@ -22,6 +22,7 @@ FlipDisplay display(
   String? badge,
   String? meridiem,
   VoidCallback? onFlip,
+  double size = 1,
 }) => FlipDisplay(
   cards: cards,
   skin: skin,
@@ -29,7 +30,11 @@ FlipDisplay display(
   badge: badge,
   meridiem: meridiem,
   onFlip: onFlip,
+  size: size,
 );
+
+double fontSizeOf(WidgetTester tester, String text) =>
+    tester.widget<Text>(find.text(text)).style!.fontSize!;
 
 Finder cardFill(Color color) => find.byWidgetPredicate(
   (w) =>
@@ -258,6 +263,168 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('AM/PM and badge scale with the card', () {
+    testWidgets('large on a 1200x750 display, in the skin face', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1200, 750)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const skin = Skin(id: 'x', name: 'x', face: DisplayFace.orbitron);
+      await tester.pumpWidget(
+        host(display(['9', '41'], skin: skin, meridiem: 'PM', badge: '07')),
+      );
+      expect(fontSizeOf(tester, 'PM'), greaterThan(40));
+      expect(fontSizeOf(tester, '07'), greaterThan(30));
+      final pm = tester.widget<Text>(find.text('PM'));
+      expect(pm.style!.fontFamily, startsWith('Orbitron'));
+      expect(pm.style!.color, DesignSkinColors.mono.withValues(alpha: 0.7));
+      expect(
+        tester.widget<Text>(find.text('07')).style!.fontFamily,
+        startsWith('Orbitron'),
+      );
+      // The corner padding grows too: PM sits well inside the card.
+      final card = tester.getRect(cardFill(DesignSkinColors.cardInk).first);
+      expect(
+        tester.getRect(find.text('PM')).left - card.left,
+        greaterThan(DesignSpace.s3),
+      );
+    });
+
+    testWidgets('beside the cards it is the same size', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1200, 750)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        host(
+          display(
+            ['9', '41'],
+            skin: mono.copyWith(meridiem: SkinMeridiem.right),
+            meridiem: 'PM',
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(fontSizeOf(tester, 'PM'), greaterThan(40));
+    });
+
+    testWidgets('AM/PM and seconds scale with the card, clear of the digits', (
+      tester,
+    ) async {
+      for (final h in const [80.0, 200.0]) {
+        await tester.pumpWidget(
+          host(
+            SizedBox(
+              width: 400,
+              height: h,
+              child: display(['9', '41'], meridiem: 'AM', badge: '07'),
+            ),
+          ),
+        );
+        final card = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
+        final cardHeight = card.height * 2 + FlipDisplay.seamHeight;
+        expect(
+          fontSizeOf(tester, 'AM'),
+          closeTo(cardHeight * FlipDisplay.meridiemScale, 0.01),
+        );
+        expect(
+          fontSizeOf(tester, '07'),
+          closeTo(cardHeight * FlipDisplay.badgeScale, 0.01),
+        );
+        // AM/PM stays in the card's bottom margin, below the digit glyphs.
+        final am = tester.getRect(find.text('AM'));
+        final cardRect = tester.getRect(
+          cardFill(DesignSkinColors.cardInk).at(1),
+        );
+        expect(am.bottom, lessThanOrEqualTo(cardRect.bottom));
+        expect(
+          am.top,
+          greaterThan(cardRect.bottom - cardHeight * 0.25),
+          reason: 'h=$h',
+        );
+      }
+      // The token sizes are reached on real clock cards.
+      await tester.pumpWidget(
+        host(
+          SizedBox(
+            width: 800,
+            height: 200,
+            child: display(['9', '41'], meridiem: 'AM', badge: '07'),
+          ),
+        ),
+      );
+      expect(fontSizeOf(tester, 'AM'), greaterThanOrEqualTo(18));
+      expect(fontSizeOf(tester, '07'), greaterThanOrEqualTo(13));
+    });
+
+    testWidgets('12h drops the leading zero and shows AM/PM; 24h does not; '
+        'switching at runtime updates the display', (tester) async {
+      final t = DateTime(2026, 9, 30, 9, 5);
+      Widget show({required bool use24h}) {
+        final v = clockValue(t, use24h: use24h, showSeconds: false, skin: mono);
+        return host(display(v.cards, meridiem: v.meridiem, badge: v.badge));
+      }
+
+      await tester.pumpWidget(show(use24h: false));
+      expect(find.text('9'), findsWidgets);
+      expect(find.text('AM'), findsOne);
+      await tester.pumpWidget(show(use24h: true));
+      await tester.pumpAndSettle();
+      expect(find.text('09'), findsWidgets);
+      expect(find.text('9'), findsNothing);
+      expect(find.text('AM'), findsNothing);
+      await tester.pumpWidget(show(use24h: false));
+      await tester.pumpAndSettle();
+      expect(find.text('AM'), findsOne);
+      expect(find.text('09'), findsNothing);
+    });
+  });
+
+  testWidgets('size shrinks the fitted card; out-of-range sizes clamp', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1280, 760)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    double cardHeight(double size) {
+      final half = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
+      return half.height * 2 + FlipDisplay.seamHeight;
+    }
+
+    for (final (size, expected) in const [
+      (1.0, 628.0),
+      (0.6, 628 * 0.6),
+      (2.0, 628.0),
+      (0.0, 62.8),
+    ]) {
+      await tester.pumpWidget(host(display(['22', '42'], size: size)));
+      expect(cardHeight(size), closeTo(expected, 0.01), reason: '$size');
+      expect(
+        tester.widget<Text>(find.text('22').first).style!.fontSize,
+        closeTo(expected * FlipDisplay.digitScale, 0.01),
+      );
+    }
+  });
+
+  testWidgets('a themed skin draws light tokens in Mono Light', (tester) async {
+    Widget themed(DesignColors colors) => MaterialApp(
+      theme: ThemeData(extensions: [colors]),
+      home: Scaffold(body: display(['12'], skin: mono.copyWith(themed: true))),
+    );
+    await tester.pumpWidget(themed(DesignColors.light));
+    expect(cardFill(DesignColors.light.card), findsNWidgets(2));
+    expect(
+      tester.widget<Text>(find.text('12').first).style!.color,
+      DesignColors.light.ink,
+    );
+    await tester.pumpWidget(themed(DesignColors.dark));
+    await tester.pumpAndSettle();
+    expect(cardFill(DesignSkinColors.cardInk), findsNWidgets(2));
+  });
+
   group('display values', () {
     final t = DateTime(2026, 9, 30, 21, 5, 7);
 
@@ -266,7 +433,12 @@ void main() {
       expect(off.cards, ['21', '05']);
       expect(off.badge, isNull);
       expect(off.meridiem, isNull);
-      final badge = clockValue(t, use24h: false, showSeconds: true, skin: mono);
+      final badge = clockValue(
+        t,
+        use24h: false,
+        showSeconds: true,
+        skin: mono.copyWith(seconds: SkinSeconds.badge),
+      );
       expect(badge.cards, ['9', '05']);
       expect(badge.badge, '07');
       expect(badge.meridiem, 'PM');
@@ -284,8 +456,14 @@ void main() {
         showSeconds: true,
         skin: mono.copyWith(seconds: SkinSeconds.off),
       );
-      expect(none.cards, ['21', '05']);
+      // A skin without seconds of its own shows them as cards, so the
+      // Show seconds switch always shows something.
+      expect(none.cards, ['21', '05', '07']);
       expect(none.badge, isNull);
+      expect(
+        clockValue(t, use24h: true, showSeconds: false, skin: mono).cards,
+        ['21', '05'],
+      );
     });
 
     test('durations: hours card from one hour; negative reads zero', () {

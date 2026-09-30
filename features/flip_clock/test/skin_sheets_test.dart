@@ -308,11 +308,112 @@ void main() {
     });
   }
 
+  testWidgets('Bold sits between Classic and Type; its presets apply '
+      'their seconds', (tester) async {
+    await open(tester, size: const Size(1280, 900));
+    final c = strings.clock;
+    final bold = find.text(c.skins_bold.toUpperCase());
+    await tester.scrollUntilVisible(tile(c.skin_nightstand), 300);
+    expect(bold, findsOne);
+    expect(
+      tester.getTopLeft(bold).dy,
+      greaterThan(tester.getTopLeft(tile(c.skin_taxi)).dy),
+    );
+    for (final name in [c.skin_studio, c.skin_arcade, c.skin_minimal]) {
+      expect(tile(name), findsOne);
+    }
+    await tester.tap(tile(c.skin_nightstand));
+    await tester.pumpAndSettle();
+    expect(settings.state.skinId, 'nightstand');
+    expect(settings.state.showSeconds, isTrue);
+    await tester.scrollUntilVisible(tile(c.skin_orbit), 300);
+    expect(
+      tester.getTopLeft(find.text(c.skins_type.toUpperCase())).dy,
+      greaterThan(tester.getTopLeft(tile(c.skin_minimal)).dy),
+    );
+    await close(tester);
+  });
+
+  Finder fill(Color color) => find.byWidgetPredicate(
+    (w) =>
+        w is Container &&
+        w.decoration is BoxDecoration &&
+        (w.decoration! as BoxDecoration).color == color,
+  );
+
+  testWidgets('Mono Light: Mono tile is ink on card over bg, Paper is '
+      'unchanged; a copy keeps the light look and is not themed', (
+    tester,
+  ) async {
+    await open(tester, mode: AppearanceMode.light);
+    final c = strings.clock;
+    const light = DesignColors.light;
+    final mono = find.descendant(
+      of: tile(c.skin_mono),
+      matching: fill(light.bg),
+    );
+    expect(mono, findsOne);
+    expect(
+      find.descendant(of: tile(c.skin_mono), matching: fill(light.card)),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: tile(c.skin_paper),
+        matching: fill(DesignSkinColors.cardPaper),
+      ),
+      findsWidgets,
+    );
+    await tester.tap(find.text(c.skins_new));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(c.customize_save));
+    await tester.pumpAndSettle();
+    final saved = settings.state.customSkins.single;
+    expect(saved.themed, isFalse);
+    expect(saved.digitColor, light.ink);
+    expect(saved.cardColor, light.card);
+    expect(saved.groundColor, light.bg);
+    await close(tester);
+  });
+
+  testWidgets('the preview shows the draft seconds preset', (tester) async {
+    await open(tester, size: const Size(1280, 900));
+    final c = strings.clock;
+    await tester.tap(find.text(c.skins_customize));
+    await tester.pumpAndSettle();
+    List<String> previewCards() => tester
+        .widget<FlipDisplay>(
+          find.descendant(
+            of: find.byType(SkinCustomizer),
+            matching: find.byType(FlipDisplay),
+          ),
+        )
+        .cards;
+    expect(previewCards(), hasLength(2));
+    await reveal(tester, find.text(c.customize_meridiem_right));
+    await tester.tap(find.text(c.customize_seconds_cards));
+    await tester.pump();
+    expect(previewCards(), hasLength(3));
+    await close(tester);
+  });
+
   test('hex parsing', () {
     expect(parseHex('#ff7a00'), const Color(0xffff7a00));
     expect(parseHex(' 00FF00 '), const Color(0xff00ff00));
     expect(parseHex('#fff'), isNull);
     expect(parseHex('#gg0000'), isNull);
     expect(hexOf(const Color(0xff0a0b0c)), '#0A0B0C');
+  });
+
+  testWidgets('the sheet title sits in the true centre', (tester) async {
+    await open(tester, size: const Size(1200, 800));
+    final title = tester.getCenter(find.text(strings.clock.skins_title));
+    expect(title.dx, closeTo(600, 1));
+    // Customize sits at the right end.
+    expect(
+      tester.getRect(find.text(strings.clock.skins_customize)).right,
+      greaterThan(1200 - 80),
+    );
+    await close(tester);
   });
 }

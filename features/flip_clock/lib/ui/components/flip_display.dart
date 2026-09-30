@@ -17,10 +17,11 @@ bool reducedMotion(BuildContext context) =>
 /// (top half down, then bottom half, [flipDuration]); the new value is
 /// authoritative at once. Reduced motion swaps instantly.
 ///
-/// Card height fills the space given; digits are [digitScale] x card height
-/// and never text-scaled, so the display never clips at large text sizes.
-/// AM/PM ([meridiem]) and small seconds ([badge]) are plain text, never
-/// cards.
+/// Card height fills the space given, times [size]; digits are
+/// [digitScale] x card height and never text-scaled, so the display never
+/// clips at large text sizes. AM/PM ([meridiem]) and small seconds
+/// ([badge]) are plain text in the skin's face, never cards, and grow with
+/// the card. The skin is drawn [Skin.forTheme] the current theme.
 class FlipDisplay extends StatefulWidget {
   const FlipDisplay({
     super.key,
@@ -30,6 +31,7 @@ class FlipDisplay extends StatefulWidget {
     this.badge,
     this.meridiem,
     this.onFlip,
+    this.size = 1,
   });
 
   final List<String> cards;
@@ -47,6 +49,10 @@ class FlipDisplay extends StatefulWidget {
   /// Called once whenever [cards] change (for the flip sound).
   final VoidCallback? onFlip;
 
+  /// Card height relative to the largest card that fits, 0.1..1
+  /// (`CardSize.factor`).
+  final double size;
+
   /// One card flip, top fold then bottom fold, 50/50.
   static const Duration flipDuration = DesignMotion.flip;
 
@@ -55,6 +61,15 @@ class FlipDisplay extends StatefulWidget {
 
   /// Height of the seam line.
   static const double seamHeight = 2;
+
+  /// AM/PM, badge and corner padding relative to the card height. They scale
+  /// with the card, so they sit in its bottom margin at every size: at
+  /// 150px AM/PM reaches the `meridiem` token's 18px, a 130px card gives the
+  /// badge `seconds-badge`'s 13px, and a small tile never has them over the
+  /// digits.
+  static const double meridiemScale = 0.12;
+  static const double badgeScale = 0.1;
+  static const double cornerScale = 0.05;
 
   /// Key of the folding half while a card animates (for tests).
   static const Key flapKey = ValueKey('flip-flap');
@@ -72,16 +87,13 @@ class _FlipDisplayState extends State<FlipDisplay> {
 
   @override
   Widget build(BuildContext context) {
-    final skin = widget.skin;
-    final theme = Theme.of(context);
+    final skin = widget.skin.forTheme(DesignColors.of(context));
     final soft = skin.digitColor.withValues(alpha: 0.7);
     final meridiem = skin.meridiem == SkinMeridiem.hidden
         ? null
         : widget.meridiem;
     final n = widget.cards.length;
     final ratio = skin.face.monospaced ? 1.3 : 1.0;
-    final tag = theme.textTheme.titleSmall!.copyWith(color: soft);
-    final badge = theme.textTheme.labelMedium!.copyWith(color: soft);
     return Semantics(
       label: widget.semanticsLabel,
       container: true,
@@ -91,10 +103,20 @@ class _FlipDisplayState extends State<FlipDisplay> {
             const gap = DesignSpace.s6;
             final width = box.maxWidth.isFinite ? box.maxWidth : 1000.0;
             final fit = (width - gap * (n - 1)) / (n * ratio);
-            final height = math.max(
-              0.0,
-              box.maxHeight.isFinite ? math.min(box.maxHeight, fit) : fit,
+            final height =
+                math.max(
+                  0.0,
+                  box.maxHeight.isFinite ? math.min(box.maxHeight, fit) : fit,
+                ) *
+                widget.size.clamp(0.1, 1);
+            final tag = skin.face.style(
+              color: soft,
+              fontSize: height * FlipDisplay.meridiemScale,
             );
+            final badge = skin.face
+                .style(color: soft, fontSize: height * FlipDisplay.badgeScale)
+                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+            final pad = height * FlipDisplay.cornerScale;
             // radius-md cards become radius-lg once digits reach digit-l.
             final large = height * FlipDisplay.digitScale >= 160;
             final radius = math.min(
@@ -120,17 +142,21 @@ class _FlipDisplayState extends State<FlipDisplay> {
                         width: height * ratio,
                         radius: radius,
                         bottomLeft: i == 0 && skin.meridiem == SkinMeridiem.left
-                            ? _Corner(meridiem, tag)
+                            ? _Corner(meridiem, tag, pad)
                             : null,
                         bottomRight: i == n - 1
-                            ? _Corner(widget.badge, badge)
+                            ? _Corner(widget.badge, badge, pad)
                             : null,
                       ),
                     ],
                     if (meridiem != null && skin.meridiem == SkinMeridiem.right)
                       Padding(
-                        padding: const EdgeInsets.only(left: DesignSpace.s3),
-                        child: Text(meridiem, style: tag),
+                        padding: EdgeInsets.only(left: pad),
+                        child: Text(
+                          meridiem,
+                          style: tag,
+                          textScaler: TextScaler.noScaling,
+                        ),
                       ),
                   ],
                 ),
@@ -145,17 +171,24 @@ class _FlipDisplayState extends State<FlipDisplay> {
 
 /// Plain text in a card corner; nothing when [text] is null.
 class _Corner extends StatelessWidget {
-  const _Corner(this.text, this.style);
+  const _Corner(this.text, this.style, this.padding);
 
   final String? text;
   final TextStyle style;
+  final double padding;
 
   @override
   Widget build(BuildContext context) => text == null
       ? const SizedBox.shrink()
       : Padding(
-          padding: const EdgeInsets.all(DesignSpace.s3),
-          child: Text(text!, style: style, maxLines: 1, softWrap: false),
+          padding: EdgeInsets.all(padding),
+          child: Text(
+            text!,
+            style: style,
+            maxLines: 1,
+            softWrap: false,
+            textScaler: TextScaler.noScaling,
+          ),
         );
 }
 

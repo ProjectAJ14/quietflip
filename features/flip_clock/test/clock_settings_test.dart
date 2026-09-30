@@ -20,6 +20,7 @@ void main() {
     expect(s.controlsIdle, const Duration(seconds: 4));
     expect(s.gestureBrightness, isTrue);
     expect(s.gestureModes, isTrue);
+    expect(s.cardSize, CardSize.large);
   });
 
   test('round-trips through json and copyWith', () {
@@ -40,6 +41,7 @@ void main() {
       controlsIdle: Duration.zero,
       gestureBrightness: false,
       gestureModes: false,
+      cardSize: CardSize.small,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -130,6 +132,22 @@ void main() {
       const ClockSettings(gestureModes: false),
       isNot(const ClockSettings()),
     );
+  });
+
+  test('card size: factors, json by name, per-field fallback', () {
+    expect(CardSize.large.factor, 1.0);
+    expect(CardSize.medium.factor, 0.8);
+    expect(CardSize.small.factor, 0.6);
+    const medium = ClockSettings(cardSize: CardSize.medium);
+    expect(medium.toJson()['cardSize'], 'medium');
+    expect(ClockSettings.fromJson(medium.toJson()).cardSize, CardSize.medium);
+    expect(medium, isNot(const ClockSettings()));
+    expect(medium.hashCode, isNot(const ClockSettings().hashCode));
+    for (final bad in [null, 'huge', 2]) {
+      final read = ClockSettings.fromJson({'cardSize': bad, 'use24h': false});
+      expect(read.cardSize, CardSize.large, reason: '$bad');
+      expect(read.use24h, isFalse);
+    }
   });
 
   test('routes are fixed', () {

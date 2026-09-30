@@ -22,21 +22,25 @@ class DesignSystem {
     BuildContext context, {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
+    DisplayFace? face,
   }) : theme = buildTheme(
          context,
          bodyFont: bodyFont,
          displayFont: displayFont,
+         face: face,
        );
 
   static MaterialTheme buildTheme(
     BuildContext context, {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
+    DisplayFace? face,
   }) => MaterialTheme(
     monoTextTheme(
       Theme.of(context).textTheme,
       bodyFont: bodyFont,
       displayFont: displayFont,
+      face: face,
     ),
   );
 
@@ -56,10 +60,52 @@ class DesignSystem {
   /// | `labelSmall` | section |
   ///
   /// The other roles keep [base]'s sizes in [bodyFont].
+  ///
+  /// With a [face] (the app following a skin), every role uses that face at
+  /// its one bundled weight instead, keeping the sizes: a skin face ships a
+  /// single weight, so asking for another would find no bundled file.
   static TextTheme monoTextTheme(
     TextTheme base, {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
+    DisplayFace? face,
+  }) {
+    final theme = _monoTextTheme(
+      base,
+      bodyFont: bodyFont,
+      displayFont: displayFont,
+    );
+    if (face == null) return theme;
+    TextStyle? inFace(TextStyle? style) => style == null
+        ? null
+        : GoogleFonts.getFont(
+            face.family,
+            textStyle: style,
+            fontWeight: face.weight,
+          );
+    return TextTheme(
+      displayLarge: inFace(theme.displayLarge),
+      displayMedium: inFace(theme.displayMedium),
+      displaySmall: inFace(theme.displaySmall),
+      headlineLarge: inFace(theme.headlineLarge),
+      headlineMedium: inFace(theme.headlineMedium),
+      headlineSmall: inFace(theme.headlineSmall),
+      titleLarge: inFace(theme.titleLarge),
+      titleMedium: inFace(theme.titleMedium),
+      titleSmall: inFace(theme.titleSmall),
+      bodyLarge: inFace(theme.bodyLarge),
+      bodyMedium: inFace(theme.bodyMedium),
+      bodySmall: inFace(theme.bodySmall),
+      labelLarge: inFace(theme.labelLarge),
+      labelMedium: inFace(theme.labelMedium),
+      labelSmall: inFace(theme.labelSmall),
+    );
+  }
+
+  static TextTheme _monoTextTheme(
+    TextTheme base, {
+    required String bodyFont,
+    required String displayFont,
   }) {
     // Sizes and line heights in px, letter spacing in em, as in tokens.json.
     TextStyle style(
@@ -170,6 +216,15 @@ class DesignSystem {
         indicatorColor: base.colorScheme.primary,
         indicatorShape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+      ),
+      // The selected segment is an accent pill with on-accent text.
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          selectedBackgroundColor: base.colorScheme.primary,
+          selectedForegroundColor: base.colorScheme.onPrimary,
+          foregroundColor: base.colorScheme.onSurface,
+          side: BorderSide(color: base.colorScheme.outlineVariant),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

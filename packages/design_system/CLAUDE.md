@@ -15,9 +15,9 @@ Everything, including `Toast`, is exported from
 
 | Symbol | Kind | Use |
 |---|---|---|
-| `DesignSystemWrapper({builder, mode})` | widget | Wraps `MaterialApp`; `mode: AppearanceMode.system` (default) picks light/dark from platform brightness, other modes force a theme; installs `GlobalLoaderOverlay` and `ToastificationWrapper` |
+| `DesignSystemWrapper({builder, mode, face})` | widget | Wraps `MaterialApp`; `mode: AppearanceMode.system` (default) picks light/dark from platform brightness, other modes force a theme; installs `GlobalLoaderOverlay` and `ToastificationWrapper` |
 | `AppearanceMode` | enum | `system` (platform brightness picks Mono Dark or Mono Light), `light` (Mono Light), `black` (Mono Dark, the QuietFlip default) |
-| `DesignSystem` | theme builder | `light()` / `black()` `ThemeData`, `forMode(mode, platformBrightness)`, static `blackScheme()` / `monoLightScheme()` (tokens on Material roles), static `monoTextTheme()`; `bodyFont` / `displayFont` (default Geist) |
+| `DesignSystem` | theme builder | `light()` / `black()` `ThemeData`, `forMode(mode, platformBrightness)`, static `blackScheme()` / `monoLightScheme()` (tokens on Material roles), static `monoTextTheme()`; `bodyFont` / `displayFont` (default Geist); `face` sets every role in that `DisplayFace` at its one bundled weight, keeping the sizes |
 | `DesignColors` | `ThemeExtension` | Every Mono colour token by name (`bg`, `surface`, `surfaceRaised`, `ink`, `inkMuted`, `hairline`, `island*`, `accent`, `danger`, shadows ...); `DesignColors.of(context)`; `.dark` / `.light` |
 | `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion` | constants | `skin-*`, `space-*`, `radius-*`, `size-*`, `dur-*` and the island spring, exactly as in `tokens.json` |
 | `SpringCurve`, `DesignMotion.islandCurve` | curve | A `SpringDescription` played over a `Duration` as a `Curve` (overshoots, ends at exactly 1); `islandCurve` is the island spring over `islandMorph` |
@@ -32,7 +32,7 @@ Everything, including `Toast`, is exported from
 | `ChromeState`, `Island`, `IslandHud` (`IslandBrightnessHud`, `IslandTitleHud`), `CornerButton` | widgets | Clock chrome: `hidden` / `dot` / `expanded`. `Island` morphs one dark pill between a dot, up to four tabs (tab-bar semantics) and a live-region HUD (a HUD wins over the state); `CornerButton` shrinks a 44px circle to a 6px dot toward its corner, tappable only when expanded. Spring morph, drops it under reduced motion; all text passed in |
 | `SettingsShell({title, categories, doneLabel, onDone, desktop, initialCategory})` | widget | One settings model laid out three ways: phone stack under 600 (large title root, category detail with a back button; system back returns to the root), split 600-1100 (`DesignSize.sidebarWidth` sidebar, accent-pill selection), desktop density at 1100+ or `desktop: true` (230 sidebar, 30px nav rows, 36px rows, 14px labels). All text passed in |
 | `SettingsCategory({icon, label, groups})`, `SettingsGroup({header, rows, footer})` | models | A category (sidebar/root row plus its detail page); a grouped inset cell with an uppercase header and a footer |
-| `SettingsSwitchRow`, `SettingsValueRow`, `SettingsSegmentedRow<T>`, `SettingsSliderRow`, `SettingsKeyRow`, `SettingsNoteRow` | widgets | Rows for `SettingsGroup.rows`: switch (row tap toggles), value with optional chevron, label over a segmented control, label/value over a slider, keycap, muted note. Take the shell's density; phone density standalone |
+| `SettingsSwitchRow`, `SettingsValueRow`, `SettingsSegmentedRow<T>`, `SettingsSliderRow`, `SettingsKeyRow`, `SettingsNoteRow` | widgets | Rows for `SettingsGroup.rows`: switch (row tap toggles), value with optional chevron, label over a segmented control, label/value over a slider (both with `DesignSpace.s2` between label and control and under the control, in both densities), keycap, muted note. Take the shell's density; phone density standalone |
 | `AuthHeadersBuilder` | widget | Builds a child with current auth headers |
 | `FileInfoDialog` | dialog | `FileInfoDialog.show(context, file)`; tap-to-copy confirms with `Toast.success` |
 
@@ -88,7 +88,7 @@ Everything, including `Toast`, is exported from
 | `fonts_test.dart` | Every Geist weight and `DisplayFace` has its `.ttf` and OFL licence in `assets/google_fonts/`, declared in `pubspec.yaml` |
 | `components_test.dart` | Mono themes and tokens, Geist text styles, loaders, error view/screen, asset fallbacks, network image, wrapper brightness + loader, string helpers |
 | `island_test.dart` | Spring overshoot, HUD models, island and corner sizes per state in both Mono themes, HUD over hidden, tab taps/colours/semantics, 320px at text scale 2, corner taps only when expanded, reduced motion |
-| `settings_shell_test.dart` | Phone/split/desktop layouts at 375/820/1280 and `desktop: true` in both Mono themes, sidebar widths and row heights, phone navigation and system back, sidebar selection and accent pill, Done, every row's callback, group header/footer, standalone rows, text scale 2 at 375 and 1280 |
+| `settings_shell_test.dart` | Phone/split/desktop layouts at 375/820/1280 and `desktop: true` in both Mono themes, sidebar widths and row heights, phone navigation and system back, sidebar selection and accent pill, shell colours from the theme in both brightnesses, `s2` gap under segmented/slider controls in both densities, Done, every row's callback, group header/footer, standalone rows, text scale 2 at 375 and 1280 |
 | `integration_test.dart` | Image adapters, `AuthHeadersBuilder` (missing provider, failures, rebuilds), dialogs, toast variants |
 
 Run `dart run melos exec --scope=design_system -- flutter test`. Keep
@@ -104,6 +104,13 @@ Run `dart run melos exec --scope=design_system -- flutter test`. Keep
   (google_fonts' file name) there too; `fonts_test.dart` fails otherwise.
 - google_fonts renders the nearest bundled weight: the `title` token's 650
   draws Geist SemiBold.
+- With a `face`, all text is one weight (the face's only bundled file):
+  titles and body differ by size only. Never ask a face for another weight;
+  google_fonts would find no bundled file.
+- The island spring overshoots past 1: animate only sizes on it. A shadow
+  or decoration lerped past 1 (Mono Light's blur to Mono Dark's ring on a
+  theme switch mid-morph) gets a negative blur and asserts; `CornerButton`
+  springs its size and draws the decoration un-animated.
 - "Big Shoulders Display" is now the "Big Shoulders" family on Google Fonts
   (same design); the face bundles `BigShoulders-ExtraBold.ttf`.
 - `AnimatedSize` asserts when given `Duration.zero` (it re-dirties itself

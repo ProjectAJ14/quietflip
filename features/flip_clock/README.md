@@ -52,8 +52,8 @@ Everything is saved at once and restored on launch.
 ## Controls
 
 Only the digits show when nobody touches the screen. A tap shows the
-controls: the mode island at the bottom (Pomodoro, Clock, Timer, Stopwatch) and the
-Skins (top left) and Settings (top right) buttons. After 4 seconds without
+controls: the mode island at the top centre (on its own row under the corner buttons on phones; Pomodoro, Clock, Timer, Stopwatch)
+between the Skins (top left) and Settings (top right) buttons. After 4 seconds without
 input they shrink to dots, and 3 seconds later they are gone. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
 whether a tap toggles them.
@@ -76,10 +76,16 @@ whether a tap toggles them.
 ## Skins
 
 The Skins corner button opens the Skins sheet: live tiles of every skin, applied
-on tap. Classic is Mono (the default, white on near-black) plus nine colour
-variations; Type has one skin per bundled face (Bebas, Anton, Oswald,
+on tap. Classic is Mono (the default, white on near-black; black on white in
+the Light theme) plus nine colour variations; Bold has presets that show off
+the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
+has one skin per bundled face (Bebas, Anton, Oswald,
 Shoulders, Poster, Terminal, Grotesk, Serif, Orbit). Every built-in skin is
 free and passes 4.5:1 digits-on-card contrast.
+
+A skin with its own face (Bebas, Orbit, Terminal and the rest) sets the whole
+app in that face: settings, the island, sheets, the date and AM/PM. Mono and
+the Classic colour skins keep Geist for everything but the digits.
 
 Customize (or New skin) opens the customizer on the current skin: face,
 digit / card / background colour (token swatches or a hex colour), corner
@@ -88,8 +94,11 @@ the first card, beside the last) and the date line. Saving a built-in skin
 creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.
 
-Seconds and the date still follow Settings (and the S key); the skin picks
-how seconds look and can add the date line on its own.
+Picking a skin applies its preset: Show seconds turns on for skins that show
+seconds and off for those that do not (Mono), and Settings or the S key can
+still change it. With a skin that has no seconds style of its own, seconds
+get their own cards. The skin can add the date line on its own. AM/PM and
+the small seconds grow with the cards, in the skin's font.
 
 ## Full screen
 

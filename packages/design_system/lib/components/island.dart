@@ -364,26 +364,17 @@ class CornerButton extends StatelessWidget {
       curve: DesignMotion.islandCurve,
       width: size,
       height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: colors.island,
-        shape: BoxShape.circle,
-        boxShadow: colors.islandShadow,
+      // The spring overshoots past 1: only the size may ride it. A shadow
+      // lerped past 1 (Mono Dark's ring to Mono Light's blur on a theme
+      // switch mid-morph) gets a negative blur and asserts.
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.island,
+          shape: BoxShape.circle,
+          boxShadow: colors.islandShadow,
+        ),
+        child: ClipOval(child: _content(expanded, colors)),
       ),
-      child: expanded
-          ? Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: onPressed,
-                customBorder: const CircleBorder(),
-                child: Icon(
-                  icon,
-                  size: _chromeIconSize,
-                  color: colors.islandInk,
-                ),
-              ),
-            )
-          : null,
     );
     return SizedBox.square(
       dimension: DesignSize.cornerButton,
@@ -408,4 +399,15 @@ class CornerButton extends StatelessWidget {
       ),
     );
   }
+
+  Widget? _content(bool expanded, DesignColors colors) => expanded
+      ? Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            child: Icon(icon, size: _chromeIconSize, color: colors.islandInk),
+          ),
+        )
+      : null;
 }

@@ -106,6 +106,16 @@ Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInter
 
 ## Gotchas
 
+- **Web never downloads fonts or the renderer.** Flutter's web engine
+  fetches Roboto from fonts.gstatic.com as its default font unless the app
+  bundles a family named `Roboto`, so `pubspec.yaml` declares `Roboto` as a
+  bundled copy of Geist (`assets/fonts/`, with `OFL-Geist.txt`). Build with
+  `flutter build web --no-web-resources-cdn` (CI does) so CanvasKit is served
+  from the app, not gstatic. Check with the browser's network panel: the
+  only external request left is Google Sign-In's script (auth module).
+- `App(face:)` sets the whole app in the selected skin's face
+  (`flip_clock.appFace()`); null keeps Geist.
+
 - Run `bootstrap.init` / `startApp` / `initClock` inside `tester.runAsync` in
   widget tests. Cubits created in fake time never finish closing, so
   `tearDown(di.reset)` hangs the test runner (no timeout fires).
