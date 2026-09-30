@@ -43,6 +43,11 @@ Shortcuts are ignored while typing in the timer fields.
   The timer itself is based on wall-clock time, so reopening the app shows the
   correct remaining time or "Time's up".
 - **Windows** builds need a Windows machine; they cannot be cross-compiled.
+- **Launcher icon** (from `assets/icon/quietflip-master.png`): Android 13 themed
+  (monochrome) icons and iOS 18 dark/tinted icons are not generated, so those
+  modes show the full-color icon. The Windows `.ico` holds one 256px image that
+  Windows scales down. The macOS icon is full-bleed square, without the rounded
+  plate macOS 11+ icons usually draw.
 - **Firebase modules are dormant.** Auth, analytics, crashlytics, feature flags
   and push notifications stay in the workspace for future use but are skipped at
   startup until `flutterfire configure` is run. The clock never uses them.
