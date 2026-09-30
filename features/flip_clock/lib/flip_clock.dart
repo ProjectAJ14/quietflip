@@ -8,6 +8,7 @@ import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
+import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/state/clock_controller.dart';
@@ -46,6 +47,20 @@ Future<void> init() async {
       .map((s) => s.systemAlerts)
       .distinct()
       .listen((_) => unawaited(countdown.syncAlert()));
+  // Apply the saved orientation now and on every change. Not awaited: launch
+  // never waits on the platform. The lock logs and no-ops where unsupported
+  // (web, desktop).
+  final lock = di.get<OrientationLock>();
+  Future<void> orient(ClockOrientation o) => lock.set(switch (o) {
+    ClockOrientation.auto => ScreenOrientation.auto,
+    ClockOrientation.landscape => ScreenOrientation.landscape,
+    ClockOrientation.portrait => ScreenOrientation.portrait,
+  });
+  unawaited(orient(settings.state.orientation));
+  settings.stream
+      .map((s) => s.orientation)
+      .distinct()
+      .listen((o) => unawaited(orient(o)));
 
   di.register<SettingsRepository>(repository);
   di.register<SettingsController>(settings, dispose: _close);

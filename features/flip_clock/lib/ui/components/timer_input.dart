@@ -11,6 +11,7 @@ class TimerInput extends StatefulWidget {
     required this.initial,
     required this.onStart,
     this.onChanged,
+    this.secondary,
   });
 
   final Duration initial;
@@ -19,6 +20,9 @@ class TimerInput extends StatefulWidget {
   /// Called on every edit: the entered duration, or null while it is
   /// zero or out of range.
   final ValueChanged<Duration?>? onChanged;
+
+  /// Shown next to Start (the Pomodoro button).
+  final Widget? secondary;
 
   @override
   State<TimerInput> createState() => _TimerInputState();
@@ -133,10 +137,18 @@ class _TimerInputState extends State<TimerInput> {
                 : null,
           ),
           const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: value == null ? null : _start,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: Text(strings.clock.start),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              FilledButton.icon(
+                onPressed: value == null ? null : _start,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(strings.clock.start),
+              ),
+              ?widget.secondary,
+            ],
           ),
         ],
       ),

@@ -35,8 +35,10 @@ class FlipClockRouter implements CoreRouter {
       routes: [
         GoRoute(
           path: 'settings',
-          builder: (_, _) =>
-              SettingsScreen(settings: di.get<SettingsController>()),
+          builder: (_, _) => SettingsScreen(
+            settings: di.get<SettingsController>(),
+            orientationSupported: di.get<OrientationLock>().supported,
+          ),
         ),
       ],
     ),

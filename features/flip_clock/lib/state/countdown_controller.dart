@@ -15,6 +15,7 @@ class CountdownState {
     this.status = CountdownStatus.idle,
     this.duration = Duration.zero,
     this.remaining = Duration.zero,
+    this.pomodoro,
   });
 
   final CountdownStatus status;
@@ -23,20 +24,29 @@ class CountdownState {
   /// Time left, already rounded up to a whole second for display.
   final Duration remaining;
 
+  /// The focus/break phase while a pomodoro cycle runs; null for a plain
+  /// timer.
+  final Pomodoro? pomodoro;
+
   @override
   bool operator ==(Object other) =>
       other is CountdownState &&
       other.status == status &&
       other.duration == duration &&
-      other.remaining == remaining;
+      other.remaining == remaining &&
+      other.pomodoro == pomodoro;
 
   @override
-  int get hashCode => Object.hash(status, duration, remaining);
+  int get hashCode => Object.hash(status, duration, remaining, pomodoro);
 }
 
 /// Runs the single countdown: persists every transition, schedules the
 /// system notification, plays the completion chime and recomputes the
 /// remaining time from the wall-clock end on every tick and app resume.
+///
+/// A pomodoro cycle is the same countdown run once per phase: while the app
+/// is open, a phase that ends chimes for [chimeFor] and the next phase starts
+/// at once.
 class CountdownController extends Cubit<CountdownState> {
   CountdownController({
     required SettingsRepository repository,
@@ -47,6 +57,7 @@ class CountdownController extends Cubit<CountdownState> {
     DateTime Function()? now,
     bool notifyOnFinish = kIsWeb,
     Duration tick = const Duration(milliseconds: 250),
+    Duration chimeFor = const Duration(seconds: 5),
   }) : _repository = repository,
        _alerts = alerts,
        _sound = sound,
@@ -55,6 +66,7 @@ class CountdownController extends Cubit<CountdownState> {
        _now = now ?? DateTime.now,
        _notifyOnFinish = notifyOnFinish,
        _tickEvery = tick,
+       _chimeFor = chimeFor,
        super(const CountdownState()) {
     _countdown = Countdown(now: _now);
     _publish();
@@ -74,24 +86,46 @@ class CountdownController extends Cubit<CountdownState> {
   /// while the tab is open.
   final bool _notifyOnFinish;
   final Duration _tickEvery;
+  final Duration _chimeFor;
   late Countdown _countdown;
   Timer? _ticker;
   Timer? _end;
+  Timer? _chime;
+
+  /// The running cycle's phase; null for a plain timer.
+  Pomodoro? _pomodoro;
+
+  /// The timer's own duration, restored when a pomodoro cycle ends.
+  Duration _timerDuration = Countdown.defaultDuration;
 
   /// False while the timer input holds an invalid or zero entry, so the
   /// Space bar cannot start the last valid duration behind the user's back.
   bool _entryValid = true;
 
   /// Restores the saved countdown. A timer that ended while the app was
-  /// closed shows as finished (silently: the system alert already fired).
+  /// closed shows as finished (silently: the system alert already fired);
+  /// a pomodoro phase too, waiting for [startNextPhase].
   Future<void> load() async {
     final snapshot = await _repository.loadCountdown();
-    if (snapshot != null) _countdown = Countdown.fromJson(snapshot, now: _now);
+    if (snapshot != null) {
+      _countdown = Countdown.fromJson(snapshot, now: _now);
+      // An idle countdown has no phase to resume.
+      if (_countdown.status != CountdownStatus.idle) {
+        _pomodoro = Pomodoro.fromJson(snapshot['pomodoro']);
+      }
+      final timerMs = snapshot['timerMs'];
+      if (_pomodoro != null && timerMs is int) {
+        final d = Duration(milliseconds: timerMs);
+        if (Countdown.isValid(d)) _timerDuration = d;
+      }
+    }
     if (_countdown.checkFinished()) {
       _logger.i('Countdown finished while the app was away');
       await _persist();
     } else if (_countdown.status == CountdownStatus.running) {
-      _startTicker();
+      // Restoring may have rebased the end (clock set back while closed):
+      // re-save it and move the system alert with it.
+      await _running();
     }
     _publish();
   }
@@ -101,7 +135,11 @@ class CountdownController extends Cubit<CountdownState> {
   /// marks the entry invalid: [toggle] then does not start.
   Future<void> setDuration(Duration? duration) async {
     _entryValid = duration != null && Countdown.isValid(duration);
-    if (duration == null || !_countdown.setDuration(duration)) return;
+    if (duration == null ||
+        _pomodoro != null ||
+        !_countdown.setDuration(duration)) {
+      return;
+    }
     _publish();
     await _persist();
   }
@@ -113,8 +151,34 @@ class CountdownController extends Cubit<CountdownState> {
         _countdown.status == CountdownStatus.idle ||
         _countdown.status == CountdownStatus.finished;
     if (!idle || !_countdown.setDuration(duration)) return;
+    _pomodoro = null;
     _entryValid = true;
     _countdown.start();
+    await _running();
+  }
+
+  /// Starts a pomodoro cycle at focus, round 1. Ignored unless idle; the
+  /// idle duration comes back when the cycle is [reset].
+  Future<void> startPomodoro() async {
+    if (_countdown.status != CountdownStatus.idle) return;
+    _timerDuration = _countdown.duration;
+    await _startPhase(const Pomodoro());
+  }
+
+  /// Starts the phase after a finished one (a phase that ended while the
+  /// app was closed waits for this). Ignored otherwise.
+  Future<void> startNextPhase() async {
+    final done = _pomodoro;
+    if (done == null || _countdown.status != CountdownStatus.finished) return;
+    await _sound.stopAlarm();
+    await _startPhase(done.next());
+  }
+
+  Future<void> _startPhase(Pomodoro phase) async {
+    _pomodoro = phase;
+    _countdown
+      ..setDuration(phase.duration)
+      ..start();
     await _running();
   }
 
@@ -135,9 +199,15 @@ class CountdownController extends Cubit<CountdownState> {
     await _running();
   }
 
-  /// Back to idle with the same duration; also dismisses a finished alert.
+  /// Back to idle with the same duration; also dismisses a finished alert
+  /// and ends a pomodoro cycle, restoring the timer's own duration.
   Future<void> reset() async {
     _countdown.reset();
+    if (_pomodoro != null) {
+      _pomodoro = null;
+      _countdown.setDuration(_timerDuration);
+    }
+    _chime?.cancel();
     // The input reappears showing the (valid) duration.
     _entryValid = true;
     _stopTicker();
@@ -148,31 +218,66 @@ class CountdownController extends Cubit<CountdownState> {
   }
 
   /// Space bar: pause a running timer, resume a paused one, dismiss a
-  /// finished one. An idle timer is started from its input instead.
+  /// finished one (or start the next pomodoro phase). An idle timer is
+  /// started from its input instead.
   Future<void> toggle() => switch (_countdown.status) {
     CountdownStatus.running => pause(),
     CountdownStatus.paused => resume(),
-    CountdownStatus.finished => reset(),
+    CountdownStatus.finished => _pomodoro == null ? reset() : startNextPhase(),
     CountdownStatus.idle =>
       _entryValid ? start(_countdown.duration) : Future<void>.value(),
   };
 
   /// Recomputes from the wall clock (tick and app resume).
   Future<void> check() async {
+    final endsAt = _countdown.endsAt;
     final finished = _countdown.checkFinished();
     _publish();
-    if (!finished) return;
+    if (!finished) {
+      // The wall clock went back: the countdown rebased its end to a full
+      // duration from now, so the end timer, snapshot and system alert
+      // (still at the old instant) follow it.
+      if (_countdown.endsAt != endsAt) await _running();
+      return;
+    }
     _stopTicker();
-    await _persist();
+    final done = _pomodoro;
+    // The next phase starts at once; it persists itself.
+    if (done != null) {
+      await _startPhase(done.next());
+    } else {
+      await _persist();
+    }
     final settings = _settings();
-    if (settings.alertSound) await _sound.playAlarm();
+    if (settings.alertSound) {
+      await _sound.playAlarm();
+      if (done != null) {
+        // A short chime, not the 60 s alarm, while the next phase runs.
+        _chime?.cancel();
+        _chime = Timer(_chimeFor, () => unawaited(_sound.stopAlarm()));
+      }
+    }
     if (_notifyOnFinish && settings.systemAlerts) {
-      await _alerts.showNow(
-        title: strings.clock.timer_finished_title,
-        body: strings.clock.timer_finished_body,
-      );
+      final (title, body) = _alertText(done);
+      await _alerts.showNow(title: title, body: body);
     }
   }
+
+  /// Title and body for the alert at the end of [phase] (null: the timer).
+  (String, String) _alertText(Pomodoro? phase) => switch (phase?.phase) {
+    null => (
+      strings.clock.timer_finished_title,
+      strings.clock.timer_finished_body,
+    ),
+    PomodoroPhase.focus => (
+      strings.clock.pomodoro,
+      strings.clock.pomodoro_focus_done,
+    ),
+    PomodoroPhase.rest => (
+      strings.clock.pomodoro,
+      strings.clock.pomodoro_break_done,
+    ),
+  };
 
   /// Brings the system alert in line with the System notifications setting
   /// after it changes: scheduled for a running countdown when on, cancelled
@@ -190,12 +295,15 @@ class CountdownController extends Cubit<CountdownState> {
     if (_settings().systemAlerts) await _schedule();
   }
 
-  Future<void> _schedule() => _alerts.schedule(
-    id: alertId,
-    at: _countdown.endsAt!,
-    title: strings.clock.timer_finished_title,
-    body: strings.clock.timer_finished_body,
-  );
+  Future<void> _schedule() {
+    final (title, body) = _alertText(_pomodoro);
+    return _alerts.schedule(
+      id: alertId,
+      at: _countdown.endsAt!,
+      title: title,
+      body: body,
+    );
+  }
 
   void _startTicker() {
     _stopTicker();
@@ -212,7 +320,13 @@ class CountdownController extends Cubit<CountdownState> {
     _end = null;
   }
 
-  Future<void> _persist() => _repository.saveCountdown(_countdown.toJson());
+  Future<void> _persist() => _repository.saveCountdown({
+    ..._countdown.toJson(),
+    if (_pomodoro case final p?) ...{
+      'pomodoro': p.toJson(),
+      'timerMs': _timerDuration.inMilliseconds,
+    },
+  });
 
   void _publish() {
     if (isClosed) return;
@@ -221,6 +335,7 @@ class CountdownController extends Cubit<CountdownState> {
         status: _countdown.status,
         duration: _countdown.duration,
         remaining: ceilToSecond(_countdown.remaining()),
+        pomodoro: _pomodoro,
       ),
     );
   }
@@ -228,6 +343,7 @@ class CountdownController extends Cubit<CountdownState> {
   @override
   Future<void> close() {
     _stopTicker();
+    _chime?.cancel();
     return super.close();
   }
 }

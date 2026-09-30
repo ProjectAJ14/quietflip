@@ -1,5 +1,5 @@
-/// Platform adapters behind small contracts: full screen, screen wake, local
-/// alerts, sounds and key-value storage.
+/// Platform adapters behind small contracts: full screen, screen wake,
+/// orientation lock, local alerts, sounds and key-value storage.
 library;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -13,6 +13,7 @@ import 'package:device_services/src/full_screen/window_full_screen_listener.dart
 import 'package:device_services/src/guarded.dart';
 import 'package:device_services/src/local_alerts/local_alerts_config.dart';
 import 'package:device_services/src/local_alerts/notification_local_alerts.dart';
+import 'package:device_services/src/orientation/system_orientation_lock.dart';
 import 'package:device_services/src/screen_wake/wakelock_screen_wake.dart';
 import 'package:device_services/src/sound/audio_sound_player.dart';
 import 'package:device_services/src/storage/preferences_key_value_store.dart';
@@ -44,6 +45,8 @@ Future<void> init({
   FlutterLocalNotificationsPlugin? notifications,
   SharedPreferencesAsync? preferences,
   AudioPlayer Function() audioPlayer = AudioPlayer.new,
+  Future<void> Function(List<DeviceOrientation>) orientations =
+      SystemChrome.setPreferredOrientations,
 }) async {
   final logger = di.get<Logger>();
   final target = platform ?? defaultTargetPlatform;
@@ -56,6 +59,15 @@ Future<void> init({
     windowManager: windowManager ?? WindowManager.instance,
   );
   di.register<ScreenWake>(WakelockScreenWake(logger: logger, toggle: wakelock));
+  di.register<OrientationLock>(
+    SystemOrientationLock(
+      logger: logger,
+      supported:
+          !isWeb &&
+          (target == TargetPlatform.android || target == TargetPlatform.iOS),
+      apply: orientations,
+    ),
+  );
   di.register<LocalAlerts>(
     NotificationLocalAlerts(
       plugin: notifications ?? FlutterLocalNotificationsPlugin(),

@@ -9,6 +9,7 @@ import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/completion_banner.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +21,8 @@ import 'package:timekeeping/timekeeping.dart';
 /// screen the controls hide and a tap, click, mouse move or key shows them
 /// for [revealFor].
 ///
-/// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes.
+/// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes,
+/// S seconds (Clock mode), D dim the digits.
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -56,6 +58,10 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   bool _visible = true;
   bool? _wakeOn;
   bool _revealed = false;
+
+  /// Shows the full-screen note with the controls revealed on entering full
+  /// screen, until they hide.
+  bool _hint = false;
   Timer? _hide;
 
   @override
@@ -64,6 +70,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final state = WidgetsBinding.instance.lifecycleState;
     _resumed = state == null || state == AppLifecycleState.resumed;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+    widget.fullScreen.active.addListener(_onFullScreen);
     widget.clock.start();
     // A timer that finished while the app was closed shows its banner.
     if (widget.countdown.state.status == CountdownStatus.finished) {
@@ -81,6 +88,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   @override
   void dispose() {
     _lifecycle.dispose();
+    widget.fullScreen.active.removeListener(_onFullScreen);
     _hide?.cancel();
     widget.clock.stop();
     if (_wakeOn ?? false) unawaited(widget.wake.setEnabled(false));
@@ -104,17 +112,58 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     unawaited(widget.wake.setEnabled(on));
   }
 
+  /// Entering full screen reveals the controls with the plain-words note
+  /// of what full screen does.
+  void _onFullScreen() {
+    if (!widget.fullScreen.active.value) {
+      _hint = false;
+      return;
+    }
+    _hint = true;
+    _reveal();
+  }
+
   void _reveal() {
     if (!widget.fullScreen.active.value) return;
     _hide?.cancel();
     _hide = Timer(FlipClockScreen.revealFor, () {
-      if (mounted) setState(() => _revealed = false);
+      if (mounted) {
+        setState(() {
+          _revealed = false;
+          _hint = false;
+        });
+      }
     });
     if (!_revealed) setState(() => _revealed = true);
   }
 
   void _setMode(ClockMode mode) => unawaited(
     widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
+  );
+
+  /// Toggling seconds also retires the one-time hint.
+  void _toggleSeconds() {
+    final s = widget.settings.state;
+    unawaited(
+      widget.settings.update(
+        s.copyWith(showSeconds: !s.showSeconds, secondsHintSeen: true),
+      ),
+    );
+  }
+
+  void _dim() {
+    final s = widget.settings.state;
+    unawaited(
+      widget.settings.update(
+        s.copyWith(digitBrightness: ClockSettings.nextDim(s.digitBrightness)),
+      ),
+    );
+  }
+
+  void _dismissHint() => unawaited(
+    widget.settings.update(
+      widget.settings.state.copyWith(secondsHintSeen: true),
+    ),
   );
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -142,12 +191,16 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       } else {
         widget.stopwatch.toggle();
       }
+    } else if (key == LogicalKeyboardKey.keyS && mode == ClockMode.clock) {
+      _toggleSeconds();
     } else if (key == LogicalKeyboardKey.digit1) {
       _setMode(ClockMode.clock);
     } else if (key == LogicalKeyboardKey.digit2) {
       _setMode(ClockMode.timer);
     } else if (key == LogicalKeyboardKey.digit3) {
       _setMode(ClockMode.stopwatch);
+    } else if (key == LogicalKeyboardKey.keyD) {
+      _dim();
     } else {
       return KeyEventResult.ignored;
     }
@@ -176,15 +229,21 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
             final bar = _TopBar(
               mode: settings.lastMode,
               fullScreen: full,
+              showSeconds: settings.showSeconds,
+              onSeconds: _toggleSeconds,
               onMode: _setMode,
               onFullScreen: () => unawaited(widget.fullScreen.toggle()),
               onSettings: widget.onOpenSettings,
+              onDim: _dim,
             );
             Widget content = _ModeView(
               screen: widget,
               settings: settings,
               controlsVisible: controlsVisible,
             );
+            if (full && settings.subtleMovement) {
+              content = SubtleMovement(clock: widget.clock, child: content);
+            }
             // Screen readers cannot send the pointer events that reveal hidden
             // controls, so the display itself offers "show controls".
             if (full && !_revealed) {
@@ -215,14 +274,44 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                                 Positioned.fill(child: content),
                                 Align(
                                   alignment: Alignment.topCenter,
-                                  child: Reveal(visible: _revealed, child: bar),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Reveal(visible: _revealed, child: bar),
+                                      // Flexible, so a tiny window squeezes the
+                                      // note instead of overflowing.
+                                      Flexible(
+                                        child: Reveal(
+                                          visible: _revealed && _hint,
+                                          child: const _FullScreenNote(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             )
                           : Column(
                               children: [
                                 bar,
-                                Expanded(child: content),
+                                Expanded(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(child: content),
+                                      // Overlays the display's padding so
+                                      // the digits keep their full size.
+                                      if (settings.lastMode ==
+                                              ClockMode.clock &&
+                                          !settings.secondsHintSeen)
+                                        Align(
+                                          alignment: Alignment.topCenter,
+                                          child: _SecondsHint(
+                                            onDismiss: _dismissHint,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                     ),
@@ -237,20 +326,54 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   }
 }
 
+/// What full screen does, in plain words, shown briefly on entering it.
+/// A live region, so screen readers announce it too.
+class _FullScreenNote extends StatelessWidget {
+  const _FullScreenNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          child: Text(
+            strings.clock.full_screen_note,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium!.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.mode,
     required this.fullScreen,
+    required this.showSeconds,
+    required this.onSeconds,
     required this.onMode,
     required this.onFullScreen,
     required this.onSettings,
+    required this.onDim,
   });
 
   final ClockMode mode;
   final bool fullScreen;
+  final bool showSeconds;
+  final VoidCallback onSeconds;
   final ValueChanged<ClockMode> onMode;
   final VoidCallback onFullScreen;
   final VoidCallback onSettings;
+  final VoidCallback onDim;
 
   /// Below this width the mode segments show icons only.
   static const double compactWidth = 520;
@@ -302,6 +425,21 @@ class _TopBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
+            if (mode == ClockMode.clock)
+              IconButton(
+                tooltip: showSeconds
+                    ? strings.clock.hide_seconds
+                    : strings.clock.show_seconds,
+                isSelected: showSeconds,
+                onPressed: onSeconds,
+                icon: const Icon(Icons.av_timer_rounded),
+              ),
+            if (fullScreen)
+              IconButton(
+                tooltip: strings.clock.dim_digits,
+                onPressed: onDim,
+                icon: const Icon(Icons.brightness_6_rounded),
+              ),
             IconButton(
               tooltip: fullScreen
                   ? strings.clock.exit_full_screen
@@ -320,6 +458,37 @@ class _TopBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One-time, quiet pointer to the seconds button, with a dismiss control.
+class _SecondsHint extends StatelessWidget {
+  const _SecondsHint({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            strings.clock.seconds_hint,
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          IconButton(
+            tooltip: strings.clock.dismiss_hint,
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
       ),
     );
   }
@@ -352,11 +521,53 @@ class _ModeView extends StatelessWidget {
               use24h: settings.use24h,
               showSeconds: settings.showSeconds,
             );
-            return Center(
-              child: FlipDisplay(
-                text: text,
-                semanticsLabel: strings.clock.current_time(text),
-                onFlip: flip,
+            if (!settings.showDate) {
+              return Center(
+                child: Opacity(
+                  opacity: settings.digitBrightness,
+                  child: FlipDisplay(
+                    text: text,
+                    semanticsLabel: strings.clock.current_time(text),
+                    onFlip: flip,
+                  ),
+                ),
+              );
+            }
+            final date = MaterialLocalizations.of(context).formatFullDate(now);
+            final theme = Theme.of(context);
+            // The date dims with the digits, so it never outshines them.
+            return Opacity(
+              opacity: settings.digitBrightness,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: FlipDisplay(
+                        text: text,
+                        semanticsLabel: strings.clock.current_time_and_date(
+                          text,
+                          date,
+                        ),
+                        onFlip: flip,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Read as part of the display's label above.
+                  ExcludeSemantics(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        date,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -365,10 +576,12 @@ class _ModeView extends StatelessWidget {
           controller: screen.countdown,
           controlsVisible: controlsVisible,
           onFlip: flip,
+          brightness: settings.digitBrightness,
         ),
         ClockMode.stopwatch => _StopwatchView(
           controller: screen.stopwatch,
           controlsVisible: controlsVisible,
+          brightness: settings.digitBrightness,
         ),
       },
     );
@@ -380,11 +593,13 @@ class _TimerView extends StatelessWidget {
     required this.controller,
     required this.controlsVisible,
     required this.onFlip,
+    required this.brightness,
   });
 
   final CountdownController controller;
   final bool controlsVisible;
   final VoidCallback? onFlip;
+  final double brightness;
 
   @override
   Widget build(BuildContext context) =>
@@ -397,35 +612,72 @@ class _TimerView extends StatelessWidget {
                 initial: state.duration,
                 onChanged: (d) => unawaited(controller.setDuration(d)),
                 onStart: (d) => unawaited(controller.start(d)),
+                secondary: FilledButton.tonalIcon(
+                  onPressed: () => unawaited(controller.startPomodoro()),
+                  icon: const Icon(Icons.repeat_rounded),
+                  label: Text(strings.clock.pomodoro),
+                ),
               ),
             );
           }
           final text = formatHms(state.remaining);
-          return Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: FlipDisplay(
-                    text: text,
-                    semanticsLabel: strings.clock.time_remaining(text),
-                    onFlip: onFlip,
+          final pomodoro = state.pomodoro;
+          final theme = Theme.of(context);
+          return _WithControls(
+            display: Column(
+              children: [
+                if (pomodoro != null)
+                  // Announced as each phase starts.
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      pomodoro.phase == PomodoroPhase.focus
+                          ? strings.clock.pomodoro_focus(pomodoro.round)
+                          : strings.clock.pomodoro_break(pomodoro.round),
+                      style: theme.textTheme.titleLarge!.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Center(
+                    child: Opacity(
+                      opacity: brightness,
+                      child: FlipDisplay(
+                        text: text,
+                        semanticsLabel: strings.clock.time_remaining(text),
+                        onFlip: onFlip,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (state.status == CountdownStatus.finished)
-                CompletionBanner(onDismiss: () => unawaited(controller.reset()))
-              else
-                Reveal(
-                  visible: controlsVisible,
-                  child: RunControls(
-                    running: state.status == CountdownStatus.running,
-                    started: true,
-                    onPrimary: () => unawaited(controller.toggle()),
-                    onReset: () => unawaited(controller.reset()),
+              ],
+            ),
+            controls: state.status == CountdownStatus.finished
+                ? CompletionBanner(
+                    onDismiss: () => unawaited(controller.reset()),
+                    action: pomodoro == null
+                        ? null
+                        : FilledButton.tonal(
+                            autofocus: true,
+                            onPressed: () =>
+                                unawaited(controller.startNextPhase()),
+                            child: Text(
+                              pomodoro.phase == PomodoroPhase.focus
+                                  ? strings.clock.start_break
+                                  : strings.clock.start_focus,
+                            ),
+                          ),
+                  )
+                : Reveal(
+                    visible: controlsVisible,
+                    child: RunControls(
+                      running: state.status == CountdownStatus.running,
+                      started: true,
+                      onPrimary: () => unawaited(controller.toggle()),
+                      onReset: () => unawaited(controller.reset()),
+                    ),
                   ),
-                ),
-            ],
           );
         },
       );
@@ -435,10 +687,12 @@ class _StopwatchView extends StatelessWidget {
   const _StopwatchView({
     required this.controller,
     required this.controlsVisible,
+    required this.brightness,
   });
 
   final StopwatchController controller;
   final bool controlsVisible;
+  final double brightness;
 
   @override
   Widget build(BuildContext context) =>
@@ -446,28 +700,52 @@ class _StopwatchView extends StatelessWidget {
         bloc: controller,
         builder: (context, state) {
           final text = formatStopwatch(state.elapsed);
-          return Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: FlipDisplay(
-                    text: text,
-                    semanticsLabel: strings.clock.elapsed(text),
-                  ),
-                ),
+          return _WithControls(
+            display: Opacity(
+              opacity: brightness,
+              child: FlipDisplay(
+                text: text,
+                semanticsLabel: strings.clock.elapsed(text),
               ),
-              const SizedBox(height: 16),
-              Reveal(
-                visible: controlsVisible,
-                child: RunControls(
-                  running: state.running,
-                  started: !state.isIdle,
-                  onPrimary: controller.toggle,
-                  onReset: controller.reset,
-                ),
+            ),
+            controls: Reveal(
+              visible: controlsVisible,
+              child: RunControls(
+                running: state.running,
+                started: !state.isIdle,
+                onPrimary: controller.toggle,
+                onReset: controller.reset,
               ),
-            ],
+            ),
           );
         },
       );
+}
+
+/// The display over its controls. On a very short window (a 100 px tall
+/// split view) the controls and the gap shrink to at most half the height
+/// instead of overflowing; `RunControls` and `CompletionBanner` scale down.
+class _WithControls extends StatelessWidget {
+  const _WithControls({required this.display, required this.controls});
+
+  final Widget display;
+  final Widget controls;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => Column(
+      children: [
+        Expanded(child: Center(child: display)),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: box.maxHeight / 2),
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: (box.maxHeight / 10).clamp(0.0, 16.0),
+            ),
+            child: controls,
+          ),
+        ),
+      ],
+    ),
+  );
 }

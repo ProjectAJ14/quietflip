@@ -1,8 +1,11 @@
+import 'package:device_services/device_services.dart' show ScreenOrientation;
 import 'package:device_services/src/full_screen/browser_full_screen.dart';
 import 'package:device_services/src/full_screen/platform_full_screen_controller.dart';
 import 'package:device_services/src/full_screen/window_full_screen_listener.dart';
+import 'package:device_services/src/orientation/system_orientation_lock.dart';
 import 'package:device_services/src/screen_wake/wakelock_screen_wake.dart';
 import 'package:device_services/src/storage/preferences_key_value_store.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,6 +85,47 @@ void main() {
         logger: logger,
         toggle: ({required enable}) => Future.error(UnsupportedError('no')),
       ).setEnabled(true);
+      expect(logger.errors, hasLength(1));
+    });
+  });
+
+  group('SystemOrientationLock', () {
+    test('maps each orientation to preferred device orientations', () async {
+      final applied = <List<DeviceOrientation>>[];
+      final lock = SystemOrientationLock(
+        logger: logger,
+        supported: true,
+        apply: (o) async => applied.add(o),
+      );
+      for (final o in ScreenOrientation.values) {
+        await lock.set(o);
+      }
+      expect(applied, [
+        <DeviceOrientation>[],
+        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+        [DeviceOrientation.portraitUp],
+      ]);
+      expect(lock.supported, isTrue);
+    });
+
+    test('unsupported platform does nothing', () async {
+      var calls = 0;
+      final lock = SystemOrientationLock(
+        logger: logger,
+        supported: false,
+        apply: (_) async => calls++,
+      );
+      await lock.set(ScreenOrientation.portrait);
+      expect(calls, 0);
+      expect(lock.supported, isFalse);
+    });
+
+    test('a throwing platform call is logged, not rethrown', () async {
+      await SystemOrientationLock(
+        logger: logger,
+        supported: true,
+        apply: (_) => Future.error(PlatformException(code: 'no')),
+      ).set(ScreenOrientation.landscape);
       expect(logger.errors, hasLength(1));
     });
   });

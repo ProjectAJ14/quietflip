@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc/bloc.dart' show Closable;
 import 'package:core/core.dart' as core;
@@ -16,6 +17,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/gestures.dart';
@@ -115,6 +117,41 @@ void main() {
     );
     await tester.tap(find.byTooltip(strings.clock.settings));
     expect(h.settingsOpened, 1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('date line shows under the clock and rolls over at midnight', (
+    tester,
+  ) async {
+    final h = Harness();
+    h.wall.now = DateTime(2026, 9, 29, 23, 59, 59);
+    await tester.pumpWidget(h.screen());
+    expect(find.text('Tuesday, September 29, 2026'), findsNothing);
+
+    await h.settings.update(h.settings.state.copyWith(showDate: true));
+    await tester.pump();
+    expect(find.text('Tuesday, September 29, 2026'), findsOne);
+    expect(
+      find.bySemanticsLabel(
+        strings.clock.current_time_and_date(
+          '23:59',
+          'Tuesday, September 29, 2026',
+        ),
+      ),
+      findsOne,
+    );
+
+    h.wall.advance(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Wednesday, September 30, 2026'), findsOne);
+
+    // A tiny window scales the date down instead of overflowing.
+    tester.view
+      ..physicalSize = const Size(200, 200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 
@@ -220,6 +257,84 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('pomodoro: start, round label, next phase, pause, reset', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    await tester.tap(find.text(strings.clock.pomodoro));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_focus(1)), findsOne);
+    expect(
+      find.bySemanticsLabel(strings.clock.time_remaining('00:25:00')),
+      findsOne,
+    );
+
+    h.wall.advance(const Duration(minutes: 25));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_break(1)), findsOne);
+    expect(find.text(strings.clock.times_up), findsNothing);
+    expect(h.sound.alarms, 1);
+    await tester.pump(const Duration(seconds: 5));
+    expect(h.sound.stops, 1);
+
+    await key(tester, LogicalKeyboardKey.space);
+    expect(h.countdown.state.status, CountdownStatus.paused);
+    await tester.tap(find.text(strings.clock.reset));
+    await tester.pump();
+    expect(find.byType(TimerInput), findsOne);
+    expect(find.text(strings.clock.pomodoro_break(1)), findsNothing);
+    expect(h.countdown.state.duration, Countdown.defaultDuration);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('a pomodoro phase that ended while away offers the next one', (
+    tester,
+  ) async {
+    final h = Harness();
+    h.store.data[SettingsRepositoryImp.countdownKey] = jsonEncode({
+      'durationMs': const Duration(minutes: 5).inMilliseconds,
+      'status': 'running',
+      'endsAtMs': h.wall.now.millisecondsSinceEpoch - 60000,
+      'pomodoro': {'phase': 'rest', 'round': 2},
+    });
+    await h.countdown.load();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    expect(h.settings.state.lastMode, ClockMode.timer);
+    expect(find.text(strings.clock.times_up), findsOne);
+    expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
+    await tester.tap(find.text(strings.clock.start_focus));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_focus(3)), findsOne);
+    expect(h.countdown.state.status, CountdownStatus.running);
+    await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('a finished focus offers Start break', (tester) async {
+    final h = Harness();
+    h.store.data[SettingsRepositoryImp.countdownKey] = jsonEncode({
+      'durationMs': const Duration(minutes: 25).inMilliseconds,
+      'status': 'finished',
+      'pomodoro': {'phase': 'focus', 'round': 1},
+    });
+    await h.countdown.load();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    expect(find.text(strings.clock.start_break), findsOne);
+    await tester.tap(find.text(strings.clock.dismiss));
+    await tester.pump();
+    expect(find.byType(TimerInput), findsOne);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
   testWidgets('Space activates a focused control instead of the timer', (
     tester,
   ) async {
@@ -242,6 +357,7 @@ void main() {
     await tester.pumpWidget(h.screen());
     await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
     await tester.pump();
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
     final reveal = find.bySemanticsLabel(strings.clock.show_controls);
     expect(reveal, findsOne);
     tester.semantics.tap(find.semantics.byLabel(strings.clock.show_controls));
@@ -254,6 +370,69 @@ void main() {
     await tester.pumpAndSettle(FlipClockScreen.revealFor);
     semantics.dispose();
     await h.dispose(tester);
+  });
+
+  testWidgets('entering full screen shows what it does, then hides it', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    final note = find.text(strings.clock.full_screen_note);
+    expect(note, findsNothing);
+
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(revealOf(tester, note).visible, isTrue);
+    expect(
+      tester.getSemantics(note),
+      isSemantics(label: strings.clock.full_screen_note, isLiveRegion: true),
+    );
+
+    expect(find.semantics.byLabel(strings.clock.full_screen_note), findsOne);
+
+    // Hidden with the controls after revealFor.
+    await tester.pump(FlipClockScreen.revealFor);
+    expect(revealOf(tester, note).visible, isFalse);
+    expect(
+      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
+      isFalse,
+    );
+    await tester.pumpAndSettle();
+    // Faded out, so screen readers no longer see it either.
+    expect(
+      find.semantics.byLabel(strings.clock.full_screen_note),
+      findsNothing,
+    );
+
+    // A later reveal shows the controls only, not the note again.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(
+      revealOf(tester, find.byTooltip(strings.clock.settings)).visible,
+      isTrue,
+    );
+    expect(revealOf(tester, note).visible, isFalse);
+
+    // Leaving and re-entering shows it again; leaving clears it.
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(note, findsNothing);
+    await key(tester, LogicalKeyboardKey.keyF);
+    expect(revealOf(tester, note).visible, isTrue);
+    await key(tester, LogicalKeyboardKey.keyF);
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    semantics.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('the full-screen listener is removed on dispose', (tester) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await h.dispose(tester);
+    // No listener left: toggling after dispose must not touch the old state.
+    await h.full.toggle();
+    await tester.pump(FlipClockScreen.revealFor);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('timer input rejects out-of-range values', (tester) async {
@@ -330,6 +509,68 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('seconds button and S toggle seconds and retire the hint', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    final hint = find.text(strings.clock.seconds_hint);
+    expect(hint, findsOne);
+
+    await tester.tap(find.byTooltip(strings.clock.show_seconds));
+    await tester.pump();
+    expect(h.settings.state.showSeconds, isTrue);
+    expect(h.settings.state.secondsHintSeen, isTrue);
+    expect(hint, findsNothing);
+    expect(find.byTooltip(strings.clock.hide_seconds), findsOne);
+    expect(
+      find.bySemanticsLabel(strings.clock.current_time('09:41:00')),
+      findsOne,
+    );
+    final saved = await SettingsRepositoryImp(
+      store: h.store,
+      logger: di.get<Logger>(),
+    ).load();
+    expect(saved.secondsHintSeen, isTrue);
+
+    await key(tester, LogicalKeyboardKey.keyS);
+    expect(h.settings.state.showSeconds, isFalse);
+    expect(find.byTooltip(strings.clock.show_seconds), findsOne);
+
+    // Not in other modes: no button, S ignored.
+    await key(tester, LogicalKeyboardKey.digit3);
+    expect(find.byTooltip(strings.clock.show_seconds), findsNothing);
+    await key(tester, LogicalKeyboardKey.keyS);
+    expect(h.settings.state.showSeconds, isFalse);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('seconds hint: dismiss saves; hidden in full screen', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    final hint = find.text(strings.clock.seconds_hint);
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(hint, findsNothing);
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(hint, findsOne);
+
+    await tester.tap(find.byTooltip(strings.clock.dismiss_hint));
+    await tester.pump();
+    expect(hint, findsNothing);
+    expect(h.settings.state.showSeconds, isFalse);
+    expect(
+      h.store.data[SettingsRepositoryImp.settingsKey],
+      contains('"secondsHintSeen":true'),
+    );
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    await h.dispose(tester);
+  });
+
   testWidgets('digits typed into the timer do not switch modes', (
     tester,
   ) async {
@@ -354,6 +595,9 @@ void main() {
     expect(h.full.toggles, 1);
     final settingsButton = find.byTooltip(strings.clock.settings);
     final start = find.text(strings.clock.start);
+    // Entering shows the controls briefly, then hides them.
+    expect(revealOf(tester, settingsButton).visible, isTrue);
+    await tester.pump(FlipClockScreen.revealFor);
     expect(revealOf(tester, settingsButton).visible, isFalse);
     expect(revealOf(tester, start).visible, isFalse);
 
@@ -378,6 +622,157 @@ void main() {
     expect(h.full.value.value, isFalse);
     await mouse.removePointer();
     await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('dim button and D key dim only the digits, and save', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    double digits() => tester
+        .widget<Opacity>(
+          find
+              .ancestor(
+                of: find.byType(FlipDisplay),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        )
+        .opacity;
+    final dim = find.byTooltip(strings.clock.dim_digits);
+    expect(digits(), 1.0);
+    expect(dim, findsNothing);
+
+    await key(tester, LogicalKeyboardKey.keyD);
+    expect(h.settings.state.digitBrightness, 0.5);
+    expect(digits(), 0.5);
+    final saved = h.store.data[SettingsRepositoryImp.settingsKey]!;
+    expect(
+      ClockSettings.fromJson(jsonDecode(saved) as Map<String, Object?>),
+      const ClockSettings(digitBrightness: 0.5),
+    );
+
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(revealOf(tester, dim).visible, isTrue);
+    await tester.tap(dim);
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 0.2);
+    // The top bar is never dimmed.
+    expect(
+      find.ancestor(of: dim, matching: find.byType(Opacity)),
+      findsNothing,
+    );
+    await tester.tap(dim);
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 1.0);
+
+    for (final mode in [ClockMode.timer, ClockMode.stopwatch]) {
+      await h.settings.update(
+        ClockSettings(lastMode: mode, digitBrightness: 0.2),
+      );
+      if (mode == ClockMode.timer) {
+        await h.countdown.start(const Duration(minutes: 1));
+      }
+      await tester.pump();
+      expect(digits(), 0.2, reason: '$mode');
+      expect(
+        find.ancestor(
+          of: find.byType(RunControls),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+        reason: '$mode',
+      );
+    }
+    await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('subtle movement shifts the display each minute in full screen', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing, reason: 'setting off');
+
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
+    await tester.pump();
+    Offset shift() => tester.getTopLeft(find.byType(FlipDisplay));
+    final first = shift();
+    expect(SubtleMovement.offsetAt(h.wall.now), isNot(Offset.zero));
+
+    // Same minute: no movement.
+    h.wall.advance(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(shift(), first);
+
+    // Next minute: moves gently over about a second.
+    final from = SubtleMovement.offsetAt(h.wall.now);
+    h.wall.now = DateTime(2026, 9, 29, 9, 42);
+    await tester.pump(const Duration(seconds: 1));
+    final to = SubtleMovement.offsetAt(h.wall.now);
+    expect(to, isNot(from));
+    await tester.pump(const Duration(milliseconds: 500));
+    final mid = shift();
+    expect(mid, isNot(first));
+    await tester.pump(const Duration(seconds: 1));
+    expect(shift() - first, to - from);
+    for (var m = 0; m < 24 * 60; m++) {
+      final o = SubtleMovement.offsetAt(DateTime(2026, 1, 1, 0, m));
+      expect(o.dx.abs() <= SubtleMovement.maxShift, isTrue);
+      expect(o.dy.abs() <= SubtleMovement.maxShift, isTrue);
+    }
+
+    // Turning it off, or leaving full screen, removes it.
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: false));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing);
+    await h.settings.update(h.settings.state.copyWith(subtleMovement: true));
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsOne);
+    await h.full.exit();
+    await tester.pump();
+    expect(find.byType(SubtleMovement), findsNothing);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('subtle movement jumps with reduced motion and never overflows', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(200, 100)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = Harness();
+    await h.settings.update(const ClockSettings(subtleMovement: true));
+    h.full.value.value = true;
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: h.screen(),
+      ),
+    );
+    expect(find.byType(SubtleMovement), findsOne);
+    expect(tester.takeException(), isNull);
+    final before = tester.getTopLeft(find.byType(FlipDisplay));
+    h.wall.now = DateTime(2026, 9, 29, 9, 42);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getTopLeft(find.byType(FlipDisplay)),
+      isNot(before),
+      reason: 'jumped without animating',
+    );
     await h.dispose(tester);
   });
 
@@ -440,11 +835,34 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme,
-        home: SettingsScreen(settings: h.settings, isWeb: true),
+        home: SettingsScreen(
+          settings: h.settings,
+          isWeb: true,
+          orientationSupported: true,
+        ),
       ),
     );
     expect(find.text(strings.clock.web_closed_tab_note), findsOne);
     expect(find.text(strings.clock.shortcut_full_screen), findsOne);
+    expect(find.text(strings.clock.shortcut_seconds), findsOne);
+    expect(find.text(strings.clock.shortcut_dim), findsOne);
+    expect(find.text(strings.clock.percent('100')), findsOne);
+    final slider = find.byType(Slider);
+    expect(
+      tester.getSemantics(slider),
+      isSemantics(
+        label: strings.clock.digit_brightness,
+        value: strings.clock.percent('100'),
+        isSlider: true,
+      ),
+    );
+    await tester.drag(slider, const Offset(-2000, 0));
+    await tester.pump();
+    expect(h.settings.state.digitBrightness, 0.2);
+    expect(find.text(strings.clock.percent('20')), findsOne);
+    await h.settings.update(const ClockSettings());
+    await tester.pump();
+    expect(find.text(strings.clock.full_screen_note), findsOne);
 
     Future<void> tap(String label) async {
       await tester.tap(find.text(label));
@@ -454,9 +872,12 @@ void main() {
     await tap(strings.clock.theme_light);
     await tap(strings.clock.use_24h);
     await tap(strings.clock.show_seconds);
+    await tap(strings.clock.show_date);
     await tap(strings.clock.flip_sound);
     await tap(strings.clock.alert_sound);
     await tap(strings.clock.keep_screen_awake_description);
+    await tap(strings.clock.subtle_movement);
+    await tap(strings.clock.orientation_landscape);
     expect(
       h.settings.state,
       const ClockSettings(
@@ -464,8 +885,11 @@ void main() {
         use24h: false,
         showSeconds: true,
         flipSound: true,
+        showDate: true,
         alertSound: false,
         keepAwake: true,
+        subtleMovement: true,
+        orientation: ClockOrientation.landscape,
       ),
     );
     expect(h.settings.appearance.value, AppearanceMode.light);
@@ -481,21 +905,55 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('orientation control is hidden where the lock is unsupported', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: SettingsScreen(settings: h.settings),
+      ),
+    );
+    expect(find.text(strings.clock.theme), findsOne);
+    expect(find.text(strings.clock.orientation), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('init registers everything; routes open settings and back', (
     tester,
   ) async {
     final store = FakeStore()
-      ..data[SettingsRepositoryImp.settingsKey] = '{"theme":"light"}';
+      ..data[SettingsRepositoryImp.settingsKey] =
+          '{"theme":"light","orientation":"landscape"}';
+    final orientation = FakeOrientation();
     di
       ..register<KeyValueStore>(store)
       ..register<LocalAlerts>(FakeAlerts())
       ..register<SoundPlayer>(FakeSound())
       ..register<FullScreenController>(FakeFullScreen())
-      ..register<ScreenWake>(FakeWake());
+      ..register<ScreenWake>(FakeWake())
+      ..register<OrientationLock>(orientation);
     await flip_clock.init();
     expect(di.has<SettingsRepository>(), isTrue);
     expect(di.has<CountdownController>(), isTrue);
     expect(flip_clock.appearance().value, AppearanceMode.light);
+
+    // The saved orientation applies at start, then follows each change.
+    expect(orientation.calls, [ScreenOrientation.landscape]);
+    final prefs = di.get<SettingsController>();
+    await prefs.update(
+      prefs.state.copyWith(orientation: ClockOrientation.portrait),
+    );
+    await prefs.update(
+      prefs.state.copyWith(orientation: ClockOrientation.auto),
+    );
+    await tester.pump();
+    expect(orientation.calls, [
+      ScreenOrientation.landscape,
+      ScreenOrientation.portrait,
+      ScreenOrientation.auto,
+    ]);
 
     // Settings reach the countdown: turning system alerts on mid-countdown
     // schedules its alert, turning them off cancels it.

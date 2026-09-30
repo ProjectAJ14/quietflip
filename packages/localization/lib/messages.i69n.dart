@@ -645,6 +645,34 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
+  String get hide_seconds => "Hide seconds";
+  String get seconds_hint =>
+      "Tap the seconds button (or press S) to show seconds.";
+  String get dismiss_hint => "Dismiss hint";
+  String get shortcut_seconds => "S: show or hide seconds";
+  String get digit_brightness => "Digit brightness";
+  String get dim_digits => "Dim the digits";
+  String percent(String value) => "$value%";
+  String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
+  String get subtle_movement => "Subtle movement";
+  String get subtle_movement_description =>
+      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+  String get full_screen_note =>
+      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
+  String get show_date => "Show date";
+  String current_time_and_date(String time, String date) =>
+      "Current time $time, $date";
+  String get orientation => "Orientation";
+  String get orientation_auto => "Auto";
+  String get orientation_landscape => "Landscape";
+  String get orientation_portrait => "Portrait";
+  String get pomodoro => "Pomodoro";
+  String pomodoro_focus(int round) => "Focus · Round $round";
+  String pomodoro_break(int round) => "Break · Round $round";
+  String get pomodoro_focus_done => "Focus done. Time for a break.";
+  String get pomodoro_break_done => "Break over. Back to focus.";
+  String get start_focus => "Start focus";
+  String get start_break => "Start break";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -740,6 +768,54 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return time_remaining;
       case 'elapsed':
         return elapsed;
+      case 'hide_seconds':
+        return hide_seconds;
+      case 'seconds_hint':
+        return seconds_hint;
+      case 'dismiss_hint':
+        return dismiss_hint;
+      case 'shortcut_seconds':
+        return shortcut_seconds;
+      case 'digit_brightness':
+        return digit_brightness;
+      case 'dim_digits':
+        return dim_digits;
+      case 'percent':
+        return percent;
+      case 'shortcut_dim':
+        return shortcut_dim;
+      case 'subtle_movement':
+        return subtle_movement;
+      case 'subtle_movement_description':
+        return subtle_movement_description;
+      case 'full_screen_note':
+        return full_screen_note;
+      case 'show_date':
+        return show_date;
+      case 'current_time_and_date':
+        return current_time_and_date;
+      case 'orientation':
+        return orientation;
+      case 'orientation_auto':
+        return orientation_auto;
+      case 'orientation_landscape':
+        return orientation_landscape;
+      case 'orientation_portrait':
+        return orientation_portrait;
+      case 'pomodoro':
+        return pomodoro;
+      case 'pomodoro_focus':
+        return pomodoro_focus;
+      case 'pomodoro_break':
+        return pomodoro_break;
+      case 'pomodoro_focus_done':
+        return pomodoro_focus_done;
+      case 'pomodoro_break_done':
+        return pomodoro_break_done;
+      case 'start_focus':
+        return start_focus;
+      case 'start_break':
+        return start_break;
       default:
         return key;
     }

@@ -96,6 +96,19 @@ class FakeWake implements ScreenWake {
   Future<void> setEnabled(bool on) async => calls.add(on);
 }
 
+class FakeOrientation implements OrientationLock {
+  FakeOrientation({this.supported = true});
+
+  final List<ScreenOrientation> calls = [];
+
+  @override
+  final bool supported;
+
+  @override
+  Future<void> set(ScreenOrientation orientation) async =>
+      calls.add(orientation);
+}
+
 /// A wall clock tests move by hand.
 class FakeClock {
   FakeClock([DateTime? start]) : now = start ?? DateTime(2026, 9, 29, 9, 41);
