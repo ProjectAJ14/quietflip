@@ -22,7 +22,6 @@ import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -105,9 +104,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
 
   /// A text field (the timer input) has focus: gestures are off.
   bool _typing = false;
-
-  /// The last press came from a mouse.
-  bool _mouse = false;
 
   /// The full-screen note, shown for [FlipClockScreen.noteFor] on entering
   /// full screen.
@@ -201,11 +197,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     if (typing != _typing && mounted) setState(() => _typing = typing);
   }
 
-  /// A tap on the clock toggles the chrome. A mouse click only shows it:
-  /// moving the mouse there has already shown it, so toggling would hide
-  /// the controls the person is reaching for. A mouse hides them by idling
-  /// or Esc.
-  void _onTap() => _mouse ? _chrome.wake() : _chrome.tap();
+  /// A tap or click on the clock toggles the chrome.
+  void _onTap() => _chrome.tap();
 
   void _setMode(ClockMode mode) => unawaited(
     widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
@@ -446,10 +439,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       onKeyEvent: _onKey,
       child: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (e) {
-          _mouse = e.kind == PointerDeviceKind.mouse;
-          _chrome.activity();
-        },
+        onPointerDown: (_) => _chrome.activity(),
         onPointerHover: (_) => _chrome.wake(),
         // Status bar icons that stay visible on the skin's ground.
         child: AnnotatedRegion<SystemUiOverlayStyle>(

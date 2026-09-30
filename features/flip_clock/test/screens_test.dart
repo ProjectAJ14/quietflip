@@ -8,6 +8,7 @@ import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
 import 'package:flip_clock/data/models/skin.dart';
+import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
@@ -32,6 +33,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
+import 'contrast.dart';
 import 'fakes.dart';
 
 final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
@@ -1017,6 +1019,25 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets(
+      'the readout clears even when brightness lands after the drag',
+      (tester) async {
+        final h = Harness()..brightness.hold = Completer<void>();
+        await tester.pumpWidget(h.screen());
+        await tester.dragFrom(const Offset(400, 100), const Offset(0, 300));
+        await tester.pump();
+        // The finger is up; the platform answers only now.
+        h.brightness.hold!.complete();
+        h.brightness.hold = null;
+        await tester.pump();
+        await tester.pump();
+        expect(hudOf(tester), isA<IslandBrightnessHud>());
+        await tester.pump(DesignMotion.hudHold);
+        expect(hudOf(tester), isNull);
+        await h.dispose(tester);
+      },
+    );
+
     testWidgets('where the device cannot, the drag dims the digits', (
       tester,
     ) async {
@@ -1493,28 +1514,71 @@ void main() {
     }
   });
 
-  testWidgets('a mouse click shows the chrome and never hides it', (
-    tester,
-  ) async {
+  testWidgets('a mouse click toggles the chrome like a tap', (tester) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await tester.pump(const Duration(seconds: 8));
     expect(chromeOf(tester), ChromeState.hidden);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: const Offset(400, 350));
-    // Moving there shows it (the hover), the click keeps it shown.
+    // Moving there still shows it (desktop discoverability).
     await mouse.moveTo(const Offset(410, 360));
     await tester.pump();
     expect(chromeOf(tester), ChromeState.expanded);
+    // A click hides it, the next shows it again.
+    await mouse.down(const Offset(410, 360));
+    await mouse.up();
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.hidden);
     await mouse.down(const Offset(410, 360));
     await mouse.up();
     await tester.pump();
     expect(chromeOf(tester), ChromeState.expanded);
-    // A touch tap still toggles.
+    // A touch tap toggles too.
     await tester.tapAt(const Offset(400, 350));
     await tester.pump();
     expect(chromeOf(tester), ChromeState.hidden);
     await mouse.removePointer();
     await h.dispose(tester);
+  });
+
+  testWidgets('run controls are legible on every skin in both themes', (
+    tester,
+  ) async {
+    final themes = {
+      'dark': theme.copyWith(extensions: const [DesignColors.dark]),
+      'light': ThemeData(
+        colorScheme: DesignSystem.monoLightScheme(),
+        extensions: const [DesignColors.light],
+      ),
+    };
+    final failures = <String>[];
+    for (final MapEntry(key: name, value: t) in themes.entries) {
+      for (final skin in Skins.builtIn()) {
+        final h = Harness();
+        await h.settings.update(
+          ClockSettings(skinId: skin.id, lastMode: ClockMode.stopwatch),
+        );
+        await tester.pumpWidget(h.screen(appTheme: t));
+        void check(List<String> labels) {
+          for (final label in labels) {
+            final f = find.text(label);
+            final ratio = contrastOf(inkOf(tester, f), backdropOf(tester, f));
+            if (ratio < 4.5) {
+              failures.add('$name/${skin.id}/$label $ratio');
+            }
+          }
+        }
+
+        // Idle (Reset disabled), then running.
+        check([strings.clock.start, strings.clock.reset]);
+        h.stopwatch.toggle();
+        await tester.pump();
+        check([strings.clock.pause, strings.clock.reset]);
+        h.stopwatch.reset();
+        await h.dispose(tester);
+      }
+    }
+    expect(failures, isEmpty);
   });
 }

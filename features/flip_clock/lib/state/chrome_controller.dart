@@ -45,8 +45,16 @@ class ChromeController extends Cubit<Chrome> {
   Timer? _idleTimer;
   Timer? _hudTimer;
 
-  /// Any pointer event or gesture: restarts the idle timer, same state.
-  void activity() => _restartIdle();
+  /// The gesture behind the HUD has ended; a late [showHud] (an async
+  /// brightness change landing after the finger lifted) must not keep it.
+  bool _released = false;
+
+  /// Any pointer event or gesture: restarts the idle timer, same state. A
+  /// new gesture holds the HUD again until its own release.
+  void activity() {
+    _released = false;
+    _restartIdle();
+  }
 
   /// Any key, or a pointer hover on desktop: shows the controls.
   void wake() => _set(ChromeState.expanded);
@@ -61,9 +69,14 @@ class ChromeController extends Cubit<Chrome> {
   /// Esc: hides the chrome now.
   void hide() => _set(ChromeState.hidden);
 
-  /// During a gesture: shows [hud] over the current state.
+  /// During a gesture: shows [hud] over the current state. After
+  /// [releaseHud] it re-arms the hold instead, so the HUD still goes.
   void showHud(IslandHud hud) {
-    _hudTimer?.cancel();
+    if (_released) {
+      _armRelease();
+    } else {
+      _hudTimer?.cancel();
+    }
     emit(Chrome(state.state, hud));
     _restartIdle();
   }
@@ -71,6 +84,11 @@ class ChromeController extends Cubit<Chrome> {
   /// The gesture ended: the HUD goes after `hudHold`, back to the state
   /// underneath.
   void releaseHud() {
+    _released = true;
+    _armRelease();
+  }
+
+  void _armRelease() {
     _hudTimer?.cancel();
     _hudTimer = Timer(_hudHold, () {
       if (!isClosed) emit(Chrome(state.state));

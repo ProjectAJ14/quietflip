@@ -150,12 +150,28 @@ void main() {
     });
   });
 
-  test('a second showHud before release cancels it', () {
+  test('a late showHud after releaseHud still clears after hudHold', () {
     _run((async, c, _) {
       c.hide();
       c.showHud(_hud);
       c.releaseHud();
       async.elapse(const Duration(milliseconds: 1000));
+      // The last drag update resolving after the finger lifted.
+      c.showHud(_hud);
+      async.elapse(const Duration(milliseconds: 1199));
+      expect(c.state.hud, _hud);
+      async.elapse(const Duration(milliseconds: 1));
+      expect(c.state, const Chrome(ChromeState.hidden));
+    });
+  });
+
+  test('a new gesture after release holds the hud until its own release', () {
+    _run((async, c, _) {
+      c.hide();
+      c.showHud(_hud);
+      c.releaseHud();
+      async.elapse(const Duration(milliseconds: 1000));
+      c.activity();
       const next = IslandTitleHud('Timer', 1, 3);
       c.showHud(next);
       async.elapse(const Duration(seconds: 5));

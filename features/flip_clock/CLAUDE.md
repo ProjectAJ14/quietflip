@@ -56,7 +56,8 @@ lib/
   state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
                                            `IslandHud`); starts expanded, -> dot after idle, -> hidden
                                            after dotIdle; activity/wake/tap/hide, showHud/releaseHud
-                                           (hudHold), setIdle (zero = never)
+                                           (hudHold; a showHud after releaseHud re-arms the hold, activity()
+                                           starts a new gesture), setIdle (zero = never)
   state/brightness_control.dart            BrightnessControl (plain class): drag/Up-Down keys drive
                                            ScreenBrightness 0..1 where supported, else
                                            digitBrightness 0.2..1 (saved); first
@@ -149,8 +150,10 @@ lib/
   `ClockSettings.controlsIdle`, updated on change). Launch is expanded; 4 s
   idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
   mouse move or any key expands, Esc leaves full screen first, otherwise
-  hides. A tap on the clock toggles (when `tapToggleControls`); a tap on a
-  control is the control's (it wins the gesture arena). Run controls show
+  hides. A tap or mouse click on the clock toggles (when
+  `tapToggleControls`); hovering still shows a hidden chrome. A tap on a
+  control is the control's (it wins the gesture arena). Run controls sit on
+  the island's dark pill in island tokens, never on the skin's ground. Run controls show
   only while expanded (`Reveal`). The mode island sits top centre between
   the corner buttons, at the same inset as the corners: `space-4` inside the
   safe area (`space-6` from 600px shortest side); below
