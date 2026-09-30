@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -25,7 +25,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
-  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode
+  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
                                            (keys flip_clock.settings, flip_clock.countdown;
                                            corrupt/failed read -> defaults, failed write logged)
@@ -60,6 +60,10 @@ lib/
   dismiss; `init()` also calls `syncAlert()` whenever System notifications is
   switched, so a running countdown gains or loses its alert; permission is requested only when the user turns on system
   notifications. Denied -> explain that the in-app alert still works.
+- Orientation: `init()` applies the saved `orientation` through
+  `OrientationLock` at start (unawaited, so launch never waits) and on every
+  distinct change. Settings > Display shows the Orientation control only when
+  `OrientationLock.supported` (Android/iOS), passed in by the router.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
 - Every string from `strings.clock.*`; every colour from `Theme.of(context)`.

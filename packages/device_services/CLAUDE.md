@@ -1,7 +1,7 @@
 # Quietflip: `packages/device_services`
 
-Platform adapters behind small contracts: full screen, screen wake, local
-(non-FCM) notifications, bundled sounds and key-value storage. It knows nothing
+Platform adapters behind small contracts: full screen, screen wake,
+orientation lock, local (non-FCM) notifications, bundled sounds and key-value storage. It knows nothing
 about clocks or timers and holds no product copy: callers pass titles and
 bodies. Layer 2 (see `packages/CLAUDE.md`): depends on `core`, `di`.
 
@@ -13,6 +13,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 |---|---|---|
 | `FullScreenController` | contract: `ValueListenable<bool> active`, `toggle()`, `exit()` | `PlatformFullScreenController` over an apply function. Mobile: `SystemChrome` immersiveSticky / edgeToEdge; desktop: `window_manager` `setFullScreen` + `WindowListener`; web: `browser_full_screen_web.dart` (`requestFullscreen` / `exitFullscreen` + `fullscreenchange`). Unsupported (iPhone Safari) or failing: `toggle` only flips `active` (app hides chrome) |
 | `ScreenWake` | contract: `setEnabled(bool)` | `wakelock_plus` |
+| `OrientationLock`, `ScreenOrientation` | contract: `bool supported`, `set(ScreenOrientation)`; enum `auto`, `landscape`, `portrait` | `SystemOrientationLock` over `SystemChrome.setPreferredOrientations` (auto = `[]`, landscape = left + right, portrait = up). Supported on Android and iOS only; web and desktop: `supported` false, `set` is a no-op |
 | `LocalAlerts` | contract: `requestPermission()`, `schedule({id, at, title, body})`, `cancel(id)`, `showNow({title, body})` | `NotificationLocalAlerts`: `flutter_local_notifications` on every platform (web through its service-worker plugin), initialised lazily on first call so no prompt at startup. `zonedSchedule` in `tz.UTC`; Android `exactAllowWhileIdle` when `canScheduleExactNotifications`, else `inexactAllowWhileIdle`. Web: `schedule` is a no-op, `showNow` works while the tab is open |
 | `SoundPlayer` | contract: `playFlip()`, `playAlarm()`, `stopAlarm()` | `audioplayers` with `assets/sounds/flip.wav` (~40 ms click) and `assets/sounds/alarm.wav` (~1 s two-tone chime, looped until `stopAlarm` or 60 s) |
 | `KeyValueStore` | contract: `read`, `write`, `delete` | `shared_preferences` (`SharedPreferencesAsync`) |
@@ -24,7 +25,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | Path | Responsibility |
 |---|---|
 | `lib/device_services.dart` | Barrel + `init()` |
-| `lib/src/contracts/` | The five `abstract interface class` contracts + `index.dart` |
+| `lib/src/contracts/` | The six `abstract interface class` contracts + `index.dart` |
 | `lib/src/<role>/` | One folder per implementation (web variants via conditional imports) |
 | `assets/sounds/` | Bundled sounds; load with `AssetSource` under `packages/device_services/...` |
 

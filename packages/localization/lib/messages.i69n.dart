@@ -662,6 +662,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get show_date => "Show date";
   String current_time_and_date(String time, String date) =>
       "Current time $time, $date";
+  String get orientation => "Orientation";
+  String get orientation_auto => "Auto";
+  String get orientation_landscape => "Landscape";
+  String get orientation_portrait => "Portrait";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -783,6 +787,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return show_date;
       case 'current_time_and_date':
         return current_time_and_date;
+      case 'orientation':
+        return orientation;
+      case 'orientation_auto':
+        return orientation_auto;
+      case 'orientation_landscape':
+        return orientation_landscape;
+      case 'orientation_portrait':
+        return orientation_portrait;
       default:
         return key;
     }

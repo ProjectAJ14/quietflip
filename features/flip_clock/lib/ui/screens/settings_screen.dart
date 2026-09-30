@@ -15,12 +15,16 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.settings,
     this.isWeb = kIsWeb,
+    this.orientationSupported = false,
   });
 
   final SettingsController settings;
 
   /// Shows the note that a closed browser tab cannot alert.
   final bool isWeb;
+
+  /// Shows the Orientation control (phones and tablets only).
+  final bool orientationSupported;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -120,6 +124,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: s.showDate,
                   onChanged: (v) => _update(s.copyWith(showDate: v)),
                 ),
+                if (widget.orientationSupported)
+                  ListTile(
+                    title: Text(c.orientation),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SegmentedButton<ClockOrientation>(
+                          showSelectedIcon: false,
+                          segments: [
+                            ButtonSegment(
+                              value: ClockOrientation.auto,
+                              label: Text(c.orientation_auto),
+                            ),
+                            ButtonSegment(
+                              value: ClockOrientation.landscape,
+                              label: Text(c.orientation_landscape),
+                            ),
+                            ButtonSegment(
+                              value: ClockOrientation.portrait,
+                              label: Text(c.orientation_portrait),
+                            ),
+                          ],
+                          selected: {s.orientation},
+                          onSelectionChanged: (v) =>
+                              _update(s.copyWith(orientation: v.single)),
+                        ),
+                      ),
+                    ),
+                  ),
                 _Section(c.sound_and_alerts),
                 SwitchListTile(
                   title: Text(c.flip_sound),

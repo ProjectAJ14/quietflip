@@ -205,3 +205,7 @@ clock:
   full_screen_note: "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver."
   show_date: "Show date"
   current_time_and_date(String time, String date): "Current time $time, $date"
+  orientation: "Orientation"
+  orientation_auto: "Auto"
+  orientation_landscape: "Landscape"
+  orientation_portrait: "Portrait"

@@ -42,7 +42,9 @@ void main() {
     TargetPlatform platform = TargetPlatform.android,
     BrowserFullScreen? browser,
     bool Function()? wakeCalled,
+    Future<void> Function(List<DeviceOrientation>)? orientations,
   }) => init(
+    orientations: orientations ?? (_) async {},
     isWeb: isWeb,
     platform: platform,
     browserFullScreen: () => browser,
@@ -64,12 +66,35 @@ void main() {
     expect(di.get<LocalAlerts>(), isNotNull);
     expect(di.get<SoundPlayer>(), isNotNull);
     expect(di.get<KeyValueStore>(), isNotNull);
+    expect(di.get<OrientationLock>(), isNotNull);
     await di.get<ScreenWake>().setEnabled(true);
     await di.reset();
     di.register<Logger>(logger);
     for (final player in players) {
       verify(player.dispose).called(1);
     }
+  });
+
+  test('orientation lock is supported only on Android and iOS', () async {
+    final applied = <List<DeviceOrientation>>[];
+    for (final (web, platform, supported) in [
+      (false, TargetPlatform.android, true),
+      (false, TargetPlatform.iOS, true),
+      (false, TargetPlatform.macOS, false),
+      (true, TargetPlatform.android, false),
+    ]) {
+      await run(
+        isWeb: web,
+        platform: platform,
+        orientations: (o) async => applied.add(o),
+      );
+      final lock = di.get<OrientationLock>();
+      expect(lock.supported, supported, reason: '$platform web=$web');
+      await lock.set(ScreenOrientation.portrait);
+      await di.reset();
+      di.register<Logger>(logger);
+    }
+    expect(applied, hasLength(2));
   });
 
   test('defaults to the real SDK objects', () async {

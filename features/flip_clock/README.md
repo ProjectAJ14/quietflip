@@ -22,8 +22,14 @@ DesignSystemWrapper(mode: ..., builder: ...)  // feed flip_clock.appearance()
 GoRouter(routes: [...const FlipClockRouter().routes])
 ```
 
-`init()` needs `Logger`, `KeyValueStore`, `LocalAlerts` and `SoundPlayer` in
-`di`; the clock route also resolves `FullScreenController` and `ScreenWake`.
+`init()` needs `Logger`, `KeyValueStore`, `LocalAlerts`, `SoundPlayer` and
+`OrientationLock` in `di`; the clock route also resolves
+`FullScreenController` and `ScreenWake`.
+
+## Orientation
+
+Settings > Display > Orientation (Auto / Landscape / Portrait) locks the
+screen on phones and tablets. The control is hidden on web and desktop.
 
 ## Subtle movement
 

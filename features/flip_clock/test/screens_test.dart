@@ -757,7 +757,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme,
-        home: SettingsScreen(settings: h.settings, isWeb: true),
+        home: SettingsScreen(
+          settings: h.settings,
+          isWeb: true,
+          orientationSupported: true,
+        ),
       ),
     );
     expect(find.text(strings.clock.web_closed_tab_note), findsOne);
@@ -795,6 +799,7 @@ void main() {
     await tap(strings.clock.alert_sound);
     await tap(strings.clock.keep_screen_awake_description);
     await tap(strings.clock.subtle_movement);
+    await tap(strings.clock.orientation_landscape);
     expect(
       h.settings.state,
       const ClockSettings(
@@ -806,6 +811,7 @@ void main() {
         alertSound: false,
         keepAwake: true,
         subtleMovement: true,
+        orientation: ClockOrientation.landscape,
       ),
     );
     expect(h.settings.appearance.value, AppearanceMode.light);
@@ -821,21 +827,55 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('orientation control is hidden where the lock is unsupported', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: SettingsScreen(settings: h.settings),
+      ),
+    );
+    expect(find.text(strings.clock.theme), findsOne);
+    expect(find.text(strings.clock.orientation), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('init registers everything; routes open settings and back', (
     tester,
   ) async {
     final store = FakeStore()
-      ..data[SettingsRepositoryImp.settingsKey] = '{"theme":"light"}';
+      ..data[SettingsRepositoryImp.settingsKey] =
+          '{"theme":"light","orientation":"landscape"}';
+    final orientation = FakeOrientation();
     di
       ..register<KeyValueStore>(store)
       ..register<LocalAlerts>(FakeAlerts())
       ..register<SoundPlayer>(FakeSound())
       ..register<FullScreenController>(FakeFullScreen())
-      ..register<ScreenWake>(FakeWake());
+      ..register<ScreenWake>(FakeWake())
+      ..register<OrientationLock>(orientation);
     await flip_clock.init();
     expect(di.has<SettingsRepository>(), isTrue);
     expect(di.has<CountdownController>(), isTrue);
     expect(flip_clock.appearance().value, AppearanceMode.light);
+
+    // The saved orientation applies at start, then follows each change.
+    expect(orientation.calls, [ScreenOrientation.landscape]);
+    final prefs = di.get<SettingsController>();
+    await prefs.update(
+      prefs.state.copyWith(orientation: ClockOrientation.portrait),
+    );
+    await prefs.update(
+      prefs.state.copyWith(orientation: ClockOrientation.auto),
+    );
+    await tester.pump();
+    expect(orientation.calls, [
+      ScreenOrientation.landscape,
+      ScreenOrientation.portrait,
+      ScreenOrientation.auto,
+    ]);
 
     // Settings reach the countdown: turning system alerts on mid-countdown
     // schedules its alert, turning them off cancels it.

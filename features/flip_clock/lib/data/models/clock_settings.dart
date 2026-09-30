@@ -4,6 +4,9 @@ enum ClockTheme { black, light }
 /// The screen mode shown on launch (the last one used).
 enum ClockMode { clock, timer, stopwatch }
 
+/// Screen orientation lock (phones and tablets only).
+enum ClockOrientation { auto, landscape, portrait }
+
 /// Local display, sound and alert preferences.
 class ClockSettings {
   const ClockSettings({
@@ -19,6 +22,7 @@ class ClockSettings {
     this.digitBrightness = maxBrightness,
     this.subtleMovement = false,
     this.showDate = false,
+    this.orientation = ClockOrientation.auto,
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -64,6 +68,7 @@ class ClockSettings {
       },
       subtleMovement: flag('subtleMovement', d.subtleMovement),
       showDate: flag('showDate', d.showDate),
+      orientation: pick(ClockOrientation.values, 'orientation', d.orientation),
     );
   }
 
@@ -75,6 +80,7 @@ class ClockSettings {
   final bool systemAlerts;
   final bool keepAwake;
   final ClockMode lastMode;
+  final ClockOrientation orientation;
 
   /// The one-time "tap the seconds button" hint was dismissed or acted on.
   final bool secondsHintSeen;
@@ -102,6 +108,7 @@ class ClockSettings {
     'digitBrightness': digitBrightness,
     'subtleMovement': subtleMovement,
     'showDate': showDate,
+    'orientation': orientation.name,
   };
 
   ClockSettings copyWith({
@@ -117,6 +124,7 @@ class ClockSettings {
     double? digitBrightness,
     bool? subtleMovement,
     bool? showDate,
+    ClockOrientation? orientation,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -130,6 +138,7 @@ class ClockSettings {
     digitBrightness: digitBrightness ?? this.digitBrightness,
     subtleMovement: subtleMovement ?? this.subtleMovement,
     showDate: showDate ?? this.showDate,
+    orientation: orientation ?? this.orientation,
   );
 
   @override
@@ -146,7 +155,8 @@ class ClockSettings {
       other.secondsHintSeen == secondsHintSeen &&
       other.digitBrightness == digitBrightness &&
       other.subtleMovement == subtleMovement &&
-      other.showDate == showDate;
+      other.showDate == showDate &&
+      other.orientation == orientation;
 
   @override
   int get hashCode => Object.hash(
@@ -162,5 +172,6 @@ class ClockSettings {
     digitBrightness,
     subtleMovement,
     showDate,
+    orientation,
   );
 }
