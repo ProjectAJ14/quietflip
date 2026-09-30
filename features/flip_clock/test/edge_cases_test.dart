@@ -46,6 +46,7 @@ class Rig {
   final sound = FakeSound();
   final full = FakeFullScreen();
   final wake = FakeWake();
+  final brightness = FakeScreenBrightness();
   final watch = FakeStopwatch();
   late final SettingsController settings;
   late final CountdownController countdown;
@@ -62,6 +63,9 @@ class Rig {
       fullScreen: full,
       wake: wake,
       sound: sound,
+      brightness: brightness,
+      logger: di.get<Logger>(),
+      doubleTapFullScreen: false,
       onOpenSettings: () {},
     ),
   );
@@ -451,6 +455,9 @@ void main() {
       );
       await tester.pumpWidget(rig.screen());
       await tester.pump(const Duration(milliseconds: 500));
+      // Let the chrome settle to hidden (4 s + 3 s) before counting.
+      await tester.pump(const Duration(seconds: 8));
+      await tester.pump(const Duration(seconds: 1));
       final elements = tester.allElements.length;
       for (var m = 0; m < 3 * 60; m++) {
         await tester.pump(const Duration(minutes: 1));
@@ -458,7 +465,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(rig.clock.state.millisecond, 0);
       expect(
-        find.bySemanticsLabel(strings.clock.current_time('12:41:09')),
+        find.bySemanticsLabel(strings.clock.current_time('12:41:18')),
         findsOne,
       );
       expect(tester.allElements.length, elements);
@@ -517,7 +524,8 @@ void main() {
         await tester.pumpWidget(rig.settingsScreen());
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: '$size x$scale');
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        // The last list is the category detail (phone root or split pane).
+        await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: '$size x$scale end');
         await rig.dispose(tester);

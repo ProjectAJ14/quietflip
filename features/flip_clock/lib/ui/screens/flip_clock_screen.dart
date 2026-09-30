@@ -1,28 +1,43 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:core/core.dart' show Logger;
+import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
+import 'package:flip_clock/data/models/skin.dart';
+import 'package:flip_clock/data/skins.dart';
+import 'package:flip_clock/state/brightness_control.dart';
+import 'package:flip_clock/state/chrome_controller.dart';
 import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/completion_banner.dart';
 import 'package:flip_clock/ui/components/controls.dart';
+import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/gesture_layer.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
+import 'package:flip_clock/ui/screens/skins_sheet.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
-/// Clock / Timer / Stopwatch. The active mode fills the screen; in full
-/// screen the controls hide and a tap, click, mouse move or key shows them
-/// for [revealFor].
+/// Pomodoro / Clock / Timer / Stopwatch as swipeable panels under one
+/// [GestureLayer]: tap toggles the chrome (mode island at the top, Skins
+/// and Settings corner buttons), a vertical drag changes brightness, a
+/// sideways swipe changes mode. The chrome shrinks to dots after
+/// `controlsIdle`, then disappears.
 ///
-/// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes,
-/// S seconds (Clock mode), D dim the digits.
+/// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
+/// F full screen, Esc leave full screen or hide the chrome, Space
+/// start/pause, S seconds (Clock mode), D dim the digits.
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -33,7 +48,10 @@ class FlipClockScreen extends StatefulWidget {
     required this.fullScreen,
     required this.wake,
     required this.sound,
+    required this.brightness,
+    required this.logger,
     required this.onOpenSettings,
+    this.doubleTapFullScreen,
   });
 
   final SettingsController settings;
@@ -43,10 +61,26 @@ class FlipClockScreen extends StatefulWidget {
   final FullScreenController fullScreen;
   final ScreenWake wake;
   final SoundPlayer sound;
+  final ScreenBrightness brightness;
+  final Logger logger;
   final VoidCallback onOpenSettings;
 
-  /// How long revealed controls stay visible in full screen.
-  static const Duration revealFor = Duration(seconds: 3);
+  /// Double tap toggles full screen. Null: on desktop and web only, since a
+  /// double tap recognizer delays every single tap.
+  final bool? doubleTapFullScreen;
+
+  bool get _doubleTap =>
+      doubleTapFullScreen ??
+      (kIsWeb ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux);
+
+  /// Below this width the island sits on its own row under the corners.
+  static const double stackedChromeWidth = 600;
+
+  /// How long the full-screen note shows after entering full screen.
+  static const Duration noteFor = Duration(seconds: 3);
 
   @override
   State<FlipClockScreen> createState() => _FlipClockScreenState();
@@ -54,15 +88,31 @@ class FlipClockScreen extends StatefulWidget {
 
 class _FlipClockScreenState extends State<FlipClockScreen> {
   late final AppLifecycleListener _lifecycle;
+  late final ChromeController _chrome = ChromeController(
+    idle: widget.settings.state.controlsIdle,
+  );
+  late final BrightnessControl _brightness = BrightnessControl(
+    device: widget.brightness,
+    settings: widget.settings,
+    logger: widget.logger,
+  );
+  late final PageController _pages = PageController(
+    initialPage: widget.settings.state.lastMode.index,
+  );
   bool _resumed = true;
   bool _visible = true;
   bool? _wakeOn;
-  bool _revealed = false;
 
-  /// Shows the full-screen note with the controls revealed on entering full
-  /// screen, until they hide.
-  bool _hint = false;
-  Timer? _hide;
+  /// A text field (the timer input) has focus: gestures are off.
+  bool _typing = false;
+
+  /// The last press came from a mouse.
+  bool _mouse = false;
+
+  /// The full-screen note, shown for [FlipClockScreen.noteFor] on entering
+  /// full screen.
+  bool _note = false;
+  Timer? _noteTimer;
 
   @override
   void initState() {
@@ -71,10 +121,14 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     _resumed = state == null || state == AppLifecycleState.resumed;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
     widget.fullScreen.active.addListener(_onFullScreen);
+    FocusManager.instance.addListener(_onFocus);
     widget.clock.start();
     // A timer that finished while the app was closed shows its banner.
-    if (widget.countdown.state.status == CountdownStatus.finished) {
-      _setMode(ClockMode.timer);
+    final countdown = widget.countdown.state;
+    if (countdown.status == CountdownStatus.finished) {
+      _setMode(
+        countdown.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro,
+      );
     }
   }
 
@@ -89,14 +143,25 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   void dispose() {
     _lifecycle.dispose();
     widget.fullScreen.active.removeListener(_onFullScreen);
-    _hide?.cancel();
+    FocusManager.instance.removeListener(_onFocus);
+    // Never leave the device dim.
+    unawaited(_brightness.reset());
+    _pages.dispose();
+    _noteTimer?.cancel();
+    unawaited(_chrome.close());
     widget.clock.stop();
     if (_wakeOn ?? false) unawaited(widget.wake.setEnabled(false));
     super.dispose();
   }
 
   void _onLifecycle(AppLifecycleState state) {
-    _resumed = state == AppLifecycleState.resumed;
+    // Rebuilt so the flip sound follows it.
+    setState(() => _resumed = state == AppLifecycleState.resumed);
+    // Backgrounded or closing: the device returns to its own brightness.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(_brightness.reset());
+    }
     _syncWake();
     if (_resumed) {
       widget.clock.refresh();
@@ -112,43 +177,92 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     unawaited(widget.wake.setEnabled(on));
   }
 
-  /// Entering full screen reveals the controls with the plain-words note
-  /// of what full screen does.
+  /// Entering full screen shows the chrome with the plain-words note of what
+  /// full screen does.
   void _onFullScreen() {
-    if (!widget.fullScreen.active.value) {
-      _hint = false;
-      return;
+    _noteTimer?.cancel();
+    final on = widget.fullScreen.active.value;
+    if (on) {
+      _chrome.wake();
+      _noteTimer = Timer(FlipClockScreen.noteFor, () {
+        if (mounted) setState(() => _note = false);
+      });
     }
-    _hint = true;
-    _reveal();
+    setState(() => _note = on);
   }
 
-  void _reveal() {
-    if (!widget.fullScreen.active.value) return;
-    _hide?.cancel();
-    _hide = Timer(FlipClockScreen.revealFor, () {
-      if (mounted) {
-        setState(() {
-          _revealed = false;
-          _hint = false;
-        });
-      }
-    });
-    if (!_revealed) setState(() => _revealed = true);
+  static bool _editing() =>
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorStateOfType<EditableTextState>() !=
+      null;
+
+  void _onFocus() {
+    final typing = _editing();
+    if (typing != _typing && mounted) setState(() => _typing = typing);
   }
+
+  /// A tap on the clock toggles the chrome. A mouse click only shows it:
+  /// moving the mouse there has already shown it, so toggling would hide
+  /// the controls the person is reaching for. A mouse hides them by idling
+  /// or Esc.
+  void _onTap() => _mouse ? _chrome.wake() : _chrome.tap();
 
   void _setMode(ClockMode mode) => unawaited(
     widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
   );
 
-  /// Toggling seconds also retires the one-time hint.
-  void _toggleSeconds() {
-    final s = widget.settings.state;
-    unawaited(
-      widget.settings.update(
-        s.copyWith(showSeconds: !s.showSeconds, secondsHintSeen: true),
+  static List<String> get _modeNames {
+    final c = strings.clock;
+    return [c.mode_pomodoro, c.mode_clock, c.mode_timer, c.mode_stopwatch];
+  }
+
+  /// Shows [mode]'s name and page dots in the island for a moment.
+  void _modeHud(ClockMode mode) {
+    _chrome
+      ..showHud(IslandTitleHud(_modeNames[mode.index], mode.index, 4))
+      ..releaseHud();
+  }
+
+  /// The mode [step] panels away, if there is one (no wrap-around).
+  void _stepMode(int step) {
+    final i = widget.settings.state.lastMode.index + step;
+    if (i < 0 || i >= ClockMode.values.length) return;
+    _setMode(ClockMode.values[i]);
+    _modeHud(ClockMode.values[i]);
+  }
+
+  /// Follows mode changes from tabs, keys and a finishing timer.
+  void _showPage(ClockMode mode) {
+    if (!_pages.hasClients || _pages.page?.round() == mode.index) return;
+    if (reducedMotion(context)) {
+      _pages.jumpToPage(mode.index);
+    } else {
+      unawaited(
+        _pages.animateToPage(
+          mode.index,
+          duration: DesignMotion.islandMorph,
+          curve: DesignMotion.islandCurve,
+        ),
+      );
+    }
+  }
+
+  /// Changes brightness by [delta] and shows it in the island.
+  Future<void> _brighten(double delta, {bool release = false}) async {
+    final value = await _brightness.change(delta);
+    if (!mounted) return;
+    _chrome.showHud(
+      IslandBrightnessHud(
+        value,
+        strings.clock.brightness_value('${(value * 100).round()}'),
       ),
     );
+    if (release) _chrome.releaseHud();
+  }
+
+  void _toggleSeconds() {
+    final s = widget.settings.state;
+    unawaited(widget.settings.update(s.copyWith(showSeconds: !s.showSeconds)));
   }
 
   void _dim() {
@@ -160,45 +274,44 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     );
   }
 
-  void _dismissHint() => unawaited(
-    widget.settings.update(
-      widget.settings.state.copyWith(secondsHintSeen: true),
-    ),
-  );
-
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    // Typing digits into the timer must not switch modes.
-    final focused = FocusManager.instance.primaryFocus?.context;
-    if (focused?.findAncestorStateOfType<EditableTextState>() != null) {
-      return KeyEventResult.ignored;
-    }
-    _reveal();
+    // Typing into the timer must not switch modes.
+    if (_editing()) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final mode = widget.settings.state.lastMode;
+    if (key == LogicalKeyboardKey.escape) {
+      // Esc leaves full screen first, then hides the chrome.
+      if (widget.fullScreen.active.value) {
+        unawaited(widget.fullScreen.exit());
+      } else {
+        _chrome.hide();
+      }
+      return KeyEventResult.handled;
+    }
+    _chrome.wake();
     if (key == LogicalKeyboardKey.keyF) {
       unawaited(widget.fullScreen.toggle());
-    } else if (key == LogicalKeyboardKey.escape &&
-        widget.fullScreen.active.value) {
-      unawaited(widget.fullScreen.exit());
     } else if (key == LogicalKeyboardKey.space &&
         node.hasPrimaryFocus &&
         mode != ClockMode.clock) {
       // Only when no control has focus: a focused button's own Space
       // activation must win.
-      if (mode == ClockMode.timer) {
+      if (mode == ClockMode.timer || mode == ClockMode.pomodoro) {
         unawaited(widget.countdown.toggle());
       } else {
         widget.stopwatch.toggle();
       }
     } else if (key == LogicalKeyboardKey.keyS && mode == ClockMode.clock) {
       _toggleSeconds();
-    } else if (key == LogicalKeyboardKey.digit1) {
-      _setMode(ClockMode.clock);
-    } else if (key == LogicalKeyboardKey.digit2) {
-      _setMode(ClockMode.timer);
-    } else if (key == LogicalKeyboardKey.digit3) {
-      _setMode(ClockMode.stopwatch);
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      _stepMode(-1);
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      _stepMode(1);
+    } else if (key == LogicalKeyboardKey.arrowUp) {
+      unawaited(_brighten(BrightnessControl.keyStep, release: true));
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      unawaited(_brighten(-BrightnessControl.keyStep, release: true));
     } else if (key == LogicalKeyboardKey.keyD) {
       _dim();
     } else {
@@ -207,9 +320,12 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     return KeyEventResult.handled;
   }
 
+  void _openSkins() => unawaited(
+    showSkins(context, settings: widget.settings, now: widget.clock.state),
+  );
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // Finishing while on Clock or Stopwatch switches to the Timer so the
     // completion banner is seen even with the alert sound off.
     return BlocListener<CountdownController, CountdownState>(
@@ -217,109 +333,194 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       listenWhen: (a, b) =>
           a.status != CountdownStatus.finished &&
           b.status == CountdownStatus.finished,
-      listener: (_, _) => _setMode(ClockMode.timer),
+      listener: (_, s) =>
+          _setMode(s.pomodoro == null ? ClockMode.timer : ClockMode.pomodoro),
       child: BlocConsumer<SettingsController, ClockSettings>(
         bloc: widget.settings,
-        listenWhen: (a, b) => a.keepAwake != b.keepAwake,
-        listener: (_, _) => _syncWake(),
+        listenWhen: (a, b) =>
+            a.keepAwake != b.keepAwake ||
+            a.controlsIdle != b.controlsIdle ||
+            a.lastMode != b.lastMode,
+        listener: (_, s) {
+          _syncWake();
+          _chrome.setIdle(s.controlsIdle);
+          _showPage(s.lastMode);
+        },
         builder: (context, settings) => ValueListenableBuilder<bool>(
           valueListenable: widget.fullScreen.active,
-          builder: (context, full, _) {
-            final controlsVisible = !full || _revealed;
-            final bar = _TopBar(
-              mode: settings.lastMode,
-              fullScreen: full,
-              showSeconds: settings.showSeconds,
-              onSeconds: _toggleSeconds,
-              onMode: _setMode,
-              onFullScreen: () => unawaited(widget.fullScreen.toggle()),
-              onSettings: widget.onOpenSettings,
-              onDim: _dim,
-            );
-            Widget content = _ModeView(
-              screen: widget,
-              settings: settings,
-              controlsVisible: controlsVisible,
-            );
-            if (full && settings.subtleMovement) {
-              content = SubtleMovement(clock: widget.clock, child: content);
-            }
-            // Screen readers cannot send the pointer events that reveal hidden
-            // controls, so the display itself offers "show controls".
-            if (full && !_revealed) {
-              content = Semantics(
-                button: true,
-                label: strings.clock.show_controls,
-                onTap: _reveal,
-                child: content,
-              );
-            }
-            return Focus(
-              autofocus: true,
-              onKeyEvent: _onKey,
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (_) => _reveal(),
-                onPointerHover: (_) => _reveal(),
-                // Status bar icons that stay visible on the Black theme.
-                child: AnnotatedRegion<SystemUiOverlayStyle>(
-                  value: theme.brightness == Brightness.dark
-                      ? SystemUiOverlayStyle.light
-                      : SystemUiOverlayStyle.dark,
-                  child: Scaffold(
-                    body: SafeArea(
-                      child: full
-                          ? Stack(
-                              children: [
-                                Positioned.fill(child: content),
-                                Align(
-                                  alignment: Alignment.topCenter,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Reveal(visible: _revealed, child: bar),
-                                      // Flexible, so a tiny window squeezes the
-                                      // note instead of overflowing.
-                                      Flexible(
-                                        child: Reveal(
-                                          visible: _revealed && _hint,
-                                          child: const _FullScreenNote(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                bar,
-                                Expanded(
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(child: content),
-                                      // Overlays the display's padding so
-                                      // the digits keep their full size.
-                                      if (settings.lastMode ==
-                                              ClockMode.clock &&
-                                          !settings.secondsHintSeen)
-                                        Align(
-                                          alignment: Alignment.topCenter,
-                                          child: _SecondsHint(
-                                            onDismiss: _dismissHint,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+          builder: (context, full, _) => BlocBuilder<ChromeController, Chrome>(
+            bloc: _chrome,
+            builder: (context, chrome) =>
+                _layout(context, settings, chrome.state, chrome.hud, full),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _layout(
+    BuildContext context,
+    ClockSettings settings,
+    ChromeState chrome,
+    IslandHud? hud,
+    bool full,
+  ) {
+    // Mono follows the theme: its ground and cards match Light or Black.
+    final skin = Skins.resolve(
+      settings.skinId,
+      settings.customSkins,
+    ).forTheme(DesignColors.of(context));
+    final c = strings.clock;
+    final hidden = chrome == ChromeState.hidden;
+    final inset = MediaQuery.sizeOf(context).shortestSide >= 600
+        ? DesignSpace.s6
+        : DesignSpace.s4;
+    // Narrow windows have no room for the tabs between the corner buttons:
+    // the island takes its own row just under them.
+    final stacked =
+        MediaQuery.sizeOf(context).width < FlipClockScreen.stackedChromeWidth;
+    final islandTop = stacked
+        ? inset + DesignSize.cornerButton + DesignSpace.s2
+        : inset;
+    // Never while a sheet or route covers the clock or the app is away.
+    final flip = settings.flipSound && _visible && _resumed
+        ? widget.sound.playFlip
+        : null;
+    // Every wrapper above the PageView stays in the tree whatever the
+    // chrome, full screen or settings: a wrapper coming or going rebuilds
+    // the PageView, whose new position starts on the launch mode.
+    Widget content = PageView(
+      controller: _pages,
+      // The gesture layer is the only thing that moves the panels.
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (final mode in ClockMode.values)
+          _ModeView(
+            mode: mode,
+            screen: widget,
+            settings: settings,
+            skin: skin,
+            inset: inset,
+            chromeTop: islandTop,
+            onFlip: flip,
+            controlsVisible: chrome == ChromeState.expanded,
+          ),
+      ],
+    );
+    content = SubtleMovement(
+      clock: widget.clock,
+      enabled: full && settings.subtleMovement,
+      child: content,
+    );
+    // A tap on the clock (a control keeps its own tap) toggles the chrome.
+    // Off while a sheet or route covers the clock or the timer is typed in.
+    content = GestureLayer(
+      pages: _pages,
+      pageCount: ClockMode.values.length,
+      enabled: _visible && !_typing,
+      brightness: settings.gestureBrightness,
+      modes: settings.gestureModes,
+      onTap: settings.tapToggleControls ? _onTap : null,
+      onDoubleTap: widget._doubleTap
+          ? () => unawaited(widget.fullScreen.toggle())
+          : null,
+      onGestureStart: _chrome.activity,
+      onBrightness: (delta) => unawaited(_brighten(delta)),
+      onBrightnessEnd: _chrome.releaseHud,
+      onPage: (i) {
+        _setMode(ClockMode.values[i]);
+        _modeHud(ClockMode.values[i]);
+      },
+      child: content,
+    );
+    // Screen readers cannot tap "anywhere", so a hidden chrome makes the
+    // whole clock one "show controls" button.
+    content = Semantics(
+      button: hidden,
+      label: hidden ? c.show_controls : null,
+      onTap: hidden ? _chrome.wake : null,
+      child: content,
+    );
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _onKey,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (e) {
+          _mouse = e.kind == PointerDeviceKind.mouse;
+          _chrome.activity();
+        },
+        onPointerHover: (_) => _chrome.wake(),
+        // Status bar icons that stay visible on the skin's ground.
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: skin.groundColor.computeLuminance() < 0.5
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
+          child: Scaffold(
+            backgroundColor: skin.groundColor,
+            body: SafeArea(
+              child: Stack(
+                children: [
+                  Positioned.fill(child: content),
+                  Positioned(
+                    top: inset,
+                    left: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.palette_outlined,
+                      tooltip: c.skins_change,
+                      onPressed: _openSkins,
+                      corner: Alignment.topLeft,
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: inset,
+                    right: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.settings_outlined,
+                      tooltip: c.settings,
+                      onPressed: widget.onOpenSettings,
+                      corner: Alignment.topRight,
+                    ),
+                  ),
+                  // Top centre: between the corner buttons, or on its own
+                  // row under them when narrow; tabs scale down rather than
+                  // run under anything.
+                  Positioned(
+                    left: stacked
+                        ? inset
+                        : inset + DesignSize.cornerButton + DesignSpace.s2,
+                    right: stacked
+                        ? inset
+                        : inset + DesignSize.cornerButton + DesignSpace.s2,
+                    top: islandTop,
+                    child: Center(
+                      child: Island(
+                        state: chrome,
+                        hud: hud,
+                        tabs: _modeNames,
+                        selected: settings.lastMode.index,
+                        onSelect: (i) => _setMode(ClockMode.values[i]),
+                        tabsLabel: c.modes,
+                      ),
+                    ),
+                  ),
+                  // Under the island.
+                  if (_note)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top:
+                          islandTop +
+                          DesignSize.islandExpandedHeight +
+                          DesignSpace.s2,
+                      child: const Center(child: _FullScreenNote()),
+                    ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -354,165 +555,52 @@ class _FullScreenNote extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.mode,
-    required this.fullScreen,
-    required this.showSeconds,
-    required this.onSeconds,
-    required this.onMode,
-    required this.onFullScreen,
-    required this.onSettings,
-    required this.onDim,
-  });
-
-  final ClockMode mode;
-  final bool fullScreen;
-  final bool showSeconds;
-  final VoidCallback onSeconds;
-  final ValueChanged<ClockMode> onMode;
-  final VoidCallback onFullScreen;
-  final VoidCallback onSettings;
-  final VoidCallback onDim;
-
-  /// Below this width the mode segments show icons only.
-  static const double compactWidth = 520;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < compactWidth;
-    ButtonSegment<ClockMode> segment(
-      ClockMode value,
-      IconData icon,
-      String label,
-    ) => ButtonSegment(
-      value: value,
-      icon: Icon(icon),
-      label: compact ? null : Text(label, maxLines: 1, softWrap: false),
-      tooltip: compact ? label : null,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              label: strings.clock.modes,
-              child: SegmentedButton<ClockMode>(
-                showSelectedIcon: false,
-                segments: [
-                  segment(
-                    ClockMode.clock,
-                    Icons.schedule_rounded,
-                    strings.clock.clock,
-                  ),
-                  segment(
-                    ClockMode.timer,
-                    Icons.hourglass_bottom_rounded,
-                    strings.clock.timer,
-                  ),
-                  segment(
-                    ClockMode.stopwatch,
-                    Icons.timer_outlined,
-                    strings.clock.stopwatch,
-                  ),
-                ],
-                selected: {mode},
-                onSelectionChanged: (s) => onMode(s.single),
-              ),
-            ),
-            const SizedBox(width: 16),
-            if (mode == ClockMode.clock)
-              IconButton(
-                tooltip: showSeconds
-                    ? strings.clock.hide_seconds
-                    : strings.clock.show_seconds,
-                isSelected: showSeconds,
-                onPressed: onSeconds,
-                icon: const Icon(Icons.av_timer_rounded),
-              ),
-            if (fullScreen)
-              IconButton(
-                tooltip: strings.clock.dim_digits,
-                onPressed: onDim,
-                icon: const Icon(Icons.brightness_6_rounded),
-              ),
-            IconButton(
-              tooltip: fullScreen
-                  ? strings.clock.exit_full_screen
-                  : strings.clock.enter_full_screen,
-              onPressed: onFullScreen,
-              icon: Icon(
-                fullScreen
-                    ? Icons.fullscreen_exit_rounded
-                    : Icons.fullscreen_rounded,
-              ),
-            ),
-            IconButton(
-              tooltip: strings.clock.settings,
-              onPressed: onSettings,
-              icon: const Icon(Icons.settings_outlined),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// One-time, quiet pointer to the seconds button, with a dismiss control.
-class _SecondsHint extends StatelessWidget {
-  const _SecondsHint({required this.onDismiss});
-
-  final VoidCallback onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            strings.clock.seconds_hint,
-            style: theme.textTheme.bodySmall!.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          IconButton(
-            tooltip: strings.clock.dismiss_hint,
-            onPressed: onDismiss,
-            icon: const Icon(Icons.close_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The active mode, with padding that shrinks on tiny windows.
+/// The active mode, clear of the chrome, with padding that shrinks on tiny
+/// windows.
 class _ModeView extends StatelessWidget {
   const _ModeView({
+    required this.mode,
     required this.screen,
     required this.settings,
+    required this.skin,
+    required this.inset,
+    required this.chromeTop,
+    required this.onFlip,
     required this.controlsVisible,
   });
 
+  final ClockMode mode;
   final FlipClockScreen screen;
   final ClockSettings settings;
+  final Skin skin;
+
+  /// The corner buttons' and island's distance from the safe area.
+  final double inset;
+
+  /// Where the island starts; the digits begin below it.
+  final double chromeTop;
+
+  /// The flip sound, or null while it must not play.
+  final VoidCallback? onFlip;
   final bool controlsVisible;
 
   @override
   Widget build(BuildContext context) {
-    final small = MediaQuery.sizeOf(context).shortestSide < 400;
-    final flip = settings.flipSound ? screen.sound.playFlip : null;
+    final size = MediaQuery.sizeOf(context);
+    final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
+    // Room for the chrome row (corner buttons and island) above, so it
+    // never covers the digits; a tiny window gives up at most a quarter of
+    // its height.
+    final top = math.min(
+      chromeTop +
+          math.max(DesignSize.cornerButton, DesignSize.islandExpandedHeight) +
+          inset,
+      size.height / 4,
+    );
+    final flip = onFlip;
     return Padding(
-      padding: EdgeInsets.all(small ? 8 : 32),
-      child: switch (settings.lastMode) {
+      padding: EdgeInsets.fromLTRB(side, top, side, side),
+      child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,
           builder: (context, now) {
@@ -521,15 +609,26 @@ class _ModeView extends StatelessWidget {
               use24h: settings.use24h,
               showSeconds: settings.showSeconds,
             );
-            if (!settings.showDate) {
+            final value = clockValue(
+              now,
+              use24h: settings.use24h,
+              showSeconds: settings.showSeconds,
+              skin: skin,
+            );
+            FlipDisplay display(String label) => FlipDisplay(
+              cards: value.cards,
+              badge: value.badge,
+              meridiem: value.meridiem,
+              skin: skin,
+              size: settings.cardSize.factor,
+              semanticsLabel: label,
+              onFlip: flip,
+            );
+            if (!settings.showDate && !skin.showDate) {
               return Center(
                 child: Opacity(
                   opacity: settings.digitBrightness,
-                  child: FlipDisplay(
-                    text: text,
-                    semanticsLabel: strings.clock.current_time(text),
-                    onFlip: flip,
-                  ),
+                  child: display(strings.clock.current_time(text)),
                 ),
               );
             }
@@ -542,13 +641,8 @@ class _ModeView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Center(
-                      child: FlipDisplay(
-                        text: text,
-                        semanticsLabel: strings.clock.current_time_and_date(
-                          text,
-                          date,
-                        ),
-                        onFlip: flip,
+                      child: display(
+                        strings.clock.current_time_and_date(text, date),
                       ),
                     ),
                   ),
@@ -561,8 +655,9 @@ class _ModeView extends StatelessWidget {
                         date,
                         maxLines: 1,
                         softWrap: false,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        style: skin.face.style(
+                          color: skin.digitColor.withValues(alpha: 0.7),
+                          fontSize: theme.textTheme.headlineSmall!.fontSize!,
                         ),
                       ),
                     ),
@@ -572,57 +667,93 @@ class _ModeView extends StatelessWidget {
             );
           },
         ),
-        ClockMode.timer => _TimerView(
+        ClockMode.pomodoro || ClockMode.timer => _TimerView(
+          pomodoroPanel: mode == ClockMode.pomodoro,
+          skin: skin,
           controller: screen.countdown,
           controlsVisible: controlsVisible,
           onFlip: flip,
           brightness: settings.digitBrightness,
+          size: settings.cardSize.factor,
         ),
         ClockMode.stopwatch => _StopwatchView(
+          skin: skin,
           controller: screen.stopwatch,
           controlsVisible: controlsVisible,
           brightness: settings.digitBrightness,
+          size: settings.cardSize.factor,
         ),
       },
     );
   }
 }
 
+/// The shared countdown. Idle, the Pomodoro panel offers a 25 min focus
+/// and the Timer panel the duration input; once running, both show the
+/// countdown (one engine).
 class _TimerView extends StatelessWidget {
   const _TimerView({
+    required this.pomodoroPanel,
+    required this.skin,
     required this.controller,
     required this.controlsVisible,
     required this.onFlip,
     required this.brightness,
+    required this.size,
   });
 
+  final bool pomodoroPanel;
+  final Skin skin;
   final CountdownController controller;
   final bool controlsVisible;
   final VoidCallback? onFlip;
   final double brightness;
+
+  /// `FlipDisplay.size`: the chosen card size.
+  final double size;
 
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<CountdownController, CountdownState>(
         bloc: controller,
         builder: (context, state) {
+          if (state.status == CountdownStatus.idle && pomodoroPanel) {
+            final focus = PomodoroPhase.focus.duration;
+            return _WithControls(
+              display: Opacity(
+                opacity: brightness,
+                child: FlipDisplay(
+                  cards: durationValue(focus).cards,
+                  skin: skin,
+                  size: size,
+                  semanticsLabel: strings.clock.time_remaining(
+                    formatHms(focus),
+                  ),
+                ),
+              ),
+              controls: Reveal(
+                visible: controlsVisible,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => unawaited(controller.startPomodoro()),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(strings.clock.start),
+                ),
+              ),
+            );
+          }
           if (state.status == CountdownStatus.idle) {
             return Center(
               child: TimerInput(
                 initial: state.duration,
                 onChanged: (d) => unawaited(controller.setDuration(d)),
                 onStart: (d) => unawaited(controller.start(d)),
-                secondary: FilledButton.tonalIcon(
-                  onPressed: () => unawaited(controller.startPomodoro()),
-                  icon: const Icon(Icons.repeat_rounded),
-                  label: Text(strings.clock.pomodoro),
-                ),
               ),
             );
           }
           final text = formatHms(state.remaining);
           final pomodoro = state.pomodoro;
           final theme = Theme.of(context);
+          final label = skin.digitColor.withValues(alpha: 0.7);
           return _WithControls(
             display: Column(
               children: [
@@ -634,8 +765,9 @@ class _TimerView extends StatelessWidget {
                       pomodoro.phase == PomodoroPhase.focus
                           ? strings.clock.pomodoro_focus(pomodoro.round)
                           : strings.clock.pomodoro_break(pomodoro.round),
-                      style: theme.textTheme.titleLarge!.copyWith(
-                        color: theme.colorScheme.primary,
+                      style: skin.face.style(
+                        color: label,
+                        fontSize: theme.textTheme.titleLarge!.fontSize!,
                       ),
                     ),
                   ),
@@ -644,7 +776,9 @@ class _TimerView extends StatelessWidget {
                     child: Opacity(
                       opacity: brightness,
                       child: FlipDisplay(
-                        text: text,
+                        cards: durationValue(state.remaining).cards,
+                        skin: skin,
+                        size: size,
                         semanticsLabel: strings.clock.time_remaining(text),
                         onFlip: onFlip,
                       ),
@@ -685,14 +819,20 @@ class _TimerView extends StatelessWidget {
 
 class _StopwatchView extends StatelessWidget {
   const _StopwatchView({
+    required this.skin,
     required this.controller,
     required this.controlsVisible,
     required this.brightness,
+    required this.size,
   });
 
+  final Skin skin;
   final StopwatchController controller;
   final bool controlsVisible;
   final double brightness;
+
+  /// `FlipDisplay.size`: the chosen card size.
+  final double size;
 
   @override
   Widget build(BuildContext context) =>
@@ -700,11 +840,15 @@ class _StopwatchView extends StatelessWidget {
         bloc: controller,
         builder: (context, state) {
           final text = formatStopwatch(state.elapsed);
+          final value = stopwatchValue(state.elapsed);
           return _WithControls(
             display: Opacity(
               opacity: brightness,
               child: FlipDisplay(
-                text: text,
+                cards: value.cards,
+                badge: value.badge,
+                skin: skin,
+                size: size,
                 semanticsLabel: strings.clock.elapsed(text),
               ),
             ),

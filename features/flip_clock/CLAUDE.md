@@ -17,7 +17,8 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, timer, stopwatch: panel order), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -25,12 +26,25 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
-  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation
+  data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation, CardSize
+  data/models/skin.dart                    Skin (face, digit/card/ground colour, seam, radius,
+                                           seconds off (default)/badge/cards, AM/PM
+                                           hidden/left/right, date, `themed`); JSON with ARGB
+                                           ints, per-field fallback, no id -> dropped; WCAG
+                                           `contrast`; `forTheme(colors)`: a themed skin (Mono)
+                                           is `ink` on `card` over `bg` in Mono Light
+  data/skins.dart                          Skins: built-in catalogue (Classic, Bold, Type) from
+                                           `DesignSkinColors`, `resolve` (unknown -> Mono),
+                                           custom ids `custom-<n>`
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
                                            (keys flip_clock.settings, flip_clock.countdown;
                                            corrupt/failed read -> defaults, failed write logged)
   state/settings_controller.dart           Cubit<ClockSettings>; saves every change; `appearance`
-                                           notifier; setSystemAlerts asks permission
+                                           notifier; setSystemAlerts asks permission; `skin`,
+                                           selectSkin (also sets showSeconds from the skin's
+                                           preset), saveSkin (built-in -> new copy first;
+                                           never themed; sets showSeconds), deleteSkin
+                                           (selected -> Mono)
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
@@ -39,14 +53,33 @@ lib/
                                            Pomodoro cycle (startPomodoro/startNextPhase)
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
-  ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode, quick-dim
-                                           in full screen), one-time seconds hint, date line,
-                                           full screen reveal + note, _WithControls (controls
-                                           at most half height), keys, wake lock
-  ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
-                                           date, orientation) / Sound & alerts / Keep awake
-                                           (+ full-screen note) / shortcuts
-  ui/components/                           FlipDisplay, TimerInput (+ `secondary` beside Start),
+  state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
+                                           `IslandHud`); starts expanded, -> dot after idle, -> hidden
+                                           after dotIdle; activity/wake/tap/hide, showHud/releaseHud
+                                           (hudHold), setIdle (zero = never)
+  state/brightness_control.dart            BrightnessControl (plain class): drag/Up-Down keys drive
+                                           ScreenBrightness 0..1 where supported, else
+                                           digitBrightness 0.2..1 (saved); first
+                                           ScreenBrightnessException -> in-app for good (logged);
+                                           reset() restores system level, never throws
+  ui/screens/flip_clock_screen.dart        modes, chrome (Island tabs top centre, Skins /
+                                           Settings CornerButtons, owned ChromeController), tap
+                                           toggle, date line, full-screen note, _WithControls
+                                           (run controls at most half height), keys, wake lock
+  ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
+  ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skin -> Skins sheet,
+                                           theme Dark/Light/Match system, card size, digit
+                                           brightness) /
+                                           Clock (24h, seconds, date, orientation) / Gestures
+                                           (swipes, tap, hide-after) / Timers (pomodoro lengths) /
+                                           Sound & alerts / Keep awake (+ full-screen note) /
+                                           Shortcuts (keycaps) / About (licences, privacy); Done
+  ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
+                                           axis-locked brightness drag and page swipe),
+                                           FlipDisplay (cards + badge + AM/PM, styled by a Skin),
+                                           display_value (clock/duration/stopwatch -> cards),
+                                           SkinPicker + SkinTile + SheetHeader + SectionHeader +
+                                           showSheet, SkinCustomizer (parseHex/hexOf), TimerInput (+ `secondary` beside Start),
                                            CompletionBanner (+ optional `action`),
                                            Reveal + RunControls, SubtleMovement
 ```
@@ -66,47 +99,103 @@ lib/
   requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
-  distinct change. Settings > Display shows the Orientation control only when
+  distinct change. Settings > Clock shows the Orientation control only when
   `OrientationLock.supported` (Android/iOS), passed in by the router.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
-- Every string from `strings.clock.*`; every colour from `Theme.of(context)`.
-  `FlipDisplay` and `Reveal` honour `reducedMotion(context)`
-  (`disableAnimations` or iOS `reduceMotion`) and never clip; only digits are
-  cards (AM/PM letters are plain text).
-- Subtle movement (burn-in) wraps the display only while full screen and the
-  setting are both on. It is driven by the screen's `ClockController` (no
+- Every string from `strings.clock.*`; chrome colours from
+  `Theme.of(context)` / `DesignColors.of(context)`. The clock's digits, cards,
+  seam and ground come only from the selected `Skin` (the one place a
+  `Color(int)` is built from a value, because custom skins are user data);
+  built-ins use `DesignSkinColors` only. A skin never colours controls.
+- `FlipDisplay` is one card per entry (a pair of digits): card height fills
+  the box, digits are 0.78 x height and not text-scaled, width 1.0 x height
+  (1.3 x for a monospaced face), `space-6` between cards, the 2px seam at
+  half height in the ground colour, `radius-md` becoming `radius-lg` once
+  digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
+  ease-in, then bottom half ease-out. It and `Reveal` honour
+  `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
+  never clip; AM/PM and small seconds are plain text in the skin's face at
+  70% of the digit colour, never cards, sized 0.12 x card height (AM/PM)
+  and 0.1 x (badge) with 0.05 x corner padding, so they stay in the card's
+  bottom margin at every size (18px / 13px, the tokens, from 150 / 130px
+  cards; small skin tiles never have them over the digits). `size` (`CardSize.factor`, clamped 0.1..1) scales the
+  fitted card height; everything inside follows. It draws
+  `skin.forTheme(DesignColors.of(context))`, as do SkinTile and the
+  customizer preview.
+- Seconds show when `showSeconds` is on, in the skin's style (a skin with
+  `off` shows them as cards, so the switch always shows something).
+  Selecting a skin applies its preset: Show seconds on unless the skin's
+  seconds are `off` (Mono), and the user can toggle it after. The date line shows when Show date is on or the skin
+  asks for it. AM/PM placement is the skin's.
+- Sheets (`showSheet`) use `surface`, `radius-lg` top corners and a
+  hairline, full width (Material's 640px cap is lifted). Skin tiles are at
+  least 196px wide.
+- Subtle movement (burn-in) always wraps the panels and moves only while
+  full screen and the setting are both on (`enabled`; off it sits centred
+  with the same padding). It is driven by the screen's `ClockController` (no
   timer of its own), steps through a fixed offset table indexed by minute of
   day (max 8 px per axis), and shifts via padding that always sums to 16 px,
   so it never clips or overflows. Never describe it as preventing burn-in.
+- Keep the widget tree above the panels' `PageView` the same shape in every
+  state (chrome hidden or not, full screen, subtle movement): pass flags to
+  wrappers, never add or drop one conditionally. A wrapper coming or going
+  rebuilds the `PageView`, whose new position starts on the launch mode, so
+  the panels jumped back to Clock while the island still said Timer.
 - Space reaches the timer/stopwatch only when no control has focus, so a
   focused button keeps its own Space activation. An invalid timer entry
   (`TimerInput.onChanged(null)`) keeps Space from starting.
-- Seconds: the top-bar button (Clock mode only) and the S key toggle
-  `showSeconds`, as does the Settings switch. The one-time seconds hint shows
-  in Clock mode, not in full screen, while `secondsHintSeen` is false; it
-  overlays the display's top padding so the digits keep their size.
-  Dismissing it or using the button/S sets `secondsHintSeen` and saves.
-- Hidden full-screen controls are offered to screen readers as a
-  "show controls" button over the display.
+- Chrome: the screen owns a `ChromeController` (idle from
+  `ClockSettings.controlsIdle`, updated on change). Launch is expanded; 4 s
+  idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
+  mouse move or any key expands, Esc leaves full screen first, otherwise
+  hides. A tap on the clock toggles (when `tapToggleControls`); a tap on a
+  control is the control's (it wins the gesture arena). Run controls show
+  only while expanded (`Reveal`). The mode island sits top centre between
+  the corner buttons, at the same inset as the corners: `space-4` inside the
+  safe area (`space-6` from 600px shortest side); below
+  `stackedChromeWidth` (600px wide) it takes its own row under the corners
+  so the tabs keep their full size. The full-screen note sits under the island.
+  The mode view reserves that top row (at most a quarter of the height) and
+  only side padding below, so the chrome never covers the digits. A hidden chrome makes
+  the whole clock one "show controls" button for screen readers.
+- Seconds: the S key (Clock mode only) and the Settings switch toggle
+  `showSeconds`.
 - Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
   and around the date line with the Clock digits);
-  the background stays the theme surface and the top bar, run controls,
-  timer input and completion banner stay at full brightness. The quick-dim
-  button (top bar, full screen only) and the D key both call
+  the background stays the skin's ground and the chrome, run controls,
+  timer input and completion banner stay at full brightness. The D key calls
   `ClockSettings.nextDim` (100% -> 50% -> 20% -> 100%; a slider value in
   between steps down to the next preset) and save.
-- Entering full screen reveals the controls for `revealFor` together with
-  `strings.clock.full_screen_note` (a live region, so screen readers hear
-  it); later reveals show the controls only. Settings shows the same note
+- Entering full screen expands the chrome and shows
+  `strings.clock.full_screen_note` for `noteFor` (3 s, a live region, so
+  screen readers hear it); leaving clears it. Settings shows the same note
   under Keep screen awake. Full screen is not a lock screen or screensaver:
   never word it as one.
 - No dependency on another feature; no account section in Settings.
 - Show date puts `MaterialLocalizations.formatFullDate` under the Clock
-  digits (headlineSmall, onSurfaceVariant, scaled down, never wraps). It is
+  digits (the skin's face at the headlineSmall size, 70% of the digit
+  colour, scaled down, never wraps; the pomodoro round label is the skin's
+  face at the titleLarge size). Every `FlipDisplay` on the clock screen gets
+  `size: settings.cardSize.factor`, and the screen draws
+  `skin.forTheme(DesignColors.of(context))`, so Mono's ground follows Light
+  or Black. It is
   driven by the `ClockController` tick, so it rolls over at midnight, and is
   read as part of the display label (`current_time_and_date`). It dims with
   the digits (one `Opacity` around the digits and the date).
+- Panels: a `PageView` (NeverScrollableScrollPhysics) in `ClockMode` order
+  (Pomodoro, Clock, Timer, Stopwatch) under one `GestureLayer`: tap toggles
+  the chrome, vertical drag -> `BrightnessControl.change(-dy / height)`
+  (device 0..1 where `ScreenBrightness.supported`, else digitBrightness
+  0.2..1; a `ScreenBrightnessException` falls back to in-app for good),
+  horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
+  12 px. Off while the clock route is not current (sheets, Settings) or a
+  text field has focus. `gestureBrightness` / `gestureModes` switch each
+  axis off. Double tap toggles full screen on desktop/web only (it delays
+  taps). Island HUD: brightness while dragging / Up / Down, the mode name
+  after a swipe or Left / Right; both release after `hudHold`. The device
+  brightness is reset on pause, detach and dispose. A mode change from tabs
+  or keys slides the panel (jumps with reduced motion).
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
   is restored on launch and when returning from Settings (a child route of
   `/clock`, so the clock screen and its state stay underneath).
@@ -114,9 +203,11 @@ lib/
   scheduled at `endsAt` on native, and shown at completion on web
   (`notifyOnFinish = kIsWeb`, because web cannot schedule). A timer that
   ended while the app was closed shows the banner silently on relaunch.
-  Finishing (or relaunching finished) switches to the Timer mode so the
-  banner is always seen.
-- Pomodoro (Timer mode, idle only): 25 min focus / 5 min break from
+  Finishing (or relaunching finished) switches to the Timer panel (the
+  Pomodoro panel for a pomodoro phase) so the banner is always seen.
+- Pomodoro (its own panel; the countdown engine is shared with the Timer:
+  idle, the Pomodoro panel offers 25:00 + Start and the Timer panel the
+  input; running, both show the countdown): 25 min focus / 5 min break from
   `timekeeping`'s `Pomodoro`, run as one `Countdown` per phase. While the
   app is open a phase end chimes for `chimeFor` (5 s, only with Alert
   sound), shows the web notification like the timer, and starts the next
@@ -133,9 +224,11 @@ lib/
 ## Common changes
 
 - **Add a setting:** field + default + JSON key in `ClockSettings` (and its
-  test), a tile in `SettingsScreen`, the key in `strings.clock`.
+  test), a `Settings*Row` in the right category of `SettingsScreen` (and
+  `test/settings_screen_test.dart`), the key in `strings.clock`.
 - **Add a keyboard shortcut:** the handler in `FlipClockScreen`, a
-  `strings.clock.shortcut_*` line in Settings, a widget test sending the key.
+  `key_*` label and `keycap_*` row in Settings > Shortcuts, a widget test
+  sending the key.
 
 ## Tests
 
@@ -173,6 +266,13 @@ widget tester's clock):
   keeps the element count flat and the wake lock on (released on dispose).
 
 ## Gotchas
+
+- Customizer controls apply each edit to the current draft (a function of
+  the draft), so two taps before a rebuild both stick.
+- The flip sound follows card flips: with seconds as a badge, the minute
+  card is the first to flip. It plays only while the clock is on screen:
+  never under Settings, a sheet or another route, nor while the app is not
+  resumed.
 
 - In `testWidgets`, do not `await cubit.close()` (or `di.reset()`) after a
   widget or listener subscribed to the cubit: the broadcast stream's close

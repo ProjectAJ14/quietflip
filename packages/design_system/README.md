@@ -18,4 +18,18 @@ dart pub add design_system
 [flutter_install_link]: https://docs.flutter.dev/get-started/install
 ## Appearance override
 
-`DesignSystemWrapper(mode: ...)` takes an `AppearanceMode`: `system` (default, follows OS brightness), `light`, `dark`, or `black` (true-black surface/background, neutral-grey `surfaceContainer*` roles for cards, white `onSurface`; built with `copyWith` over the generated dark scheme in `DesignSystem.blackScheme()`).
+`DesignSystemWrapper(mode: ...)` takes an `AppearanceMode`: `system` (default, follows OS brightness), `light` (Mono Light) or `black` (Mono Dark: true-black ground, white ink and accent). Both are the QuietFlip Mono themes from the design system's `tokens.json`: `DesignSystem.blackScheme()` / `monoLightScheme()` map the tokens onto Material roles, and `DesignColors.of(context)` gives every token by name (including the island colours, which are the same in both themes).
+
+## Tokens and fonts
+
+- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
+- Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.
+
+## Chrome: island and corner buttons
+
+`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState` and morphing on `DesignMotion.islandCurve`. `CornerButton` is a 44px round button that collapses to a dot toward its `corner`. Both are dark in every theme, take all their text as parameters, and only cross-fade when the platform asks for reduced motion.
+
+## Settings shell
+
+`SettingsShell` lays out one list of `SettingsCategory` (icon, label, `SettingsGroup`s) three ways: a phone stack under 600px (large-title root; a category opens its detail, and back returns to the root), a split view from 600px with a 300px sidebar, and desktop density from 1100px or with `desktop: true` (230px sidebar, 36px rows). Fill groups with `SettingsSwitchRow`, `SettingsValueRow`, `SettingsSegmentedRow`, `SettingsSliderRow`, `SettingsKeyRow` and `SettingsNoteRow`; every visible string is a parameter. Segmented and slider rows keep 8px (`DesignSpace.s2`) between the label and the control and under the control.

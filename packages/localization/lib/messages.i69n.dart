@@ -614,12 +614,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get timer_finished_body => "Your QuietFlip timer has finished.";
   String get alerts_channel => "Timer alerts";
   String get invalid_duration => "Enter a time between 1 second and 99:59:59.";
-  String get enter_full_screen => "Enter full screen";
-  String get exit_full_screen => "Exit full screen";
   String get show_controls => "Tap or move the mouse to show controls";
-  String get display => "Display";
   String get theme => "Theme";
-  String get theme_black => "Black";
   String get theme_light => "Light";
   String get use_24h => "24-hour time";
   String get show_seconds => "Show seconds";
@@ -636,24 +632,11 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keep_screen_awake => "Keep screen awake";
   String get keep_screen_awake_description =>
       "Stop the screen from sleeping while the clock is showing.";
-  String get keyboard_shortcuts => "Keyboard shortcuts";
-  String get shortcut_full_screen => "F: enter or leave full screen";
-  String get shortcut_exit_full_screen => "Esc: leave full screen";
-  String get shortcut_start_pause =>
-      "Space: start or pause the timer or stopwatch";
-  String get shortcut_modes => "1, 2, 3: Clock, Timer, Stopwatch";
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
-  String get hide_seconds => "Hide seconds";
-  String get seconds_hint =>
-      "Tap the seconds button (or press S) to show seconds.";
-  String get dismiss_hint => "Dismiss hint";
-  String get shortcut_seconds => "S: show or hide seconds";
   String get digit_brightness => "Digit brightness";
-  String get dim_digits => "Dim the digits";
   String percent(String value) => "$value%";
-  String get shortcut_dim => "D: dim the digits (100%, 50%, 20%)";
   String get subtle_movement => "Subtle movement";
   String get subtle_movement_description =>
       "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
@@ -666,6 +649,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get orientation_auto => "Auto";
   String get orientation_landscape => "Landscape";
   String get orientation_portrait => "Portrait";
+  String get settings_card_size => "Card size";
+  String get card_size_small => "Small";
+  String get card_size_medium => "Medium";
+  String get card_size_large => "Large";
   String get pomodoro => "Pomodoro";
   String pomodoro_focus(int round) => "Focus · Round $round";
   String pomodoro_break(int round) => "Break · Round $round";
@@ -673,6 +660,119 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get pomodoro_break_done => "Break over. Back to focus.";
   String get start_focus => "Start focus";
   String get start_break => "Start break";
+  String get skins_title => "Skins";
+  String get skins_customize => "Customize";
+  String get skins_done => "Done";
+  String get skins_yours => "Your skins";
+  String get skins_classic => "Classic";
+  String get skins_bold => "Bold";
+  String get skins_type => "Type";
+  String get skins_new => "New skin";
+  String get skins_from_current => "From current";
+  String get skins_change => "Change skin";
+  String get customize_title => "Customize skin";
+  String get customize_name => "Name";
+  String customize_copy_name(String name) => "$name copy";
+  String get customize_font => "Font";
+  String get customize_digits => "Digits";
+  String get customize_card => "Card";
+  String get customize_ground => "Background";
+  String get customize_custom_colour => "Custom colour";
+  String get customize_hex_hint => "Hex, for example #FF7A00";
+  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
+  String get customize_apply => "Apply";
+  String get customize_low_contrast => "Digits may be hard to read.";
+  String get customize_shape => "Shape";
+  String get customize_radius => "Corner radius";
+  String get customize_seam => "Split line";
+  String get customize_details => "Details";
+  String get customize_seconds => "Seconds";
+  String get customize_seconds_off => "Off";
+  String get customize_seconds_badge => "Small";
+  String get customize_seconds_cards => "Cards";
+  String get customize_meridiem => "AM / PM";
+  String get customize_meridiem_hidden => "Hidden";
+  String get customize_meridiem_left => "Inside";
+  String get customize_meridiem_right => "Beside";
+  String get customize_save => "Save skin";
+  String get customize_reset => "Reset";
+  String get customize_delete => "Delete skin";
+  String get skin_mono => "Mono";
+  String get skin_paper => "Paper";
+  String get skin_rose => "Rose";
+  String get skin_violet => "Violet";
+  String get skin_amber => "Amber";
+  String get skin_signal => "Signal";
+  String get skin_field => "Field";
+  String get skin_mint => "Mint";
+  String get skin_cyan => "Cyan";
+  String get skin_taxi => "Taxi";
+  String get skin_bebas => "Bebas";
+  String get skin_anton => "Anton";
+  String get skin_oswald => "Oswald";
+  String get skin_shoulders => "Shoulders";
+  String get skin_poster => "Poster";
+  String get skin_terminal => "Terminal";
+  String get skin_grotesk => "Grotesk";
+  String get skin_serif => "Serif";
+  String get skin_orbit => "Orbit";
+  String get skin_nightstand => "Nightstand";
+  String get skin_studio => "Studio";
+  String get skin_arcade => "Arcade";
+  String get skin_railway => "Railway";
+  String get skin_desk => "Desk";
+  String get skin_neon => "Neon";
+  String get skin_minimal => "Minimal";
+  String get mode_pomodoro => "Pomodoro";
+  String get mode_clock => "Clock";
+  String get mode_timer => "Timer";
+  String get mode_stopwatch => "Stopwatch";
+  String brightness_value(String percent) => "$percent%";
+  String get settings_appearance => "Appearance";
+  String get settings_clock => "Clock";
+  String get settings_gestures => "Gestures";
+  String get settings_timers => "Timers";
+  String get settings_sound => "Sound & alerts";
+  String get settings_awake => "Keep awake";
+  String get settings_shortcuts => "Shortcuts";
+  String get settings_about => "About";
+  String get settings_skin => "Skin";
+  String get theme_dark => "Dark";
+  String get theme_system => "Match system";
+  String get gesture_swipes => "Swipes";
+  String get gesture_brightness => "Swipe up or down for brightness";
+  String get gesture_modes => "Swipe sideways to change mode";
+  String get gesture_footer =>
+      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
+  String get gesture_controls => "Controls";
+  String get gesture_tap => "Tap to show controls";
+  String get gesture_idle => "Hide controls after";
+  String gesture_idle_seconds(int seconds) => "${seconds}s";
+  String get gesture_idle_never => "Never";
+  String get gesture_controls_footer =>
+      "Controls shrink to a dot, then disappear.";
+  String get timers_pomodoro_focus => "Focus";
+  String get timers_pomodoro_break => "Break";
+  String timers_minutes(int minutes) => "$minutes min";
+  String get sound_footer =>
+      "The in-app alert always plays, even with notifications off.";
+  String get key_start_pause => "Start or pause";
+  String get key_change_mode => "Change mode";
+  String get key_brightness => "Brightness";
+  String get key_show_seconds => "Show seconds";
+  String get key_full_screen => "Full screen";
+  String get key_hide_controls => "Hide controls";
+  String get key_dim => "Dim the digits";
+  String get keycap_space => "Space";
+  String get keycap_left_right => "← →";
+  String get keycap_up_down => "↑ ↓";
+  String get keycap_s => "S";
+  String get keycap_f => "F";
+  String get keycap_esc => "Esc";
+  String get keycap_d => "D";
+  String get about_licenses => "Licenses";
+  String get about_privacy => "Privacy";
+  String get about_privacy_value => "No ads. No tracking.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -716,18 +816,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return alerts_channel;
       case 'invalid_duration':
         return invalid_duration;
-      case 'enter_full_screen':
-        return enter_full_screen;
-      case 'exit_full_screen':
-        return exit_full_screen;
       case 'show_controls':
         return show_controls;
-      case 'display':
-        return display;
       case 'theme':
         return theme;
-      case 'theme_black':
-        return theme_black;
       case 'theme_light':
         return theme_light;
       case 'use_24h':
@@ -752,38 +844,16 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return keep_screen_awake;
       case 'keep_screen_awake_description':
         return keep_screen_awake_description;
-      case 'keyboard_shortcuts':
-        return keyboard_shortcuts;
-      case 'shortcut_full_screen':
-        return shortcut_full_screen;
-      case 'shortcut_exit_full_screen':
-        return shortcut_exit_full_screen;
-      case 'shortcut_start_pause':
-        return shortcut_start_pause;
-      case 'shortcut_modes':
-        return shortcut_modes;
       case 'current_time':
         return current_time;
       case 'time_remaining':
         return time_remaining;
       case 'elapsed':
         return elapsed;
-      case 'hide_seconds':
-        return hide_seconds;
-      case 'seconds_hint':
-        return seconds_hint;
-      case 'dismiss_hint':
-        return dismiss_hint;
-      case 'shortcut_seconds':
-        return shortcut_seconds;
       case 'digit_brightness':
         return digit_brightness;
-      case 'dim_digits':
-        return dim_digits;
       case 'percent':
         return percent;
-      case 'shortcut_dim':
-        return shortcut_dim;
       case 'subtle_movement':
         return subtle_movement;
       case 'subtle_movement_description':
@@ -802,6 +872,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return orientation_landscape;
       case 'orientation_portrait':
         return orientation_portrait;
+      case 'settings_card_size':
+        return settings_card_size;
+      case 'card_size_small':
+        return card_size_small;
+      case 'card_size_medium':
+        return card_size_medium;
+      case 'card_size_large':
+        return card_size_large;
       case 'pomodoro':
         return pomodoro;
       case 'pomodoro_focus':
@@ -816,6 +894,226 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return start_focus;
       case 'start_break':
         return start_break;
+      case 'skins_title':
+        return skins_title;
+      case 'skins_customize':
+        return skins_customize;
+      case 'skins_done':
+        return skins_done;
+      case 'skins_yours':
+        return skins_yours;
+      case 'skins_classic':
+        return skins_classic;
+      case 'skins_bold':
+        return skins_bold;
+      case 'skins_type':
+        return skins_type;
+      case 'skins_new':
+        return skins_new;
+      case 'skins_from_current':
+        return skins_from_current;
+      case 'skins_change':
+        return skins_change;
+      case 'customize_title':
+        return customize_title;
+      case 'customize_name':
+        return customize_name;
+      case 'customize_copy_name':
+        return customize_copy_name;
+      case 'customize_font':
+        return customize_font;
+      case 'customize_digits':
+        return customize_digits;
+      case 'customize_card':
+        return customize_card;
+      case 'customize_ground':
+        return customize_ground;
+      case 'customize_custom_colour':
+        return customize_custom_colour;
+      case 'customize_hex_hint':
+        return customize_hex_hint;
+      case 'customize_hex_invalid':
+        return customize_hex_invalid;
+      case 'customize_apply':
+        return customize_apply;
+      case 'customize_low_contrast':
+        return customize_low_contrast;
+      case 'customize_shape':
+        return customize_shape;
+      case 'customize_radius':
+        return customize_radius;
+      case 'customize_seam':
+        return customize_seam;
+      case 'customize_details':
+        return customize_details;
+      case 'customize_seconds':
+        return customize_seconds;
+      case 'customize_seconds_off':
+        return customize_seconds_off;
+      case 'customize_seconds_badge':
+        return customize_seconds_badge;
+      case 'customize_seconds_cards':
+        return customize_seconds_cards;
+      case 'customize_meridiem':
+        return customize_meridiem;
+      case 'customize_meridiem_hidden':
+        return customize_meridiem_hidden;
+      case 'customize_meridiem_left':
+        return customize_meridiem_left;
+      case 'customize_meridiem_right':
+        return customize_meridiem_right;
+      case 'customize_save':
+        return customize_save;
+      case 'customize_reset':
+        return customize_reset;
+      case 'customize_delete':
+        return customize_delete;
+      case 'skin_mono':
+        return skin_mono;
+      case 'skin_paper':
+        return skin_paper;
+      case 'skin_rose':
+        return skin_rose;
+      case 'skin_violet':
+        return skin_violet;
+      case 'skin_amber':
+        return skin_amber;
+      case 'skin_signal':
+        return skin_signal;
+      case 'skin_field':
+        return skin_field;
+      case 'skin_mint':
+        return skin_mint;
+      case 'skin_cyan':
+        return skin_cyan;
+      case 'skin_taxi':
+        return skin_taxi;
+      case 'skin_bebas':
+        return skin_bebas;
+      case 'skin_anton':
+        return skin_anton;
+      case 'skin_oswald':
+        return skin_oswald;
+      case 'skin_shoulders':
+        return skin_shoulders;
+      case 'skin_poster':
+        return skin_poster;
+      case 'skin_terminal':
+        return skin_terminal;
+      case 'skin_grotesk':
+        return skin_grotesk;
+      case 'skin_serif':
+        return skin_serif;
+      case 'skin_orbit':
+        return skin_orbit;
+      case 'skin_nightstand':
+        return skin_nightstand;
+      case 'skin_studio':
+        return skin_studio;
+      case 'skin_arcade':
+        return skin_arcade;
+      case 'skin_railway':
+        return skin_railway;
+      case 'skin_desk':
+        return skin_desk;
+      case 'skin_neon':
+        return skin_neon;
+      case 'skin_minimal':
+        return skin_minimal;
+      case 'mode_pomodoro':
+        return mode_pomodoro;
+      case 'mode_clock':
+        return mode_clock;
+      case 'mode_timer':
+        return mode_timer;
+      case 'mode_stopwatch':
+        return mode_stopwatch;
+      case 'brightness_value':
+        return brightness_value;
+      case 'settings_appearance':
+        return settings_appearance;
+      case 'settings_clock':
+        return settings_clock;
+      case 'settings_gestures':
+        return settings_gestures;
+      case 'settings_timers':
+        return settings_timers;
+      case 'settings_sound':
+        return settings_sound;
+      case 'settings_awake':
+        return settings_awake;
+      case 'settings_shortcuts':
+        return settings_shortcuts;
+      case 'settings_about':
+        return settings_about;
+      case 'settings_skin':
+        return settings_skin;
+      case 'theme_dark':
+        return theme_dark;
+      case 'theme_system':
+        return theme_system;
+      case 'gesture_swipes':
+        return gesture_swipes;
+      case 'gesture_brightness':
+        return gesture_brightness;
+      case 'gesture_modes':
+        return gesture_modes;
+      case 'gesture_footer':
+        return gesture_footer;
+      case 'gesture_controls':
+        return gesture_controls;
+      case 'gesture_tap':
+        return gesture_tap;
+      case 'gesture_idle':
+        return gesture_idle;
+      case 'gesture_idle_seconds':
+        return gesture_idle_seconds;
+      case 'gesture_idle_never':
+        return gesture_idle_never;
+      case 'gesture_controls_footer':
+        return gesture_controls_footer;
+      case 'timers_pomodoro_focus':
+        return timers_pomodoro_focus;
+      case 'timers_pomodoro_break':
+        return timers_pomodoro_break;
+      case 'timers_minutes':
+        return timers_minutes;
+      case 'sound_footer':
+        return sound_footer;
+      case 'key_start_pause':
+        return key_start_pause;
+      case 'key_change_mode':
+        return key_change_mode;
+      case 'key_brightness':
+        return key_brightness;
+      case 'key_show_seconds':
+        return key_show_seconds;
+      case 'key_full_screen':
+        return key_full_screen;
+      case 'key_hide_controls':
+        return key_hide_controls;
+      case 'key_dim':
+        return key_dim;
+      case 'keycap_space':
+        return keycap_space;
+      case 'keycap_left_right':
+        return keycap_left_right;
+      case 'keycap_up_down':
+        return keycap_up_down;
+      case 'keycap_s':
+        return keycap_s;
+      case 'keycap_f':
+        return keycap_f;
+      case 'keycap_esc':
+        return keycap_esc;
+      case 'keycap_d':
+        return keycap_d;
+      case 'about_licenses':
+        return about_licenses;
+      case 'about_privacy':
+        return about_privacy;
+      case 'about_privacy_value':
+        return about_privacy_value;
       default:
         return key;
     }

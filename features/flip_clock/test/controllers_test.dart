@@ -61,9 +61,11 @@ void main() {
       await c.load();
       expect(c.state.theme, ClockTheme.light);
       expect(c.appearance.value, AppearanceMode.light);
-      await c.update(c.state.copyWith(theme: ClockTheme.black, use24h: false));
+      await c.update(c.state.copyWith(theme: ClockTheme.dark, use24h: false));
       expect(c.appearance.value, AppearanceMode.black);
       expect((await repo.load()).use24h, isFalse);
+      await c.update(c.state.copyWith(theme: ClockTheme.system));
+      expect(c.appearance.value, AppearanceMode.system);
       await c.close();
     });
 

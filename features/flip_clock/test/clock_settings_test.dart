@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('defaults: black, 24h, no seconds, alert sound on', () {
     const s = ClockSettings();
-    expect(s.theme, ClockTheme.black);
+    expect(s.theme, ClockTheme.dark);
     expect(s.use24h, isTrue);
     expect(s.showSeconds, isFalse);
     expect(s.flipSound, isFalse);
@@ -12,11 +12,15 @@ void main() {
     expect(s.systemAlerts, isFalse);
     expect(s.keepAwake, isFalse);
     expect(s.lastMode, ClockMode.clock);
-    expect(s.secondsHintSeen, isFalse);
     expect(s.digitBrightness, 1.0);
     expect(s.subtleMovement, isFalse);
     expect(s.showDate, isFalse);
     expect(s.orientation, ClockOrientation.auto);
+    expect(s.tapToggleControls, isTrue);
+    expect(s.controlsIdle, const Duration(seconds: 4));
+    expect(s.gestureBrightness, isTrue);
+    expect(s.gestureModes, isTrue);
+    expect(s.cardSize, CardSize.large);
   });
 
   test('round-trips through json and copyWith', () {
@@ -29,11 +33,15 @@ void main() {
       systemAlerts: true,
       keepAwake: true,
       lastMode: ClockMode.stopwatch,
-      secondsHintSeen: true,
       digitBrightness: 0.4,
       subtleMovement: true,
       showDate: true,
       orientation: ClockOrientation.landscape,
+      tapToggleControls: false,
+      controlsIdle: Duration.zero,
+      gestureBrightness: false,
+      gestureModes: false,
+      cardSize: CardSize.small,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -47,10 +55,13 @@ void main() {
         'theme': 'neon',
         'use24h': 'yes',
         'lastMode': 3,
-        'secondsHintSeen': 'no',
         'subtleMovement': 'on',
         'showDate': 'true',
         'orientation': 'sideways',
+        'tapToggleControls': 'off',
+        'controlsIdleMs': '2000',
+        'gestureBrightness': 'no',
+        'gestureModes': 0,
       }),
       const ClockSettings(),
     );
@@ -73,6 +84,27 @@ void main() {
     );
   });
 
+  test('controls idle reads only the offered choices', () {
+    Duration read(Object? v) =>
+        ClockSettings.fromJson({'controlsIdleMs': v}).controlsIdle;
+    expect(read(2000), const Duration(seconds: 2));
+    expect(read(8000), const Duration(seconds: 8));
+    expect(read(0), Duration.zero);
+    expect(read(3000), const Duration(seconds: 4));
+    expect(read(-1), const Duration(seconds: 4));
+    expect(read(null), const Duration(seconds: 4));
+    expect(
+      const ClockSettings(
+        controlsIdle: Duration.zero,
+      ).toJson()['controlsIdleMs'],
+      0,
+    );
+    expect(
+      const ClockSettings(tapToggleControls: false),
+      isNot(const ClockSettings()),
+    );
+  });
+
   test(
     'quick dim cycles 100 -> 50 -> 20 -> 100 and steps down from between',
     () {
@@ -84,8 +116,52 @@ void main() {
     },
   );
 
+  test('gesture flags read their own keys and compare', () {
+    final json = const ClockSettings(gestureBrightness: false).toJson();
+    expect(json['gestureBrightness'], isFalse);
+    expect(json['gestureModes'], isTrue);
+    expect(
+      ClockSettings.fromJson({'gestureModes': false}),
+      const ClockSettings(gestureModes: false),
+    );
+    expect(
+      const ClockSettings(gestureBrightness: false),
+      isNot(const ClockSettings()),
+    );
+    expect(
+      const ClockSettings(gestureModes: false),
+      isNot(const ClockSettings()),
+    );
+  });
+
+  test('card size: factors, json by name, per-field fallback', () {
+    expect(CardSize.large.factor, 1.0);
+    expect(CardSize.medium.factor, 0.8);
+    expect(CardSize.small.factor, 0.6);
+    const medium = ClockSettings(cardSize: CardSize.medium);
+    expect(medium.toJson()['cardSize'], 'medium');
+    expect(ClockSettings.fromJson(medium.toJson()).cardSize, CardSize.medium);
+    expect(medium, isNot(const ClockSettings()));
+    expect(medium.hashCode, isNot(const ClockSettings().hashCode));
+    for (final bad in [null, 'huge', 2]) {
+      final read = ClockSettings.fromJson({'cardSize': bad, 'use24h': false});
+      expect(read.cardSize, CardSize.large, reason: '$bad');
+      expect(read.use24h, isFalse);
+    }
+  });
+
   test('routes are fixed', () {
     expect(FlipClockRouter.home, '/clock');
     expect(FlipClockRouter.settings, '/clock/settings');
+  });
+
+  test('theme migrates black to Dark and reads Light and System', () {
+    ClockTheme read(Object? v) => ClockSettings.fromJson({'theme': v}).theme;
+    expect(read('black'), ClockTheme.dark);
+    expect(read('dark'), ClockTheme.dark);
+    expect(read('light'), ClockTheme.light);
+    expect(read('system'), ClockTheme.system);
+    expect(read('neon'), ClockTheme.dark);
+    expect(read(null), ClockTheme.dark);
   });
 }

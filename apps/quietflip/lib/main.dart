@@ -46,7 +46,11 @@ Future<void> startApp({
       client: di.has<NotificationClient>()
           ? di.get<NotificationClient>()
           : null,
-      child: App(router: router, appearance: flip_clock.appearance()),
+      child: App(
+        router: router,
+        appearance: flip_clock.appearance(),
+        face: flip_clock.appFace(),
+      ),
     ),
   );
 }

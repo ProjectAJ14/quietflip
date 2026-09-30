@@ -5,15 +5,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Shifts [child] by a few pixels once per minute so the same pixels are not
 /// lit all night (lowers, does not prevent, burn-in). Driven by the screen's
-/// [ClockController]; this widget owns no timer, so unmounting it (leaving
-/// full screen, turning the setting off) stops the movement.
+/// [ClockController]; this widget owns no timer.
 ///
 /// The shift is padding that always sums to 2 * [maxShift] per axis, so the
 /// child's space never changes with the offset and nothing clips or overflows.
+/// Disabled, it sits centred (zero offset, same padding): callers keep it in
+/// the tree either way, so toggling it never rebuilds the child's state.
 class SubtleMovement extends StatelessWidget {
-  const SubtleMovement({super.key, required this.clock, required this.child});
+  const SubtleMovement({
+    super.key,
+    required this.clock,
+    required this.enabled,
+    required this.child,
+  });
 
   final ClockController clock;
+
+  /// Off: centred and still.
+  final bool enabled;
   final Widget child;
 
   /// Largest shift from centre on each axis, in logical pixels.
@@ -38,11 +47,11 @@ class SubtleMovement extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocBuilder<ClockController, DateTime>(
     bloc: clock,
-    buildWhen: (a, b) => offsetAt(a) != offsetAt(b),
+    buildWhen: (a, b) => enabled && offsetAt(a) != offsetAt(b),
     builder: (context, now) {
-      final o = offsetAt(now);
+      final o = enabled ? offsetAt(now) : Offset.zero;
       return AnimatedPadding(
-        duration: reducedMotion(context)
+        duration: !enabled || reducedMotion(context)
             ? Duration.zero
             : const Duration(seconds: 1),
         curve: Curves.easeInOut,

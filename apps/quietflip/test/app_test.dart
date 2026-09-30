@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auth/auth.dart' as auth;
 import 'package:core/core.dart' as core;
 import 'package:design_system/design_system.dart';
@@ -66,6 +68,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the whole app follows the skin face', (tester) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const Text('Test destination')),
+      ],
+    );
+    addTearDown(router.dispose);
+    final appearance = ValueNotifier(AppearanceMode.black);
+    final face = ValueNotifier<DisplayFace?>(null);
+    addTearDown(appearance.dispose);
+    addTearDown(face.dispose);
+    await tester.pumpWidget(
+      App(router: router, appearance: appearance, face: face),
+    );
+    await tester.pumpAndSettle();
+    TextStyle body() => Theme.of(
+      tester.element(find.text('Test destination')),
+    ).textTheme.bodyLarge!;
+    expect(body().fontFamily, startsWith('Geist'));
+    face.value = DisplayFace.orbitron;
+    await tester.pumpAndSettle();
+    expect(body().fontFamily, startsWith('Orbitron'));
+  });
+
   testWidgets('real routes boot without Firebase; the clock is home', (
     tester,
   ) async {
@@ -124,4 +150,18 @@ void main() {
       expect(find.text('login'), findsOneWidget);
     });
   }
+
+  test(
+    'web never downloads Roboto: the name is bundled Geist with its OFL',
+    () {
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('- family: Roboto'));
+      expect(pubspec, contains('asset: assets/fonts/Geist-Regular.ttf'));
+      expect(File('assets/fonts/Geist-Regular.ttf').existsSync(), isTrue);
+      expect(
+        File('assets/fonts/OFL-Geist.txt').readAsStringSync(),
+        contains('SIL Open Font License'),
+      );
+    },
+  );
 }

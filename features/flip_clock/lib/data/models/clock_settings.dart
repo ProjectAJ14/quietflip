@@ -1,16 +1,34 @@
-/// Theme the user picked in Settings.
-enum ClockTheme { black, light }
+import 'package:design_system/design_system.dart';
+import 'package:flip_clock/data/models/skin.dart';
+import 'package:flutter/foundation.dart';
 
-/// The screen mode shown on launch (the last one used).
-enum ClockMode { clock, timer, stopwatch }
+/// The chrome theme picked in Settings: Mono Dark (the default, even when
+/// the OS is light), Mono Light, or following the OS.
+enum ClockTheme { dark, light, system }
+
+/// The screen modes in panel order; the one shown on launch is the last
+/// one used.
+enum ClockMode { pomodoro, clock, timer, stopwatch }
 
 /// Screen orientation lock (phones and tablets only).
 enum ClockOrientation { auto, landscape, portrait }
 
+/// How much of the space the flip cards fill.
+enum CardSize {
+  small(0.6),
+  medium(0.8),
+  large(1);
+
+  const CardSize(this.factor);
+
+  /// Card height relative to the largest card that fits.
+  final double factor;
+}
+
 /// Local display, sound and alert preferences.
 class ClockSettings {
   const ClockSettings({
-    this.theme = ClockTheme.black,
+    this.theme = ClockTheme.dark,
     this.use24h = true,
     this.showSeconds = false,
     this.flipSound = false,
@@ -18,16 +36,34 @@ class ClockSettings {
     this.systemAlerts = false,
     this.keepAwake = false,
     this.lastMode = ClockMode.clock,
-    this.secondsHintSeen = false,
     this.digitBrightness = maxBrightness,
     this.subtleMovement = false,
     this.showDate = false,
     this.orientation = ClockOrientation.auto,
+    this.skinId = 'mono',
+    this.customSkins = const [],
+    this.tapToggleControls = true,
+    this.controlsIdle = defaultControlsIdle,
+    this.gestureBrightness = true,
+    this.gestureModes = true,
+    this.cardSize = CardSize.large,
   });
 
   /// Dimmest and brightest [digitBrightness].
   static const double minBrightness = 0.2;
   static const double maxBrightness = 1;
+
+  /// How long the controls stay before collapsing, by default.
+  static const Duration defaultControlsIdle = DesignMotion.controlsIdle;
+
+  /// The [controlsIdle] values Settings offers; [Duration.zero] means Never
+  /// (the controls stay until hidden).
+  static const List<Duration> controlsIdleChoices = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 8),
+    Duration.zero,
+  ];
 
   /// The quick-dim step after [current]: 100% -> 50% -> 20% -> 100%.
   /// A slider value in between steps down to the next preset.
@@ -52,7 +88,10 @@ class ClockSettings {
     }
 
     return ClockSettings(
-      theme: pick(ClockTheme.values, 'theme', d.theme),
+      // Earlier releases saved the dark theme as 'black'.
+      theme: json['theme'] == 'black'
+          ? ClockTheme.dark
+          : pick(ClockTheme.values, 'theme', d.theme),
       use24h: flag('use24h', d.use24h),
       showSeconds: flag('showSeconds', d.showSeconds),
       flipSound: flag('flipSound', d.flipSound),
@@ -60,7 +99,6 @@ class ClockSettings {
       systemAlerts: flag('systemAlerts', d.systemAlerts),
       keepAwake: flag('keepAwake', d.keepAwake),
       lastMode: pick(ClockMode.values, 'lastMode', d.lastMode),
-      secondsHintSeen: flag('secondsHintSeen', d.secondsHintSeen),
       digitBrightness: switch (json['digitBrightness']) {
         final num v when !v.isNaN =>
           v.clamp(minBrightness, maxBrightness).toDouble(),
@@ -69,6 +107,24 @@ class ClockSettings {
       subtleMovement: flag('subtleMovement', d.subtleMovement),
       showDate: flag('showDate', d.showDate),
       orientation: pick(ClockOrientation.values, 'orientation', d.orientation),
+      skinId: json['skinId'] is String ? json['skinId']! as String : d.skinId,
+      // A skin that cannot be read is dropped; the others survive.
+      customSkins: json['customSkins'] is List
+          ? [
+              for (final raw in json['customSkins']! as List)
+                ?Skin.fromJson(raw),
+            ]
+          : d.customSkins,
+      tapToggleControls: flag('tapToggleControls', d.tapToggleControls),
+      controlsIdle: switch (json['controlsIdleMs']) {
+        final int ms
+            when controlsIdleChoices.contains(Duration(milliseconds: ms)) =>
+          Duration(milliseconds: ms),
+        _ => d.controlsIdle,
+      },
+      gestureBrightness: flag('gestureBrightness', d.gestureBrightness),
+      gestureModes: flag('gestureModes', d.gestureModes),
+      cardSize: pick(CardSize.values, 'cardSize', d.cardSize),
     );
   }
 
@@ -82,9 +138,6 @@ class ClockSettings {
   final ClockMode lastMode;
   final ClockOrientation orientation;
 
-  /// The one-time "tap the seconds button" hint was dismissed or acted on.
-  final bool secondsHintSeen;
-
   /// Opacity of the digits, [minBrightness]..[maxBrightness]; the background
   /// and controls are never dimmed.
   final double digitBrightness;
@@ -95,6 +148,29 @@ class ClockSettings {
   /// Shows today's date under the clock digits.
   final bool showDate;
 
+  /// The selected skin; an unknown id shows Mono.
+  final String skinId;
+
+  /// Skins the user made, first in the picker.
+  final List<Skin> customSkins;
+
+  /// A tap on the display shows or hides the controls.
+  final bool tapToggleControls;
+
+  /// Idle time before the controls collapse, one of [controlsIdleChoices];
+  /// [Duration.zero] means never.
+  final Duration controlsIdle;
+
+  /// A vertical drag on the display (and the Up/Down keys) changes the
+  /// brightness.
+  final bool gestureBrightness;
+
+  /// A horizontal swipe on the display switches between modes.
+  final bool gestureModes;
+
+  /// How large the flip cards are.
+  final CardSize cardSize;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -104,11 +180,17 @@ class ClockSettings {
     'systemAlerts': systemAlerts,
     'keepAwake': keepAwake,
     'lastMode': lastMode.name,
-    'secondsHintSeen': secondsHintSeen,
     'digitBrightness': digitBrightness,
     'subtleMovement': subtleMovement,
     'showDate': showDate,
     'orientation': orientation.name,
+    'skinId': skinId,
+    'customSkins': [for (final skin in customSkins) skin.toJson()],
+    'tapToggleControls': tapToggleControls,
+    'controlsIdleMs': controlsIdle.inMilliseconds,
+    'gestureBrightness': gestureBrightness,
+    'gestureModes': gestureModes,
+    'cardSize': cardSize.name,
   };
 
   ClockSettings copyWith({
@@ -120,11 +202,17 @@ class ClockSettings {
     bool? systemAlerts,
     bool? keepAwake,
     ClockMode? lastMode,
-    bool? secondsHintSeen,
     double? digitBrightness,
     bool? subtleMovement,
     bool? showDate,
     ClockOrientation? orientation,
+    String? skinId,
+    List<Skin>? customSkins,
+    bool? tapToggleControls,
+    Duration? controlsIdle,
+    bool? gestureBrightness,
+    bool? gestureModes,
+    CardSize? cardSize,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -134,11 +222,17 @@ class ClockSettings {
     systemAlerts: systemAlerts ?? this.systemAlerts,
     keepAwake: keepAwake ?? this.keepAwake,
     lastMode: lastMode ?? this.lastMode,
-    secondsHintSeen: secondsHintSeen ?? this.secondsHintSeen,
     digitBrightness: digitBrightness ?? this.digitBrightness,
     subtleMovement: subtleMovement ?? this.subtleMovement,
     showDate: showDate ?? this.showDate,
     orientation: orientation ?? this.orientation,
+    skinId: skinId ?? this.skinId,
+    customSkins: customSkins ?? this.customSkins,
+    tapToggleControls: tapToggleControls ?? this.tapToggleControls,
+    controlsIdle: controlsIdle ?? this.controlsIdle,
+    gestureBrightness: gestureBrightness ?? this.gestureBrightness,
+    gestureModes: gestureModes ?? this.gestureModes,
+    cardSize: cardSize ?? this.cardSize,
   );
 
   @override
@@ -152,11 +246,17 @@ class ClockSettings {
       other.systemAlerts == systemAlerts &&
       other.keepAwake == keepAwake &&
       other.lastMode == lastMode &&
-      other.secondsHintSeen == secondsHintSeen &&
       other.digitBrightness == digitBrightness &&
       other.subtleMovement == subtleMovement &&
       other.showDate == showDate &&
-      other.orientation == orientation;
+      other.orientation == orientation &&
+      other.skinId == skinId &&
+      listEquals(other.customSkins, customSkins) &&
+      other.tapToggleControls == tapToggleControls &&
+      other.controlsIdle == controlsIdle &&
+      other.gestureBrightness == gestureBrightness &&
+      other.gestureModes == gestureModes &&
+      other.cardSize == cardSize;
 
   @override
   int get hashCode => Object.hash(
@@ -168,10 +268,16 @@ class ClockSettings {
     systemAlerts,
     keepAwake,
     lastMode,
-    secondsHintSeen,
     digitBrightness,
     subtleMovement,
     showDate,
     orientation,
+    skinId,
+    Object.hashAll(customSkins),
+    tapToggleControls,
+    controlsIdle,
+    gestureBrightness,
+    gestureModes,
+    cardSize,
   );
 }

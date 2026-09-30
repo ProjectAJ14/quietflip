@@ -33,8 +33,9 @@ dev_dependencies:
 
 flutter:
   assets:
-    # Open Sans (OFL) weights the theme uses, so google_fonts never fetches
-    # them from the network (the app turns runtime fetching off).
+    # Geist (interface) and every digit face, each with its OFL licence, so
+    # google_fonts never fetches from the network (the app turns runtime
+    # fetching off). Names follow google_fonts: <Family>-<Weight>.ttf.
     - assets/google_fonts/
 
 resolution: workspace
