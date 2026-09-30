@@ -395,7 +395,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
           ),
           for (final preset in settings.timerPresets)
             IslandAction(
-              label: _presetLabel(preset),
+              label: presetLabel(preset),
               onPressed: () => unawaited(down.start(preset)),
             ),
           act(
@@ -671,17 +671,6 @@ class _Laps extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A preset's chip text: `5m` for whole minutes, else `1:30`.
-String _presetLabel(Duration preset) {
-  final seconds = preset.inSeconds.remainder(60);
-  return seconds == 0
-      ? strings.clock.preset_minutes(preset.inMinutes)
-      : strings.clock.preset_minutes_seconds(
-          preset.inMinutes,
-          seconds.toString().padLeft(2, '0'),
-        );
 }
 
 /// What full screen does, in plain words, shown briefly on entering it.

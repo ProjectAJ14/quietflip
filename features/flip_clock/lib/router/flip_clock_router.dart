@@ -21,6 +21,9 @@ class FlipClockRouter implements CoreRouter {
   /// Settings screen, stacked on [home] so going back restores it.
   static const String settings = '/clock/settings';
 
+  /// Settings opened on the Timers category.
+  static const String timerSettings = '$settings?category=timers';
+
   @override
   List<RouteBase> get routes => [
     GoRoute(
@@ -36,13 +39,15 @@ class FlipClockRouter implements CoreRouter {
         brightness: di.get<ScreenBrightness>(),
         logger: di.get<Logger>(),
         onOpenSettings: () => context.go(settings),
-        onOpenTimerSettings: () => context.go(settings),
+        onOpenTimerSettings: () => context.go(timerSettings),
       ),
       routes: [
         GoRoute(
           path: 'settings',
-          builder: (context, _) => SettingsScreen(
+          builder: (context, state) => SettingsScreen(
             settings: di.get<SettingsController>(),
+            openTimers: state.uri.queryParameters['category'] == 'timers',
+            now: () => di.get<ClockController>().state,
             orientationSupported: di.get<OrientationLock>().supported,
             onDone: () => context.go(home),
             onSkins: () => unawaited(

@@ -35,7 +35,8 @@ into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
 
-- **Appearance:** Skin (opens the Skins sheet), Theme (Dark, the default
+- **Appearance:** Skins (the first five as live thumbnails, tap to apply;
+  View all opens the Skins sheet), Theme (Dark, the default
   even when the OS is light; Light; Match system), Digit brightness (20% to
   100%; dims only the digits and the date line, never the controls; the D
   key cycles 100%, 50%, 20%).
@@ -43,7 +44,10 @@ Everything is saved at once and restored on launch.
   Orientation (Auto / Landscape / Portrait; phones and tablets only).
 - **Gestures:** swipe up or down for brightness, swipe sideways to change
   mode, tap to show controls, hide controls after 2 s / 4 s / 8 s / Never.
-- **Timers:** the Pomodoro lengths (25 min focus, 5 min break).
+- **Timers:** the default timer Start runs (Pomodoro or a preset), your
+  presets (delete any, Add timer in minutes and seconds, up to six), and the
+  Pomodoro lengths (25 min focus, 5 min break). The island's tune icon opens
+  Settings right here; Done returns to the clock.
 - **Sound & alerts:** flip sound, alert sound, system notifications.
 - **Keep awake:** keep the screen awake; subtle movement (full screen
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a

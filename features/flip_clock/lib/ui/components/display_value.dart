@@ -1,9 +1,18 @@
 import 'package:flip_clock/data/models/skin.dart';
+import 'package:localization/localization.dart';
 
 /// What a `FlipDisplay` shows: its cards, the small corner text and AM/PM.
 typedef DisplayValue = ({List<String> cards, String? badge, String? meridiem});
 
 String _two(int n) => n.toString().padLeft(2, '0');
+
+/// A timer preset's short name: `5m` for whole minutes, else `1:30`.
+String presetLabel(Duration preset) {
+  final seconds = preset.inSeconds.remainder(60);
+  return seconds == 0
+      ? strings.clock.preset_minutes(preset.inMinutes)
+      : strings.clock.preset_minutes_seconds(preset.inMinutes, _two(seconds));
+}
 
 /// The clock at [t]: hour and minute cards, seconds in [skin]'s style when
 /// [showSeconds] (their own cards when the skin has none, so Show seconds

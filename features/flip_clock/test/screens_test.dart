@@ -914,8 +914,8 @@ void main() {
       FlipClockRouter.settings,
     );
     expect(find.byType(SettingsScreen), findsOne);
-    // Appearance > Skin opens the Skins sheet over Settings.
-    await tester.tap(find.text(strings.clock.settings_skin));
+    // Appearance > View all opens the Skins sheet over Settings.
+    await tester.tap(find.text(strings.clock.skins_view_all));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsOne);
     // The sheet's Done sits above Settings' own.
@@ -924,14 +924,23 @@ void main() {
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOne);
-    // The Pomodoro tray's tune icon opens Settings too.
+    // The Pomodoro tray's tune icon opens Settings on Timers.
     await modeTab(tester, strings.clock.mode_pomodoro);
     await tester.pumpAndSettle();
     await tester.tap(action(strings.clock.action_timer_settings));
     await tester.pumpAndSettle();
-    expect(find.byType(SettingsScreen), findsOne);
+    expect(
+      router.routeInformationProvider.value.uri.toString(),
+      FlipClockRouter.timerSettings,
+    );
+    expect(
+      tester.widget<SettingsScreen>(find.byType(SettingsScreen)).openTimers,
+      isTrue,
+    );
+    expect(find.text(strings.clock.timers_presets.toUpperCase()), findsOne);
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
+    expect(find.byType(FlipClockScreen), findsOne);
     await tester.pumpWidget(const SizedBox());
     unawaited(di.reset());
     await tester.pump();

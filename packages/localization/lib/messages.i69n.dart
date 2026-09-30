@@ -739,7 +739,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get settings_awake => "Keep awake";
   String get settings_shortcuts => "Shortcuts";
   String get settings_about => "About";
-  String get settings_skin => "Skin";
   String get theme_dark => "Dark";
   String get theme_system => "Match system";
   String get gesture_swipes => "Swipes";
@@ -754,6 +753,16 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get gesture_idle_never => "Never";
   String get gesture_controls_footer =>
       "Controls shrink to a dot, then disappear.";
+  String get timers_default => "Default timer";
+  String get timers_start_runs => "Start runs";
+  String get timers_presets => "Presets";
+  String get timers_add => "Add timer";
+  String get timers_limit_footer =>
+      "Six timers fit the island. Delete one to add another.";
+  String get timers_delete => "Delete timer";
+  String get timers_picker_minutes => "Minutes";
+  String get timers_picker_seconds => "Seconds";
+  String get skins_view_all => "View all";
   String get timers_pomodoro_focus => "Focus";
   String get timers_pomodoro_break => "Break";
   String timers_minutes(int minutes) => "$minutes min";
@@ -1055,8 +1064,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return settings_shortcuts;
       case 'settings_about':
         return settings_about;
-      case 'settings_skin':
-        return settings_skin;
       case 'theme_dark':
         return theme_dark;
       case 'theme_system':
@@ -1081,6 +1088,24 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return gesture_idle_never;
       case 'gesture_controls_footer':
         return gesture_controls_footer;
+      case 'timers_default':
+        return timers_default;
+      case 'timers_start_runs':
+        return timers_start_runs;
+      case 'timers_presets':
+        return timers_presets;
+      case 'timers_add':
+        return timers_add;
+      case 'timers_limit_footer':
+        return timers_limit_footer;
+      case 'timers_delete':
+        return timers_delete;
+      case 'timers_picker_minutes':
+        return timers_picker_minutes;
+      case 'timers_picker_seconds':
+        return timers_picker_seconds;
+      case 'skins_view_all':
+        return skins_view_all;
       case 'timers_pomodoro_focus':
         return timers_pomodoro_focus;
       case 'timers_pomodoro_break':

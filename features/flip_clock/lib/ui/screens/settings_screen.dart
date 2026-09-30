@@ -2,7 +2,12 @@ import 'dart:async';
 
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
+import 'package:flip_clock/data/models/skin.dart';
+import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/ui/components/display_value.dart';
+import 'package:flip_clock/ui/components/skin_picker.dart';
+import 'package:flip_clock/ui/components/timer_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +26,8 @@ class SettingsScreen extends StatefulWidget {
     this.desktop,
     this.onDone,
     this.onSkins,
+    this.openTimers = false,
+    this.now = DateTime.now,
   });
 
   final SettingsController settings;
@@ -37,8 +44,17 @@ class SettingsScreen extends StatefulWidget {
   /// Closes Settings (the Done button).
   final VoidCallback? onDone;
 
-  /// Opens the Skins sheet (Appearance > Skin).
+  /// Opens the Skins sheet (Appearance > Skins > View all).
   final VoidCallback? onSkins;
+
+  /// Opens straight on the Timers category (the island's tune icon).
+  final bool openTimers;
+
+  /// The time the skin thumbnails show.
+  final DateTime Function() now;
+
+  /// Skin thumbnails in Appearance before "View all".
+  static const int skinStrip = 5;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -68,22 +84,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     body: SafeArea(
       child: BlocBuilder<SettingsController, ClockSettings>(
         bloc: widget.settings,
-        builder: (context, s) => SettingsShell(
-          title: strings.clock.settings,
-          doneLabel: widget.onDone == null ? null : strings.generic.done,
-          onDone: widget.onDone,
-          desktop: _desktop,
-          categories: [
+        builder: (context, s) {
+          final timers = _timers(s);
+          final categories = [
             _appearance(s),
             _clock(s),
             _gestures(s),
-            _timers(),
+            timers,
             _sound(s),
             _awake(s),
             _shortcuts(),
             _about(context),
-          ],
-        ),
+          ];
+          return SettingsShell(
+            title: strings.clock.settings,
+            doneLabel: widget.onDone == null ? null : strings.generic.done,
+            onDone: widget.onDone,
+            desktop: _desktop,
+            initialCategory: widget.openTimers ? categories.indexOf(timers) : 0,
+            openInitialCategory: widget.openTimers,
+            categories: categories,
+          );
+        },
       ),
     ),
   );
@@ -95,12 +117,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       label: c.settings_appearance,
       groups: [
         SettingsGroup(
+          header: c.skins_title,
           rows: [
-            SettingsValueRow(
-              label: c.settings_skin,
-              value: widget.settings.skin.name,
-              onTap: widget.onSkins,
+            _SkinStrip(
+              skins: _strip(s),
+              selectedId: widget.settings.skin.id,
+              now: widget.now(),
+              use24h: s.use24h,
+              onSelect: (skin) =>
+                  unawaited(widget.settings.selectSkin(skin.id)),
             ),
+            SettingsValueRow(label: c.skins_view_all, onTap: widget.onSkins),
+          ],
+        ),
+        SettingsGroup(
+          rows: [
             SettingsSegmentedRow<ClockTheme>(
               label: c.theme,
               options: [
@@ -227,12 +258,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  SettingsCategory _timers() {
+  /// The first [SettingsScreen.skinStrip] skins (yours first, as in the
+  /// picker), always including the selected one.
+  List<Skin> _strip(ClockSettings s) {
+    final all = [...s.customSkins, ...Skins.builtIn()];
+    final first = all.take(SettingsScreen.skinStrip).toList();
+    final selected = widget.settings.skin;
+    if (first.any((skin) => skin.id == selected.id)) return first;
+    return [selected, ...first.take(SettingsScreen.skinStrip - 1)];
+  }
+
+  Future<void> _addPreset() async {
+    final picked = await showTimerPicker(context);
+    if (picked == null || !mounted) return;
+    // Settings may have changed while the dialog was open.
+    final now = widget.settings.state;
+    _update(now.copyWith(timerPresets: [...now.timerPresets, picked]));
+  }
+
+  SettingsCategory _timers(ClockSettings s) {
     final c = strings.clock;
+    final full = s.timerPresets.length >= ClockSettings.maxTimerPresets;
     return SettingsCategory(
       icon: Icons.timer_outlined,
       label: c.settings_timers,
       groups: [
+        SettingsGroup(
+          header: c.timers_default,
+          rows: [
+            SettingsSegmentedRow<TimerPreset>(
+              label: c.timers_start_runs,
+              options: [
+                (const PomodoroCycle(), c.preset_pomodoro),
+                for (final p in s.timerPresets) (Minutes(p), presetLabel(p)),
+              ],
+              selected: s.defaultTimer,
+              onChanged: (v) => _update(s.copyWith(defaultTimer: v)),
+            ),
+          ],
+        ),
+        SettingsGroup(
+          header: c.timers_presets,
+          footer: full ? c.timers_limit_footer : null,
+          rows: [
+            for (final p in s.timerPresets)
+              SettingsValueRow(
+                label: presetLabel(p),
+                trailing: IconButton(
+                  tooltip: c.timers_delete,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  onPressed: () => _update(
+                    s.copyWith(
+                      timerPresets: [
+                        for (final q in s.timerPresets)
+                          if (q != p) q,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            SettingsValueRow(
+              label: c.timers_add,
+              onTap: full ? null : () => unawaited(_addPreset()),
+            ),
+          ],
+        ),
         SettingsGroup(
           header: c.mode_pomodoro,
           rows: [
@@ -356,4 +446,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
+}
+
+/// A row of skin thumbnails that scrolls sideways; tapping one applies it.
+class _SkinStrip extends StatelessWidget {
+  const _SkinStrip({
+    required this.skins,
+    required this.selectedId,
+    required this.now,
+    required this.use24h,
+    required this.onSelect,
+  });
+
+  final List<Skin> skins;
+  final String selectedId;
+  final DateTime now;
+  final bool use24h;
+  final ValueChanged<Skin> onSelect;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    // Room for the selected tile's ring.
+    padding: const EdgeInsets.all(DesignSpace.s3),
+    child: Row(
+      spacing: DesignSpace.s3,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final skin in skins)
+          SizedBox(
+            width: SkinPicker.minTileWidth,
+            child: SkinTile(
+              skin: skin,
+              selected: skin.id == selectedId,
+              now: now,
+              use24h: use24h,
+              onTap: () => onSelect(skin),
+            ),
+          ),
+      ],
+    ),
+  );
 }
