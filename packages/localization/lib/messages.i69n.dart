@@ -673,6 +673,61 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get pomodoro_break_done => "Break over. Back to focus.";
   String get start_focus => "Start focus";
   String get start_break => "Start break";
+  String get skins_title => "Skins";
+  String get skins_customize => "Customize";
+  String get skins_done => "Done";
+  String get skins_yours => "Your skins";
+  String get skins_classic => "Classic";
+  String get skins_type => "Type";
+  String get skins_new => "New skin";
+  String get skins_from_current => "From current";
+  String get skins_change => "Change skin";
+  String get customize_title => "Customize skin";
+  String get customize_name => "Name";
+  String customize_copy_name(String name) => "$name copy";
+  String get customize_font => "Font";
+  String get customize_digits => "Digits";
+  String get customize_card => "Card";
+  String get customize_ground => "Background";
+  String get customize_custom_colour => "Custom colour";
+  String get customize_hex_hint => "Hex, for example #FF7A00";
+  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
+  String get customize_apply => "Apply";
+  String get customize_low_contrast => "Digits may be hard to read.";
+  String get customize_shape => "Shape";
+  String get customize_radius => "Corner radius";
+  String get customize_seam => "Split line";
+  String get customize_details => "Details";
+  String get customize_seconds => "Seconds";
+  String get customize_seconds_off => "Off";
+  String get customize_seconds_badge => "Small";
+  String get customize_seconds_cards => "Cards";
+  String get customize_meridiem => "AM / PM";
+  String get customize_meridiem_hidden => "Hidden";
+  String get customize_meridiem_left => "Inside";
+  String get customize_meridiem_right => "Beside";
+  String get customize_save => "Save skin";
+  String get customize_reset => "Reset";
+  String get customize_delete => "Delete skin";
+  String get skin_mono => "Mono";
+  String get skin_paper => "Paper";
+  String get skin_rose => "Rose";
+  String get skin_violet => "Violet";
+  String get skin_amber => "Amber";
+  String get skin_signal => "Signal";
+  String get skin_field => "Field";
+  String get skin_mint => "Mint";
+  String get skin_cyan => "Cyan";
+  String get skin_taxi => "Taxi";
+  String get skin_bebas => "Bebas";
+  String get skin_anton => "Anton";
+  String get skin_oswald => "Oswald";
+  String get skin_shoulders => "Shoulders";
+  String get skin_poster => "Poster";
+  String get skin_terminal => "Terminal";
+  String get skin_grotesk => "Grotesk";
+  String get skin_serif => "Serif";
+  String get skin_orbit => "Orbit";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -816,6 +871,116 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return start_focus;
       case 'start_break':
         return start_break;
+      case 'skins_title':
+        return skins_title;
+      case 'skins_customize':
+        return skins_customize;
+      case 'skins_done':
+        return skins_done;
+      case 'skins_yours':
+        return skins_yours;
+      case 'skins_classic':
+        return skins_classic;
+      case 'skins_type':
+        return skins_type;
+      case 'skins_new':
+        return skins_new;
+      case 'skins_from_current':
+        return skins_from_current;
+      case 'skins_change':
+        return skins_change;
+      case 'customize_title':
+        return customize_title;
+      case 'customize_name':
+        return customize_name;
+      case 'customize_copy_name':
+        return customize_copy_name;
+      case 'customize_font':
+        return customize_font;
+      case 'customize_digits':
+        return customize_digits;
+      case 'customize_card':
+        return customize_card;
+      case 'customize_ground':
+        return customize_ground;
+      case 'customize_custom_colour':
+        return customize_custom_colour;
+      case 'customize_hex_hint':
+        return customize_hex_hint;
+      case 'customize_hex_invalid':
+        return customize_hex_invalid;
+      case 'customize_apply':
+        return customize_apply;
+      case 'customize_low_contrast':
+        return customize_low_contrast;
+      case 'customize_shape':
+        return customize_shape;
+      case 'customize_radius':
+        return customize_radius;
+      case 'customize_seam':
+        return customize_seam;
+      case 'customize_details':
+        return customize_details;
+      case 'customize_seconds':
+        return customize_seconds;
+      case 'customize_seconds_off':
+        return customize_seconds_off;
+      case 'customize_seconds_badge':
+        return customize_seconds_badge;
+      case 'customize_seconds_cards':
+        return customize_seconds_cards;
+      case 'customize_meridiem':
+        return customize_meridiem;
+      case 'customize_meridiem_hidden':
+        return customize_meridiem_hidden;
+      case 'customize_meridiem_left':
+        return customize_meridiem_left;
+      case 'customize_meridiem_right':
+        return customize_meridiem_right;
+      case 'customize_save':
+        return customize_save;
+      case 'customize_reset':
+        return customize_reset;
+      case 'customize_delete':
+        return customize_delete;
+      case 'skin_mono':
+        return skin_mono;
+      case 'skin_paper':
+        return skin_paper;
+      case 'skin_rose':
+        return skin_rose;
+      case 'skin_violet':
+        return skin_violet;
+      case 'skin_amber':
+        return skin_amber;
+      case 'skin_signal':
+        return skin_signal;
+      case 'skin_field':
+        return skin_field;
+      case 'skin_mint':
+        return skin_mint;
+      case 'skin_cyan':
+        return skin_cyan;
+      case 'skin_taxi':
+        return skin_taxi;
+      case 'skin_bebas':
+        return skin_bebas;
+      case 'skin_anton':
+        return skin_anton;
+      case 'skin_oswald':
+        return skin_oswald;
+      case 'skin_shoulders':
+        return skin_shoulders;
+      case 'skin_poster':
+        return skin_poster;
+      case 'skin_terminal':
+        return skin_terminal;
+      case 'skin_grotesk':
+        return skin_grotesk;
+      case 'skin_serif':
+        return skin_serif;
+      case 'skin_orbit':
+        return skin_orbit;
       default:
         return key;
     }

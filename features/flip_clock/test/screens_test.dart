@@ -7,6 +7,7 @@ import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
+import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
@@ -17,6 +18,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/controls.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/components/timer_input.dart';
 import 'package:flip_clock/ui/screens/index.dart';
@@ -161,13 +163,13 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(showSeconds: true));
     await tester.pumpWidget(h.screen());
-    h.wall.advance(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
+    h.wall.advance(const Duration(minutes: 1));
+    await tester.pump(const Duration(minutes: 1));
     expect(h.sound.flips, 0);
     await h.settings.update(h.settings.state.copyWith(flipSound: true));
     await tester.pump();
-    h.wall.advance(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
+    h.wall.advance(const Duration(minutes: 1));
+    await tester.pump(const Duration(minutes: 1));
     expect(h.sound.flips, 1);
     await tester.pumpAndSettle();
     await h.dispose(tester);
@@ -993,5 +995,40 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     unawaited(di.reset());
     await tester.pump();
+  });
+
+  testWidgets('the palette opens skins; the ground follows the skin', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    Color ground() =>
+        tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor!;
+    expect(ground(), DesignSkinColors.bgInk);
+    await tester.tap(find.byTooltip(strings.clock.skins_change));
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinPicker), findsOne);
+    await tester.tap(find.widgetWithText(SkinTile, strings.clock.skin_paper));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.clock.skins_done));
+    await tester.pumpAndSettle();
+    expect(h.settings.state.skinId, 'paper');
+    expect(ground(), DesignSkinColors.bgPaper);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a skin with the date line shows it without the setting', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.settings.saveSkin(
+      const Skin(id: '', name: 'Dated', showDate: true),
+    );
+    await tester.pumpWidget(h.screen());
+    final date = MaterialLocalizations.of(
+      tester.element(find.byType(FlipClockScreen)),
+    ).formatFullDate(h.wall.now);
+    expect(find.text(date), findsOne);
+    await h.dispose(tester);
   });
 }

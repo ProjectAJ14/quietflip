@@ -1,3 +1,6 @@
+import 'package:flip_clock/data/models/skin.dart';
+import 'package:flutter/foundation.dart';
+
 /// Theme the user picked in Settings.
 enum ClockTheme { black, light }
 
@@ -23,6 +26,8 @@ class ClockSettings {
     this.subtleMovement = false,
     this.showDate = false,
     this.orientation = ClockOrientation.auto,
+    this.skinId = 'mono',
+    this.customSkins = const [],
   });
 
   /// Dimmest and brightest [digitBrightness].
@@ -69,6 +74,14 @@ class ClockSettings {
       subtleMovement: flag('subtleMovement', d.subtleMovement),
       showDate: flag('showDate', d.showDate),
       orientation: pick(ClockOrientation.values, 'orientation', d.orientation),
+      skinId: json['skinId'] is String ? json['skinId']! as String : d.skinId,
+      // A skin that cannot be read is dropped; the others survive.
+      customSkins: json['customSkins'] is List
+          ? [
+              for (final raw in json['customSkins']! as List)
+                ?Skin.fromJson(raw),
+            ]
+          : d.customSkins,
     );
   }
 
@@ -95,6 +108,12 @@ class ClockSettings {
   /// Shows today's date under the clock digits.
   final bool showDate;
 
+  /// The selected skin; an unknown id shows Mono.
+  final String skinId;
+
+  /// Skins the user made, first in the picker.
+  final List<Skin> customSkins;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -109,6 +128,8 @@ class ClockSettings {
     'subtleMovement': subtleMovement,
     'showDate': showDate,
     'orientation': orientation.name,
+    'skinId': skinId,
+    'customSkins': [for (final skin in customSkins) skin.toJson()],
   };
 
   ClockSettings copyWith({
@@ -125,6 +146,8 @@ class ClockSettings {
     bool? subtleMovement,
     bool? showDate,
     ClockOrientation? orientation,
+    String? skinId,
+    List<Skin>? customSkins,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -139,6 +162,8 @@ class ClockSettings {
     subtleMovement: subtleMovement ?? this.subtleMovement,
     showDate: showDate ?? this.showDate,
     orientation: orientation ?? this.orientation,
+    skinId: skinId ?? this.skinId,
+    customSkins: customSkins ?? this.customSkins,
   );
 
   @override
@@ -156,7 +181,9 @@ class ClockSettings {
       other.digitBrightness == digitBrightness &&
       other.subtleMovement == subtleMovement &&
       other.showDate == showDate &&
-      other.orientation == orientation;
+      other.orientation == orientation &&
+      other.skinId == skinId &&
+      listEquals(other.customSkins, customSkins);
 
   @override
   int get hashCode => Object.hash(
@@ -173,5 +200,7 @@ class ClockSettings {
     subtleMovement,
     showDate,
     orientation,
+    skinId,
+    Object.hashAll(customSkins),
   );
 }

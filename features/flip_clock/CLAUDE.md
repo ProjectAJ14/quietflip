@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode`, `ClockOrientation` | model | Defaults: black, Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto. `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -26,11 +26,20 @@ lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
   data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, ClockOrientation
+  data/models/skin.dart                    Skin (face, digit/card/ground colour, seam, radius,
+                                           seconds off/badge/cards, AM/PM hidden/left/right,
+                                           date); JSON with ARGB ints, per-field fallback,
+                                           no id -> dropped; WCAG `contrast`
+  data/skins.dart                          Skins: built-in catalogue (Classic, Type) from
+                                           `DesignSkinColors`, `resolve` (unknown -> Mono),
+                                           custom ids `custom-<n>`
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
                                            (keys flip_clock.settings, flip_clock.countdown;
                                            corrupt/failed read -> defaults, failed write logged)
   state/settings_controller.dart           Cubit<ClockSettings>; saves every change; `appearance`
-                                           notifier; setSystemAlerts asks permission
+                                           notifier; setSystemAlerts asks permission; `skin`,
+                                           selectSkin, saveSkin (built-in -> new copy first),
+                                           deleteSkin (selected -> Mono)
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
@@ -43,10 +52,14 @@ lib/
                                            in full screen), one-time seconds hint, date line,
                                            full screen reveal + note, _WithControls (controls
                                            at most half height), keys, wake lock
+  ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
   ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
                                            date, orientation) / Sound & alerts / Keep awake
                                            (+ full-screen note) / shortcuts
-  ui/components/                           FlipDisplay, TimerInput (+ `secondary` beside Start),
+  ui/components/                           FlipDisplay (cards + badge + AM/PM, styled by a Skin),
+                                           display_value (clock/duration/stopwatch -> cards),
+                                           SkinPicker + SkinTile + SheetHeader + SectionHeader +
+                                           showSheet, SkinCustomizer (parseHex/hexOf), TimerInput (+ `secondary` beside Start),
                                            CompletionBanner (+ optional `action`),
                                            Reveal + RunControls, SubtleMovement
 ```
@@ -70,10 +83,26 @@ lib/
   `OrientationLock.supported` (Android/iOS), passed in by the router.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
-- Every string from `strings.clock.*`; every colour from `Theme.of(context)`.
-  `FlipDisplay` and `Reveal` honour `reducedMotion(context)`
-  (`disableAnimations` or iOS `reduceMotion`) and never clip; only digits are
-  cards (AM/PM letters are plain text).
+- Every string from `strings.clock.*`; chrome colours from
+  `Theme.of(context)` / `DesignColors.of(context)`. The clock's digits, cards,
+  seam and ground come only from the selected `Skin` (the one place a
+  `Color(int)` is built from a value, because custom skins are user data);
+  built-ins use `DesignSkinColors` only. A skin never colours controls.
+- `FlipDisplay` is one card per entry (a pair of digits): card height fills
+  the box, digits are 0.78 x height and not text-scaled, width 1.0 x height
+  (1.3 x for a monospaced face), `space-6` between cards, the 2px seam at
+  half height in the ground colour, `radius-md` becoming `radius-lg` once
+  digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
+  ease-in, then bottom half ease-out. It and `Reveal` honour
+  `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
+  never clip; AM/PM and small seconds are plain text at 70% of the digit
+  colour, never cards.
+- Seconds show when `showSeconds` is on, in the skin's style (`off` hides
+  them for that skin). The date line shows when Show date is on or the skin
+  asks for it. AM/PM placement is the skin's.
+- Sheets (`showSheet`) use `surface`, `radius-lg` top corners and a
+  hairline, full width (Material's 640px cap is lifted). Skin tiles are at
+  least 196px wide.
 - Subtle movement (burn-in) wraps the display only while full screen and the
   setting are both on. It is driven by the screen's `ClockController` (no
   timer of its own), steps through a fixed offset table indexed by minute of
@@ -173,6 +202,11 @@ widget tester's clock):
   keeps the element count flat and the wake lock on (released on dispose).
 
 ## Gotchas
+
+- Customizer controls apply each edit to the current draft (a function of
+  the draft), so two taps before a rebuild both stick.
+- The flip sound follows card flips: with seconds as a badge, the minute
+  card is the first to flip.
 
 - In `testWidgets`, do not `await cubit.close()` (or `di.reset()`) after a
   widget or listener subscribed to the cubit: the broadcast stream's close

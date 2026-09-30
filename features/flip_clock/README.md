@@ -34,7 +34,7 @@ Settings > Display, all saved and restored on launch:
 - **Show seconds**, also a top-bar button in Clock mode (S key), with a
   one-time hint until it is used or dismissed.
 - **Digit brightness** (20% to 100%) dims only the digits (and the date line);
-  the background stays black and the controls stay readable. In full screen
+  the background (the skin's ground) stays as it is and the controls stay readable. In full screen
   the top bar also has a quick-dim button that cycles 100%, 50%, 20% (D key).
 - **Subtle movement**, off by default: full screen shifts the display up to
   8 px per axis once a minute, easing over 1 s (a jump with reduced motion).
@@ -42,6 +42,24 @@ Settings > Display, all saved and restored on launch:
 - **Show date**, off by default: today's full date under the clock digits.
 - **Orientation** (Auto / Landscape / Portrait) locks the screen on phones
   and tablets. The control is hidden on web and desktop.
+
+## Skins
+
+The palette button opens the Skins sheet: live tiles of every skin, applied
+on tap. Classic is Mono (the default, white on near-black) plus nine colour
+variations; Type has one skin per bundled face (Bebas, Anton, Oswald,
+Shoulders, Poster, Terminal, Grotesk, Serif, Orbit). Every built-in skin is
+free and passes 4.5:1 digits-on-card contrast.
+
+Customize (or New skin) opens the customizer on the current skin: face,
+digit / card / background colour (token swatches or a hex colour), corner
+radius, split line, seconds style (off, small, cards), AM/PM (hidden, inside
+the first card, beside the last) and the date line. Saving a built-in skin
+creates a copy under Your skins; custom skins can be edited or deleted. A
+skin controls only the digits, cards and ground, never the controls.
+
+Seconds and the date still follow Settings (and the S key); the skin picks
+how seconds look and can add the date line on its own.
 
 ## Full screen
 
