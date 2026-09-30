@@ -3,9 +3,13 @@ import 'package:localization/localization.dart';
 
 /// "Time's up" with a Dismiss button, announced to screen readers.
 class CompletionBanner extends StatelessWidget {
-  const CompletionBanner({super.key, required this.onDismiss});
+  const CompletionBanner({super.key, required this.onDismiss, this.action});
 
   final VoidCallback onDismiss;
+
+  /// Shown before Dismiss (start the next pomodoro phase); it should take
+  /// the focus itself, so Dismiss only autofocuses without one.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +40,9 @@ class CompletionBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 24),
+                if (action case final a?) ...[a, const SizedBox(width: 12)],
                 FilledButton(
-                  autofocus: true,
+                  autofocus: action == null,
                   onPressed: onDismiss,
                   child: Text(strings.clock.dismiss),
                 ),

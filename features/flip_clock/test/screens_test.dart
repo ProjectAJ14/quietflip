@@ -257,6 +257,84 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('pomodoro: start, round label, next phase, pause, reset', (
+    tester,
+  ) async {
+    final h = Harness();
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    await tester.tap(find.text(strings.clock.pomodoro));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_focus(1)), findsOne);
+    expect(
+      find.bySemanticsLabel(strings.clock.time_remaining('00:25:00')),
+      findsOne,
+    );
+
+    h.wall.advance(const Duration(minutes: 25));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_break(1)), findsOne);
+    expect(find.text(strings.clock.times_up), findsNothing);
+    expect(h.sound.alarms, 1);
+    await tester.pump(const Duration(seconds: 5));
+    expect(h.sound.stops, 1);
+
+    await key(tester, LogicalKeyboardKey.space);
+    expect(h.countdown.state.status, CountdownStatus.paused);
+    await tester.tap(find.text(strings.clock.reset));
+    await tester.pump();
+    expect(find.byType(TimerInput), findsOne);
+    expect(find.text(strings.clock.pomodoro_break(1)), findsNothing);
+    expect(h.countdown.state.duration, Countdown.defaultDuration);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('a pomodoro phase that ended while away offers the next one', (
+    tester,
+  ) async {
+    final h = Harness();
+    h.store.data[SettingsRepositoryImp.countdownKey] = jsonEncode({
+      'durationMs': const Duration(minutes: 5).inMilliseconds,
+      'status': 'running',
+      'endsAtMs': h.wall.now.millisecondsSinceEpoch - 60000,
+      'pomodoro': {'phase': 'rest', 'round': 2},
+    });
+    await h.countdown.load();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    expect(h.settings.state.lastMode, ClockMode.timer);
+    expect(find.text(strings.clock.times_up), findsOne);
+    expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
+    await tester.tap(find.text(strings.clock.start_focus));
+    await tester.pump();
+    expect(find.text(strings.clock.pomodoro_focus(3)), findsOne);
+    expect(h.countdown.state.status, CountdownStatus.running);
+    await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('a finished focus offers Start break', (tester) async {
+    final h = Harness();
+    h.store.data[SettingsRepositoryImp.countdownKey] = jsonEncode({
+      'durationMs': const Duration(minutes: 25).inMilliseconds,
+      'status': 'finished',
+      'pomodoro': {'phase': 'focus', 'round': 1},
+    });
+    await h.countdown.load();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    expect(find.text(strings.clock.start_break), findsOne);
+    await tester.tap(find.text(strings.clock.dismiss));
+    await tester.pump();
+    expect(find.byType(TimerInput), findsOne);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
   testWidgets('Space activates a focused control instead of the timer', (
     tester,
   ) async {

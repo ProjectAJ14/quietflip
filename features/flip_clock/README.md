@@ -1,7 +1,8 @@
 # flip_clock
 
 QuietFlip's whole first release: a split-flap clock, a countdown timer (1 s to
-99:59:59) and a stopwatch, plus Settings. The clock can show today's date
+99:59:59) with a Pomodoro preset (25 min focus, 5 min break, repeating, with
+a round count) and a stopwatch, plus Settings. The clock can show today's date
 under the digits (Settings > Display > Show date). No account, network or analytics.
 
 ## Routes
@@ -26,16 +27,21 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 `OrientationLock` in `di`; the clock route also resolves
 `FullScreenController` and `ScreenWake`.
 
-## Orientation
+## Display settings
 
-Settings > Display > Orientation (Auto / Landscape / Portrait) locks the
-screen on phones and tablets. The control is hidden on web and desktop.
+Settings > Display, all saved and restored on launch:
 
-## Subtle movement
-
-Off by default (Settings > Display). When on, full screen shifts the display
-up to 8 px per axis once a minute, easing over 1 s (a jump with reduced
-motion). It lowers, but does not prevent, burn-in risk.
+- **Show seconds**, also a top-bar button in Clock mode (S key), with a
+  one-time hint until it is used or dismissed.
+- **Digit brightness** (20% to 100%) dims only the digits (and the date line);
+  the background stays black and the controls stay readable. In full screen
+  the top bar also has a quick-dim button that cycles 100%, 50%, 20% (D key).
+- **Subtle movement**, off by default: full screen shifts the display up to
+  8 px per axis once a minute, easing over 1 s (a jump with reduced motion).
+  It lowers, but does not prevent, burn-in risk.
+- **Show date**, off by default: today's full date under the clock digits.
+- **Orientation** (Auto / Landscape / Portrait) locks the screen on phones
+  and tablets. The control is hidden on web and desktop.
 
 ## Full screen
 
@@ -45,16 +51,11 @@ lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 ## Keyboard
 
-F full screen, Esc leave full screen, Space start/pause, 1 / 2 / 3 Clock /
+F full screen, Esc leave full screen, Space start/pause (or start the next
+pomodoro phase after one ended while the app was closed), 1 / 2 / 3 Clock /
 Timer / Stopwatch, S show or hide seconds (Clock mode; also a top-bar
 button, with a one-time hint until it is used or dismissed), D dim the digits
 (100%, 50%, 20%).
-
-## Night dimming
-
-Settings > Display > Digit brightness (20% to 100%) dims only the digits; the
-background stays black and the controls stay readable. In full screen the
-top bar also has a quick-dim button that cycles 100%, 50%, 20%.
 
 ## Edge cases covered
 

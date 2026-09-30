@@ -11,6 +11,7 @@ import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
 import 'fakes.dart';
@@ -338,6 +339,193 @@ void main() {
     });
   });
 
+  group('Pomodoro', () {
+    const focus = Duration(minutes: 25);
+    const rest = Duration(minutes: 5);
+    const id = CountdownController.alertId;
+
+    testWidgets('focus, break, next round; chimes briefly; alert each end', (
+      tester,
+    ) async {
+      final c = countdown();
+      await c.setDuration(const Duration(seconds: 90));
+      await c.startPomodoro();
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.pomodoro, const Pomodoro());
+      expect(c.state.remaining, focus);
+      expect(alerts.scheduled[id], clock.now.add(focus));
+      expect(saved()['pomodoro'], {'phase': 'focus', 'round': 1});
+      expect(saved()['timerMs'], 90000);
+
+      clock.advance(focus);
+      await tester.pump(tick);
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.pomodoro, const Pomodoro(phase: PomodoroPhase.rest));
+      expect(c.state.remaining, rest);
+      expect(alerts.scheduled[id], clock.now.add(rest));
+      expect(alerts.shown, [strings.clock.pomodoro]);
+      expect(sound.alarms, 1);
+      expect(sound.stops, 0);
+      await tester.pump(const Duration(seconds: 5));
+      expect(sound.stops, 1, reason: 'the chime is brief');
+
+      clock.advance(rest);
+      await tester.pump(tick);
+      expect(c.state.pomodoro, const Pomodoro(round: 2));
+      expect(c.state.remaining, focus);
+      expect(sound.alarms, 2);
+
+      // Ignored while a phase runs.
+      await c.startPomodoro();
+      await c.startNextPhase();
+      await c.setDuration(const Duration(seconds: 10));
+      expect(c.state.pomodoro, const Pomodoro(round: 2));
+      expect(c.state.duration, focus);
+
+      // Space pauses and resumes, cancelling and rescheduling the alert.
+      await c.toggle();
+      expect(c.state.status, CountdownStatus.paused);
+      expect(alerts.scheduled, isEmpty);
+      await c.toggle();
+      expect(c.state.status, CountdownStatus.running);
+      expect(alerts.scheduled[id], clock.now.add(focus));
+
+      // Reset ends the cycle, silences the chime and restores the timer.
+      await c.reset();
+      expect(c.state.status, CountdownStatus.idle);
+      expect(c.state.pomodoro, isNull);
+      expect(c.state.duration, const Duration(seconds: 90));
+      expect(saved().containsKey('pomodoro'), isFalse);
+      final stops = sound.stops;
+      await tester.pump(const Duration(seconds: 10));
+      expect(sound.stops, stops, reason: 'the chime timer was cancelled');
+      await c.close();
+    });
+
+    testWidgets('alert sound and system alerts off: silent phase change', (
+      tester,
+    ) async {
+      settings = const ClockSettings(alertSound: false);
+      final c = countdown();
+      await c.startPomodoro();
+      expect(alerts.scheduled, isEmpty);
+      clock.advance(focus);
+      await tester.pump(tick);
+      expect(c.state.pomodoro, const Pomodoro(phase: PomodoroPhase.rest));
+      expect(sound.alarms, 0);
+      expect(alerts.shown, isEmpty);
+      expect(alerts.scheduled, isEmpty);
+      await c.close();
+    });
+
+    testWidgets('closing mid-chime cancels the chime timer', (tester) async {
+      final c = countdown();
+      await c.startPomodoro();
+      clock.advance(focus);
+      await tester.pump(tick);
+      expect(sound.alarms, 1);
+      await c.close();
+      await tester.pump(const Duration(seconds: 10));
+      expect(sound.stops, 0);
+    });
+
+    testWidgets('relaunch restores a phase; one ended while away waits', (
+      tester,
+    ) async {
+      var c = countdown();
+      await c.setDuration(const Duration(seconds: 90));
+      await c.startPomodoro();
+      await c.close();
+
+      clock.advance(const Duration(minutes: 10));
+      c = countdown();
+      await c.load();
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.pomodoro, const Pomodoro());
+      expect(c.state.remaining, const Duration(minutes: 15));
+      await c.close();
+
+      // Ended while closed: finished and silent, not skipped ahead.
+      clock.advance(const Duration(hours: 1));
+      c = countdown();
+      await c.load();
+      expect(c.state.status, CountdownStatus.finished);
+      expect(c.state.pomodoro, const Pomodoro());
+      expect(sound.alarms, 0);
+      expect(saved()['pomodoro'], {'phase': 'focus', 'round': 1});
+
+      // Space starts the next phase.
+      await c.toggle();
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.pomodoro, const Pomodoro(phase: PomodoroPhase.rest));
+      expect(c.state.remaining, rest);
+      await c.reset();
+      expect(c.state.duration, const Duration(seconds: 90));
+      await c.close();
+    });
+
+    test('corrupt saved pomodoro fields fall back safely', () async {
+      final key = SettingsRepositoryImp.countdownKey;
+      Future<CountdownController> restore(Map<String, Object?> json) async {
+        store.data[key] = jsonEncode(json);
+        final c = countdown();
+        await c.load();
+        return c;
+      }
+
+      const paused = {
+        'durationMs': 1500000,
+        'status': 'paused',
+        'remainingMs': 60000,
+      };
+
+      // Unknown phase: a plain paused timer.
+      var c = await restore({
+        ...paused,
+        'pomodoro': {'phase': 'nap', 'round': 1},
+      });
+      expect(c.state.status, CountdownStatus.paused);
+      expect(c.state.pomodoro, isNull);
+      await c.close();
+
+      // Bad timer duration: reset falls back to the default.
+      c = await restore({
+        ...paused,
+        'pomodoro': {'phase': 'rest', 'round': 2},
+        'timerMs': -5,
+      });
+      expect(
+        c.state.pomodoro,
+        const Pomodoro(phase: PomodoroPhase.rest, round: 2),
+      );
+      await c.reset();
+      expect(c.state.duration, Countdown.defaultDuration);
+      await c.close();
+
+      // An idle snapshot has no phase to resume.
+      c = await restore({
+        'durationMs': 1500000,
+        'status': 'idle',
+        'pomodoro': {'phase': 'focus', 'round': 3},
+      });
+      expect(c.state.status, CountdownStatus.idle);
+      expect(c.state.pomodoro, isNull);
+      await c.close();
+    });
+
+    test('a plain finished timer has no next phase', () async {
+      final c = countdown();
+      await c.startNextPhase();
+      expect(c.state.status, CountdownStatus.idle);
+      await c.start(const Duration(seconds: 1));
+      clock.advance(const Duration(seconds: 1));
+      await c.check();
+      await c.startNextPhase();
+      expect(c.state.status, CountdownStatus.finished);
+      await c.close();
+    });
+  });
+
   group('StopwatchController', () {
     testWidgets('start, tick, pause, resume, reset', (tester) async {
       final watch = FakeStopwatch();
@@ -422,5 +610,9 @@ void main() {
       const CountdownState(duration: Duration(seconds: 1)).hashCode,
     );
     expect(a, isNot(const CountdownState()));
+    expect(
+      const CountdownState(pomodoro: Pomodoro()),
+      isNot(const CountdownState()),
+    );
   });
 }

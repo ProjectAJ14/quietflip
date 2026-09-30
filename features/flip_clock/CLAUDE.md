@@ -35,15 +35,19 @@ lib/
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
                                            (and each rebase after the clock is set back),
-                                           LocalAlerts + SoundPlayer; syncAlert() on setting change
+                                           LocalAlerts + SoundPlayer; syncAlert() on setting change;
+                                           Pomodoro cycle (startPomodoro/startNextPhase)
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
   ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode, quick-dim
-                                           in full screen), one-time seconds hint, full screen
-                                           reveal, keys, wake lock
-  ui/screens/settings_screen.dart          Display (incl. digit brightness slider) / Sound & alerts /
-                                           Keep awake / shortcuts
-  ui/components/                           FlipDisplay, TimerInput, CompletionBanner,
+                                           in full screen), one-time seconds hint, date line,
+                                           full screen reveal + note, _WithControls (controls
+                                           at most half height), keys, wake lock
+  ui/screens/settings_screen.dart          Display (seconds, brightness slider, subtle movement,
+                                           date, orientation) / Sound & alerts / Keep awake
+                                           (+ full-screen note) / shortcuts
+  ui/components/                           FlipDisplay, TimerInput (+ `secondary` beside Start),
+                                           CompletionBanner (+ optional `action`),
                                            Reveal + RunControls, SubtleMovement
 ```
 
@@ -58,8 +62,8 @@ lib/
 - Persist every countdown transition; relaunch shows "finished while away".
 - `LocalAlerts` is scheduled on start/resume and cancelled on pause/reset/
   dismiss; `init()` also calls `syncAlert()` whenever System notifications is
-  switched, so a running countdown gains or loses its alert; permission is requested only when the user turns on system
-  notifications. Denied -> explain that the in-app alert still works.
+  switched, so a running countdown gains or loses its alert; permission is
+  requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
   distinct change. Settings > Display shows the Orientation control only when
@@ -85,7 +89,8 @@ lib/
   Dismissing it or using the button/S sets `secondsHintSeen` and saves.
 - Hidden full-screen controls are offered to screen readers as a
   "show controls" button over the display.
-- Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`);
+- Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
+  and around the date line with the Clock digits);
   the background stays the theme surface and the top bar, run controls,
   timer input and completion banner stay at full brightness. The quick-dim
   button (top bar, full screen only) and the D key both call
@@ -111,6 +116,19 @@ lib/
   ended while the app was closed shows the banner silently on relaunch.
   Finishing (or relaunching finished) switches to the Timer mode so the
   banner is always seen.
+- Pomodoro (Timer mode, idle only): 25 min focus / 5 min break from
+  `timekeeping`'s `Pomodoro`, run as one `Countdown` per phase. While the
+  app is open a phase end chimes for `chimeFor` (5 s, only with Alert
+  sound), shows the web notification like the timer, and starts the next
+  phase at once (round + 1 on each new focus); the "Focus · Round n" /
+  "Break · Round n" label is a live region. The system alert is scheduled
+  per phase and cancelled on pause/reset like the timer. Reset ends the
+  cycle and restores the timer's own duration. The snapshot adds
+  `pomodoro: {phase, round}` and `timerMs`; corrupt fields load as a plain
+  timer (or the default duration), an idle snapshot drops them. A phase
+  that ended while the app was closed loads finished with Start break /
+  Start focus (autofocused) beside Dismiss; Space starts it. `setDuration`
+  is ignored during a cycle.
 
 ## Common changes
 

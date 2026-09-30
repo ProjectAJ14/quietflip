@@ -666,6 +666,13 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get orientation_auto => "Auto";
   String get orientation_landscape => "Landscape";
   String get orientation_portrait => "Portrait";
+  String get pomodoro => "Pomodoro";
+  String pomodoro_focus(int round) => "Focus · Round $round";
+  String pomodoro_break(int round) => "Break · Round $round";
+  String get pomodoro_focus_done => "Focus done. Time for a break.";
+  String get pomodoro_break_done => "Break over. Back to focus.";
+  String get start_focus => "Start focus";
+  String get start_break => "Start break";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -795,6 +802,20 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return orientation_landscape;
       case 'orientation_portrait':
         return orientation_portrait;
+      case 'pomodoro':
+        return pomodoro;
+      case 'pomodoro_focus':
+        return pomodoro_focus;
+      case 'pomodoro_break':
+        return pomodoro_break;
+      case 'pomodoro_focus_done':
+        return pomodoro_focus_done;
+      case 'pomodoro_break_done':
+        return pomodoro_break_done;
+      case 'start_focus':
+        return start_focus;
+      case 'start_break':
+        return start_break;
       default:
         return key;
     }

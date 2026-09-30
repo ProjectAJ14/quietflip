@@ -22,6 +22,8 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | `start`, `pause`, `resume`, `reset` | methods | idle->running, running->paused, paused->running, any->idle (same duration) |
 | `checkFinished()` | method | True only on the running->finished transition |
 | `toJson()` / `Countdown.fromJson(json, {now})` | persistence | Corrupt input -> idle default, never throws. A running snapshot whose `endsAt` has passed restores as running so `checkFinished()` reports it |
+| `PomodoroPhase` | enum | `focus` (25 min), `rest` (5 min, shown as "Break"); `.duration` |
+| `Pomodoro({phase, round})` | value | Defaults focus, round 1. `duration`; `next()` is focus -> break (same round) -> focus (round + 1); `toJson()` `{phase, round}`; `Pomodoro.fromJson(json)` returns null for anything invalid, never throws |
 | `formatClock(t, {use24h, showSeconds})` | function | `09:41`, `09:41:07`, `9:41 AM`, `12:05 AM` (midnight), `12:30 PM` (noon) |
 | `formatHms(d)` | function | `HH:MM:SS`; callers pass `ceilToSecond(remaining)` |
 | `ceilToSecond(d)` | function | Rounds up to a whole second (`400ms -> 1s`, `0 -> 0`) |
@@ -34,6 +36,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | `lib/timekeeping.dart` | Barrel |
 | `lib/src/countdown.dart` | `CountdownStatus`, `Countdown` |
 | `lib/src/format.dart` | `formatClock`, `formatHms`, `ceilToSecond`, `formatStopwatch` |
+| `lib/src/pomodoro.dart` | `PomodoroPhase`, `Pomodoro` (phase durations and sequence; the timing itself is a `Countdown`) |
 | `test/` | Tests for every public behavior |
 
 ## Rules

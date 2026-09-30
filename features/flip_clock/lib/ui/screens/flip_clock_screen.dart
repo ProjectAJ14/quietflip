@@ -612,22 +612,62 @@ class _TimerView extends StatelessWidget {
                 initial: state.duration,
                 onChanged: (d) => unawaited(controller.setDuration(d)),
                 onStart: (d) => unawaited(controller.start(d)),
+                secondary: FilledButton.tonalIcon(
+                  onPressed: () => unawaited(controller.startPomodoro()),
+                  icon: const Icon(Icons.repeat_rounded),
+                  label: Text(strings.clock.pomodoro),
+                ),
               ),
             );
           }
           final text = formatHms(state.remaining);
+          final pomodoro = state.pomodoro;
+          final theme = Theme.of(context);
           return _WithControls(
-            display: Opacity(
-              opacity: brightness,
-              child: FlipDisplay(
-                text: text,
-                semanticsLabel: strings.clock.time_remaining(text),
-                onFlip: onFlip,
-              ),
+            display: Column(
+              children: [
+                if (pomodoro != null)
+                  // Announced as each phase starts.
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      pomodoro.phase == PomodoroPhase.focus
+                          ? strings.clock.pomodoro_focus(pomodoro.round)
+                          : strings.clock.pomodoro_break(pomodoro.round),
+                      style: theme.textTheme.titleLarge!.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Center(
+                    child: Opacity(
+                      opacity: brightness,
+                      child: FlipDisplay(
+                        text: text,
+                        semanticsLabel: strings.clock.time_remaining(text),
+                        onFlip: onFlip,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             controls: state.status == CountdownStatus.finished
                 ? CompletionBanner(
                     onDismiss: () => unawaited(controller.reset()),
+                    action: pomodoro == null
+                        ? null
+                        : FilledButton.tonal(
+                            autofocus: true,
+                            onPressed: () =>
+                                unawaited(controller.startNextPhase()),
+                            child: Text(
+                              pomodoro.phase == PomodoroPhase.focus
+                                  ? strings.clock.start_break
+                                  : strings.clock.start_focus,
+                            ),
+                          ),
                   )
                 : Reveal(
                     visible: controlsVisible,
