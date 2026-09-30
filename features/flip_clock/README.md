@@ -27,4 +27,5 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 ## Keyboard
 
 F full screen, Esc leave full screen, Space start/pause, 1 / 2 / 3 Clock /
-Timer / Stopwatch. See `CLAUDE.md` for rules and tests.
+Timer / Stopwatch, S show or hide seconds (Clock mode; also a top-bar
+button, with a one-time hint until it is used or dismissed). See `CLAUDE.md` for rules and tests.

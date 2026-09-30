@@ -120,6 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   c.shortcut_exit_full_screen,
                   c.shortcut_start_pause,
                   c.shortcut_modes,
+                  c.shortcut_seconds,
                 ])
                   ListTile(dense: true, title: Text(line)),
               ],

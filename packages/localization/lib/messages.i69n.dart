@@ -645,6 +645,11 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String current_time(String time) => "Current time $time";
   String time_remaining(String time) => "Time remaining $time";
   String elapsed(String time) => "Elapsed time $time";
+  String get hide_seconds => "Hide seconds";
+  String get seconds_hint =>
+      "Tap the seconds button (or press S) to show seconds.";
+  String get dismiss_hint => "Dismiss hint";
+  String get shortcut_seconds => "S: show or hide seconds";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -740,6 +745,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return time_remaining;
       case 'elapsed':
         return elapsed;
+      case 'hide_seconds':
+        return hide_seconds;
+      case 'seconds_hint':
+        return seconds_hint;
+      case 'dismiss_hint':
+        return dismiss_hint;
+      case 'shortcut_seconds':
+        return shortcut_seconds;
       default:
         return key;
     }

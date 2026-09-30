@@ -20,7 +20,8 @@ import 'package:timekeeping/timekeeping.dart';
 /// screen the controls hide and a tap, click, mouse move or key shows them
 /// for [revealFor].
 ///
-/// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes.
+/// Keys: F full screen, Esc leave it, Space start/pause, 1/2/3 modes,
+/// S seconds (Clock mode).
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -117,6 +118,22 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
   );
 
+  /// Toggling seconds also retires the one-time hint.
+  void _toggleSeconds() {
+    final s = widget.settings.state;
+    unawaited(
+      widget.settings.update(
+        s.copyWith(showSeconds: !s.showSeconds, secondsHintSeen: true),
+      ),
+    );
+  }
+
+  void _dismissHint() => unawaited(
+    widget.settings.update(
+      widget.settings.state.copyWith(secondsHintSeen: true),
+    ),
+  );
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     // Typing digits into the timer must not switch modes.
@@ -142,6 +159,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       } else {
         widget.stopwatch.toggle();
       }
+    } else if (key == LogicalKeyboardKey.keyS && mode == ClockMode.clock) {
+      _toggleSeconds();
     } else if (key == LogicalKeyboardKey.digit1) {
       _setMode(ClockMode.clock);
     } else if (key == LogicalKeyboardKey.digit2) {
@@ -176,6 +195,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
             final bar = _TopBar(
               mode: settings.lastMode,
               fullScreen: full,
+              showSeconds: settings.showSeconds,
+              onSeconds: _toggleSeconds,
               onMode: _setMode,
               onFullScreen: () => unawaited(widget.fullScreen.toggle()),
               onSettings: widget.onOpenSettings,
@@ -222,7 +243,24 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                           : Column(
                               children: [
                                 bar,
-                                Expanded(child: content),
+                                Expanded(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(child: content),
+                                      // Overlays the display's padding so
+                                      // the digits keep their full size.
+                                      if (settings.lastMode ==
+                                              ClockMode.clock &&
+                                          !settings.secondsHintSeen)
+                                        Align(
+                                          alignment: Alignment.topCenter,
+                                          child: _SecondsHint(
+                                            onDismiss: _dismissHint,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                     ),
@@ -241,6 +279,8 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.mode,
     required this.fullScreen,
+    required this.showSeconds,
+    required this.onSeconds,
     required this.onMode,
     required this.onFullScreen,
     required this.onSettings,
@@ -248,6 +288,8 @@ class _TopBar extends StatelessWidget {
 
   final ClockMode mode;
   final bool fullScreen;
+  final bool showSeconds;
+  final VoidCallback onSeconds;
   final ValueChanged<ClockMode> onMode;
   final VoidCallback onFullScreen;
   final VoidCallback onSettings;
@@ -302,6 +344,15 @@ class _TopBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
+            if (mode == ClockMode.clock)
+              IconButton(
+                tooltip: showSeconds
+                    ? strings.clock.hide_seconds
+                    : strings.clock.show_seconds,
+                isSelected: showSeconds,
+                onPressed: onSeconds,
+                icon: const Icon(Icons.av_timer_rounded),
+              ),
             IconButton(
               tooltip: fullScreen
                   ? strings.clock.exit_full_screen
@@ -320,6 +371,37 @@ class _TopBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One-time, quiet pointer to the seconds button, with a dismiss control.
+class _SecondsHint extends StatelessWidget {
+  const _SecondsHint({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            strings.clock.seconds_hint,
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          IconButton(
+            tooltip: strings.clock.dismiss_hint,
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
       ),
     );
   }

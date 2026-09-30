@@ -192,3 +192,7 @@ clock:
   current_time(String time): "Current time $time"
   time_remaining(String time): "Time remaining $time"
   elapsed(String time): "Elapsed time $time"
+  hide_seconds: "Hide seconds"
+  seconds_hint: "Tap the seconds button (or press S) to show seconds."
+  dismiss_hint: "Dismiss hint"
+  shortcut_seconds: "S: show or hide seconds"

@@ -12,6 +12,7 @@ void main() {
     expect(s.systemAlerts, isFalse);
     expect(s.keepAwake, isFalse);
     expect(s.lastMode, ClockMode.clock);
+    expect(s.secondsHintSeen, isFalse);
   });
 
   test('round-trips through json and copyWith', () {
@@ -24,6 +25,7 @@ void main() {
       systemAlerts: true,
       keepAwake: true,
       lastMode: ClockMode.stopwatch,
+      secondsHintSeen: true,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -33,7 +35,12 @@ void main() {
 
   test('corrupt fields fall back to defaults', () {
     expect(
-      ClockSettings.fromJson({'theme': 'neon', 'use24h': 'yes', 'lastMode': 3}),
+      ClockSettings.fromJson({
+        'theme': 'neon',
+        'use24h': 'yes',
+        'lastMode': 3,
+        'secondsHintSeen': 'no',
+      }),
       const ClockSettings(),
     );
   });

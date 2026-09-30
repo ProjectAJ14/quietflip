@@ -330,6 +330,68 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('seconds button and S toggle seconds and retire the hint', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    final hint = find.text(strings.clock.seconds_hint);
+    expect(hint, findsOne);
+
+    await tester.tap(find.byTooltip(strings.clock.show_seconds));
+    await tester.pump();
+    expect(h.settings.state.showSeconds, isTrue);
+    expect(h.settings.state.secondsHintSeen, isTrue);
+    expect(hint, findsNothing);
+    expect(find.byTooltip(strings.clock.hide_seconds), findsOne);
+    expect(
+      find.bySemanticsLabel(strings.clock.current_time('09:41:00')),
+      findsOne,
+    );
+    final saved = await SettingsRepositoryImp(
+      store: h.store,
+      logger: di.get<Logger>(),
+    ).load();
+    expect(saved.secondsHintSeen, isTrue);
+
+    await key(tester, LogicalKeyboardKey.keyS);
+    expect(h.settings.state.showSeconds, isFalse);
+    expect(find.byTooltip(strings.clock.show_seconds), findsOne);
+
+    // Not in other modes: no button, S ignored.
+    await key(tester, LogicalKeyboardKey.digit3);
+    expect(find.byTooltip(strings.clock.show_seconds), findsNothing);
+    await key(tester, LogicalKeyboardKey.keyS);
+    expect(h.settings.state.showSeconds, isFalse);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('seconds hint: dismiss saves; hidden in full screen', (
+    tester,
+  ) async {
+    final h = Harness();
+    await tester.pumpWidget(h.screen());
+    final hint = find.text(strings.clock.seconds_hint);
+    await tester.tap(find.byTooltip(strings.clock.enter_full_screen));
+    await tester.pump();
+    expect(hint, findsNothing);
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(hint, findsOne);
+
+    await tester.tap(find.byTooltip(strings.clock.dismiss_hint));
+    await tester.pump();
+    expect(hint, findsNothing);
+    expect(h.settings.state.showSeconds, isFalse);
+    expect(
+      h.store.data[SettingsRepositoryImp.settingsKey],
+      contains('"secondsHintSeen":true'),
+    );
+    await tester.pumpAndSettle(FlipClockScreen.revealFor);
+    await h.dispose(tester);
+  });
+
   testWidgets('digits typed into the timer do not switch modes', (
     tester,
   ) async {
@@ -445,6 +507,7 @@ void main() {
     );
     expect(find.text(strings.clock.web_closed_tab_note), findsOne);
     expect(find.text(strings.clock.shortcut_full_screen), findsOne);
+    expect(find.text(strings.clock.shortcut_seconds), findsOne);
 
     Future<void> tap(String label) async {
       await tester.tap(find.text(label));

@@ -14,7 +14,7 @@ Exported from `package:localization/localization.dart`.
 | Symbol | Kind | Notes |
 |---|---|---|
 | `strings` | global getter | `LocalizationProvider.messages`; use `strings.<group>.<key>` |
-| `Messages` | generated | Groups: `app`, `generic`, `common` (only `week`, `month`), `auth`, `profile`, `nav` (incl. `explore`), `notifications`, `errors`, `validation`, `developer` (`no_viewer`), `clock` (flip_clock feature: modes, controls, settings, notification text, semantics `current_time(time)` / `time_remaining(time)` / `elapsed(time)`) |
+| `Messages` | generated | Groups: `app`, `generic`, `common` (only `week`, `month`), `auth`, `profile`, `nav` (incl. `explore`), `notifications`, `errors`, `validation`, `developer` (`no_viewer`), `clock` (flip_clock feature: modes, controls, settings, seconds button and hint, semantics `current_time(time)` / `time_remaining(time)` / `elapsed(time)`) |
 | `<Group>Messages` | generated | e.g. `ErrorsMessages`, `ValidationMessages`; parameterised keys are methods (`errors.format_exception_message(code, postfix)`, `validation.invalid_key_config(of, key)`) |
 | `LocalizationProvider` | static helper | `messages`, `currentLocale`, `supportedLocales`, `isLocaleSupported`, `getBestMatchingLocale(List<Locale>)` |
 

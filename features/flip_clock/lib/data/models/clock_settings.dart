@@ -15,6 +15,7 @@ class ClockSettings {
     this.systemAlerts = false,
     this.keepAwake = false,
     this.lastMode = ClockMode.clock,
+    this.secondsHintSeen = false,
   });
 
   /// Restores saved settings; any missing or mistyped field keeps its
@@ -40,6 +41,7 @@ class ClockSettings {
       systemAlerts: flag('systemAlerts', d.systemAlerts),
       keepAwake: flag('keepAwake', d.keepAwake),
       lastMode: pick(ClockMode.values, 'lastMode', d.lastMode),
+      secondsHintSeen: flag('secondsHintSeen', d.secondsHintSeen),
     );
   }
 
@@ -52,6 +54,9 @@ class ClockSettings {
   final bool keepAwake;
   final ClockMode lastMode;
 
+  /// The one-time "tap the seconds button" hint was dismissed or acted on.
+  final bool secondsHintSeen;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -61,6 +66,7 @@ class ClockSettings {
     'systemAlerts': systemAlerts,
     'keepAwake': keepAwake,
     'lastMode': lastMode.name,
+    'secondsHintSeen': secondsHintSeen,
   };
 
   ClockSettings copyWith({
@@ -72,6 +78,7 @@ class ClockSettings {
     bool? systemAlerts,
     bool? keepAwake,
     ClockMode? lastMode,
+    bool? secondsHintSeen,
   }) => ClockSettings(
     theme: theme ?? this.theme,
     use24h: use24h ?? this.use24h,
@@ -81,6 +88,7 @@ class ClockSettings {
     systemAlerts: systemAlerts ?? this.systemAlerts,
     keepAwake: keepAwake ?? this.keepAwake,
     lastMode: lastMode ?? this.lastMode,
+    secondsHintSeen: secondsHintSeen ?? this.secondsHintSeen,
   );
 
   @override
@@ -93,7 +101,8 @@ class ClockSettings {
       other.alertSound == alertSound &&
       other.systemAlerts == systemAlerts &&
       other.keepAwake == keepAwake &&
-      other.lastMode == lastMode;
+      other.lastMode == lastMode &&
+      other.secondsHintSeen == secondsHintSeen;
 
   @override
   int get hashCode => Object.hash(
@@ -105,5 +114,6 @@ class ClockSettings {
     systemAlerts,
     keepAwake,
     lastMode,
+    secondsHintSeen,
   );
 }

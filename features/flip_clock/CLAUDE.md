@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
-| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock. `fromJson` falls back per field |
+| `ClockSettings`, `ClockTheme`, `ClockMode` | model | Defaults: black, 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, seconds hint not seen. `fromJson` falls back per field |
 
 ## Layout
 
@@ -37,7 +37,8 @@ lib/
                                            LocalAlerts + SoundPlayer; syncAlert() on setting change
   state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
-  ui/screens/flip_clock_screen.dart        modes, top bar, full screen reveal, keys, wake lock
+  ui/screens/flip_clock_screen.dart        modes, top bar (seconds button in Clock mode), one-time
+                                           seconds hint, full screen reveal, keys, wake lock
   ui/screens/settings_screen.dart          Display / Sound & alerts / Keep awake / shortcuts
   ui/components/                           FlipDisplay, TimerInput, CompletionBanner,
                                            Reveal + RunControls
@@ -65,6 +66,11 @@ lib/
 - Space reaches the timer/stopwatch only when no control has focus, so a
   focused button keeps its own Space activation. An invalid timer entry
   (`TimerInput.onChanged(null)`) keeps Space from starting.
+- Seconds: the top-bar button (Clock mode only) and the S key toggle
+  `showSeconds`, as does the Settings switch. The one-time seconds hint shows
+  in Clock mode, not in full screen, while `secondsHintSeen` is false; it
+  overlays the display's top padding so the digits keep their size.
+  Dismissing it or using the button/S sets `secondsHintSeen` and saves.
 - Hidden full-screen controls are offered to screen readers as a
   "show controls" button over the display.
 - No dependency on another feature; no account section in Settings.
