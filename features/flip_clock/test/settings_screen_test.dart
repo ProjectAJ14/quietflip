@@ -170,7 +170,12 @@ void main() {
 
     // Shortcuts.
     await tap(tester, c.settings_shortcuts);
-    for (final key in [c.keycap_space, c.keycap_left_right, c.keycap_esc]) {
+    for (final key in [
+      c.keycap_space,
+      c.keycap_left_right,
+      c.keycap_esc,
+      c.keycap_l,
+    ]) {
       expect(find.text(key), findsOne);
     }
 

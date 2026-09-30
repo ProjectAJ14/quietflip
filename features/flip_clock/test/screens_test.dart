@@ -1630,7 +1630,7 @@ void main() {
       h.stopwatch.start();
       await tester.pump();
       await crossFade(tester);
-      expect(trayOf(tester), withChrome([c.action_pause]));
+      expect(trayOf(tester), withChrome([c.action_pause, c.action_lap]));
       h.watch.reading = const Duration(seconds: 2);
       h.stopwatch.pause();
       await tester.pumpAndSettle();
@@ -1727,6 +1727,85 @@ void main() {
       await tester.pumpAndSettle();
       await tapAction(tester, c.action_done);
       expect(h.countdown.state.status, CountdownStatus.idle);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+  });
+
+  group('stopwatch laps', () {
+    final c = strings.clock;
+
+    testWidgets('Start, Lap, Lap, Pause, Reset from the island alone', (
+      tester,
+    ) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.stopwatch),
+      );
+      await tester.pumpWidget(h.screen());
+      await tapAction(tester, c.action_start);
+      await crossFade(tester);
+      expect(trayOf(tester).take(2), [c.action_pause, c.action_lap]);
+      h.watch.reading = const Duration(seconds: 12, milliseconds: 400);
+      await tapAction(tester, c.action_lap);
+      h.watch.reading = const Duration(seconds: 20);
+      await tapAction(tester, c.action_lap);
+      // Newest first, numbered from the start.
+      expect(find.text(c.lap_label(2, '0:00:07.6')), findsOne);
+      expect(find.text(c.lap_label(1, '0:00:12.4')), findsOne);
+      expect(
+        tester.getTopLeft(find.text(c.lap_label(2, '0:00:07.6'))).dy,
+        lessThan(tester.getTopLeft(find.text(c.lap_label(1, '0:00:12.4'))).dy),
+      );
+      await tapAction(tester, c.action_pause);
+      await crossFade(tester);
+      await tapAction(tester, c.action_reset);
+      expect(h.stopwatch.state.isIdle, isTrue);
+      expect(h.stopwatch.state.laps, isEmpty);
+      expect(find.text(c.lap_label(1, '0:00:12.4')), findsNothing);
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    });
+
+    testWidgets('L laps in Stopwatch mode only; three rows show, then scroll', (
+      tester,
+    ) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.stopwatch, skinId: 'orbit'),
+      );
+      await tester.pumpWidget(h.screen());
+      h.stopwatch.start();
+      await tester.pump();
+      for (var i = 1; i <= 5; i++) {
+        h.watch.reading = Duration(seconds: i);
+        await key(tester, LogicalKeyboardKey.keyL);
+      }
+      expect(h.stopwatch.state.laps, hasLength(5));
+      // Latest three on screen, older ones below the fold.
+      for (final n in [5, 4, 3]) {
+        expect(find.text(c.lap_label(n, '0:00:01.0')), findsOne, reason: '$n');
+      }
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsNothing);
+      final lap = tester.widget<Text>(find.text(c.lap_label(5, '0:00:01.0')));
+      expect(lap.style!.fontFamily, startsWith('Orbitron'));
+      expect(lap.style!.color, Skins.resolve('orbit', const []).digitColor);
+      await tester.drag(
+        find.text(c.lap_label(3, '0:00:01.0')),
+        const Offset(0, -300),
+      );
+      await tester.pump();
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsOne);
+
+      // Elsewhere L does nothing.
+      h.stopwatch.pause();
+      await h.settings.update(
+        h.settings.state.copyWith(lastMode: ClockMode.clock),
+      );
+      await tester.pumpAndSettle();
+      await key(tester, LogicalKeyboardKey.keyL);
+      expect(h.stopwatch.state.laps, hasLength(5));
+      h.stopwatch.reset();
       await tester.pumpAndSettle();
       await h.dispose(tester);
     });

@@ -577,6 +577,40 @@ void main() {
       await c.close();
     });
 
+    testWidgets('laps: splits newest first, only while running, reset clears', (
+      tester,
+    ) async {
+      final watch = FakeStopwatch();
+      final c = StopwatchController(stopwatch: watch);
+      c.lap();
+      expect(c.state.laps, isEmpty, reason: 'idle');
+      c.start();
+      watch.reading = const Duration(seconds: 12);
+      c.lap();
+      watch.reading = const Duration(seconds: 20);
+      c.lap();
+      expect(c.state.laps, const [Duration(seconds: 8), Duration(seconds: 12)]);
+      c.pause();
+      watch.reading = const Duration(seconds: 25);
+      c.lap();
+      expect(c.state.laps, hasLength(2), reason: 'ignored while paused');
+      expect(
+        c.state,
+        isNot(const StopwatchState(elapsed: Duration(seconds: 20))),
+      );
+      expect(
+        c.state,
+        StopwatchState(
+          elapsed: const Duration(seconds: 20),
+          laps: c.state.laps,
+        ),
+      );
+      c.reset();
+      expect(c.state.laps, isEmpty);
+      expect(c.state, const StopwatchState());
+      await c.close();
+    });
+
     test('measures with a real monotonic stopwatch', () {
       final c = StopwatchController(stopwatch: Stopwatch());
       c.start();

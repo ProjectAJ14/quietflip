@@ -517,6 +517,27 @@ void main() {
       });
     });
 
+    testWidgets('stopwatch laps lay out at every size and text scale', (
+      tester,
+    ) async {
+      await atEachSize(tester, (size, scale) async {
+        final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9)));
+        await rig.settings.update(
+          const ClockSettings(lastMode: ClockMode.stopwatch),
+        );
+        await tester.pumpWidget(rig.screen());
+        rig.stopwatch.start();
+        for (var i = 0; i < 5; i++) {
+          rig.stopwatch.lap();
+        }
+        rig.stopwatch.pause();
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: '$size x$scale');
+        rig.stopwatch.reset();
+        await rig.dispose(tester);
+      });
+    });
+
     testWidgets('settings lays out at every size and text scale', (
       tester,
     ) async {

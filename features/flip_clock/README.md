@@ -59,7 +59,7 @@ and Settings. Pomodoro offers Start (your default timer), a Pomodoro chip,
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
-Pause, Resume and Reset. After 4 seconds without input the island shrinks
+Pause, Lap, Resume and Reset; laps list under its digits, newest first. After 4 seconds without input the island shrinks
 to a dot, and 3 seconds later it is gone; a timer that finishes brings it
 back. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
@@ -116,7 +116,7 @@ lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
 pomodoro phase after one ended while the app was closed), Left / Right
-change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mode), D dim the digits
+change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mode), L lap (Stopwatch), D dim the digits
 (100%, 50%, 20%).
 
 ## Edge cases covered

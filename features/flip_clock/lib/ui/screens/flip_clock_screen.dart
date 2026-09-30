@@ -34,7 +34,8 @@ import 'package:timekeeping/timekeeping.dart';
 ///
 /// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
 /// F full screen, Esc leave full screen or hide the chrome, Space
-/// start/pause, S seconds (Clock mode), D dim the digits.
+/// start/pause, S seconds (Clock mode), L lap (Stopwatch), D dim the
+/// digits.
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -283,6 +284,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       }
     } else if (key == LogicalKeyboardKey.keyS && mode == ClockMode.clock) {
       _toggleSeconds();
+    } else if (key == LogicalKeyboardKey.keyL && mode == ClockMode.stopwatch) {
+      widget.stopwatch.lap();
     } else if (key == LogicalKeyboardKey.arrowLeft) {
       _stepMode(-1);
     } else if (key == LogicalKeyboardKey.arrowRight) {
@@ -442,9 +445,10 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
         ],
       },
       ClockMode.stopwatch => [
-        if (stopwatch.running)
-          act(c.action_pause, Icons.pause_rounded, watch.pause, primary: true)
-        else if (stopwatch.isIdle)
+        if (stopwatch.running) ...[
+          act(c.action_pause, Icons.pause_rounded, watch.pause, primary: true),
+          act(c.action_lap, Icons.flag_outlined, watch.lap),
+        ] else if (stopwatch.isIdle)
           act(
             c.action_start,
             Icons.play_arrow_rounded,
@@ -610,6 +614,57 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                     ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The stopwatch's split times under its digits, newest first: three
+/// rows show (at most a third of the panel), the rest scroll.
+class _Laps extends StatelessWidget {
+  const _Laps({
+    required this.laps,
+    required this.skin,
+    required this.maxHeight,
+  });
+
+  final List<Duration> laps;
+  final Skin skin;
+
+  /// A third of the panel, so short windows keep room for the digits.
+  final double maxHeight;
+
+  /// Rows visible before the list scrolls.
+  static const int visible = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final fontSize = Theme.of(context).textTheme.titleMedium!.fontSize!;
+    final style = skin.face.style(color: skin.digitColor, fontSize: fontSize);
+    // A row is the scaled line plus a little air, so large text still fits.
+    final row =
+        MediaQuery.textScalerOf(context).scale(fontSize) * 1.5 + DesignSpace.s1;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: math.min(row * visible, maxHeight),
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: laps.length,
+        itemExtent: row,
+        itemBuilder: (context, i) => Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              strings.clock.lap_label(
+                laps.length - i,
+                formatStopwatch(laps[i]),
+              ),
+              maxLines: 1,
+              style: style,
             ),
           ),
         ),
@@ -872,19 +927,32 @@ class _StopwatchView extends StatelessWidget {
         bloc: controller,
         builder: (context, state) {
           final value = stopwatchValue(state.elapsed);
-          return Center(
-            child: Opacity(
-              opacity: brightness,
-              child: FlipDisplay(
-                cards: value.cards,
-                badge: value.badge,
-                skin: skin,
-                size: size,
-                semanticsLabel: strings.clock.elapsed(
-                  formatStopwatch(state.elapsed),
-                ),
-              ),
+          final display = FlipDisplay(
+            cards: value.cards,
+            badge: value.badge,
+            skin: skin,
+            size: size,
+            semanticsLabel: strings.clock.elapsed(
+              formatStopwatch(state.elapsed),
             ),
+          );
+          // The laps dim with the digits, like the date line.
+          return Opacity(
+            opacity: brightness,
+            child: state.laps.isEmpty
+                ? Center(child: display)
+                : LayoutBuilder(
+                    builder: (context, box) => Column(
+                      children: [
+                        Expanded(child: Center(child: display)),
+                        _Laps(
+                          laps: state.laps,
+                          skin: skin,
+                          maxHeight: box.maxHeight / 3,
+                        ),
+                      ],
+                    ),
+                  ),
           );
         },
       );

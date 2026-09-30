@@ -54,7 +54,9 @@ lib/
                                            Pomodoro cycle (startPomodoro/startNextPhase),
                                            startPreset (cycle or plain start); toggle
                                            on idle starts settings' defaultTimer
-  state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker
+  state/stopwatch_controller.dart          Cubit<StopwatchState>; injected Stopwatch, 100 ms ticker;
+                                           lap() while running (splits newest first, in
+                                           memory only), reset clears laps
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
   state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
                                            `IslandHud`); starts expanded, -> dot after idle, -> hidden
@@ -168,7 +170,7 @@ lib/
   | Pomodoro idle | Start (`defaultTimer`), chips Pomodoro + each preset (`5m`, `1:30`), tune -> `onOpenTimerSettings` |
   | Pomodoro running / paused | Pause or Resume, Reset |
   | Pomodoro finished | "Time's up" (live region); Restart (same duration, `restart()`) or Start break / Start focus; Done |
-  | Stopwatch idle / running / paused | Start / Pause / Resume + Reset |
+  | Stopwatch idle / running / paused | Start / Pause + Lap / Resume + Reset |
 
   The island rebuilds on countdown/stopwatch state changes, not on ticks.
   A countdown that finishes while the chrome is hidden wakes it on the
@@ -179,6 +181,10 @@ lib/
   the whole clock one "show controls" button for screen readers.
 - Seconds: the S key (Clock mode only) and the Settings switch toggle
   `showSeconds`.
+- Laps: the tray's Lap and the L key (Stopwatch mode only) record a split.
+  They list under the digits, newest first (`Lap 3  0:00:12.4`), in the
+  skin's face and digit colour at the titleMedium size, dimmed with the
+  digits; three rows show (at most a third of the panel), the rest scroll.
 - Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
   and around the date line with the Clock digits);
   the background stays the skin's ground and the island stays at full

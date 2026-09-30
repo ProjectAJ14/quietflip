@@ -728,6 +728,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
   String get preset_pomodoro => "Pomodoro";
+  String get action_lap => "Lap";
+  String lap_label(int number, String time) => "Lap $number  $time";
   String brightness_value(String percent) => "$percent%";
   String get settings_appearance => "Appearance";
   String get settings_clock => "Clock";
@@ -764,6 +766,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get key_full_screen => "Full screen";
   String get key_hide_controls => "Hide controls";
   String get key_dim => "Dim the digits";
+  String get key_lap => "Lap (stopwatch)";
   String get keycap_space => "Space";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
@@ -771,6 +774,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_f => "F";
   String get keycap_esc => "Esc";
   String get keycap_d => "D";
+  String get keycap_l => "L";
   String get about_licenses => "Licenses";
   String get about_privacy => "Privacy";
   String get about_privacy_value => "No ads. No tracking.";
@@ -1029,6 +1033,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return preset_minutes_seconds;
       case 'preset_pomodoro':
         return preset_pomodoro;
+      case 'action_lap':
+        return action_lap;
+      case 'lap_label':
+        return lap_label;
       case 'brightness_value':
         return brightness_value;
       case 'settings_appearance':
@@ -1095,6 +1103,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return key_hide_controls;
       case 'key_dim':
         return key_dim;
+      case 'key_lap':
+        return key_lap;
       case 'keycap_space':
         return keycap_space;
       case 'keycap_left_right':
@@ -1109,6 +1119,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return keycap_esc;
       case 'keycap_d':
         return keycap_d;
+      case 'keycap_l':
+        return keycap_l;
       case 'about_licenses':
         return about_licenses;
       case 'about_privacy':

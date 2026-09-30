@@ -324,6 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (c.key_brightness, c.keycap_up_down),
               (c.key_show_seconds, c.keycap_s),
               (c.key_dim, c.keycap_d),
+              (c.key_lap, c.keycap_l),
               (c.key_full_screen, c.keycap_f),
               (c.key_hide_controls, c.keycap_esc),
             ])
