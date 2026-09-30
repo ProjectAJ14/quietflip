@@ -1,10 +1,37 @@
-name: Template quality
-on: [push, pull_request]
+name: CI
+# Doc-only changes (*.md) skip CI.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
 permissions:
   contents: read
+# A new push to the same branch or PR cancels the run it replaces.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true # Flutter SDK + pub cache
+      - run: dart pub get
+      - run: dart run melos bootstrap
+      - run: dart run melos run lint
+
+  coverage:
+    name: Tests (100% coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -13,12 +40,23 @@ jobs:
           cache: true
       - run: dart pub get
       - run: dart run melos bootstrap
-      - run: dart run melos run lint
       - run: dart run melos run coverage
-      - run: flutter build web
-        working-directory: apps/quietflip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
           path: coverage/lcov.info
+
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - run: flutter build web
+        working-directory: apps/quietflip

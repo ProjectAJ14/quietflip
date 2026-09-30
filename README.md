@@ -157,7 +157,7 @@ that generated fixture before retrying.
 Coverage is not a proof of correctness, branch completeness, security, or native
 plugin compatibility. Keep assertions about behavior, and add device integration
 tests for your Firebase project, native permissions, provider sign-in and backend.
-The generated GitHub Actions workflow checks analysis, tests, coverage and a web build.
+The GitHub Actions workflow (`CI`) runs three parallel jobs: Lint, Tests (100% coverage) and Web build. It runs on pull requests and pushes to `main`; a newer push cancels the older run, and changes that only touch `.md` files skip it.
 
 ### Authentication and demo mode
 
