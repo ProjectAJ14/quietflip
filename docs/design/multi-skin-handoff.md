@@ -8,7 +8,7 @@ This section is the brief for the coding agent. It maps every design in this sys
 
 ## Delivery order
 
-Ship as five pull requests, each green on `dart run melos run lint` and `dart run melos run coverage`:
+Ship as ONE pull request, built in five stages, one commit (or more) per stage, in this order. Run `dart run melos run lint` and `dart run melos run coverage` after each stage so a break is caught where it starts; the PR opens only when all five are done and both pass:
 
 1. **Mono theme and fonts.** Geist becomes `bodyFont` and `displayFont`. `DesignSystem.blackScheme()` becomes the Mono Dark scheme (`bg` #000000, `surface-raised` #1c1c1e, `ink` #ffffff, `ink-muted` #a1a1a1, `hairline` #2c2c2e, `accent` #ffffff, `on-accent` #000000); add a Mono Light scheme with the `light` values. Default `AppearanceMode.black`. Bundle Geist 400/500/600/700 and every skin face (one weight each) under `assets/google_fonts/` with `OFL.txt`; delete Open Sans. Add a `DesignSize` and `DesignMotion` constants class for the `size-*` and `dur-*` tokens.
 2. **Skins.** A `Skin` model and a skin catalogue in `features/flip_clock` (skins are product data, not shared UI). `FlipDisplay` takes a `Skin` instead of reading the theme for its face. Skins picker sheet and Customize sheet.
