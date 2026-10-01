@@ -2,7 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:design_system/design_system.dart' as ds;
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _tabs = ['Clock', 'Timer', 'Stopwatch'];
@@ -14,6 +14,7 @@ Future<void> _pump(
   double width = 400,
   double textScale = 1,
   bool disableAnimations = false,
+  bool settle = true,
 }) async {
   tester.view.physicalSize = Size(width, 800);
   tester.view.devicePixelRatio = 1;
@@ -36,7 +37,7 @@ Future<void> _pump(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
 ds.Island _island({
@@ -155,7 +156,10 @@ void main() {
 
         await _pump(tester, mode, _island());
         // Mid-morph the outgoing dot still fades beside the tabs.
-        expect(tester.getSize(find.byType(ds.Island)).height, 52);
+        expect(
+          tester.getSize(find.byType(ds.Island)).height,
+          ds.DesignSize.islandExpandedHeight,
+        );
 
         await _pump(tester, mode, _island(state: ds.ChromeState.hidden));
         expect(tester.getSize(find.byType(ds.Island)), const Size(10, 10));
@@ -350,7 +354,10 @@ void main() {
           ds.Island.trayHeight,
         );
         await _pump(tester, mode, _island());
-        expect(tester.getSize(find.byType(ds.Island)).height, 52);
+        expect(
+          tester.getSize(find.byType(ds.Island)).height,
+          ds.DesignSize.islandExpandedHeight,
+        );
       });
 
       testWidgets('every tray action is legible on the island', (tester) async {
@@ -427,6 +434,204 @@ void main() {
           lessThanOrEqualTo(320 - 2 * ds.DesignSpace.s4),
         );
       });
+    });
+  }
+
+  /// Product of every opacity between the island's fill and the screen.
+  double paintedOpacity(WidgetTester tester) {
+    var opacity = 1.0;
+    RenderObject? node = tester.renderObject(
+      find
+          .descendant(
+            of: find.byType(ds.Island),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    while (node != null) {
+      if (node is RenderOpacity) opacity *= node.opacity;
+      if (node is RenderAnimatedOpacity) opacity *= node.opacity.value;
+      node = node.parent;
+    }
+    return opacity;
+  }
+
+  testWidgets('hiding shrinks the island to a dot before it fades', (
+    tester,
+  ) async {
+    await _pump(tester, ds.AppearanceMode.black, _island(actions: _actions()));
+    final expanded = tester.getSize(find.byType(ds.Island)).height;
+    expect(expanded, ds.Island.trayHeight);
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(state: ds.ChromeState.hidden, actions: _actions()),
+      settle: false,
+    );
+    var last = expanded;
+    for (var t = 0; t <= 600; t += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final height = tester.getSize(find.byType(ds.Island)).height;
+      final opacity = paintedOpacity(tester);
+      if (height >= expanded / 2) {
+        expect(opacity, greaterThan(0.9), reason: '$t ms, $height px');
+      }
+      // No overshoot on the way out: the shape only ever gets smaller.
+      expect(height, lessThanOrEqualTo(last + 0.01), reason: '$t ms');
+      last = height;
+    }
+    expect(
+      tester.getSize(find.byType(ds.Island)).height,
+      ds.DesignSize.islandDot,
+    );
+    expect(paintedOpacity(tester), 0);
+  });
+
+  AnimatedSize morph(WidgetTester tester) =>
+      tester.widget<AnimatedSize>(find.byType(AnimatedSize));
+
+  testWidgets('growing springs; going to the dot shrinks without a fade', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(state: ds.ChromeState.dot),
+    );
+    await _pump(tester, ds.AppearanceMode.black, _island(), settle: false);
+    expect(morph(tester).curve, ds.DesignMotion.islandCurve);
+    expect(morph(tester).duration, ds.DesignMotion.islandMorph);
+    await tester.pumpAndSettle();
+
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(state: ds.ChromeState.dot),
+      settle: false,
+    );
+    expect(morph(tester).curve, ds.DesignMotion.collapseCurve);
+    expect(morph(tester).duration, ds.DesignMotion.islandCollapse);
+    for (var t = 0; t < 400; t += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(paintedOpacity(tester), 1, reason: '$t ms');
+    }
+    expect(tester.getSize(find.byType(ds.Island)), const Size(10, 10));
+
+    // The dot is already small: hiding it is a plain fade.
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(state: ds.ChromeState.hidden),
+      settle: false,
+    );
+    final fade = tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity));
+    expect(fade.duration, ds.DesignMotion.fade);
+    expect(fade.curve, Curves.linear);
+    await tester.pumpAndSettle();
+    expect(paintedOpacity(tester), 0);
+  });
+
+  testWidgets('reduced motion hides with a plain cross-fade', (tester) async {
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(actions: _actions()),
+      disableAnimations: true,
+    );
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(state: ds.ChromeState.hidden, actions: _actions()),
+      disableAnimations: true,
+      settle: false,
+    );
+    expect(find.byType(AnimatedSize), findsNothing);
+    final fade = tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity));
+    expect(fade.duration, ds.DesignMotion.fade);
+    expect(fade.curve, Curves.linear);
+  });
+
+  testWidgets('spacing: inset, row gap, item and group gaps, centred tray', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      _island(actions: _actions()),
+      width: 800,
+    );
+    final island = tester.getRect(find.byType(ds.Island));
+    final clock = tester.getRect(
+      find.ancestor(of: find.text('Clock'), matching: find.byType(InkWell)),
+    );
+    final start = tester.getRect(find.byTooltip('Start'));
+    final reset = tester.getRect(find.byTooltip('Reset'));
+    final chip = tester.getRect(
+      find.ancestor(of: find.text('5m'), matching: find.byType(InkWell)),
+    );
+    final tray = tester.getRect(find.byType(SingleChildScrollView));
+    expect(clock.top - island.top, ds.DesignSpace.islandInset);
+    expect(island.bottom - start.bottom, ds.DesignSpace.islandInset);
+    expect(start.top - clock.bottom, ds.DesignSpace.islandRowGap);
+    expect(clock.height, ds.DesignSize.cornerButton);
+    expect(start.height, ds.DesignSize.cornerButton);
+    expect(chip.height, ds.DesignSize.cornerButton);
+    // Start and Reset are one group; the chips are the next.
+    expect(reset.left - start.right, ds.DesignSpace.islandItemGap);
+    expect(chip.left - reset.right, ds.DesignSpace.islandGroupGap);
+    expect(
+      tester.getRect(find.text('5m')).left - chip.left,
+      ds.DesignSpace.islandItemPadding,
+    );
+    expect(tray.center.dx, closeTo(island.center.dx, 0.01));
+  });
+
+  for (final mode in [ds.AppearanceMode.black, ds.AppearanceMode.light]) {
+    testWidgets('${mode.name}: the island floats on shadows and a highlight', (
+      tester,
+    ) async {
+      final colors = mode == ds.AppearanceMode.black
+          ? ds.DesignColors.dark
+          : ds.DesignColors.light;
+      await _pump(tester, mode, _island(actions: _actions()));
+      final fill =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: find.byType(ds.Island),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(fill.color, colors.island);
+      expect(fill.boxShadow, colors.islandElevation.shadows);
+      final paint = tester.widget<CustomPaint>(
+        find
+            .descendant(
+              of: find.byType(ds.Island),
+              matching: find.byType(CustomPaint),
+            )
+            .first,
+      );
+      expect(paint.foregroundPainter, isNotNull);
+      expect(
+        paint.foregroundPainter!.shouldRepaint(paint.foregroundPainter!),
+        isFalse,
+      );
+      // The highlight is painted: a stroke on the island's outline.
+      expect(
+        find.byType(ds.Island),
+        paints..something((method, args) {
+          if (method != #drawRRect) return false;
+          final paint = args[1] as Paint;
+          return paint.style == PaintingStyle.stroke &&
+              paint.strokeWidth == 1 &&
+              paint.shader != null;
+        }),
+      );
     });
   }
 
