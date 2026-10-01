@@ -686,7 +686,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   }
 }
 
-/// The stopwatch's split times under its digits, newest first: three
+/// The stopwatch's split times under its digits: a grid of as many columns
+/// as fit the widest label, newest first, left to right then down. Three
 /// rows show (at most a third of the panel), the rest scroll.
 class _Laps extends StatelessWidget {
   const _Laps({
@@ -701,38 +702,82 @@ class _Laps extends StatelessWidget {
   /// A third of the panel, so short windows keep room for the digits.
   final double maxHeight;
 
-  /// Rows visible before the list scrolls.
+  /// Rows visible before the grid scrolls.
   static const int visible = 3;
+
+  /// The widest lap a cell must fit: `Lap 99  99:59:59.9`.
+  static const int _lastNumber = 99;
+  static const Duration _longest = Duration(
+    hours: 99,
+    minutes: 59,
+    seconds: 59,
+    milliseconds: 900,
+  );
 
   @override
   Widget build(BuildContext context) {
     final fontSize = Theme.of(context).textTheme.titleMedium!.fontSize!;
     final style = skin.face.style(color: skin.digitColor, fontSize: fontSize);
+    final scaler = MediaQuery.textScalerOf(context);
     // A row is the scaled line plus a little air, so large text still fits.
-    final row =
-        MediaQuery.textScalerOf(context).scale(fontSize) * 1.5 + DesignSpace.s1;
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: math.min(row * visible, maxHeight),
+    final row = scaler.scale(fontSize) * 1.5 + DesignSpace.s1;
+    // Measured in the skin's face at the current text scale, not guessed.
+    final painter = TextPainter(
+      text: TextSpan(
+        text: strings.clock.lap_label(_lastNumber, formatStopwatch(_longest)),
+        style: style,
       ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: laps.length,
-        itemExtent: row,
-        itemBuilder: (context, i) => Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              strings.clock.lap_label(
-                laps.length - i,
-                formatStopwatch(laps[i]),
+      textScaler: scaler,
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    )..layout();
+    final cell = painter.width;
+    painter.dispose();
+    const across = DesignSpace.s4;
+    const down = DesignSpace.s2;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final fit = math.max(1, (box.maxWidth + across) ~/ (cell + across));
+        // Fewer laps than fit: just those columns, centred.
+        final columns = math.min(fit, laps.length);
+        final width = columns == fit
+            ? box.maxWidth
+            : columns * cell + (columns - 1) * across;
+        return SizedBox(
+          width: width,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: math.min(
+                row * visible + down * (visible - 1),
+                maxHeight,
               ),
-              maxLines: 1,
-              style: style,
+            ),
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisExtent: row,
+                mainAxisSpacing: down,
+                crossAxisSpacing: across,
+              ),
+              itemCount: laps.length,
+              itemBuilder: (context, i) => Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    strings.clock.lap_label(
+                      laps.length - i,
+                      formatStopwatch(laps[i]),
+                    ),
+                    maxLines: 1,
+                    style: style,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

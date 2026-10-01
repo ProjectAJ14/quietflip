@@ -1970,6 +1970,9 @@ void main() {
     });
   });
 
+  /// Rows of laps visible before the grid scrolls.
+  const lapRows = 3;
+
   group('stopwatch laps', () {
     final c = strings.clock;
 
@@ -1988,13 +1991,13 @@ void main() {
       await tapAction(tester, c.action_lap);
       h.watch.reading = const Duration(seconds: 20);
       await tapAction(tester, c.action_lap);
-      // Newest first, numbered from the start.
+      // Newest first, numbered from the start, left to right.
       expect(find.text(c.lap_label(2, '0:00:07.6')), findsOne);
       expect(find.text(c.lap_label(1, '0:00:12.4')), findsOne);
-      expect(
-        tester.getTopLeft(find.text(c.lap_label(2, '0:00:07.6'))).dy,
-        lessThan(tester.getTopLeft(find.text(c.lap_label(1, '0:00:12.4'))).dy),
-      );
+      final newest = tester.getRect(find.text(c.lap_label(2, '0:00:07.6')));
+      final oldest = tester.getRect(find.text(c.lap_label(1, '0:00:12.4')));
+      expect(newest.right, lessThan(oldest.left));
+      expect(newest.center.dy, closeTo(oldest.center.dy, 0.5));
       await tapAction(tester, c.action_pause);
       await crossFade(tester);
       await tapAction(tester, c.action_reset);
@@ -2005,7 +2008,123 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('L laps in Stopwatch mode only; three rows show, then scroll', (
+    int columnsOf(WidgetTester tester) =>
+        (tester.widget<GridView>(find.byType(GridView)).gridDelegate
+                as SliverGridDelegateWithFixedCrossAxisCount)
+            .crossAxisCount;
+    double scrollOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(GridView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .maxScrollExtent;
+
+    /// A stopwatch on screen at [width] with [count] one-second laps.
+    Future<Harness> lapped(
+      WidgetTester tester,
+      int count, {
+      double width = 1280,
+      double textScale = 1,
+      String skinId = 'mono',
+    }) async {
+      tester.view
+        ..physicalSize = Size(width, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final h = Harness();
+      await h.settings.update(
+        ClockSettings(lastMode: ClockMode.stopwatch, skinId: skinId),
+      );
+      await tester.pumpWidget(h.screen());
+      h.stopwatch.start();
+      await tester.pump();
+      for (var i = 1; i <= count; i++) {
+        h.watch.reading = Duration(seconds: i);
+        h.stopwatch.lap();
+      }
+      await tester.pump();
+      return h;
+    }
+
+    Future<void> done(WidgetTester tester, Harness h) async {
+      h.stopwatch.reset();
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    }
+
+    testWidgets('one column at 320px, several at 1280px', (tester) async {
+      // A wide face (Orbitron) fits one label across a phone.
+      var h = await lapped(tester, 4, width: 320, skinId: 'orbit');
+      expect(columnsOf(tester), 1);
+      await done(tester, h);
+      // A condensed face fits more: the width is measured, not guessed.
+      h = await lapped(tester, 4, width: 320);
+      expect(columnsOf(tester), 2);
+      await done(tester, h);
+      h = await lapped(tester, 12);
+      expect(columnsOf(tester), greaterThan(3));
+      expect(tester.takeException(), isNull);
+      await done(tester, h);
+    });
+
+    testWidgets('three full rows show without scrolling; one more scrolls', (
+      tester,
+    ) async {
+      var h = await lapped(tester, 1);
+      // One lap: one centred cell.
+      expect(columnsOf(tester), 1);
+      await done(tester, h);
+      h = await lapped(tester, 30);
+      final columns = columnsOf(tester);
+      await done(tester, h);
+
+      h = await lapped(tester, columns * lapRows);
+      expect(scrollOf(tester), 0);
+      await done(tester, h);
+      h = await lapped(tester, columns * lapRows + 1);
+      expect(scrollOf(tester), greaterThan(0));
+      // Newest first: the oldest is past the fold until scrolled.
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsNothing);
+      await tester.drag(find.byType(GridView), const Offset(0, -300));
+      await tester.pump();
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsOne);
+      await done(tester, h);
+    });
+
+    testWidgets('text scale 2 takes fewer columns and never clips', (
+      tester,
+    ) async {
+      var h = await lapped(tester, 30);
+      final normal = columnsOf(tester);
+      await done(tester, h);
+      h = await lapped(tester, 30, textScale: 2);
+      expect(columnsOf(tester), lessThan(normal));
+      expect(tester.takeException(), isNull);
+      // Every label fits its cell unscaled.
+      final label = find.text(c.lap_label(30, '0:00:01.0'));
+      final fitted = tester.widget<FittedBox>(
+        find.ancestor(of: label, matching: find.byType(FittedBox)).first,
+      );
+      expect(fitted.fit, BoxFit.scaleDown);
+      expect(
+        tester.getSize(label).width,
+        lessThanOrEqualTo(
+          tester
+              .getSize(
+                find.ancestor(of: label, matching: find.byType(Center)).first,
+              )
+              .width,
+        ),
+      );
+      await done(tester, h);
+    });
+
+    testWidgets('L laps in Stopwatch mode only, in the skin face', (
       tester,
     ) async {
       final h = Harness();
@@ -2020,20 +2139,9 @@ void main() {
         await key(tester, LogicalKeyboardKey.keyL);
       }
       expect(h.stopwatch.state.laps, hasLength(5));
-      // Latest three on screen, older ones below the fold.
-      for (final n in [5, 4, 3]) {
-        expect(find.text(c.lap_label(n, '0:00:01.0')), findsOne, reason: '$n');
-      }
-      expect(find.text(c.lap_label(1, '0:00:01.0')), findsNothing);
       final lap = tester.widget<Text>(find.text(c.lap_label(5, '0:00:01.0')));
       expect(lap.style!.fontFamily, startsWith('Orbitron'));
       expect(lap.style!.color, Skins.resolve('orbit', const []).digitColor);
-      await tester.drag(
-        find.text(c.lap_label(3, '0:00:01.0')),
-        const Offset(0, -300),
-      );
-      await tester.pump();
-      expect(find.text(c.lap_label(1, '0:00:01.0')), findsOne);
 
       // Elsewhere L does nothing.
       h.stopwatch.pause();

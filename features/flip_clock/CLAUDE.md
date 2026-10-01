@@ -230,8 +230,12 @@ lib/
 - Seconds: the S key (Clock mode only) and the Settings switch toggle
   `showSeconds`.
 - Laps: the tray's Lap and the L key (Stopwatch mode only) record a split.
-  They list under the digits, newest first (`Lap 3  0:00:12.4`), in the
-  skin's face and digit colour at the titleMedium size, dimmed with the
+  They sit under the digits in a grid: as many columns as fit the widest
+  label (`Lap 99  99:59:59.9`, measured with a `TextPainter` in the skin's
+  face at the current text scale; at least one), `space-4` between columns
+  and `space-2` between rows; fewer laps than fit take only their columns,
+  centred. Newest first, left to right then down (`Lap 3  0:00:12.4`), in
+  the skin's face and digit colour at the titleMedium size, dimmed with the
   digits; three rows show (at most a third of the panel), the rest scroll.
 - Digit brightness dims only the digits (`Opacity` around each `FlipDisplay`,
   and around the date line with the Clock digits);

@@ -69,7 +69,7 @@ does the same). Pomodoro offers Start (your default timer), a Pomodoro chip,
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
-Pause, Lap, Resume and Reset; laps list under its digits, newest first. After 4 seconds without input the island and
+Pause, Lap, Resume and Reset; laps fill a grid under its digits, newest first, as many columns as fit, three rows before it scrolls. After 4 seconds without input the island and
 the corner buttons shrink to dots, and 3 seconds later they are gone; a timer that finishes brings it
 back. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
