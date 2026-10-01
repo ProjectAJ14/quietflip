@@ -329,7 +329,9 @@ regenerate.
   `design_system/CLAUDE.md`).
 - Phone upright: the clock stacks hours over minutes; turned sideways: one row.
 - The date sits above the time.
-- 12 laps on a laptop: a grid of several columns, 3 rows visible, scrolls.
+- Laps on a laptop: a grid of as many columns as fit; up to 3 rows show,
+  more laps than 3 full rows scroll (decided 2026-10-01: no column cap, so
+  12 laps at 1280 px fill 2 rows of 9).
 - With Show seconds on, every gallery tile shows seconds.
 - In the gallery it is obvious which skin is selected and how to customise it.
 
