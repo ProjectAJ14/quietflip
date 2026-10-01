@@ -71,8 +71,10 @@ lib/
                                            ScreenBrightnessException -> in-app for good (logged);
                                            reset() restores system level, never throws
   ui/screens/flip_clock_screen.dart        modes, chrome (the Island top centre: tabs over the
-                                           current mode's action tray plus Skins / Settings;
-                                           owned ChromeController), tap toggle, date line,
+                                           current mode's action tray; CornerButtons Skins
+                                           top-left, Settings top-right, Rotation bottom-right
+                                           where supported; owned ChromeController), tap
+                                           toggle, date line,
                                            full-screen note, keys, wake lock
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
   ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skins strip: the
@@ -119,8 +121,14 @@ lib/
   requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
-  distinct change. Settings > Clock shows the Orientation control only when
-  `OrientationLock.supported` (Android/iOS), passed in by the router.
+  distinct change. Settings > Clock shows the Orientation control, the
+  clock screen its Rotation corner button and the R key, only when
+  `OrientationLock.supported` (Android/iOS), passed in by the router (the
+  widgets never `di.get`). Rotation and R cycle `orientation` auto ->
+  portrait -> landscape -> auto (the button's icon shows the current one:
+  `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`) and
+  show the mode name in an `IslandTitleHud` with three dots; nothing new in
+  the model, and the Settings row stays in sync.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
 - Every string from `strings.clock.*`; chrome colours from
@@ -176,17 +184,23 @@ lib/
   `tapToggleControls`); hovering still shows a hidden chrome, and the first
   press within `ChromeController.hoverGrace` (300 ms) of that hover does not
   hide it again (moving to the clock and clicking is one motion). A tap on a
-  tray action is the action's (the island sits above the gesture layer).
-- The island is the only control on the clock screen. It sits top centre,
-  `space-4` inside the safe area (`space-6` from 600px shortest side).
-  Expanded, it shows the mode tabs over the tray (`IslandAction`s, drawn in
-  island tokens on its dark pill, never on the skin's ground, so they are
-  legible on every skin in both themes), then Skins and Settings after a
-  hairline on every mode:
+  tray action or a corner button is that control's (both sit above the
+  gesture layer), never a chrome toggle.
+- Chrome is the island plus corner buttons, all driven by the one
+  `ChromeState` in the same frame (button / dot / gone, same spring in,
+  same collapse out): Skins (`palette_outlined`) top-left, Settings
+  top-right, Rotation bottom-right on phones only. Each sits `inset` from
+  the safe area; the island is centred between the top two
+  (`inset + cornerButton + space-2` from each side), never under them.
+- The island sits top centre, `space-4` inside the safe area (`space-6`
+  from 600px shortest side). Expanded, it shows the mode tabs over the
+  tray (`IslandAction`s, drawn in island tokens on its dark pill, never on
+  the skin's ground, so they are legible on every skin in both themes),
+  only the current mode's controls, centred:
 
   | Mode / state | Tray |
   |---|---|
-  | Clock | (Skins, Settings only) |
+  | Clock | (none: tabs only) |
   | Pomodoro idle | Start (`defaultTimer`), chips Pomodoro + each preset (`5m`, `1:30`), tune -> `onOpenTimerSettings` |
   | Pomodoro running / paused | Pause or Resume, Reset |
   | Pomodoro finished | "Time's up" (live region); Restart (same duration, `restart()`) or Start break / Start focus; Done |
@@ -199,6 +213,8 @@ lib/
   the inset above (at most a quarter of the height) and only side padding
   below, so the chrome never covers the digits. A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
+- Rotation: the R key (phones only) and the Rotation corner button cycle
+  the screen rotation (see Orientation).
 - Seconds: the S key (Clock mode only) and the Settings switch toggle
   `showSeconds`.
 - Laps: the tray's Lap and the L key (Stopwatch mode only) record a split.

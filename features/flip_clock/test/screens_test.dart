@@ -73,6 +73,7 @@ class Harness {
     bool doubleTap = false,
     bool reduceMotion = false,
     ThemeData? appTheme,
+    bool orientationSupported = false,
   }) => MaterialApp(
     theme: appTheme ?? theme,
     builder: reduceMotion
@@ -94,6 +95,7 @@ class Harness {
       doubleTapFullScreen: doubleTap,
       onOpenSettings: () => settingsOpened++,
       onOpenTimerSettings: () => timerSettingsOpened++,
+      orientationSupported: orientationSupported,
     ),
   );
 
@@ -1396,19 +1398,31 @@ void main() {
       final island = tester.getRect(find.byType(Island));
       expect(island.center.dy, lessThan(844 / 4));
       expect(island.center.dx, closeTo(width / 2, 0.5));
-      // Every button on the screen is inside the island.
+      // Every button on the screen is the island's or a corner button's.
       for (final type in [InkWell, ButtonStyleButton, IconButton]) {
         final all = find.byType(type);
-        final inIsland = find.descendant(
-          of: find.byType(Island),
-          matching: find.byType(type),
-        );
+        int inside(Type owner) => find
+            .descendant(of: find.byType(owner), matching: find.byType(type))
+            .evaluate()
+            .length;
         expect(
           all.evaluate().length,
-          inIsland.evaluate().length,
+          inside(Island) + inside(CornerButton),
           reason: '$type',
         );
       }
+      // Skins top-left, Settings top-right, clear of the island; no
+      // Rotation where the screen cannot be locked.
+      final skins = tester.getRect(find.byTooltip(strings.clock.action_skins));
+      final settings = tester.getRect(
+        find.byTooltip(strings.clock.action_settings),
+      );
+      expect(skins.left, lessThan(width / 4));
+      expect(settings.right, greaterThan(width * 3 / 4));
+      expect(skins.top, settings.top);
+      expect(skins.right, lessThanOrEqualTo(island.left));
+      expect(settings.left, greaterThanOrEqualTo(island.right));
+      expect(find.byTooltip(strings.clock.action_rotation), findsNothing);
       // Tabs keep their full size (the callout line is 20px), never shrunk.
       expect(
         tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
@@ -1594,13 +1608,126 @@ void main() {
     expect(failures, isEmpty);
   });
 
+  group('corner chrome', () {
+    final c = strings.clock;
+    ChromeState cornerOf(WidgetTester tester, String tooltip) => tester
+        .widget<CornerButton>(
+          find.ancestor(
+            of: find.byTooltip(tooltip),
+            matching: find.byType(CornerButton),
+          ),
+        )
+        .state;
+
+    testWidgets('Skins and Settings follow the island, frame for frame', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      for (final (expected, wait) in [
+        (ChromeState.expanded, DesignMotion.controlsIdle),
+        (ChromeState.dot, DesignMotion.dotIdle),
+        (ChromeState.hidden, Duration.zero),
+      ]) {
+        expect(chromeOf(tester), expected);
+        for (final t in [
+          c.action_skins,
+          c.action_settings,
+          c.action_rotation,
+        ]) {
+          expect(cornerOf(tester, t), expected, reason: '$t $expected');
+        }
+        await tester.pump(wait);
+        await tester.pump();
+      }
+      await h.dispose(tester);
+    });
+
+    testWidgets('a corner tap is the button\'s own, never a chrome toggle', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(c.action_settings));
+      await tester.pump();
+      expect(h.settingsOpened, 1);
+      expect(chromeOf(tester), ChromeState.expanded);
+      await tester.tap(find.byTooltip(c.action_skins));
+      await tester.pumpAndSettle();
+      expect(find.text(c.skins_title), findsOne);
+      await h.dispose(tester);
+    });
+
+    testWidgets('Rotation cycles auto, portrait, landscape and says so', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      final rotation = find.byTooltip(c.action_rotation);
+      // Bottom right.
+      final box = tester.getRect(rotation);
+      final screen = tester.getRect(find.byType(FlipClockScreen));
+      expect(box.right, greaterThan(screen.width * 3 / 4));
+      expect(box.bottom, greaterThan(screen.height * 3 / 4));
+      expect(find.byIcon(Icons.screen_rotation_outlined), findsOne);
+      for (final (orientation, name, icon, dot) in [
+        (
+          ClockOrientation.portrait,
+          c.orientation_portrait,
+          Icons.stay_current_portrait_outlined,
+          1,
+        ),
+        (
+          ClockOrientation.landscape,
+          c.orientation_landscape,
+          Icons.stay_current_landscape_outlined,
+          2,
+        ),
+        (
+          ClockOrientation.auto,
+          c.orientation_auto,
+          Icons.screen_rotation_outlined,
+          0,
+        ),
+      ]) {
+        await tester.tap(rotation);
+        await tester.pump();
+        expect(h.settings.state.orientation, orientation);
+        expect(find.byIcon(icon), findsOne);
+        final hud =
+            tester.widget<Island>(find.byType(Island)).hud! as IslandTitleHud;
+        expect(hud.title, name);
+        expect(hud.index, dot);
+        expect(hud.count, 3);
+        // The tap was the button's: the chrome stays.
+        expect(chromeOf(tester), ChromeState.expanded);
+        await tester.pump(DesignMotion.hudHold);
+      }
+      // R cycles too.
+      await key(tester, LogicalKeyboardKey.keyR);
+      expect(h.settings.state.orientation, ClockOrientation.portrait);
+      await tester.pump(DesignMotion.hudHold);
+      await h.dispose(tester);
+    });
+
+    testWidgets('no Rotation and no R where the screen cannot be locked', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      expect(find.byTooltip(c.action_rotation), findsNothing);
+      await key(tester, LogicalKeyboardKey.keyR);
+      expect(h.settings.state.orientation, ClockOrientation.auto);
+      await h.dispose(tester);
+    });
+  });
+
   group('island tray', () {
     final c = strings.clock;
-    List<String> withChrome(List<String> actions) => [
-      ...actions,
-      c.action_skins,
-      c.action_settings,
-    ];
 
     testWidgets('each mode and state offers its own actions', (tester) async {
       final h = Harness();
@@ -1611,46 +1738,43 @@ void main() {
         ),
       );
       await tester.pumpWidget(h.screen());
-      expect(trayOf(tester), withChrome([]), reason: 'clock');
+      expect(trayOf(tester), [], reason: 'clock');
 
       await h.settings.update(
         h.settings.state.copyWith(lastMode: ClockMode.pomodoro),
       );
       await tester.pumpAndSettle();
-      expect(
-        trayOf(tester),
-        withChrome([
-          c.action_start,
-          c.preset_pomodoro,
-          // Ascending: 90 s first.
-          '1:30',
-          '5m',
-          '10m',
-          '15m',
-          c.action_timer_settings,
-        ]),
-      );
+      expect(trayOf(tester), [
+        c.action_start,
+        c.preset_pomodoro,
+        // Ascending: 90 s first.
+        '1:30',
+        '5m',
+        '10m',
+        '15m',
+        c.action_timer_settings,
+      ]);
       await h.countdown.start(ninety);
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_pause, c.action_reset]));
+      expect(trayOf(tester), [c.action_pause, c.action_reset]);
       await h.countdown.pause();
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      expect(trayOf(tester), [c.action_resume, c.action_reset]);
       await h.countdown.reset();
 
       await h.settings.update(
         h.settings.state.copyWith(lastMode: ClockMode.stopwatch),
       );
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_start]));
+      expect(trayOf(tester), [c.action_start]);
       h.stopwatch.start();
       await tester.pump();
       await crossFade(tester);
-      expect(trayOf(tester), withChrome([c.action_pause, c.action_lap]));
+      expect(trayOf(tester), [c.action_pause, c.action_lap]);
       h.watch.reading = const Duration(seconds: 2);
       h.stopwatch.pause();
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      expect(trayOf(tester), [c.action_resume, c.action_reset]);
       await tapAction(tester, c.action_reset);
       expect(h.stopwatch.state.isIdle, isTrue);
       await tapAction(tester, c.action_start);
@@ -1727,7 +1851,7 @@ void main() {
       expect(chromeOf(tester), ChromeState.expanded);
       expect(h.settings.state.lastMode, ClockMode.pomodoro);
       expect(find.text(c.times_up), findsOne);
-      expect(trayOf(tester), withChrome([c.action_restart, c.action_done]));
+      expect(trayOf(tester), [c.action_restart, c.action_done]);
       expect(h.sound.alarms, 1);
 
       await tapAction(tester, c.action_restart);

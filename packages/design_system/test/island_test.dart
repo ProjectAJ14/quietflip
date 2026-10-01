@@ -48,7 +48,6 @@ ds.Island _island({
   List<String> tabs = _tabs,
   ValueChanged<int>? onSelect,
   List<ds.IslandAction> actions = const [],
-  List<ds.IslandAction> trailing = const [],
   String? status,
 }) => ds.Island(
   state: state,
@@ -58,7 +57,6 @@ ds.Island _island({
   onSelect: onSelect ?? (_) {},
   tabsLabel: 'Modes',
   actions: actions,
-  trailing: trailing,
   status: status,
 );
 
@@ -83,18 +81,6 @@ List<ds.IslandAction> _actions([List<String>? log]) => [
     onPressed: () => log?.add('Timers'),
   ),
 ];
-
-List<ds.IslandAction> _trailing([List<String>? log]) => [
-  ds.IslandAction(
-    label: 'Settings',
-    icon: Icons.settings_outlined,
-    onPressed: () => log?.add('Settings'),
-  ),
-];
-
-final _rule = find.byWidgetPredicate(
-  (w) => w is SizedBox && w.width == 1 && w.child is ColoredBox,
-);
 
 /// WCAG contrast of two opaque colours, 1..21.
 double _contrast(Color a, Color b) {
@@ -279,7 +265,7 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets('the tray lays out actions, chips, a rule and a status', (
+      testWidgets('the tray lays out actions, chips and a status', (
         tester,
       ) async {
         final semantics = tester.ensureSemantics();
@@ -287,34 +273,28 @@ void main() {
         await _pump(
           tester,
           mode,
-          _island(
-            actions: _actions(log),
-            trailing: _trailing(log),
-            status: "Time's up",
-          ),
+          _island(actions: _actions(log), status: "Time's up"),
           width: 800,
         );
         expect(
           tester.getSize(find.byType(ds.Island)).height,
           ds.Island.trayHeight,
         );
-        for (final label in ['Start', 'Reset', 'Timers', 'Settings']) {
+        for (final label in ['Start', 'Reset', 'Timers']) {
           expect(find.byTooltip(label), findsOneWidget, reason: label);
         }
         expect(find.text('5m'), findsOneWidget);
         // An abbreviated chip is spoken in full; others by their label.
         expect(find.bySemanticsLabel('5 minute timer'), findsOneWidget);
         expect(find.bySemanticsLabel('10m'), findsOneWidget);
-        expect(_rule, findsOneWidget);
         final status = tester.getSemantics(find.bySemanticsLabel("Time's up"));
         expect(status.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
 
         await tester.tap(find.byIcon(Icons.play_arrow_rounded));
         await tester.tap(find.text('10m'));
         await tester.tap(find.byIcon(Icons.tune_rounded));
-        await tester.tap(find.byIcon(Icons.settings_outlined));
         await tester.tap(find.byIcon(Icons.restart_alt_rounded));
-        expect(log, ['Start', '10m', 'Timers', 'Settings']);
+        expect(log, ['Start', '10m', 'Timers']);
         final reset = tester
             .getSemantics(find.bySemanticsLabel('Reset'))
             .getSemanticsData();
@@ -323,11 +303,10 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets('trailing alone has no rule; no tray keeps the tab height', (
+      testWidgets('a status alone makes a tray; none keeps the tab height', (
         tester,
       ) async {
-        await _pump(tester, mode, _island(trailing: _trailing()));
-        expect(_rule, findsNothing);
+        await _pump(tester, mode, _island(status: 'Done'));
         expect(
           tester.getSize(find.byType(ds.Island)).height,
           ds.Island.trayHeight,
@@ -340,15 +319,11 @@ void main() {
       });
 
       testWidgets('every tray action is legible on the island', (tester) async {
-        await _pump(
-          tester,
-          mode,
-          _island(actions: _actions(), trailing: _trailing(), status: 'Done'),
-        );
+        await _pump(tester, mode, _island(actions: _actions(), status: 'Done'));
         final tray = find.byType(SingleChildScrollView);
         final icons = find.descendant(of: tray, matching: find.byType(Icon));
         final texts = find.descendant(of: tray, matching: find.byType(Text));
-        expect(icons, findsNWidgets(4));
+        expect(icons, findsNWidgets(3));
         expect(texts, findsNWidgets(3));
         for (final e in [...icons.evaluate(), ...texts.evaluate()]) {
           final w = e.widget;
@@ -371,8 +346,12 @@ void main() {
               ..._actions(log),
               for (var m = 20; m < 25; m++)
                 ds.IslandAction(label: '${m}m', onPressed: () {}),
+              ds.IslandAction(
+                label: 'Last',
+                icon: Icons.settings_outlined,
+                onPressed: () => log.add('Last'),
+              ),
             ],
-            trailing: _trailing(log),
           ),
           width: 320,
           textScale: 2,
@@ -385,7 +364,7 @@ void main() {
         // The primary action comes first and is on screen.
         await tester.tap(find.byIcon(Icons.play_arrow_rounded));
         expect(log, ['Start']);
-        // Settings is past the end until the tray is scrolled.
+        // The last action is past the end until the tray is scrolled.
         expect(
           find.byIcon(Icons.settings_outlined).hitTestable(),
           findsNothing,
@@ -396,7 +375,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         await tester.tap(find.byIcon(Icons.settings_outlined));
-        expect(log, ['Start', 'Settings']);
+        expect(log, ['Start', 'Last']);
       });
 
       testWidgets('four long tabs fit 320px at text scale 2', (tester) async {
@@ -673,6 +652,185 @@ void main() {
         expect(islandRadius(tester), corner == 0 ? 0 : 5);
       });
     }
+  });
+
+  group('corner button', () {
+    var presses = 0;
+    Widget corner(ds.ChromeState state) => ds.CornerButton(
+      state: state,
+      icon: Icons.settings_outlined,
+      tooltip: 'Settings',
+      onPressed: () => presses++,
+      corner: Alignment.topRight,
+    );
+    final box = find.descendant(
+      of: find.byType(ds.CornerButton),
+      matching: find.byType(AnimatedContainer),
+    );
+    double radius(WidgetTester tester) =>
+        ((tester
+                            .widget<DecoratedBox>(
+                              find
+                                  .descendant(
+                                    of: find.byType(ds.CornerButton),
+                                    matching: find.byType(DecoratedBox),
+                                  )
+                                  .first,
+                            )
+                            .decoration
+                        as BoxDecoration)
+                    .borderRadius!
+                as BorderRadius)
+            .topLeft
+            .x;
+    double opacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find
+              .descendant(
+                of: find.byType(ds.CornerButton),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
+        )
+        .opacity;
+
+    setUp(() => presses = 0);
+
+    for (final mode in [ds.AppearanceMode.black, ds.AppearanceMode.light]) {
+      testWidgets('${mode.name}: taps only when expanded; dot in its corner', (
+        tester,
+      ) async {
+        await _pump(tester, mode, corner(ds.ChromeState.expanded));
+        expect(tester.getSize(box), const Size(44, 44));
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.settings_outlined));
+        expect(presses, 1);
+
+        await _pump(tester, mode, corner(ds.ChromeState.dot));
+        expect(
+          tester.getSize(find.byType(ds.CornerButton)),
+          const Size(44, 44),
+        );
+        expect(tester.getSize(box), const Size(6, 6));
+        expect(
+          tester.getTopRight(box),
+          tester.getTopRight(find.byType(ds.CornerButton)),
+        );
+        await tester.tap(box, warnIfMissed: false);
+        expect(presses, 1);
+
+        await _pump(tester, mode, corner(ds.ChromeState.hidden));
+        expect(opacity(tester), 0);
+        await tester.tap(box, warnIfMissed: false);
+        expect(presses, 1);
+      });
+    }
+
+    testWidgets('hiding shrinks to the dot before it fades', (tester) async {
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.expanded),
+      );
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.hidden),
+        settle: false,
+      );
+      expect(
+        tester.widget<AnimatedContainer>(box).curve,
+        ds.DesignMotion.collapseCurve,
+      );
+      final fade = tester.widget<AnimatedOpacity>(
+        find
+            .descendant(
+              of: find.byType(ds.CornerButton),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
+      );
+      expect(fade.duration, ds.DesignMotion.islandCollapse);
+      expect(fade.curve, ds.DesignMotion.collapseFade);
+      await tester.pumpAndSettle();
+      expect(tester.getSize(box), const Size(6, 6));
+
+      // Growing back rides the spring.
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.expanded),
+        settle: false,
+      );
+      expect(
+        tester.widget<AnimatedContainer>(box).curve,
+        ds.DesignMotion.islandCurve,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    for (final c in [0.0, 24.0]) {
+      testWidgets('takes the app corner $c, never a circle', (tester) async {
+        final shape = ds.DesignShape(c);
+        await _pump(
+          tester,
+          ds.AppearanceMode.black,
+          corner(ds.ChromeState.expanded),
+          corner: c,
+        );
+        expect(radius(tester), shape.forHeight(44));
+      });
+    }
+
+    testWidgets('reduced motion drops the morph', (tester) async {
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.dot),
+        disableAnimations: true,
+      );
+      expect(tester.widget<AnimatedContainer>(box).duration, Duration.zero);
+    });
+
+    testWidgets('a theme switch mid-morph never lerps a shadow past 1', (
+      tester,
+    ) async {
+      await _pump(tester, ds.AppearanceMode.light, corner(ds.ChromeState.dot));
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        corner(ds.ChromeState.expanded),
+        settle: false,
+      );
+      await tester.pump(const Duration(milliseconds: 150));
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.expanded),
+        settle: false,
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(tester.takeException(), isNull);
+      }
+    });
+  });
+
+  testWidgets('the island fits the box it is given', (tester) async {
+    await _pump(
+      tester,
+      ds.AppearanceMode.black,
+      SizedBox(
+        width: 200,
+        child: Center(child: _island(actions: _actions())),
+      ),
+      width: 800,
+    );
+    expect(
+      tester.getSize(find.byType(ds.Island)).width,
+      lessThanOrEqualTo(200),
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('reduced motion drops the spring', (tester) async {

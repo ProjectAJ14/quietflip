@@ -726,6 +726,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get action_done => "Done";
   String get action_skins => "Skins";
   String get action_settings => "Settings";
+  String get action_rotation => "Screen rotation";
   String get action_timer_settings => "Timer settings";
   String preset_minutes(int minutes) => "${minutes}m";
   String preset_minutes_seconds(int minutes, String seconds) =>
@@ -784,6 +785,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get key_hide_controls => "Hide controls";
   String get key_dim => "Dim the digits";
   String get key_lap => "Lap (stopwatch)";
+  String get key_rotation => "Screen rotation";
   String get keycap_space => "Space";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
@@ -792,6 +794,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_esc => "Esc";
   String get keycap_d => "D";
   String get keycap_l => "L";
+  String get keycap_r => "R";
   String get about_licenses => "Licenses";
   String get about_privacy => "Privacy";
   String get about_privacy_value => "No ads. No tracking.";
@@ -1048,6 +1051,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return action_skins;
       case 'action_settings':
         return action_settings;
+      case 'action_rotation':
+        return action_rotation;
       case 'action_timer_settings':
         return action_timer_settings;
       case 'preset_minutes':
@@ -1152,6 +1157,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return key_dim;
       case 'key_lap':
         return key_lap;
+      case 'key_rotation':
+        return key_rotation;
       case 'keycap_space':
         return keycap_space;
       case 'keycap_left_right':
@@ -1168,6 +1175,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return keycap_d;
       case 'keycap_l':
         return keycap_l;
+      case 'keycap_r':
+        return keycap_r;
       case 'about_licenses':
         return about_licenses;
       case 'about_privacy':

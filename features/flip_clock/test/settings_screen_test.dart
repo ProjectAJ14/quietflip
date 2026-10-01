@@ -203,9 +203,11 @@ void main() {
       c.keycap_left_right,
       c.keycap_esc,
       c.keycap_l,
+      c.keycap_r,
     ]) {
       expect(find.text(key), findsOne);
     }
+    expect(find.text(c.key_rotation), findsOne);
 
     // About.
     await tap(tester, c.settings_about);
@@ -283,6 +285,9 @@ void main() {
     expect(find.text(strings.clock.orientation), findsNothing);
     await tap(tester, strings.clock.settings_sound);
     expect(find.text(strings.clock.web_closed_tab_note), findsNothing);
+    // No rotation shortcut either.
+    await tap(tester, strings.clock.settings_shortcuts);
+    expect(find.text(strings.clock.key_rotation), findsNothing);
     await close(tester);
   });
 

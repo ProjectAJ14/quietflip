@@ -40,6 +40,7 @@ class FlipClockRouter implements CoreRouter {
         logger: di.get<Logger>(),
         onOpenSettings: () => context.go(settings),
         onOpenTimerSettings: () => context.go(timerSettings),
+        orientationSupported: di.get<OrientationLock>().supported,
       ),
       routes: [
         GoRoute(

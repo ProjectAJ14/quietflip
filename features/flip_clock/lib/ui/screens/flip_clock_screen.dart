@@ -27,15 +27,15 @@ import 'package:timekeeping/timekeeping.dart';
 
 /// Pomodoro / Clock / Stopwatch as swipeable panels under one
 /// [GestureLayer]: tap toggles the chrome (the island at the top: mode
-/// tabs over the current mode's actions, Skins and Settings), a vertical
-/// drag changes brightness, a sideways swipe changes mode. The chrome
-/// shrinks to a dot after `controlsIdle`, then disappears. The island is
-/// the only control on the screen.
+/// tabs over the current mode's actions; Skins top-left, Settings
+/// top-right and, on phones, Rotation bottom-right, all in step with the
+/// island), a vertical drag changes brightness, a sideways swipe changes
+/// mode. The chrome shrinks to dots after `controlsIdle`, then disappears.
 ///
 /// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
 /// F full screen, Esc leave full screen or hide the chrome, Space
 /// start/pause, S seconds (Clock mode), L lap (Stopwatch), D dim the
-/// digits.
+/// digits, R screen rotation (phones).
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -51,6 +51,7 @@ class FlipClockScreen extends StatefulWidget {
     required this.onOpenSettings,
     required this.onOpenTimerSettings,
     this.doubleTapFullScreen,
+    this.orientationSupported = false,
   });
 
   final SettingsController settings;
@@ -66,6 +67,10 @@ class FlipClockScreen extends StatefulWidget {
 
   /// Opens Settings on the Timers category (the tray's tune icon).
   final VoidCallback onOpenTimerSettings;
+
+  /// Shows the Rotation corner button and the R key (phones and tablets:
+  /// `OrientationLock.supported`).
+  final bool orientationSupported;
 
   /// Double tap toggles full screen. Null: on desktop and web only, since a
   /// double tap recognizer delays every single tap.
@@ -242,6 +247,30 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     if (release) _chrome.releaseHud();
   }
 
+  /// Rotation cycles follow the device -> portrait -> landscape and says
+  /// which in the island. `init()` applies it through `OrientationLock`.
+  static const List<ClockOrientation> _rotations = [
+    ClockOrientation.auto,
+    ClockOrientation.portrait,
+    ClockOrientation.landscape,
+  ];
+
+  static String _rotationName(ClockOrientation o) => switch (o) {
+    ClockOrientation.auto => strings.clock.orientation_auto,
+    ClockOrientation.portrait => strings.clock.orientation_portrait,
+    ClockOrientation.landscape => strings.clock.orientation_landscape,
+  };
+
+  void _cycleRotation() {
+    final s = widget.settings.state;
+    final i = (_rotations.indexOf(s.orientation) + 1) % _rotations.length;
+    final next = _rotations[i];
+    unawaited(widget.settings.update(s.copyWith(orientation: next)));
+    _chrome
+      ..showHud(IslandTitleHud(_rotationName(next), i, _rotations.length))
+      ..releaseHud();
+  }
+
   void _toggleSeconds() {
     final s = widget.settings.state;
     unawaited(widget.settings.update(s.copyWith(showSeconds: !s.showSeconds)));
@@ -296,6 +325,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       unawaited(_brighten(-BrightnessControl.keyStep, release: true));
     } else if (key == LogicalKeyboardKey.keyD) {
       _dim();
+    } else if (key == LogicalKeyboardKey.keyR && widget.orientationSupported) {
+      _cycleRotation();
     } else {
       return KeyEventResult.ignored;
     }
@@ -336,18 +367,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                       ? c.times_up
                       : null,
                   actions: _tray(mode, settings, countdown, stopwatch),
-                  trailing: [
-                    IslandAction(
-                      label: c.action_skins,
-                      icon: Icons.palette_outlined,
-                      onPressed: _openSkins,
-                    ),
-                    IslandAction(
-                      label: c.action_settings,
-                      icon: Icons.settings_outlined,
-                      onPressed: widget.onOpenSettings,
-                    ),
-                  ],
                 );
               },
             ),
@@ -599,12 +618,56 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(child: content),
+                  // Between the corner buttons, never under them.
                   Positioned(
-                    left: inset,
-                    right: inset,
+                    left: inset + DesignSize.cornerButton + DesignSpace.s2,
+                    right: inset + DesignSize.cornerButton + DesignSpace.s2,
                     top: inset,
                     child: Center(child: _island(settings, chrome, hud)),
                   ),
+                  // Corner chrome, in step with the island. A tap on one is
+                  // its own (it sits above the gesture layer).
+                  Positioned(
+                    left: inset,
+                    top: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.palette_outlined,
+                      tooltip: c.action_skins,
+                      onPressed: _openSkins,
+                      corner: Alignment.topLeft,
+                    ),
+                  ),
+                  Positioned(
+                    right: inset,
+                    top: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.settings_outlined,
+                      tooltip: c.action_settings,
+                      onPressed: widget.onOpenSettings,
+                      corner: Alignment.topRight,
+                    ),
+                  ),
+                  if (widget.orientationSupported)
+                    Positioned(
+                      right: inset,
+                      bottom: inset,
+                      child: CornerButton(
+                        state: chrome,
+                        icon: switch (settings.orientation) {
+                          ClockOrientation.auto =>
+                            Icons.screen_rotation_outlined,
+                          ClockOrientation.portrait =>
+                            Icons.stay_current_portrait_outlined,
+                          ClockOrientation.landscape =>
+                            Icons.stay_current_landscape_outlined,
+                        },
+                        tooltip: c.action_rotation,
+                        onPressed: _cycleRotation,
+                        corner: Alignment.bottomRight,
+                      ),
+                    ),
                   // Under the island.
                   if (_note)
                     Positioned(

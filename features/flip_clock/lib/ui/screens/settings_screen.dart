@@ -439,6 +439,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (c.key_show_seconds, c.keycap_s),
               (c.key_dim, c.keycap_d),
               (c.key_lap, c.keycap_l),
+              if (widget.orientationSupported) (c.key_rotation, c.keycap_r),
               (c.key_full_screen, c.keycap_f),
               (c.key_hide_controls, c.keycap_esc),
             ])
