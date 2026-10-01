@@ -345,7 +345,6 @@ void main() {
     expect(ds.DesignMotion.dotIdle, const Duration(seconds: 3));
     expect(ds.DesignMotion.hudHold, const Duration(milliseconds: 1200));
     expect(ds.DesignMotion.islandSpring.stiffness, 320);
-    expect(ds.DesignRadius.md, 14);
     expect(ds.DesignSpace.s6, 24);
   });
 

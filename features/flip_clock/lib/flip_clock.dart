@@ -83,3 +83,7 @@ ValueListenable<AppearanceMode> appearance() =>
 /// The face the whole app is set in, following the selected skin (null keeps
 /// Geist), for `DesignSystemWrapper(face:)`. Valid after [init].
 ValueListenable<DisplayFace?> appFace() => di.get<SettingsController>().face;
+
+/// The corner radius every shape in the app follows, for
+/// `DesignSystemWrapper(corner:)`. Valid after [init].
+ValueListenable<double> appCorner() => di.get<SettingsController>().corner;

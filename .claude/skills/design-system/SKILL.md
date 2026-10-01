@@ -26,8 +26,11 @@ compose it; they do not restyle it. Package details and gotchas are in
 
 - Spacing comes from `DesignSpace` (`space-*`: 4, 8, 12, 16, 24, 32, 48).
   Prefer `DesignSpace.s4` for phone screen padding.
-- Corner radius comes from `DesignRadius` (`radius-*`: 6, 10, 14, 22, pill);
-  4 stays for stock buttons and the nav indicator (set in the theme).
+- Corner radius comes from `DesignShape.of(context)`: one user-chosen
+  corner (default 14) with the roles `xs` / `sm` / `md` / `lg` (6, 10, 14,
+  22 at the default) and `forHeight(h)` for short elements. No circles,
+  no stadiums, no `BorderRadius.circular(` outside `design_shape.dart`;
+  `features/flip_clock/test/corner_rule_test.dart` fails on them.
 - Chrome sizes and timings come from `DesignSize` and `DesignMotion`; the
   exact values live in the design system's `tokens.json`. Never invent one.
 - When the same spacing or size literal repeats across three or more files,

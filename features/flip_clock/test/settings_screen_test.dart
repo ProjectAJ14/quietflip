@@ -114,10 +114,33 @@ void main() {
       await tap(tester, label);
       expect(settings.state.cardSize, size);
     }
-    await tester.drag(find.byType(Slider), const Offset(-2000, 0));
+    await tester.drag(find.byType(Slider).first, const Offset(-2000, 0));
     await tester.pumpAndSettle();
     expect(settings.state.digitBrightness, ClockSettings.minBrightness);
     expect(find.text(c.percent('20')), findsOne);
+    // Corners: a live sample over a slider from Square to Round.
+    await tester.ensureVisible(find.byType(Slider).last);
+    await tester.pumpAndSettle();
+    expect(find.text(c.settings_corners), findsWidgets);
+    expect(find.text(c.corners_square), findsOne);
+    expect(find.text(c.corners_round), findsOne);
+    expect(find.text(c.corners_value('14')), findsOne);
+    expect(find.text('12'), findsWidgets);
+    // The sample is look only: its button is drawn enabled and does nothing.
+    final sample = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, c.action_start),
+    );
+    final before = settings.state;
+    sample.onPressed!();
+    expect(settings.state, before);
+    await tester.drag(find.byType(Slider).last, const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+    expect(settings.state.corner, DesignShape.minCorner);
+    expect(find.text(c.corners_value('0')), findsOne);
+    await tester.drag(find.byType(Slider).last, const Offset(2000, 0));
+    await tester.pumpAndSettle();
+    expect(settings.state.corner, DesignShape.maxCorner);
+    expect(settings.corner.value, DesignShape.maxCorner);
 
     // Clock.
     await tap(tester, c.settings_clock);

@@ -1,3 +1,4 @@
+import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -176,13 +177,20 @@ class Island extends StatefulWidget {
     final expanded = _expanded;
     final visible = _visible;
     final reduceMotion = _reduceMotion(context);
-    // Two rows are too tall for a stadium: its round ends would clip the
-    // outer tabs and actions.
-    final radius = expanded && _hasTray ? DesignRadius.lg : DesignRadius.pill;
+    final shape = DesignShape.of(context);
+    // Two rows take the large role; anything shorter is capped at half its
+    // height, so the dot stays a dot.
+    final radius = shape.forHeight(
+      _height,
+      role: expanded && _hasTray ? shape.lg : shape.md,
+    );
 
     final Widget content = switch (hud) {
-      IslandBrightnessHud() => _hud(hud.label, _brightness(hud, colors, text)),
-      IslandTitleHud() => _hud(hud.title, _title(hud, colors, text)),
+      IslandBrightnessHud() => _hud(
+        hud.label,
+        _brightness(hud, colors, shape, text),
+      ),
+      IslandTitleHud() => _hud(hud.title, _title(hud, colors, shape, text)),
       null when expanded => _expandedContent(context, colors, text),
       null => const SizedBox.square(
         key: ValueKey(ChromeState.dot),
@@ -250,22 +258,32 @@ class Island extends StatefulWidget {
                 ? DesignMotion.islandCollapse
                 : DesignMotion.fade,
             curve: fadeAfter ? DesignMotion.collapseFade : Curves.linear,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.island,
-                borderRadius: BorderRadius.circular(radius),
-                boxShadow: colors.islandElevation.shadows,
-              ),
-              child: CustomPaint(
-                foregroundPainter: _EdgeHighlight(
-                  radius,
-                  colors.islandElevation.highlight,
+            // The corner follows the size: tweened on a curve that never
+            // overshoots, so it cannot snap ahead of the shrinking shape.
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: radius),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : DesignMotion.islandCollapse,
+              curve: DesignMotion.collapseCurve,
+              builder: (context, radius, pill) => DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.island,
+                  borderRadius: DesignShape.circular(radius),
+                  boxShadow: colors.islandElevation.shadows,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
-                  child: pill,
+                child: CustomPaint(
+                  foregroundPainter: _EdgeHighlight(
+                    radius,
+                    colors.islandElevation.highlight,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: DesignShape.circular(radius),
+                    child: pill,
+                  ),
                 ),
               ),
+              child: pill,
             ),
           ),
         ),
@@ -289,6 +307,7 @@ class Island extends StatefulWidget {
   Widget _brightness(
     IslandBrightnessHud hud,
     DesignColors colors,
+    DesignShape shape,
     TextTheme text,
   ) => Row(
     mainAxisSize: MainAxisSize.min,
@@ -300,7 +319,7 @@ class Island extends StatefulWidget {
         color: colors.islandInk,
       ),
       ClipRRect(
-        borderRadius: BorderRadius.circular(DesignRadius.pill),
+        borderRadius: DesignShape.circular(shape.forHeight(hudBarHeight)),
         child: SizedBox(
           width: hudBarWidth,
           height: hudBarHeight,
@@ -322,7 +341,12 @@ class Island extends StatefulWidget {
     ],
   );
 
-  Widget _title(IslandTitleHud hud, DesignColors colors, TextTheme text) => Row(
+  Widget _title(
+    IslandTitleHud hud,
+    DesignColors colors,
+    DesignShape shape,
+    TextTheme text,
+  ) => Row(
     mainAxisSize: MainAxisSize.min,
     spacing: DesignSpace.s2,
     children: [
@@ -337,7 +361,7 @@ class Island extends StatefulWidget {
           for (var i = 0; i < hud.count; i++)
             DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: DesignShape.circular(shape.forHeight(hudDot)),
                 color: i == hud.index
                     ? colors.islandInk
                     : colors.islandInkMuted,
@@ -370,7 +394,7 @@ class Island extends StatefulWidget {
             children: [
               SizedBox(
                 height: DesignSize.cornerButton,
-                child: _tabBar(colors, text),
+                child: _tabBar(colors, DesignShape.of(context), text),
               ),
               if (_hasTray)
                 SizedBox(
@@ -409,7 +433,7 @@ class Island extends StatefulWidget {
         if ((i == 0 && status != null) ||
             (i > 0 && (actions[i - 1].icon == null) != (a.icon == null)))
           groupBreak,
-        _action(a, colors, text),
+        _action(a, colors, DesignShape.of(context), text),
       ],
       if (trailing.isNotEmpty && (actions.isNotEmpty || status != null))
         SizedBox(
@@ -418,7 +442,8 @@ class Island extends StatefulWidget {
           // The island is dark in both themes, so its rule is the dark one.
           child: ColoredBox(color: DesignColors.dark.hairline),
         ),
-      for (final a in trailing) _action(a, colors, text),
+      for (final a in trailing)
+        _action(a, colors, DesignShape.of(context), text),
     ];
     return AnimatedSwitcher(
       duration: DesignMotion.fade,
@@ -439,7 +464,13 @@ class Island extends StatefulWidget {
     );
   }
 
-  Widget _action(IslandAction a, DesignColors colors, TextTheme text) {
+  Widget _action(
+    IslandAction a,
+    DesignColors colors,
+    DesignShape shape,
+    TextTheme text,
+  ) {
+    final item = shape.forHeight(DesignSize.cornerButton);
     final enabled = a.onPressed != null;
     final ink = a.primary
         ? colors.islandOnActive
@@ -479,7 +510,7 @@ class Island extends StatefulWidget {
         onTap: a.onPressed,
         child: InkWell(
           onTap: a.onPressed,
-          customBorder: const StadiumBorder(),
+          customBorder: DesignShape.rounded(item),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: a.primary
@@ -488,7 +519,7 @@ class Island extends StatefulWidget {
                   // The island is dark in both themes: the dark chip fill.
                   ? DesignColors.dark.controlOff
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(DesignRadius.pill),
+              borderRadius: DesignShape.circular(item),
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
@@ -503,7 +534,7 @@ class Island extends StatefulWidget {
     );
   }
 
-  Widget _tabBar(DesignColors colors, TextTheme text) {
+  Widget _tabBar(DesignColors colors, DesignShape shape, TextTheme text) {
     return Center(
       widthFactor: 1,
       child: FittedBox(
@@ -516,7 +547,8 @@ class Island extends StatefulWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: DesignSpace.islandItemGap,
             children: [
-              for (var i = 0; i < tabs.length; i++) _tab(i, colors, text),
+              for (var i = 0; i < tabs.length; i++)
+                _tab(i, colors, shape, text),
             ],
           ),
         ),
@@ -524,7 +556,8 @@ class Island extends StatefulWidget {
     );
   }
 
-  Widget _tab(int i, DesignColors colors, TextTheme text) {
+  Widget _tab(int i, DesignColors colors, DesignShape shape, TextTheme text) {
+    final item = shape.forHeight(DesignSize.cornerButton);
     final isSelected = i == selected;
     return Semantics(
       container: true,
@@ -536,11 +569,11 @@ class Island extends StatefulWidget {
       onTap: () => onSelect(i),
       child: InkWell(
         onTap: () => onSelect(i),
-        customBorder: const StadiumBorder(),
+        customBorder: DesignShape.rounded(item),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: isSelected ? colors.islandActive : Colors.transparent,
-            borderRadius: BorderRadius.circular(DesignRadius.pill),
+            borderRadius: DesignShape.circular(item),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(
@@ -609,7 +642,7 @@ class _EdgeHighlight extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     canvas.drawRRect(
-      RRect.fromRectAndRadius(rect.deflate(0.5), Radius.circular(radius)),
+      RRect.fromRectAndRadius(rect.deflate(0.5), DesignShape.radius(radius)),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1

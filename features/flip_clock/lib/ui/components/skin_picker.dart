@@ -214,6 +214,9 @@ class SkinTile extends StatelessWidget {
   /// Height of the tile's preview.
   static const double faceHeight = 118;
 
+  /// The selected tile's check badge.
+  static const double checkSize = 22;
+
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
@@ -231,7 +234,7 @@ class SkinTile extends StatelessWidget {
       label: skin.name,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(DesignRadius.md),
+        borderRadius: DesignShape.circular(DesignShape.of(context).md),
         child: ExcludeSemantics(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,7 +247,9 @@ class SkinTile extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: skin.groundColor,
-                  borderRadius: BorderRadius.circular(DesignRadius.md),
+                  borderRadius: DesignShape.circular(
+                    DesignShape.of(context).md,
+                  ),
                   boxShadow: selected
                       ? [
                           BoxShadow(color: colors.surface, spreadRadius: 2),
@@ -265,13 +270,20 @@ class SkinTile extends StatelessWidget {
                     if (selected)
                       Align(
                         alignment: Alignment.topRight,
-                        child: CircleAvatar(
-                          radius: 11,
-                          backgroundColor: colors.accent,
-                          child: Icon(
-                            Icons.check_rounded,
-                            size: 16,
-                            color: colors.onAccent,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: colors.accent,
+                            borderRadius: DesignShape.circular(
+                              DesignShape.of(context).forHeight(checkSize),
+                            ),
+                          ),
+                          child: SizedBox.square(
+                            dimension: checkSize,
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: colors.onAccent,
+                            ),
                           ),
                         ),
                       ),
@@ -326,7 +338,7 @@ class _NewTile extends StatelessWidget {
       label: strings.clock.skins_new,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(DesignRadius.md),
+        borderRadius: DesignShape.circular(DesignShape.of(context).md),
         child: ExcludeSemantics(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,7 +346,9 @@ class _NewTile extends StatelessWidget {
               Container(
                 height: SkinTile.faceHeight,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(DesignRadius.md),
+                  borderRadius: DesignShape.circular(
+                    DesignShape.of(context).md,
+                  ),
                   border: Border.all(color: colors.hairline, width: 1.5),
                 ),
                 child: Column(
@@ -356,7 +370,7 @@ class _NewTile extends StatelessWidget {
   }
 }
 
-/// Opens [child] as a sheet on `surface`, rounded `radius-lg` on top with a
+/// Opens [child] as a sheet on `surface`, rounded `DesignShape.lg` on top with a
 /// hairline edge, 90% of the screen tall.
 Future<T?> showSheet<T>(BuildContext context, Widget child) {
   final colors = DesignColors.of(context);
@@ -371,8 +385,8 @@ Future<T?> showSheet<T>(BuildContext context, Widget child) {
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       side: BorderSide(color: colors.hairline),
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(DesignRadius.lg),
+      borderRadius: BorderRadius.vertical(
+        top: DesignShape.radius(DesignShape.of(context).lg),
       ),
     ),
     builder: (context) => FractionallySizedBox(heightFactor: 0.9, child: child),

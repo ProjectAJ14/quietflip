@@ -6,6 +6,7 @@ import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
+import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/timer_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -160,6 +161,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               divisions: 8,
               valueLabel: c.percent(_percent(s.digitBrightness)),
               onChanged: (v) => _update(s.copyWith(digitBrightness: v)),
+            ),
+          ],
+        ),
+        SettingsGroup(
+          header: c.settings_corners,
+          rows: [
+            _CornerSample(skin: widget.settings.skin),
+            SettingsSliderRow(
+              label: c.settings_corners,
+              value: s.corner,
+              min: DesignShape.minCorner,
+              max: DesignShape.maxCorner,
+              divisions:
+                  (DesignShape.maxCorner - DesignShape.minCorner) ~/
+                  ClockSettings.cornerStep,
+              valueLabel: c.corners_value('${s.corner.round()}'),
+              minLabel: c.corners_square,
+              maxLabel: c.corners_round,
+              onChanged: (v) => _update(s.copyWith(corner: v)),
             ),
           ],
         ),
@@ -453,6 +473,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 /// A row of skin thumbnails that scrolls sideways; tapping one applies it.
+/// A button, a chip and a mini flip card in the app's current corner, so
+/// the Corners slider shows its effect as it moves. Look only: not
+/// tappable, not announced.
+class _CornerSample extends StatelessWidget {
+  const _CornerSample({required this.skin});
+
+  final Skin skin;
+
+  /// Size of the mini flip card.
+  static const double card = 48;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignSpace.s4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: DesignSpace.s4,
+          children: [
+            FilledButton(
+              onPressed: () {},
+              child: Text(strings.clock.action_start),
+            ),
+            Chip(label: Text(presetLabel(const Duration(minutes: 5)))),
+            SizedBox.square(
+              dimension: card,
+              child: FlipDisplay(
+                cards: const ['12'],
+                skin: skin,
+                semanticsLabel: '',
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _SkinStrip extends StatelessWidget {
   const _SkinStrip({
     required this.skins,

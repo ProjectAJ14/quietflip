@@ -17,8 +17,9 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
+| `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -28,7 +29,8 @@ lib/
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
   data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, TimerPreset,
                                            ClockOrientation, CardSize
-  data/models/skin.dart                    Skin (face, digit/card/ground colour, seam, radius,
+  data/models/skin.dart                    Skin (face, digit/card/ground colour, seam (no radius:
+                                           corners are global; an old `cardRadius` key is ignored),
                                            seconds off (default)/badge/cards, AM/PM
                                            hidden/left/right, date, `themed`); JSON with ARGB
                                            ints, per-field fallback, no id -> dropped; WCAG
@@ -77,7 +79,9 @@ lib/
                                            first 5 SkinTiles, yours first, the selected one
                                            always in it, tap applies; View all -> Skins sheet;
                                            theme Dark/Light/Match system, card size, digit
-                                           brightness) /
+                                           brightness; Corners: a live sample of a button,
+                                           a chip and a mini flip card over a 0..24 slider,
+                                           Square .. Round) /
                                            Clock (24h, seconds, date, orientation) / Gestures
                                            (swipes, tap, hide-after) / Timers (Default timer: segmented
                                            Pomodoro + presets; Presets: a row each with delete,
@@ -127,7 +131,8 @@ lib/
 - `FlipDisplay` is one card per entry (a pair of digits): card height fills
   the box, digits are 0.78 x height and not text-scaled, width 1.0 x height
   (1.3 x for a monospaced face), `space-6` between cards, the 2px seam at
-  half height in the ground colour, `radius-md` becoming `radius-lg` once
+  half height in the ground colour, the app's corner (`DesignShape` `md`,
+  capped at half the card) becoming `lg` once
   digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
   ease-in, then bottom half ease-out. It honours
   `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
@@ -146,7 +151,7 @@ lib/
   Selecting a skin applies its preset: Show seconds on unless the skin's
   seconds are `off` (Mono), and the user can toggle it after. The date line shows when Show date is on or the skin
   asks for it. AM/PM placement is the skin's.
-- Sheets (`showSheet`) use `surface`, `radius-lg` top corners and a
+- Sheets (`showSheet`) use `surface`, `DesignShape.lg` top corners and a
   hairline, full width (Material's 640px cap is lifted). Skin tiles are at
   least 196px wide.
 - Subtle movement (burn-in) always wraps the panels and moves only while

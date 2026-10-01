@@ -92,6 +92,29 @@ void main() {
     expect(body().fontFamily, startsWith('Orbitron'));
   });
 
+  testWidgets('the whole app follows the one corner setting', (tester) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const Text('Test destination')),
+      ],
+    );
+    addTearDown(router.dispose);
+    final appearance = ValueNotifier(AppearanceMode.black);
+    final corner = ValueNotifier<double>(14);
+    addTearDown(appearance.dispose);
+    addTearDown(corner.dispose);
+    await tester.pumpWidget(
+      App(router: router, appearance: appearance, corner: corner),
+    );
+    await tester.pumpAndSettle();
+    DesignShape shape() =>
+        DesignShape.of(tester.element(find.text('Test destination')));
+    expect(shape().corner, 14);
+    corner.value = 0;
+    await tester.pumpAndSettle();
+    expect(shape().corner, 0);
+  });
+
   testWidgets('real routes boot without Firebase; the clock is home', (
     tester,
   ) async {

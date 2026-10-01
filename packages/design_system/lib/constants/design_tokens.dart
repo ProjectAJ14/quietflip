@@ -241,15 +241,6 @@ abstract final class DesignSpace {
   static const double islandItemPadding = s4;
 }
 
-/// Corner radii (`radius-*`).
-abstract final class DesignRadius {
-  static const double xs = 6;
-  static const double sm = 10;
-  static const double md = 14;
-  static const double lg = 22;
-  static const double pill = 999;
-}
-
 /// Fixed chrome sizes (`size-*`).
 abstract final class DesignSize {
   /// Island collapsed to a single dot.

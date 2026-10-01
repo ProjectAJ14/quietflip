@@ -112,6 +112,8 @@ List<ds.SettingsCategory> _everything({
             max: 1,
             divisions: 10,
             valueLabel: '50%',
+            minLabel: 'Dim',
+            maxLabel: 'Bright',
             onChanged: onSlide ?? (_) {},
           ),
           const ds.SettingsKeyRow(label: _long, keycap: 'Space'),
@@ -457,6 +459,13 @@ void main() {
     await tester.drag(find.byType(Slider), const Offset(200, 0));
     expect(slides, isNotEmpty);
     expect(tester.getSemantics(find.byType(Slider)).label, 'Brightness');
+    // Stop labels sit under the two ends of the track.
+    final track = tester.getRect(find.byType(Slider));
+    expect(tester.getRect(find.text('Dim')).top, greaterThan(track.center.dy));
+    expect(
+      tester.getRect(find.text('Bright')).right,
+      greaterThan(tester.getRect(find.text('Dim')).right),
+    );
 
     expect(find.text('Space'), findsOneWidget);
     handle.dispose();

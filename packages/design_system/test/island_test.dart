@@ -15,6 +15,7 @@ Future<void> _pump(
   double textScale = 1,
   bool disableAnimations = false,
   bool settle = true,
+  double corner = ds.DesignShape.defaultCorner,
 }) async {
   tester.view.physicalSize = Size(width, 800);
   tester.view.devicePixelRatio = 1;
@@ -22,6 +23,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     ds.DesignSystemWrapper(
       mode: mode,
+      corner: corner,
       builder: (_, theme) => MaterialApp(
         theme: theme,
         builder: (context, app) => MediaQuery(
@@ -321,29 +323,6 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets(
-        'two rows round to radius-lg so no corner clips; one is a pill',
-        (tester) async {
-          BorderRadiusGeometry? radius() =>
-              (tester
-                          .widget<DecoratedBox>(
-                            find
-                                .descendant(
-                                  of: find.byType(ds.Island),
-                                  matching: find.byType(DecoratedBox),
-                                )
-                                .first,
-                          )
-                          .decoration
-                      as BoxDecoration)
-                  .borderRadius;
-          await _pump(tester, mode, _island(actions: _actions()));
-          expect(radius(), BorderRadius.circular(ds.DesignRadius.lg));
-          await _pump(tester, mode, _island());
-          expect(radius(), BorderRadius.circular(ds.DesignRadius.pill));
-        },
-      );
-
       testWidgets('trailing alone has no rule; no tray keeps the tab height', (
         tester,
       ) async {
@@ -634,6 +613,67 @@ void main() {
       );
     });
   }
+
+  group('corners follow the one app corner', () {
+    double islandRadius(WidgetTester tester) =>
+        ((tester
+                            .widget<DecoratedBox>(
+                              find
+                                  .descendant(
+                                    of: find.byType(ds.Island),
+                                    matching: find.byType(DecoratedBox),
+                                  )
+                                  .first,
+                            )
+                            .decoration
+                        as BoxDecoration)
+                    .borderRadius!
+                as BorderRadius)
+            .topLeft
+            .x;
+    double actionRadius(WidgetTester tester) =>
+        ((tester
+                            .widget<DecoratedBox>(
+                              find
+                                  .ancestor(
+                                    of: find.text('5m'),
+                                    matching: find.byType(DecoratedBox),
+                                  )
+                                  .first,
+                            )
+                            .decoration
+                        as BoxDecoration)
+                    .borderRadius!
+                as BorderRadius)
+            .topLeft
+            .x;
+
+    for (final corner in [0.0, 14.0, 24.0]) {
+      testWidgets('at $corner', (tester) async {
+        final shape = ds.DesignShape(corner);
+        await _pump(
+          tester,
+          ds.AppearanceMode.black,
+          _island(actions: _actions()),
+          corner: corner,
+        );
+        // Two rows take the large role; items inside are capped at half
+        // their height, so they never become more round than a pill.
+        expect(islandRadius(tester), shape.lg);
+        expect(actionRadius(tester), shape.forHeight(44));
+        await _pump(tester, ds.AppearanceMode.black, _island(), corner: corner);
+        expect(islandRadius(tester), shape.forHeight(60));
+        await _pump(
+          tester,
+          ds.AppearanceMode.black,
+          _island(state: ds.ChromeState.dot),
+          corner: corner,
+        );
+        // The dot stays a dot (or a square at 0).
+        expect(islandRadius(tester), corner == 0 ? 0 : 5);
+      });
+    }
+  });
 
   testWidgets('reduced motion drops the spring', (tester) async {
     await _pump(tester, ds.AppearanceMode.black, _island());

@@ -106,7 +106,7 @@ void main() {
     expect(digit.style!.fontSize, closeTo(628 * 0.78, 0.01));
   });
 
-  testWidgets('radius-md cards become radius-lg at digit-l sizes', (
+  testWidgets('md cards become lg at digit-l sizes, from the app corner', (
     tester,
   ) async {
     BorderRadius radiusAt(Size size) {
@@ -120,10 +120,10 @@ void main() {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(800, 400);
     await tester.pumpWidget(host(display(['22', '42'])));
-    expect(radiusAt(const Size(800, 400)).topLeft.x, DesignRadius.lg);
+    expect(radiusAt(const Size(800, 400)).topLeft.x, const DesignShape().lg);
     tester.view.physicalSize = const Size(300, 100);
     await tester.pumpWidget(host(display(['22', '42'])));
-    expect(radiusAt(const Size(300, 100)).topLeft.x, DesignRadius.md);
+    expect(radiusAt(const Size(300, 100)).topLeft.x, const DesignShape().md);
   });
 
   testWidgets('a monospaced face gets wider cards', (tester) async {

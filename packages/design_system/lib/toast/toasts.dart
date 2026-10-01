@@ -1,3 +1,4 @@
+import 'package:design_system/constants/design_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:toastification/toastification.dart';
@@ -15,7 +16,8 @@ class Toast {
           return ScaleTransition(scale: animation, child: child);
         },
         icon: Icon(Iconsax.notification),
-        borderRadius: BorderRadius.circular(12.0),
+        // No context here (raised from a push handler): the default corner.
+        borderRadius: DesignShape.circular(const DesignShape().sm),
         showProgressBar: true,
         dragToClose: true,
         applyBlurEffect: true,
@@ -37,7 +39,7 @@ class Toast {
       return ScaleTransition(scale: animation, child: child);
     },
     icon: Icon(Iconsax.warning_2),
-    borderRadius: BorderRadius.circular(12.0),
+    borderRadius: DesignShape.circular(DesignShape.of(context).sm),
     showProgressBar: true,
     dragToClose: true,
     applyBlurEffect: true,
@@ -59,7 +61,7 @@ class Toast {
       return ScaleTransition(scale: animation, child: child);
     },
     icon: Icon(Iconsax.tick_circle),
-    borderRadius: BorderRadius.circular(12.0),
+    borderRadius: DesignShape.circular(DesignShape.of(context).sm),
     showProgressBar: true,
     dragToClose: true,
     applyBlurEffect: true,
@@ -81,7 +83,7 @@ class Toast {
       return ScaleTransition(scale: animation, child: child);
     },
     icon: Icon(Iconsax.danger),
-    borderRadius: BorderRadius.circular(12.0),
+    borderRadius: DesignShape.circular(DesignShape.of(context).sm),
     showProgressBar: true,
     dragToClose: true,
     applyBlurEffect: true,

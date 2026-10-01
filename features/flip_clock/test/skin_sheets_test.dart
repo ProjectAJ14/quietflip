@@ -163,7 +163,6 @@ void main() {
     await tester.tap(find.text(c.customize_seconds_cards));
     await tester.tap(find.text(c.customize_meridiem_right));
     await tester.pump();
-    await tester.drag(find.byType(Slider), const Offset(-400, 0));
     await reveal(tester, find.text(c.show_date));
     await tester.tap(find.text(c.customize_seam));
     await tester.tap(find.text(c.show_date));
@@ -180,7 +179,6 @@ void main() {
     expect(saved.groundColor, DesignSkinColors.bgPaper);
     expect(saved.seconds, SkinSeconds.cards);
     expect(saved.meridiem, SkinMeridiem.right);
-    expect(saved.cardRadius, 0);
     expect(saved.seam, isFalse);
     expect(saved.showDate, isTrue);
     // It shows first, under Your skins.

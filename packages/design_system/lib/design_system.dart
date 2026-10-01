@@ -1,11 +1,13 @@
 import 'package:design_system/generated/theme.dart';
 import 'package:design_system/constants/design_fonts.dart';
+import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 export 'components/index.dart';
 export 'constants/design_fonts.dart';
+export 'constants/design_shape.dart';
 export 'constants/design_tokens.dart';
 export 'constants/navigation_icons.dart';
 export 'dialogs/index.dart';
@@ -18,12 +20,17 @@ export 'wrapper/wrappers.dart';
 class DesignSystem {
   final MaterialTheme theme;
 
+  /// Every component shape follows this one corner ([DesignShape]).
+  final DesignShape shape;
+
   DesignSystem(
     BuildContext context, {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
     DisplayFace? face,
-  }) : theme = buildTheme(
+    double corner = DesignShape.defaultCorner,
+  }) : shape = DesignShape(corner),
+       theme = buildTheme(
          context,
          bodyFont: bodyFont,
          displayFont: displayFont,
@@ -158,11 +165,46 @@ class DesignSystem {
   }
 
   ThemeData _baseTheme(ThemeData base, DesignColors colors) {
+    final control = DesignShape.rounded(shape.sm);
     return base.copyWith(
-      extensions: [colors],
+      extensions: [colors, shape],
+      // Every Material component takes its corner from [shape]. Switch and
+      // Slider thumbs cannot take one (see CLAUDE.md, exceptions).
+      cardTheme: CardThemeData(shape: DesignShape.rounded(shape.md)),
+      dialogTheme: DialogThemeData(shape: DesignShape.rounded(shape.lg)),
+      bottomSheetTheme: BottomSheetThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: DesignShape.radius(shape.lg),
+          ),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(shape: control),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: base.colorScheme.onSurface,
+          borderRadius: DesignShape.circular(shape.xs),
+        ),
+        textStyle: base.textTheme.bodySmall?.copyWith(
+          color: base.colorScheme.surface,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        shape: control,
+        behavior: SnackBarBehavior.floating,
+      ),
+      listTileTheme: ListTileThemeData(shape: control),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          shape: DesignShape.rounded(shape.forHeight(40, role: shape.sm)),
+        ),
+      ),
       inputDecorationTheme: base.inputDecorationTheme.copyWith(
         border: UnderlineInputBorder(
           borderSide: BorderSide(color: base.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.vertical(
+            top: DesignShape.radius(shape.xs),
+          ),
         ),
         hintStyle: base.textTheme.labelSmall?.copyWith(
           color: base.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -214,9 +256,7 @@ class DesignSystem {
           );
         }),
         indicatorColor: base.colorScheme.primary,
-        indicatorShape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-        ),
+        indicatorShape: DesignShape.rounded(shape.xs),
       ),
       // The selected segment is an accent pill with on-accent text.
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -225,11 +265,12 @@ class DesignSystem {
           selectedForegroundColor: base.colorScheme.onPrimary,
           foregroundColor: base.colorScheme.onSurface,
           side: BorderSide(color: base.colorScheme.outlineVariant),
+          shape: control,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: control,
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -241,12 +282,12 @@ class DesignSystem {
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: control,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: control,
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -258,7 +299,7 @@ class DesignSystem {
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: control,
           side: BorderSide(color: base.colorScheme.primary, width: 1.5),
         ),
       ),

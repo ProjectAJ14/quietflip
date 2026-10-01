@@ -22,13 +22,14 @@ dart pub add design_system
 
 ## Tokens and fonts
 
-- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- `DesignShape` (theme extension, `DesignShape.of(context)`): every corner in the app from one value, `DesignSystemWrapper(corner:)` (default 14, 0 is square). Roles `xs` / `sm` / `md` / `lg` keep the token ratios (6 / 10 / 14 / 22 at 14); `forHeight(h, role:)` caps a role at half the height, so nothing is rounder than a pill and the island dot stays a dot. `DesignShape.circular` / `radius` / `rounded` are the only way to build a radius; every Material component shape in the theme follows it. No circles or stadiums anywhere.
 - Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
 - Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.
 
 ## Chrome: the island
 
-`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) over an action tray, or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState`. It grows on the island spring (`DesignMotion.islandCurve`) and shrinks on `DesignMotion.collapseCurve` over `islandCollapse`, with no overshoot; hiding from a bigger shape shrinks to the dot first and fades only over the last 40% (`collapseFade`), and outgoing content scales down inside the shrinking pill. The tray takes `actions` and `trailing` (after a hairline) as `IslandAction(label:, icon:, onPressed:, primary:)`: an icon button, a filled primary, or a text chip when `icon` is null; an optional `status` line is announced. It scrolls sideways rather than overflow. The island is dark in every theme, takes all its text as parameters, and only cross-fades when the platform asks for reduced motion.
+`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) over an action tray, or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState`. It grows on the island spring (`DesignMotion.islandCurve`) and shrinks on `DesignMotion.collapseCurve` over `islandCollapse`, with no overshoot; hiding from a bigger shape shrinks to the dot first and fades only over the last 40% (`collapseFade`), and outgoing content scales down inside the shrinking pill. Its corner is `DesignShape.lg` with a tray, else `forHeight` of its height, tweened with the size. The tray takes `actions` and `trailing` (after a hairline) as `IslandAction(label:, icon:, onPressed:, primary:)`: an icon button, a filled primary, or a text chip when `icon` is null; an optional `status` line is announced. It scrolls sideways rather than overflow. The island is dark in every theme, takes all its text as parameters, and only cross-fades when the platform asks for reduced motion.
 
 | Island token | Value | Use |
 |---|---|---|

@@ -643,6 +643,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get card_size_small => "Small";
   String get card_size_medium => "Medium";
   String get card_size_large => "Large";
+  String get settings_corners => "Corners";
+  String get corners_square => "Square";
+  String get corners_round => "Round";
+  String corners_value(String value) => "$value px";
   String get pomodoro => "Pomodoro";
   String pomodoro_focus(int round) => "Focus · Round $round";
   String pomodoro_break(int round) => "Break · Round $round";
@@ -672,7 +676,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get customize_apply => "Apply";
   String get customize_low_contrast => "Digits may be hard to read.";
   String get customize_shape => "Shape";
-  String get customize_radius => "Corner radius";
   String get customize_seam => "Split line";
   String get customize_details => "Details";
   String get customize_seconds => "Seconds";
@@ -879,6 +882,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return card_size_medium;
       case 'card_size_large':
         return card_size_large;
+      case 'settings_corners':
+        return settings_corners;
+      case 'corners_square':
+        return corners_square;
+      case 'corners_round':
+        return corners_round;
+      case 'corners_value':
+        return corners_value;
       case 'pomodoro':
         return pomodoro;
       case 'pomodoro_focus':
@@ -937,8 +948,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return customize_low_contrast;
       case 'customize_shape':
         return customize_shape;
-      case 'customize_radius':
-        return customize_radius;
       case 'customize_seam':
         return customize_seam;
       case 'customize_details':

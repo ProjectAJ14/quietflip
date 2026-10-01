@@ -275,16 +275,6 @@ class _Controls extends StatelessWidget {
           onChanged: (v) => onChanged((d) => d.copyWith(groundColor: v)),
         ),
         SectionHeader(c.customize_shape),
-        Text(c.customize_radius),
-        Slider(
-          value: draft.cardRadius,
-          min: Skin.minRadius,
-          max: Skin.maxRadius,
-          divisions: 32,
-          label: '${draft.cardRadius.round()}',
-          semanticFormatterCallback: (v) => '${v.round()}',
-          onChanged: (v) => onChanged((d) => d.copyWith(cardRadius: v)),
-        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(c.customize_seam),
@@ -369,7 +359,7 @@ class _FaceTile extends StatelessWidget {
       label: face.family,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(DesignRadius.xs),
+        borderRadius: DesignShape.circular(DesignShape.of(context).xs),
         child: ExcludeSemantics(
           child: Container(
             width: 56,
@@ -378,7 +368,7 @@ class _FaceTile extends StatelessWidget {
             decoration: _ring(
               colors,
               selected: selected,
-              radius: DesignRadius.xs,
+              radius: DesignShape.of(context).xs,
             ),
             child: Text(
               '17',
@@ -400,7 +390,7 @@ BoxDecoration _ring(
   Color? fill,
 }) => BoxDecoration(
   color: fill ?? colors.surfaceRaised,
-  borderRadius: BorderRadius.circular(radius),
+  borderRadius: DesignShape.circular(radius),
   boxShadow: selected
       ? [
           BoxShadow(color: colors.surface, spreadRadius: 2),
@@ -443,9 +433,11 @@ class _Swatches extends StatelessWidget {
       selected: selected,
       label: label,
       // 28px visible, 44px to hit.
-      child: InkResponse(
+      child: InkWell(
         onTap: onTap,
-        radius: DesignSize.cornerButton / 2,
+        customBorder: DesignShape.rounded(
+          DesignShape.of(context).forHeight(DesignSize.cornerButton),
+        ),
         child: SizedBox.square(
           dimension: DesignSize.cornerButton,
           child: Center(
@@ -455,7 +447,7 @@ class _Swatches extends StatelessWidget {
               decoration: _ring(
                 tokens,
                 selected: selected,
-                radius: DesignRadius.pill,
+                radius: DesignShape.of(context).forHeight(28),
                 fill: fill,
               ),
               child: child,
@@ -582,11 +574,7 @@ class _Footer extends StatelessWidget {
                 onPressed: onDelete,
                 child: Text(c.customize_delete),
               ),
-            FilledButton(
-              style: FilledButton.styleFrom(shape: const StadiumBorder()),
-              onPressed: onSave,
-              child: Text(c.customize_save),
-            ),
+            FilledButton(onPressed: onSave, child: Text(c.customize_save)),
           ],
         ),
       ),

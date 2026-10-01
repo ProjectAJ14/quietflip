@@ -117,11 +117,12 @@ class _FlipDisplayState extends State<FlipDisplay> {
                 .style(color: soft, fontSize: height * FlipDisplay.badgeScale)
                 .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
             final pad = height * FlipDisplay.cornerScale;
-            // radius-md cards become radius-lg once digits reach digit-l.
+            // The app's corner: md cards become lg once digits reach digit-l.
             final large = height * FlipDisplay.digitScale >= 160;
-            final radius = math.min(
-              height / 2,
-              skin.cardRadius * (large ? DesignRadius.lg / DesignRadius.md : 1),
+            final shape = DesignShape.of(context);
+            final radius = shape.forHeight(
+              height,
+              role: large ? shape.lg : shape.md,
             );
             return Center(
               // Only an AM/PM beside the cards can exceed the width.
@@ -357,7 +358,7 @@ class _Half extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final r = Radius.circular(radius);
+    final r = DesignShape.radius(radius);
     return Container(
       width: width,
       height: height,
