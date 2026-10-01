@@ -50,7 +50,14 @@ Everything is saved at once and restored on launch.
   presets (delete any, Add timer in minutes and seconds, up to six), and the
   Pomodoro lengths (25 min focus, 5 min break). The island's tune icon opens
   Settings right here; Done returns to the clock.
-- **Sound & alerts:** flip sound, alert sound, system notifications.
+- **Sound & alerts:** two groups of five tiles, each with its own moving
+  wave. Tick (the sound on every card flip): Classic, Split-flap,
+  Clockwork, Woodblock, Digital. Alarm (loops until dismissed, at most
+  60 s): Chime, Bell, Beeps, Rising, Ring. Tapping a tile picks it, turns
+  that sound on if it was off, and previews it: a tick three times a second
+  apart, an alarm for two loops, with its wave moving in time. Each group
+  has its on/off switch (tiles dim while off); System notifications sits
+  under the alarms.
 - **Keep awake:** keep the screen awake; subtle movement (full screen
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a
   jump with reduced motion; it lowers, but does not prevent, burn-in risk).

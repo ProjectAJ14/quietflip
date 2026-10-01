@@ -3,14 +3,18 @@ import 'dart:async';
 import 'package:core/core.dart' as core;
 import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
+import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
+import 'package:flip_clock/ui/components/sound_wave.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
@@ -19,10 +23,12 @@ import 'fakes.dart';
 
 void main() {
   late FakeAlerts alerts;
+  late FakeSound sound;
   late SettingsController settings;
   setUp(() async {
     await core.init();
     alerts = FakeAlerts();
+    sound = FakeSound();
     settings = SettingsController(
       repository: SettingsRepositoryImp(
         store: FakeStore(),
@@ -63,6 +69,7 @@ void main() {
           theme: theme,
           home: SettingsScreen(
             settings: settings,
+            sound: sound,
             isWeb: isWeb,
             orientationSupported: orientation,
             desktop: desktop,
@@ -182,8 +189,8 @@ void main() {
     // Sound & alerts.
     await tap(tester, c.settings_sound);
     expect(find.text(c.web_closed_tab_note), findsOne);
-    await tap(tester, c.flip_sound);
-    await tap(tester, c.alert_sound);
+    await tap(tester, c.tick_sound);
+    await tap(tester, c.alarm_sound);
     expect(settings.state.flipSound, isTrue);
     expect(settings.state.alertSound, isFalse);
     alerts.grant = false;
@@ -241,7 +248,11 @@ void main() {
           mode: mode,
           builder: (context, theme) => MaterialApp(
             theme: theme,
-            home: SettingsScreen(settings: settings, desktop: true),
+            home: SettingsScreen(
+              settings: settings,
+              sound: sound,
+              desktop: true,
+            ),
           ),
         ),
       ),
@@ -503,6 +514,210 @@ void main() {
       expect(tiles.first.skin.id, 'orbit');
       expect(tiles.first.selected, isTrue);
       expect(tiles, hasLength(SettingsScreen.skinStrip));
+      await close(tester);
+    });
+  });
+
+  group('Sound & alerts', () {
+    final c = strings.clock;
+
+    Future<void> openSound(
+      WidgetTester tester, {
+      Size size = const Size(1280, 900),
+      double textScale = 1,
+    }) async {
+      await open(tester, size: size, textScale: textScale, desktop: false);
+      await tap(tester, c.settings_sound);
+    }
+
+    /// Taps a tile without settling, so fake time stays where the test is.
+    Future<void> pick(WidgetTester tester, String name) async {
+      await tester.ensureVisible(find.text(name));
+      await tester.pump();
+      await tester.tap(find.text(name));
+      await tester.pump();
+    }
+
+    Future<void> wait(WidgetTester tester, int ms) =>
+        tester.pump(Duration(milliseconds: ms));
+
+    testWidgets('two rows of five tiles, Classic and Chime selected', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await openSound(tester);
+      for (final name in [c.tick_classic, c.tick_digital, c.alarm_ring]) {
+        expect(find.text(name), findsOne);
+      }
+      expect(find.byType(SoundWave), findsNWidgets(10));
+      expect(find.text(c.sound_tick_hint), findsOne);
+      expect(find.text(c.sound_alarm_hint), findsOne);
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel(
+            '${c.tick_woodblock}, ${c.tick_woodblock_mood}',
+          ),
+        ),
+        isSemantics(isInMutuallyExclusiveGroup: true, hasCheckedState: true),
+      );
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('${c.tick_classic}, ${c.tick_classic_mood}'),
+        ),
+        isSemantics(
+          isInMutuallyExclusiveGroup: true,
+          hasCheckedState: true,
+          isChecked: true,
+        ),
+      );
+      handle.dispose();
+      await close(tester);
+    });
+
+    testWidgets('tap selects, saves, turns the tick on and ticks 3 times', (
+      tester,
+    ) async {
+      await openSound(tester);
+      expect(settings.state.flipSound, isFalse);
+      await pick(tester, c.tick_woodblock);
+      expect(settings.state.tickSound, TickSound.woodblock);
+      expect(settings.state.flipSound, isTrue, reason: 'picking turns it on');
+      expect(sound.ticks, [TickSound.woodblock]);
+      final wave = find.byWidgetPredicate(
+        (w) => w is SoundWave && w.playing != null,
+      );
+      expect(wave, findsOne, reason: 'its wave moves');
+      await wait(tester, 999);
+      expect(sound.ticks, hasLength(1));
+      await wait(tester, 1);
+      expect(sound.ticks, hasLength(2));
+      await wait(tester, 1000);
+      expect(sound.ticks, [for (var i = 0; i < 3; i++) TickSound.woodblock]);
+      await wait(tester, 1500);
+      expect(sound.ticks, hasLength(3), reason: 'three ticks only');
+      expect(wave, findsNothing, reason: 'back to rest');
+      expect(sound.stops, 0);
+      await close(tester);
+    });
+
+    testWidgets('an alarm preview plays two loops, then stops', (tester) async {
+      await openSound(tester);
+      await pick(tester, c.alarm_beeps);
+      expect(settings.state.alarmSound, AlarmSound.beeps);
+      expect(sound.played, [AlarmSound.beeps]);
+      await wait(tester, 2190);
+      expect(sound.stops, 0);
+      await wait(tester, 20);
+      expect(sound.stops, 1, reason: '2 x 1.1 s');
+      await close(tester);
+      expect(sound.stops, 1, reason: 'leaving does not stop it twice');
+    });
+
+    testWidgets('a second tap cancels the first preview', (tester) async {
+      await openSound(tester);
+      await pick(tester, c.alarm_bell);
+      await wait(tester, 500);
+      await pick(tester, c.tick_clockwork);
+      expect(sound.stops, 1, reason: 'the bell preview stops');
+      await pick(tester, c.tick_digital);
+      await wait(tester, 5000);
+      expect(sound.played, [AlarmSound.bell]);
+      expect(sound.stops, 1, reason: 'the bell timer was cancelled');
+      expect(sound.ticks, [
+        TickSound.clockwork,
+        for (var i = 0; i < 3; i++) TickSound.digital,
+      ]);
+      await close(tester);
+    });
+
+    testWidgets('leaving cancels the preview, stopping only its own alarm', (
+      tester,
+    ) async {
+      await openSound(tester);
+      await pick(tester, c.tick_split_flap);
+      await tester.pumpWidget(const SizedBox());
+      await wait(tester, 5000);
+      expect(sound.ticks, [TickSound.splitFlap], reason: 'no more ticks');
+      expect(sound.stops, 0, reason: 'a real alarm keeps ringing');
+      unawaited(settings.close());
+
+      sound = FakeSound();
+      settings = SettingsController(
+        repository: SettingsRepositoryImp(
+          store: FakeStore(),
+          logger: di.get<Logger>(),
+        ),
+        alerts: alerts,
+      );
+      await openSound(tester);
+      await pick(tester, c.alarm_rising);
+      await wait(tester, 1000);
+      await close(tester);
+      expect(sound.stops, 1, reason: 'its own alarm stops');
+    });
+
+    testWidgets('tiles dim while their switch is off; a tap turns it on', (
+      tester,
+    ) async {
+      await settings.update(const ClockSettings(alertSound: false));
+      await openSound(tester);
+      double opacityOver(String name) => tester
+          .widget<Opacity>(
+            find.ancestor(of: find.text(name), matching: find.byType(Opacity)),
+          )
+          .opacity;
+      expect(opacityOver(c.tick_classic), 0.45, reason: 'tick is off');
+      expect(opacityOver(c.alarm_chime), 0.45);
+      await pick(tester, c.alarm_chime);
+      expect(settings.state.alertSound, isTrue);
+      expect(settings.state.flipSound, isFalse, reason: 'only its own kind');
+      expect(opacityOver(c.alarm_chime), 1);
+      await tester.tap(find.text(c.tick_sound));
+      await tester.pump();
+      expect(settings.state.flipSound, isTrue);
+      await close(tester);
+    });
+
+    for (final (width, rows) in [(900.0, 1), (360.0, 2)]) {
+      testWidgets('${width}px wide: tiles in $rows row(s)', (tester) async {
+        await openSound(tester, size: Size(width, 900));
+        final tops = {
+          for (final tick in TickSound.values)
+            tester
+                .getTopLeft(
+                  // The five tick waves come first.
+                  find.byType(SoundWave).at(tick.index),
+                )
+                .dy,
+        };
+        expect(tops, hasLength(rows));
+        await close(tester);
+      });
+    }
+
+    for (final width in [360.0, 1280.0]) {
+      testWidgets('text scale 2 at ${width}px never clips', (tester) async {
+        await openSound(tester, size: Size(width, 900), textScale: 2);
+        expect(tester.takeException(), isNull);
+        final name = tester.renderObject<RenderParagraph>(
+          find.text(c.tick_split_flap),
+        );
+        expect(name.didExceedMaxLines, isFalse, reason: 'two lines at most');
+        await close(tester);
+      });
+    }
+
+    testWidgets('Enter on a focused tile selects and previews it', (
+      tester,
+    ) async {
+      await openSound(tester);
+      // The tile's InkWell owns the nearest focus node.
+      Focus.of(tester.element(find.text(c.tick_digital))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(settings.state.tickSound, TickSound.digital);
+      expect(sound.ticks, [TickSound.digital]);
       await close(tester);
     });
   });

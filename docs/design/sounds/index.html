@@ -1,0 +1,252 @@
+<title>Quietflip Sound Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the app's Settings > Sound & alerts detail pane, Mono Dark first. Two groups of five sound tiles, each tile a live wave. */
+:root {
+  --bg: #000000; --surface: #0e0e0f; --raised: #1c1c1e; --ink: #ffffff;
+  --muted: #a1a1a1; --subtle: #7c7c7c; --hairline: #2c2c2e; --accent: #ffffff;
+  --on-accent: #000000; --off: #39393d;
+  --ui: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --corner: 14px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f2f2f4; --surface: #ffffff; --raised: #ffffff; --ink: #0a0a0a;
+  --muted: #525252; --subtle: #6b6b6b; --hairline: #d1d1d6; --accent: #0a0a0a;
+  --on-accent: #ffffff; --off: #d1d1d6; color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #f2f2f4; --surface: #ffffff; --raised: #ffffff; --ink: #0a0a0a;
+  --muted: #525252; --subtle: #6b6b6b; --hairline: #d1d1d6; --accent: #0a0a0a;
+  --on-accent: #ffffff; --off: #d1d1d6; color-scheme: light }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--ui); font-size: 15px; }
+.page { max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; display: grid; gap: 28px; }
+header h1 { font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+header p { color: var(--muted); margin: 6px 0 0; max-width: 60ch; line-height: 1.5; }
+
+.group { display: grid; gap: 8px; }
+.group-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.group-head h2 { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.group-head span { font-family: var(--mono); font-size: 12px; color: var(--subtle); }
+.card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--corner); overflow: hidden; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.row + .row, .row + .tiles, .tiles + .row { border-top: 1px solid var(--hairline); }
+.row label { display: grid; gap: 2px; cursor: pointer; }
+.row small { color: var(--muted); font-size: 13px; }
+
+.switch { appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--off); position: relative; cursor: pointer; transition: background .18s; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: var(--surface); transition: transform .18s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(20px); }
+.switch:focus-visible, .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding: 14px; transition: opacity .18s; }
+.tiles.dim { opacity: .45; }
+@media (max-width: 560px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tile { all: unset; box-sizing: border-box; display: grid; gap: 8px; cursor: pointer; min-width: 0; }
+.wave { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: calc(var(--corner) * 0.71); background: var(--raised); border: 1px solid var(--hairline); overflow: hidden; transition: border-color .18s, box-shadow .18s; }
+.tile[aria-checked="true"] .wave { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.wave canvas { width: 100%; height: 100%; display: block; }
+.check { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 6px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 12px; opacity: 0; transition: opacity .18s; }
+.tile[aria-checked="true"] .check { opacity: 1; }
+.cap { display: grid; gap: 1px; padding: 0 2px; min-width: 0; }
+.cap b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap i { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+.tile.playing .cap i { color: var(--ink); }
+footer { color: var(--subtle); font-size: 13px; line-height: 1.5; padding: 0 4px; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Sound &amp; alerts</h1>
+    <p>Design mockup. Tap a tile to pick that sound and hear it: ticks play three times, one second apart, the way the clock ticks; alarms play two loops. Every wave moves the way its sound does.</p>
+  </header>
+
+  <section class="group" aria-labelledby="tick-h">
+    <div class="group-head"><h2 id="tick-h">Tick</h2><span>plays on every flip</span></div>
+    <div class="card">
+      <div class="row"><label for="tick-on">Tick sound<small>A soft sound each time a card flips</small></label><input id="tick-on" class="switch" type="checkbox" checked></div>
+      <div class="tiles" id="ticks" role="radiogroup" aria-label="Tick sound"></div>
+    </div>
+  </section>
+
+  <section class="group" aria-labelledby="alarm-h">
+    <div class="group-head"><h2 id="alarm-h">Alarm</h2><span>loops until dismissed, 60 s max</span></div>
+    <div class="card">
+      <div class="row"><label for="alarm-on">Alarm sound<small>Plays when a timer or Pomodoro phase ends</small></label><input id="alarm-on" class="switch" type="checkbox" checked></div>
+      <div class="tiles" id="alarms" role="radiogroup" aria-label="Alarm sound"></div>
+      <div class="row"><label for="notify">System notifications<small>Alert even when the app is in the background</small></label><input id="notify" class="switch" type="checkbox"></div>
+    </div>
+  </section>
+
+  <footer>The in-app alert always plays, even with notifications off. Classic and Chime are today's sounds; the other eight are synthesised for Quietflip, so they carry no licence.</footer>
+</div>
+
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const gauss = (x, w) => Math.exp(-(x * x) / (2 * w * w));
+// t: seconds since this play started, e: 0..1 energy (0.25 at rest).
+const shapes = {
+  // One sharp spike in the middle that rings down.
+  spike(c, w, h, t, e) { line(c, w, h, x => e * 0.8 * Math.sin((x - 0.5) * 60 - t * 30) * gauss(x - 0.5, 0.08)); },
+  // Two bursts, the second smaller: tick-tock of an escapement.
+  double(c, w, h, t, e) { line(c, w, h, x => e * (0.8 * Math.sin(x * 120 - t * 40) * gauss(x - 0.38, 0.04) + 0.5 * Math.sin(x * 90 - t * 40) * gauss(x - 0.62, 0.04))); },
+  // Bars that flip one after another, like flaps.
+  flaps(c, w, h, t, e) {
+    const n = 11, bw = w / (n * 1.8);
+    for (let i = 0; i < n; i++) {
+      const k = Math.abs(Math.cos(t * 9 - i * 0.55));
+      const bh = h * (0.12 + e * 0.6 * k * gauss(i / (n - 1) - 0.5, 0.3));
+      c.fillRect(w * 0.1 + i * (w * 0.8 / (n - 1)) - bw / 2, (h - bh) / 2, bw, bh);
+    }
+  },
+  // Rings spreading from the centre: a knock or a strike.
+  rings(c, w, h, t, e, o) {
+    const n = o.count || 3, base = Math.min(w, h) * 0.08;
+    for (let i = 0; i < n; i++) {
+      const p = ((t * (o.speed || 0.8)) + i / n) % 1;
+      c.globalAlpha = Math.max(0, (1 - p) * Math.min(1, e * 1.6));
+      c.beginPath(); c.arc(w / 2, h / 2, base + p * Math.min(w, h) * 0.42, 0, Math.PI * 2); c.stroke();
+    }
+    c.globalAlpha = 1;
+    c.beginPath(); c.arc(w / 2, h / 2, base * (0.6 + e * 0.6), 0, Math.PI * 2); c.fill();
+  },
+  // A square wave; beeps pulse it in groups of four.
+  steps(c, w, h, t, e, o) {
+    const g = o.groups ? (Math.floor((t % 1.1) / 0.15) < 4 && (t % 0.15) < 0.08 ? 1 : 0.2) : 1;
+    const a = e * g * 0.35, cycles = o.cycles || 5;
+    c.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const x = i / 200, s = Math.sign(Math.sin((x * cycles - t * (o.speed || 2)) * Math.PI * 2)) || 1;
+      const y = h / 2 - s * a * h * gauss(x - 0.5, 0.28);
+      i ? c.lineTo(x * w, y) : c.moveTo(x * w, y);
+    }
+    c.stroke();
+  },
+  // Two tones, one after the other.
+  twin(c, w, h, t, e) {
+    const sw = Math.sin(t * Math.PI * 2) * 0.5 + 0.5;
+    line(c, w, h, x => e * 0.35 * (0.4 + 0.6 * sw) * Math.sin(x * 14 - t * 6));
+    c.globalAlpha = 0.5;
+    line(c, w, h, x => e * 0.3 * (1 - 0.6 * sw) * Math.sin(x * 20 - t * 8 + 1));
+    c.globalAlpha = 1;
+  },
+  // A staircase that lights up note by note.
+  rise(c, w, h, t, e) {
+    const n = 4, step = Math.floor((t % 1.6) / 0.15), bw = w * 0.12;
+    for (let i = 0; i < n; i++) {
+      const lit = step >= i && step < 8 ? 1 : 0.3;
+      c.globalAlpha = 0.25 + 0.75 * lit * Math.min(1, e * 1.4);
+      const bh = h * (0.18 + i * 0.13);
+      c.fillRect(w * 0.2 + i * (w * 0.6 / (n - 1)) - bw / 2, h * 0.78 - bh, bw, bh);
+    }
+    c.globalAlpha = 1;
+  },
+  // A dense wave that shakes: a hammer between two bells.
+  ring(c, w, h, t, e) {
+    const on = (t % 1.6) < 1.2 ? 1 : 0.25;
+    const jx = reduce ? 0 : Math.sin(t * 138) * 2 * e * on;
+    c.save(); c.translate(jx, 0);
+    line(c, w, h, x => e * on * 0.4 * Math.sin(x * 70 + t * 20) * (0.6 + 0.4 * Math.sin(t * 138)) * gauss(x - 0.5, 0.3));
+    c.restore();
+  },
+};
+function line(c, w, h, f) {
+  c.beginPath();
+  for (let i = 0; i <= 160; i++) { const x = i / 160, y = h / 2 - f(x) * h; i ? c.lineTo(x * w, y) : c.moveTo(x * w, y); }
+  c.stroke();
+}
+
+const ticks = [
+  { id: 'classic', name: 'Classic', mood: 'soft click', file: '../../../packages/device_services/assets/sounds/flip.wav', shape: 'spike', decay: 0.25 },
+  { id: 'split_flap', name: 'Split-flap', mood: 'flaps patter', file: '../../../packages/device_services/assets/sounds/tick_split_flap.wav', shape: 'flaps', decay: 0.35 },
+  { id: 'clockwork', name: 'Clockwork', mood: 'watch tick', file: '../../../packages/device_services/assets/sounds/tick_clockwork.wav', shape: 'double', decay: 0.2 },
+  { id: 'woodblock', name: 'Woodblock', mood: 'hollow knock', file: '../../../packages/device_services/assets/sounds/tick_woodblock.wav', shape: 'rings', o: { count: 2, speed: 2.5 }, decay: 0.4 },
+  { id: 'digital', name: 'Digital', mood: 'clean blip', file: '../../../packages/device_services/assets/sounds/tick_digital.wav', shape: 'steps', o: { cycles: 6, speed: 4 }, decay: 0.2 },
+];
+const alarms = [
+  { id: 'chime', name: 'Chime', mood: 'two tones', file: '../../../packages/device_services/assets/sounds/alarm.wav', shape: 'twin', period: 1 },
+  { id: 'bell', name: 'Bell', mood: 'struck bell', file: '../../../packages/device_services/assets/sounds/alarm_bell.wav', shape: 'rings', o: { count: 4, speed: 0.5 }, period: 2 },
+  { id: 'beeps', name: 'Beeps', mood: 'bedside', file: '../../../packages/device_services/assets/sounds/alarm_beeps.wav', shape: 'steps', o: { groups: true, cycles: 7, speed: 3 }, period: 1.1 },
+  { id: 'rising', name: 'Rising', mood: 'marimba', file: '../../../packages/device_services/assets/sounds/alarm_rising.wav', shape: 'rise', period: 1.6 },
+  { id: 'ring', name: 'Ring', mood: 'twin bells', file: '../../../packages/device_services/assets/sounds/alarm_ring.wav', shape: 'ring', period: 1.6 },
+];
+
+let ctx, playing = null; const buffers = {};
+async function buffer(file) {
+  ctx ||= new AudioContext();
+  return buffers[file] ||= fetch(file).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b));
+}
+const tiles = [];
+function build(list, host, kind) {
+  list.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'tile'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === 0);
+    b.innerHTML = `<div class="wave"><canvas></canvas><div class="check" aria-hidden="true">✓</div></div><div class="cap"><b>${s.name}</b><i>${s.mood}</i></div>`;
+    b.setAttribute('aria-label', `${s.name}, ${s.mood}`);
+    host.append(b);
+    const t = { s, kind, b, canvas: b.querySelector('canvas'), start: 0, until: 0 };
+    tiles.push(t);
+    b.onclick = () => select(t, host);
+  });
+}
+async function select(t, host) {
+  host.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-checked', x === t.b));
+  const sw = document.getElementById(t.kind === 'tick' ? 'tick-on' : 'alarm-on');
+  if (!sw.checked) { sw.checked = true; sync(); }   // picking a sound turns it on
+  stop();
+  const buf = await buffer(t.s.file);
+  const now = ctx.currentTime, srcs = [];
+  if (t.kind === 'tick') {
+    for (let k = 0; k < 3; k++) { const n = ctx.createBufferSource(); n.buffer = buf; n.connect(ctx.destination); n.start(now + k); srcs.push(n); }
+    t.until = 3;
+  } else {
+    const n = ctx.createBufferSource(); n.buffer = buf; n.loop = true; n.connect(ctx.destination); n.start(now); n.stop(now + t.s.period * 2); srcs.push(n);
+    t.until = t.s.period * 2;
+  }
+  t.start = performance.now(); playing = { t, srcs };
+  t.b.classList.add('playing');
+}
+function stop() {
+  if (!playing) return;
+  playing.srcs.forEach(n => { try { n.stop(); } catch {} });
+  playing.t.b.classList.remove('playing'); playing = null;
+}
+function energy(t, secs) {
+  if (!playing || playing.t !== t || secs > t.until) return 0.25;
+  if (t.kind === 'tick') { const p = secs % 1; return 0.25 + 0.75 * Math.exp(-p / t.s.decay); }
+  return 1;
+}
+function sync() {
+  document.getElementById('ticks').classList.toggle('dim', !document.getElementById('tick-on').checked);
+  document.getElementById('alarms').classList.toggle('dim', !document.getElementById('alarm-on').checked);
+}
+document.getElementById('tick-on').onchange = sync;
+document.getElementById('alarm-on').onchange = sync;
+
+build(ticks, document.getElementById('ticks'), 'tick');
+build(alarms, document.getElementById('alarms'), 'alarm');
+
+function frame(ms) {
+  const css = getComputedStyle(document.documentElement);
+  const ink = css.getPropertyValue('--ink').trim(), dpr = devicePixelRatio || 1;
+  for (const t of tiles) {
+    const r = t.canvas.getBoundingClientRect();
+    if (t.canvas.width !== Math.round(r.width * dpr)) { t.canvas.width = Math.round(r.width * dpr); t.canvas.height = Math.round(r.height * dpr); }
+    const c = t.canvas.getContext('2d'), w = r.width, h = r.height;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    const active = playing && playing.t === t;
+    const secs = active ? (ms - t.start) / 1000 : 0;
+    if (active && secs > t.until + 0.4) stop();
+    const e = energy(t, secs);
+    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 1.6; c.lineJoin = 'round';
+    c.globalAlpha = 1;
+    // At rest (or with reduced motion) the wave holds a still pose.
+    shapes[t.s.shape](c, w, h, active && !reduce ? secs : 0.12, e, t.s.o || {});
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>

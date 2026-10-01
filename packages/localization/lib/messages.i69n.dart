@@ -610,8 +610,35 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get use_24h => "24-hour time";
   String get show_seconds => "Show seconds";
   String get sound_and_alerts => "Sound & alerts";
-  String get flip_sound => "Flip sound";
-  String get alert_sound => "Alert sound";
+  String get sound_tick_group => "Tick";
+  String get sound_tick_hint => "plays on every flip";
+  String get sound_alarm_group => "Alarm";
+  String get sound_alarm_hint => "loops until dismissed, 60 s max";
+  String get tick_sound => "Tick sound";
+  String get tick_sound_description => "A soft sound each time a card flips";
+  String get alarm_sound => "Alarm sound";
+  String get alarm_sound_description =>
+      "Plays when a timer or Pomodoro phase ends";
+  String get tick_classic => "Classic";
+  String get tick_classic_mood => "soft click";
+  String get tick_split_flap => "Split-flap";
+  String get tick_split_flap_mood => "flaps patter";
+  String get tick_clockwork => "Clockwork";
+  String get tick_clockwork_mood => "watch tick";
+  String get tick_woodblock => "Woodblock";
+  String get tick_woodblock_mood => "hollow knock";
+  String get tick_digital => "Digital";
+  String get tick_digital_mood => "clean blip";
+  String get alarm_chime => "Chime";
+  String get alarm_chime_mood => "two tones";
+  String get alarm_bell => "Bell";
+  String get alarm_bell_mood => "struck bell";
+  String get alarm_beeps => "Beeps";
+  String get alarm_beeps_mood => "bedside";
+  String get alarm_rising => "Rising";
+  String get alarm_rising_mood => "marimba";
+  String get alarm_ring => "Ring";
+  String get alarm_ring_mood => "twin bells";
   String get system_notifications => "System notifications";
   String get system_notifications_description =>
       "Get a notification when a timer finishes, even if QuietFlip is in the background.";
@@ -834,10 +861,62 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return show_seconds;
       case 'sound_and_alerts':
         return sound_and_alerts;
-      case 'flip_sound':
-        return flip_sound;
-      case 'alert_sound':
-        return alert_sound;
+      case 'sound_tick_group':
+        return sound_tick_group;
+      case 'sound_tick_hint':
+        return sound_tick_hint;
+      case 'sound_alarm_group':
+        return sound_alarm_group;
+      case 'sound_alarm_hint':
+        return sound_alarm_hint;
+      case 'tick_sound':
+        return tick_sound;
+      case 'tick_sound_description':
+        return tick_sound_description;
+      case 'alarm_sound':
+        return alarm_sound;
+      case 'alarm_sound_description':
+        return alarm_sound_description;
+      case 'tick_classic':
+        return tick_classic;
+      case 'tick_classic_mood':
+        return tick_classic_mood;
+      case 'tick_split_flap':
+        return tick_split_flap;
+      case 'tick_split_flap_mood':
+        return tick_split_flap_mood;
+      case 'tick_clockwork':
+        return tick_clockwork;
+      case 'tick_clockwork_mood':
+        return tick_clockwork_mood;
+      case 'tick_woodblock':
+        return tick_woodblock;
+      case 'tick_woodblock_mood':
+        return tick_woodblock_mood;
+      case 'tick_digital':
+        return tick_digital;
+      case 'tick_digital_mood':
+        return tick_digital_mood;
+      case 'alarm_chime':
+        return alarm_chime;
+      case 'alarm_chime_mood':
+        return alarm_chime_mood;
+      case 'alarm_bell':
+        return alarm_bell;
+      case 'alarm_bell_mood':
+        return alarm_bell_mood;
+      case 'alarm_beeps':
+        return alarm_beeps;
+      case 'alarm_beeps_mood':
+        return alarm_beeps_mood;
+      case 'alarm_rising':
+        return alarm_rising;
+      case 'alarm_rising_mood':
+        return alarm_rising_mood;
+      case 'alarm_ring':
+        return alarm_ring;
+      case 'alarm_ring_mood':
+        return alarm_ring_mood;
       case 'system_notifications':
         return system_notifications;
       case 'system_notifications_description':

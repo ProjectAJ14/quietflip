@@ -236,6 +236,14 @@ void main() {
     h.wall.advance(const Duration(minutes: 1));
     await tester.pump(const Duration(minutes: 1));
     expect(h.sound.flips, 1);
+    expect(h.sound.ticks, [TickSound.classic]);
+    await h.settings.update(
+      h.settings.state.copyWith(tickSound: TickSound.woodblock),
+    );
+    await tester.pump();
+    h.wall.advance(const Duration(minutes: 1));
+    await tester.pump(const Duration(minutes: 1));
+    expect(h.sound.ticks.last, TickSound.woodblock, reason: 'the pick plays');
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });

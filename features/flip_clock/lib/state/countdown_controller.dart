@@ -244,7 +244,7 @@ class CountdownController extends Cubit<CountdownState> {
     }
     final settings = _settings();
     if (settings.alertSound) {
-      await _sound.playAlarm();
+      await _sound.playAlarm(settings.alarmSound);
       if (done != null) {
         // A short chime, not the 60 s alarm, while the next phase runs.
         _chime?.cancel();

@@ -56,15 +56,19 @@ class FakeAlerts implements LocalAlerts {
 }
 
 class FakeSound implements SoundPlayer {
-  int flips = 0;
-  int alarms = 0;
+  /// Every tick and alarm played, in order.
+  final List<TickSound> ticks = [];
+  final List<AlarmSound> played = [];
   int stops = 0;
 
-  @override
-  Future<void> playFlip() async => flips++;
+  int get flips => ticks.length;
+  int get alarms => played.length;
 
   @override
-  Future<void> playAlarm() async => alarms++;
+  Future<void> playTick(TickSound sound) async => ticks.add(sound);
+
+  @override
+  Future<void> playAlarm(AlarmSound sound) async => played.add(sound);
 
   @override
   Future<void> stopAlarm() async => stops++;

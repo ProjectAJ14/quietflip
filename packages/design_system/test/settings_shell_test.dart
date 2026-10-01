@@ -52,6 +52,7 @@ ds.SettingsShell _shell({
           groups: [
             ds.SettingsGroup(
               header: 'Basics',
+              hint: 'kept as typed',
               rows: [
                 ds.SettingsValueRow(label: 'Version', value: '1.0'),
                 ds.SettingsKeyRow(label: 'Toggle', keycap: 'Space'),
@@ -86,6 +87,7 @@ List<ds.SettingsCategory> _everything({
     groups: [
       ds.SettingsGroup(
         header: _long,
+        hint: _long,
         footer: _long,
         rows: [
           ds.SettingsSwitchRow(
@@ -412,12 +414,22 @@ void main() {
     });
   }
 
-  testWidgets('groups: uppercase header, footer, hairline between rows', (
+  testWidgets('groups: uppercase header, hint, footer, hairline between rows', (
     tester,
   ) async {
     await _pump(tester, _shell(), width: 820);
     expect(find.text('BASICS'), findsOneWidget);
     expect(find.text('Basics'), findsNothing);
+    expect(
+      find.text('kept as typed'),
+      findsOneWidget,
+      reason: 'not uppercased',
+    );
+    expect(
+      tester.getTopLeft(find.text('kept as typed')).dx,
+      greaterThan(tester.getTopRight(find.text('BASICS')).dx),
+      reason: 'the hint sits at the end of the header line',
+    );
     expect(find.text('Shown under the group'), findsOneWidget);
     expect(find.byType(Divider), findsOneWidget);
     expect(find.text('Space'), findsOneWidget);

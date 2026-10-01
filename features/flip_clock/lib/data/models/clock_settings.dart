@@ -1,4 +1,5 @@
 import 'package:design_system/design_system.dart';
+import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flutter/foundation.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -64,6 +65,8 @@ class ClockSettings {
     this.showSeconds = false,
     this.flipSound = false,
     this.alertSound = true,
+    this.tickSound = TickSound.classic,
+    this.alarmSound = AlarmSound.chime,
     this.systemAlerts = false,
     this.keepAwake = false,
     this.lastMode = ClockMode.clock,
@@ -166,6 +169,8 @@ class ClockSettings {
       showSeconds: flag('showSeconds', d.showSeconds),
       flipSound: flag('flipSound', d.flipSound),
       alertSound: flag('alertSound', d.alertSound),
+      tickSound: pick(TickSound.values, 'tickSound', d.tickSound),
+      alarmSound: pick(AlarmSound.values, 'alarmSound', d.alarmSound),
       systemAlerts: flag('systemAlerts', d.systemAlerts),
       keepAwake: flag('keepAwake', d.keepAwake),
       // The Timer panel merged into Pomodoro.
@@ -219,6 +224,12 @@ class ClockSettings {
   final bool showSeconds;
   final bool flipSound;
   final bool alertSound;
+
+  /// The tick played on each flip while [flipSound] is on.
+  final TickSound tickSound;
+
+  /// The alarm played when a timer ends while [alertSound] is on.
+  final AlarmSound alarmSound;
   final bool systemAlerts;
   final bool keepAwake;
   final ClockMode lastMode;
@@ -275,6 +286,8 @@ class ClockSettings {
     'showSeconds': showSeconds,
     'flipSound': flipSound,
     'alertSound': alertSound,
+    'tickSound': tickSound.name,
+    'alarmSound': alarmSound.name,
     'systemAlerts': systemAlerts,
     'keepAwake': keepAwake,
     'lastMode': lastMode.name,
@@ -306,6 +319,8 @@ class ClockSettings {
     bool? showSeconds,
     bool? flipSound,
     bool? alertSound,
+    TickSound? tickSound,
+    AlarmSound? alarmSound,
     bool? systemAlerts,
     bool? keepAwake,
     ClockMode? lastMode,
@@ -333,6 +348,8 @@ class ClockSettings {
       showSeconds: showSeconds ?? this.showSeconds,
       flipSound: flipSound ?? this.flipSound,
       alertSound: alertSound ?? this.alertSound,
+      tickSound: tickSound ?? this.tickSound,
+      alarmSound: alarmSound ?? this.alarmSound,
       systemAlerts: systemAlerts ?? this.systemAlerts,
       keepAwake: keepAwake ?? this.keepAwake,
       lastMode: lastMode ?? this.lastMode,
@@ -361,6 +378,8 @@ class ClockSettings {
       other.showSeconds == showSeconds &&
       other.flipSound == flipSound &&
       other.alertSound == alertSound &&
+      other.tickSound == tickSound &&
+      other.alarmSound == alarmSound &&
       other.systemAlerts == systemAlerts &&
       other.keepAwake == keepAwake &&
       other.lastMode == lastMode &&
@@ -386,6 +405,8 @@ class ClockSettings {
     showSeconds,
     flipSound,
     alertSound,
+    tickSound,
+    alarmSound,
     systemAlerts,
     keepAwake,
     lastMode,

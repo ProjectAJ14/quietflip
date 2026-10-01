@@ -76,7 +76,7 @@ class Rig {
 
   Widget settingsScreen() => MaterialApp(
     theme: theme,
-    home: SettingsScreen(settings: settings, isWeb: true),
+    home: SettingsScreen(settings: settings, sound: sound, isWeb: true),
   );
 
   Future<void> dispose(WidgetTester tester) async {

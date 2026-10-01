@@ -2,7 +2,11 @@
 
 Platform adapters for QuietFlip behind small contracts: `FullScreenController`,
 `ScreenWake`, `OrientationLock`, `ScreenBrightness`, `LocalAlerts`, `SoundPlayer`, `KeyValueStore`. Call `init()` after
-`core.init()`. Bundled sounds live in `assets/sounds/`. See `CLAUDE.md`.
+`core.init()`. Bundled sounds live in `assets/sounds/`: five ticks (`TickSound`,
+played with `playTick`) and five looping alarms (`AlarmSound`, `playAlarm` /
+`stopAlarm`). Eight of them are synthesised by `tool/generate_sounds.dart`
+(`dart run tool/generate_sounds.dart` from the repository root); none are
+third-party. See `CLAUDE.md` for the table.
 
 ```dart
 await device_services.init(

@@ -19,7 +19,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped and snapped to a step on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, tick sound Classic and alarm sound Chime (`tickSound` / `alarmSound`: `device_services`' `TickSound` / `AlarmSound`, JSON by name, unknown -> default; `flipSound` / `alertSound` stay the on/off switches), system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped and snapped to a step on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -93,7 +93,10 @@ lib/
                                            Add timer -> TimerPicker, off at 6 with a footer;
                                            Pomodoro lengths read-only; `openTimers` starts
                                            here) /
-                                           Sound & alerts / Keep awake (+ full-screen note) /
+                                           Sound & alerts (Tick and Alarm groups:
+                                           switch, then five sound tiles with a live
+                                           SoundWave each; see Sound picker) /
+                                           Keep awake (+ full-screen note) /
                                            Shortcuts (keycaps) / About (licences, privacy); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
@@ -106,7 +109,7 @@ lib/
                                            Delete tooltips are spoken in full),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
                                            showSheet, SkinCustomizer (parseHex/hexOf),
-                                           SubtleMovement
+                                           SubtleMovement, SoundWave (sound_wave.dart)
 ```
 
 ## Rules
@@ -368,7 +371,42 @@ widget tester's clock):
   timers (ticker + end) and none after finishing; 3 h of the screen ticking
   keeps the element count flat and the wake lock on (released on dispose).
 
+- Sound picker (Settings > Sound & alerts): `SettingsScreen` takes the
+  `SoundPlayer` (the router passes `di.get<SoundPlayer>()`). Two
+  `SettingsGroup`s with a header hint: Tick (the `flipSound` switch, the
+  five ticks) and Alarm (the `alertSound` switch, the five alarms, System
+  notifications and its notes, the footer). Tiles: 5 across when each gets
+  80 px, else 3 (3 + 2 on a phone), `space-3` gaps and padding; a square
+  wave on `surfaceRaised`, `sm` corners, the skin tiles' ring and check
+  (`selectionRing` / `SelectionCheck` in `skin_picker.dart`); name
+  (bodyMedium 500) and mood word (labelSmall, `inkSubtle`, `ink` while
+  playing), two lines at most. A radio group per kind: each tile is
+  "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
+  saves the pick, turns its kind's switch on and previews it: ticks at 0,
+  1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
+  `stopAlarm`. One preview at a time: a new tap cancels its timers and
+  stops its alarm; leaving Settings does the same, and calls `stopAlarm`
+  only for an alarm the preview started and that is still looping. A
+  switch off dims its tiles to 45%; they stay tappable.
+- Sound waves: `SoundWave.tick(TickSound)` / `.alarm(AlarmSound)`, one
+  `CustomPainter` per sound, the motion ported from the `shapes` object in
+  `docs/design/sounds/index.html` (that page is the spec; change both
+  together). A designed motif timed to the sound, not an audio meter
+  (`audioplayers` has no amplitude stream). At rest (`playing` null) it
+  paints a still pose (0.12 s, energy 0.25) with no ticker running; a new
+  `playing` value starts one from 0: ticks pulse
+  `0.25 + 0.75 e^(-p / decay)` on ticks at 0, 1, 2 s, alarms hold 1 for two
+  loops, then 0.4 s at rest energy and the ticker stops. Reduced motion
+  (`reducedMotion`) keeps the still pose. Line 1.6 px, round joins, the
+  colour passed in; sized by its parent.
+
 ## Gotchas
+
+- An alarm preview shares the one alarm player with a real alarm: picking
+  an alarm while a finished timer rings replaces it and the preview stops
+  it after two loops. The finished tray still shows.
+- In the background the system notification plays the OS default sound,
+  not the picked alarm.
 
 - Customizer controls apply each edit to the current draft (a function of
   the draft), so two taps before a rebuild both stick.
