@@ -198,6 +198,38 @@ class SectionHeader extends StatelessWidget {
 /// shows it), the
 /// name and face below, always in one row. Selected: a 2px accent ring, a
 /// check badge, and a Customize button in place of the face name.
+/// A selectable tile's outline: a hairline, or when [selected] the accent
+/// ring with a gap. Skin tiles and sound tiles share it.
+List<BoxShadow> selectionRing(DesignColors colors, {required bool selected}) =>
+    selected
+    ? [
+        BoxShadow(color: colors.surface, spreadRadius: 2),
+        BoxShadow(color: colors.accent, spreadRadius: 4),
+      ]
+    : [BoxShadow(color: colors.hairline, spreadRadius: 1)];
+
+/// The selected tile's check badge (top right of its preview).
+class SelectionCheck extends StatelessWidget {
+  const SelectionCheck({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = DesignColors.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.accent,
+        borderRadius: DesignShape.circular(
+          DesignShape.of(context).forHeight(SkinTile.checkSize),
+        ),
+      ),
+      child: SizedBox.square(
+        dimension: SkinTile.checkSize,
+        child: Icon(Icons.check_rounded, size: 16, color: colors.onAccent),
+      ),
+    );
+  }
+}
+
 class SkinTile extends StatelessWidget {
   const SkinTile({
     super.key,
@@ -261,12 +293,7 @@ class SkinTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: skin.groundColor,
                 borderRadius: DesignShape.circular(DesignShape.of(context).md),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(color: colors.surface, spreadRadius: 2),
-                        BoxShadow(color: colors.accent, spreadRadius: 4),
-                      ]
-                    : [BoxShadow(color: colors.hairline, spreadRadius: 1)],
+                boxShadow: selectionRing(colors, selected: selected),
               ),
               child: Stack(
                 children: [
@@ -302,24 +329,9 @@ class SkinTile extends StatelessWidget {
                     ),
                   ),
                   if (selected)
-                    Align(
+                    const Align(
                       alignment: Alignment.topRight,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.accent,
-                          borderRadius: DesignShape.circular(
-                            DesignShape.of(context).forHeight(checkSize),
-                          ),
-                        ),
-                        child: SizedBox.square(
-                          dimension: checkSize,
-                          child: Icon(
-                            Icons.check_rounded,
-                            size: 16,
-                            color: colors.onAccent,
-                          ),
-                        ),
-                      ),
+                      child: SelectionCheck(),
                     ),
                 ],
               ),

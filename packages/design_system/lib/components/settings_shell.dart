@@ -25,10 +25,19 @@ class SettingsCategory {
 
 /// Rows drawn as one grouped inset cell, with an optional header and footer.
 class SettingsGroup {
-  const SettingsGroup({this.header, required this.rows, this.footer});
+  const SettingsGroup({
+    this.header,
+    this.hint,
+    required this.rows,
+    this.footer,
+  });
 
   /// Section label above the cell, shown uppercase.
   final String? header;
+
+  /// A muted note at the end of the header line, shown as given; it wraps
+  /// under the header when the line is too narrow. Needs a [header].
+  final String? hint;
 
   /// The rows, usually the `Settings*Row` widgets, separated by hairlines.
   final List<Widget> rows;
@@ -357,9 +366,21 @@ class _Group extends StatelessWidget {
               DesignSpace.s4,
               DesignSpace.s2,
             ),
-            child: Text(
-              header.toUpperCase(),
-              style: text.labelSmall?.copyWith(color: colors.inkSubtle),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: DesignSpace.s3,
+              children: [
+                Text(
+                  header.toUpperCase(),
+                  style: text.labelSmall?.copyWith(color: colors.inkSubtle),
+                ),
+                if (group.hint case final hint?)
+                  Text(
+                    hint,
+                    style: text.bodySmall?.copyWith(color: colors.inkSubtle),
+                  ),
+              ],
             ),
           ),
         Material(

@@ -47,6 +47,7 @@ class FlipClockRouter implements CoreRouter {
           path: 'settings',
           builder: (context, state) => SettingsScreen(
             settings: di.get<SettingsController>(),
+            sound: di.get<SoundPlayer>(),
             openTimers: state.uri.queryParameters['category'] == 'timers',
             now: () => di.get<ClockController>().state,
             orientationSupported: di.get<OrientationLock>().supported,

@@ -93,7 +93,10 @@ lib/
                                            Add timer -> TimerPicker, off at 6 with a footer;
                                            Pomodoro lengths read-only; `openTimers` starts
                                            here) /
-                                           Sound & alerts / Keep awake (+ full-screen note) /
+                                           Sound & alerts (Tick and Alarm groups:
+                                           switch, then five sound tiles with a live
+                                           SoundWave each; see Sound picker) /
+                                           Keep awake (+ full-screen note) /
                                            Shortcuts (keycaps) / About (licences, privacy); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
@@ -368,6 +371,23 @@ widget tester's clock):
   timers (ticker + end) and none after finishing; 3 h of the screen ticking
   keeps the element count flat and the wake lock on (released on dispose).
 
+- Sound picker (Settings > Sound & alerts): `SettingsScreen` takes the
+  `SoundPlayer` (the router passes `di.get<SoundPlayer>()`). Two
+  `SettingsGroup`s with a header hint: Tick (the `flipSound` switch, the
+  five ticks) and Alarm (the `alertSound` switch, the five alarms, System
+  notifications and its notes, the footer). Tiles: 5 across when each gets
+  80 px, else 3 (3 + 2 on a phone), `space-3` gaps and padding; a square
+  wave on `surfaceRaised`, `sm` corners, the skin tiles' ring and check
+  (`selectionRing` / `SelectionCheck` in `skin_picker.dart`); name
+  (bodyMedium 500) and mood word (labelSmall, `inkSubtle`, `ink` while
+  playing), two lines at most. A radio group per kind: each tile is
+  "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
+  saves the pick, turns its kind's switch on and previews it: ticks at 0,
+  1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
+  `stopAlarm`. One preview at a time: a new tap cancels its timers and
+  stops its alarm; leaving Settings does the same, and calls `stopAlarm`
+  only for an alarm the preview started and that is still looping. A
+  switch off dims its tiles to 45%; they stay tappable.
 - Sound waves: `SoundWave.tick(TickSound)` / `.alarm(AlarmSound)`, one
   `CustomPainter` per sound, the motion ported from the `shapes` object in
   `docs/design/sounds/index.html` (that page is the spec; change both
@@ -381,6 +401,12 @@ widget tester's clock):
   colour passed in; sized by its parent.
 
 ## Gotchas
+
+- An alarm preview shares the one alarm player with a real alarm: picking
+  an alarm while a finished timer rings replaces it and the preview stops
+  it after two loops. The finished tray still shows.
+- In the background the system notification plays the OS default sound,
+  not the picked alarm.
 
 - Customizer controls apply each edit to the current draft (a function of
   the draft), so two taps before a rebuild both stick.

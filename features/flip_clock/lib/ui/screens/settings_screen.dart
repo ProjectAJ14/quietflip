@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:design_system/design_system.dart';
+import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
@@ -8,9 +9,11 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
+import 'package:flip_clock/ui/components/sound_wave.dart';
 import 'package:flip_clock/ui/components/timer_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -22,6 +25,7 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.settings,
+    required this.sound,
     this.isWeb = kIsWeb,
     this.orientationSupported = false,
     this.desktop,
@@ -33,6 +37,9 @@ class SettingsScreen extends StatefulWidget {
   });
 
   final SettingsController settings;
+
+  /// Plays the previews in Sound & alerts.
+  final SoundPlayer sound;
 
   /// Shows the note that a closed browser tab cannot alert.
   final bool isWeb;
@@ -67,6 +74,80 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _denied = false;
+
+  // One sound preview at a time: the sound, when it started, its timers,
+  // and whether an alarm it started may still be looping.
+  Enum? _previewing;
+  DateTime? _previewSince;
+  final List<Timer> _previewTimers = [];
+  bool _previewAlarm = false;
+
+  @override
+  void dispose() {
+    _stopPreview();
+    super.dispose();
+  }
+
+  /// Cancels the preview. Stops the alarm only if the preview started it
+  /// and it is still running, so a real alarm behind Settings keeps ringing.
+  void _stopPreview() {
+    for (final timer in _previewTimers) {
+      timer.cancel();
+    }
+    _previewTimers.clear();
+    if (_previewAlarm) {
+      _previewAlarm = false;
+      unawaited(widget.sound.stopAlarm());
+    }
+  }
+
+  void _startPreview(Enum sound, Duration length) {
+    final tail = Duration(milliseconds: (SoundWave.tail * 1000).round());
+    _previewTimers.add(
+      Timer(length + tail, () {
+        if (mounted) setState(() => _previewing = _previewSince = null);
+      }),
+    );
+    setState(() {
+      _previewing = sound;
+      _previewSince = DateTime.now();
+    });
+  }
+
+  /// Selects [tick] (turning Tick sound on) and plays it three times, a
+  /// second apart, the way the clock ticks.
+  void _pickTick(ClockSettings s, TickSound tick) {
+    _update(s.copyWith(tickSound: tick, flipSound: true));
+    _stopPreview();
+    unawaited(widget.sound.playTick(tick));
+    for (final second in [1, 2]) {
+      _previewTimers.add(
+        Timer(
+          Duration(seconds: second),
+          () => unawaited(widget.sound.playTick(tick)),
+        ),
+      );
+    }
+    _startPreview(tick, SoundWave.tickPreview);
+  }
+
+  /// Selects [alarm] (turning Alarm sound on) and plays two loops of it.
+  void _pickAlarm(ClockSettings s, AlarmSound alarm) {
+    _update(s.copyWith(alarmSound: alarm, alertSound: true));
+    _stopPreview();
+    unawaited(widget.sound.playAlarm(alarm));
+    _previewAlarm = true;
+    final length = SoundWave.alarmPreview(alarm);
+    _previewTimers.add(
+      Timer(length, () {
+        _previewAlarm = false;
+        unawaited(widget.sound.stopAlarm());
+      }),
+    );
+    _startPreview(alarm, length);
+  }
+
+  DateTime? _since(Enum sound) => _previewing == sound ? _previewSince : null;
 
   void _update(ClockSettings next) => unawaited(widget.settings.update(next));
 
@@ -371,21 +452,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   SettingsCategory _sound(ClockSettings s) {
     final c = strings.clock;
+    final ink = DesignColors.of(context).ink;
     return SettingsCategory(
       icon: Icons.volume_up_outlined,
       label: c.settings_sound,
       groups: [
         SettingsGroup(
+          header: c.sound_tick_group,
+          hint: c.sound_tick_hint,
           rows: [
             SettingsSwitchRow(
-              label: c.flip_sound,
+              label: c.tick_sound,
+              subtitle: c.tick_sound_description,
               value: s.flipSound,
               onChanged: (v) => _update(s.copyWith(flipSound: v)),
             ),
+            _SoundTiles(
+              enabled: s.flipSound,
+              tiles: [
+                for (final tick in TickSound.values)
+                  _SoundTile(
+                    text: _tickText(tick),
+                    selected: tick == s.tickSound,
+                    playing: _previewing == tick,
+                    onTap: () => _pickTick(s, tick),
+                    wave: SoundWave.tick(
+                      tick,
+                      playing: _since(tick),
+                      color: ink,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+        SettingsGroup(
+          header: c.sound_alarm_group,
+          hint: c.sound_alarm_hint,
+          rows: [
             SettingsSwitchRow(
-              label: c.alert_sound,
+              label: c.alarm_sound,
+              subtitle: c.alarm_sound_description,
               value: s.alertSound,
               onChanged: (v) => _update(s.copyWith(alertSound: v)),
+            ),
+            _SoundTiles(
+              enabled: s.alertSound,
+              tiles: [
+                for (final alarm in AlarmSound.values)
+                  _SoundTile(
+                    text: _alarmText(alarm),
+                    selected: alarm == s.alarmSound,
+                    playing: _previewing == alarm,
+                    onTap: () => _pickAlarm(s, alarm),
+                    wave: SoundWave.alarm(
+                      alarm,
+                      playing: _since(alarm),
+                      color: ink,
+                    ),
+                  ),
+              ],
             ),
             SettingsSwitchRow(
               label: c.system_notifications,
@@ -400,6 +526,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  /// A tick's name and mood word.
+  static (String, String) _tickText(TickSound tick) {
+    final c = strings.clock;
+    return switch (tick) {
+      TickSound.classic => (c.tick_classic, c.tick_classic_mood),
+      TickSound.splitFlap => (c.tick_split_flap, c.tick_split_flap_mood),
+      TickSound.clockwork => (c.tick_clockwork, c.tick_clockwork_mood),
+      TickSound.woodblock => (c.tick_woodblock, c.tick_woodblock_mood),
+      TickSound.digital => (c.tick_digital, c.tick_digital_mood),
+    };
+  }
+
+  /// An alarm's name and mood word.
+  static (String, String) _alarmText(AlarmSound alarm) {
+    final c = strings.clock;
+    return switch (alarm) {
+      AlarmSound.chime => (c.alarm_chime, c.alarm_chime_mood),
+      AlarmSound.bell => (c.alarm_bell, c.alarm_bell_mood),
+      AlarmSound.beeps => (c.alarm_beeps, c.alarm_beeps_mood),
+      AlarmSound.rising => (c.alarm_rising, c.alarm_rising_mood),
+      AlarmSound.ring => (c.alarm_ring, c.alarm_ring_mood),
+    };
   }
 
   SettingsCategory _awake(ClockSettings s) {
@@ -560,4 +710,134 @@ class _SkinStrip extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// One kind's sound tiles: five across when each gets
+/// [_SoundTiles.minFiveWidth], else three (3 + 2 on a phone). Dimmed while
+/// the kind's switch is off, still tappable (a tap turns it back on).
+class _SoundTiles extends StatelessWidget {
+  const _SoundTiles({required this.enabled, required this.tiles});
+
+  final bool enabled;
+  final List<_SoundTile> tiles;
+
+  static const double minFiveWidth = 80;
+  static const double dimmed = 0.45;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(DesignSpace.s3),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        double width(int columns) =>
+            (constraints.maxWidth - (columns - 1) * DesignSpace.s3) / columns;
+        final tile = width(5) >= minFiveWidth ? width(5) : width(3);
+        return Opacity(
+          opacity: enabled ? 1 : dimmed,
+          child: Semantics(
+            role: SemanticsRole.radioGroup,
+            child: Wrap(
+              spacing: DesignSpace.s3,
+              runSpacing: DesignSpace.s3,
+              children: [
+                for (final t in tiles)
+                  SizedBox(width: tile.floorToDouble(), child: t),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+/// A square wave over the sound's name and mood word; a radio ("Woodblock,
+/// hollow knock") with the skin tiles' ring and check when selected.
+class _SoundTile extends StatelessWidget {
+  const _SoundTile({
+    required this.text,
+    required this.selected,
+    required this.playing,
+    required this.onTap,
+    required this.wave,
+  });
+
+  final (String, String) text;
+  final bool selected;
+  final bool playing;
+  final VoidCallback onTap;
+  final SoundWave wave;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = DesignColors.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final corner = DesignShape.circular(DesignShape.of(context).sm);
+    final (name, mood) = text;
+    return Semantics(
+      container: true,
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      label: '$name, $mood',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: corner,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surfaceRaised,
+                  borderRadius: corner,
+                  boxShadow: selectionRing(colors, selected: selected),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(borderRadius: corner, child: wave),
+                    ),
+                    if (selected)
+                      const Align(
+                        alignment: Alignment.topRight,
+                        child: Padding(
+                          padding: EdgeInsets.all(DesignSpace.s1),
+                          child: SelectionCheck(),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignSpace.s2),
+            ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.ink,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    mood,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: playing ? colors.ink : colors.inkSubtle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

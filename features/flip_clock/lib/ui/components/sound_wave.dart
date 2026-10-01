@@ -127,6 +127,13 @@ class SoundWave extends StatefulWidget {
   /// Keeps moving this long after the sound, at rest energy, then stops.
   static const double tail = 0.4;
 
+  /// A tick preview: three ticks, one second apart, each given its second.
+  static const Duration tickPreview = Duration(seconds: 3);
+
+  /// An alarm preview: two loops of [sound]'s file.
+  static Duration alarmPreview(AlarmSound sound) =>
+      Duration(milliseconds: (_alarms[sound]!.until * 1000).round());
+
   @override
   State<SoundWave> createState() => _SoundWaveState();
 }
