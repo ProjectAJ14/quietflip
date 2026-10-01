@@ -360,6 +360,7 @@ if keys are listed there.
 - **Gallery seconds follow the skin, not Show seconds** (changed after
   review, 2026-10-01). A tile shows seconds only when that skin is
   configured to (`cards` or `badge`), because selecting it applies that
-  preset; Show seconds does not turn them on in every preview. This
-  replaces item 10's "seconds show in the preview when they show on the
-  clock".
+  preset; Show seconds does not turn them on in every preview. The date
+  line works the same way: only skins that show the date draw it on their
+  tile. This replaces item 10's "seconds show in the preview when they
+  show on the clock" and its date rule.

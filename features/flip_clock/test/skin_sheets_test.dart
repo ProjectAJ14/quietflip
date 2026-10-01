@@ -435,7 +435,7 @@ void main() {
         t.data!,
     };
 
-    testWidgets('tiles show seconds only for skins that show them', (
+    testWidgets('tiles show seconds and date only for skins that show them', (
       tester,
     ) async {
       final date = DateTime(2026, 9, 30);
@@ -463,8 +463,14 @@ void main() {
         find.descendant(of: tile(badge.name), matching: find.text('00')),
         findsOne,
       );
-      // The Show seconds setting does not leak into previews: Mono has no
-      // seconds, so its tile stays HH MM. The date follows Show date.
+      // A skin with the date line shows it on its tile.
+      final dated = Skins.builtIn().firstWhere((k) => k.showDate);
+      expect(
+        find.descendant(of: tile(dated.name), matching: find.text(formatted)),
+        findsOne,
+      );
+      // Show seconds and Show date do not leak into previews: Mono has
+      // neither, so its tile stays HH MM with no date.
       await settings.update(
         settings.state.copyWith(showSeconds: true, showDate: true),
       );
@@ -473,6 +479,10 @@ void main() {
       expect(cardsOf(tester, cards.name), {'17', '14', '00'});
       expect(
         find.descendant(of: tile(mono), matching: find.text(formatted)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: tile(dated.name), matching: find.text(formatted)),
         findsOne,
       );
       expect(tester.takeException(), isNull);
@@ -491,13 +501,13 @@ void main() {
               child: SizedBox(
                 width: SkinPicker.minTileWidth,
                 child: SkinTile(
-                  skin: Skins.builtIn().firstWhere(
-                    (k) => k.seconds == SkinSeconds.cards,
-                  ),
+                  // Three groups and the date line: the fullest tile.
+                  skin: Skins.builtIn()
+                      .firstWhere((k) => k.seconds == SkinSeconds.cards)
+                      .copyWith(showDate: true),
                   selected: true,
                   now: now,
                   use24h: false,
-                  showDate: true,
                   onTap: () {},
                   onCustomize: () {},
                 ),

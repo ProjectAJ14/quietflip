@@ -20,7 +20,6 @@ class SkinPicker extends StatelessWidget {
     required this.selectedId,
     required this.now,
     required this.use24h,
-    required this.showDate,
     required this.onSelect,
     required this.onCustomize,
     required this.onNew,
@@ -34,8 +33,6 @@ class SkinPicker extends StatelessWidget {
   final DateTime now;
   final bool use24h;
 
-  /// The Show date setting, so tiles draw the date when the clock would.
-  final bool showDate;
   final ValueChanged<Skin> onSelect;
 
   /// Opens the customizer on the selected skin (its tile's Customize).
@@ -76,7 +73,6 @@ class SkinPicker extends StatelessWidget {
                   selected: skin.id == selectedId,
                   now: now,
                   use24h: use24h,
-                  showDate: showDate,
                   onTap: () => onSelect(skin),
                   onCustomize: onCustomize,
                 ),
@@ -198,8 +194,8 @@ class SectionHeader extends StatelessWidget {
 
 /// One skin: its own ground with mini cards at the current time, drawn as
 /// that skin is configured (seconds only when the skin shows them, in its
-/// style: what selecting it gives; the date above when [showDate] or the
-/// skin asks), the
+/// style: what selecting it gives; the date above only when the skin
+/// shows it), the
 /// name and face below, always in one row. Selected: a 2px accent ring, a
 /// check badge, and a Customize button in place of the face name.
 class SkinTile extends StatelessWidget {
@@ -210,7 +206,6 @@ class SkinTile extends StatelessWidget {
     required this.now,
     required this.use24h,
     required this.onTap,
-    this.showDate = false,
     this.onCustomize,
   });
 
@@ -218,7 +213,6 @@ class SkinTile extends StatelessWidget {
   final bool selected;
   final DateTime now;
   final bool use24h;
-  final bool showDate;
   final VoidCallback onTap;
 
   /// Opens the customizer on this skin; offered on the selected tile only.
@@ -243,7 +237,7 @@ class SkinTile extends StatelessWidget {
       skin: skin,
     );
     final customize = selected ? onCustomize : null;
-    final date = showDate || skin.showDate
+    final date = skin.showDate
         ? MaterialLocalizations.of(context).formatFullDate(now)
         : null;
     // The tile is one button ("Rose, selected"); Customize is its own.

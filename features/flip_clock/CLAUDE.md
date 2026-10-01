@@ -180,7 +180,8 @@ lib/
   is configured: the user's `use24h`, seconds only when the skin shows them
   (`cards` -> a card, `badge` -> the badge, `off` -> none, whatever Show
   seconds says; selecting a skin applies that preset), the date line small
-  above the cards when `showDate` or `skin.showDate`; always one row. Select vs
+  above the cards only when `skin.showDate` (Show date never adds it);
+  always one row. Select vs
   customise: a tap applies the skin; the selected tile gets the accent
   ring, the check and, in place of the face name, a Customize button (pencil
   + label, its own focusable button spoken "Customize <name>"; the tile is

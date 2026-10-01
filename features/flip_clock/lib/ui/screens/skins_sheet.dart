@@ -26,7 +26,6 @@ Future<void> showSkins(
       selectedId: settings.skin.id,
       now: now,
       use24h: s.use24h,
-      showDate: s.showDate,
       onSelect: (skin) => unawaited(settings.selectSkin(skin.id)),
       onDone: () => Navigator.of(context).pop(),
       onCustomize: () =>
