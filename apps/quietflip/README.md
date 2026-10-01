@@ -25,12 +25,14 @@ Then from this folder:
 
 | Key | Action |
 |---|---|
+| `Space` | Start or pause the Pomodoro timer or stopwatch |
+| `←` / `→` | Previous / next mode (Pomodoro, Clock, Stopwatch) |
+| `↑` / `↓` | Brightness |
+| `S` | Show or hide seconds (Clock) |
+| `L` | Lap (Stopwatch) |
+| `D` | Dim the digits |
 | `F` | Enter or leave full screen |
-| `Esc` | Leave full screen |
-| `Space` | Start or pause the timer or stopwatch |
-| `1` / `2` / `3` | Clock / Timer / Stopwatch |
-
-Shortcuts are ignored while typing in the timer fields.
+| `Esc` | Leave full screen, or hide the controls |
 
 ## Known limitations
 
