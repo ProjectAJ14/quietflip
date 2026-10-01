@@ -25,17 +25,28 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
+/// Below this width the island floats under the corner buttons' row
+/// instead of between them, so it never has to shrink to fit.
+const double _besideCornersWidth = 600;
+
+/// The chrome floating above the clock on a [size] window: how far the
+/// island sits below the safe area, and how far it keeps from each side.
+({double top, double side}) _islandPlace(Size size, double inset) =>
+    size.width < _besideCornersWidth
+    ? (top: inset + DesignSize.cornerButton + DesignSpace.s2, side: inset)
+    : (top: inset, side: inset + DesignSize.cornerButton + DesignSpace.s2);
+
 /// Pomodoro / Clock / Stopwatch as swipeable panels under one
 /// [GestureLayer]: tap toggles the chrome (the island at the top: mode
-/// tabs over the current mode's actions, Skins and Settings), a vertical
-/// drag changes brightness, a sideways swipe changes mode. The chrome
-/// shrinks to a dot after `controlsIdle`, then disappears. The island is
-/// the only control on the screen.
+/// tabs over the current mode's actions; Skins top-left, Settings
+/// top-right and, on phones, Rotation bottom-right, all in step with the
+/// island), a vertical drag changes brightness, a sideways swipe changes
+/// mode. The chrome shrinks to dots after `controlsIdle`, then disappears.
 ///
 /// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
 /// F full screen, Esc leave full screen or hide the chrome, Space
 /// start/pause, S seconds (Clock mode), L lap (Stopwatch), D dim the
-/// digits.
+/// digits, R screen rotation (phones).
 class FlipClockScreen extends StatefulWidget {
   const FlipClockScreen({
     super.key,
@@ -51,6 +62,7 @@ class FlipClockScreen extends StatefulWidget {
     required this.onOpenSettings,
     required this.onOpenTimerSettings,
     this.doubleTapFullScreen,
+    this.orientationSupported = false,
   });
 
   final SettingsController settings;
@@ -66,6 +78,10 @@ class FlipClockScreen extends StatefulWidget {
 
   /// Opens Settings on the Timers category (the tray's tune icon).
   final VoidCallback onOpenTimerSettings;
+
+  /// Shows the Rotation corner button and the R key (phones and tablets:
+  /// `OrientationLock.supported`).
+  final bool orientationSupported;
 
   /// Double tap toggles full screen. Null: on desktop and web only, since a
   /// double tap recognizer delays every single tap.
@@ -242,6 +258,30 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     if (release) _chrome.releaseHud();
   }
 
+  /// Rotation cycles follow the device -> portrait -> landscape and says
+  /// which in the island. `init()` applies it through `OrientationLock`.
+  static const List<ClockOrientation> _rotations = [
+    ClockOrientation.auto,
+    ClockOrientation.portrait,
+    ClockOrientation.landscape,
+  ];
+
+  static String _rotationName(ClockOrientation o) => switch (o) {
+    ClockOrientation.auto => strings.clock.orientation_auto,
+    ClockOrientation.portrait => strings.clock.orientation_portrait,
+    ClockOrientation.landscape => strings.clock.orientation_landscape,
+  };
+
+  void _cycleRotation() {
+    final s = widget.settings.state;
+    final i = (_rotations.indexOf(s.orientation) + 1) % _rotations.length;
+    final next = _rotations[i];
+    unawaited(widget.settings.update(s.copyWith(orientation: next)));
+    _chrome
+      ..showHud(IslandTitleHud(_rotationName(next), i, _rotations.length))
+      ..releaseHud();
+  }
+
   void _toggleSeconds() {
     final s = widget.settings.state;
     unawaited(widget.settings.update(s.copyWith(showSeconds: !s.showSeconds)));
@@ -296,6 +336,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       unawaited(_brighten(-BrightnessControl.keyStep, release: true));
     } else if (key == LogicalKeyboardKey.keyD) {
       _dim();
+    } else if (key == LogicalKeyboardKey.keyR && widget.orientationSupported) {
+      _cycleRotation();
     } else {
       return KeyEventResult.ignored;
     }
@@ -336,18 +378,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                       ? c.times_up
                       : null,
                   actions: _tray(mode, settings, countdown, stopwatch),
-                  trailing: [
-                    IslandAction(
-                      label: c.action_skins,
-                      icon: Icons.palette_outlined,
-                      onPressed: _openSkins,
-                    ),
-                    IslandAction(
-                      label: c.action_settings,
-                      icon: Icons.settings_outlined,
-                      onPressed: widget.onOpenSettings,
-                    ),
-                  ],
                 );
               },
             ),
@@ -524,6 +554,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final inset = MediaQuery.sizeOf(context).shortestSide >= 600
         ? DesignSpace.s6
         : DesignSpace.s4;
+    final place = _islandPlace(MediaQuery.sizeOf(context), inset);
     // Never while a sheet or route covers the clock or the app is away.
     final flip = settings.flipSound && _visible && _resumed
         ? widget.sound.playFlip
@@ -599,18 +630,63 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(child: content),
+                  // Between the corner buttons, or below their row on a narrow
+                  // window; never under them, never scaled down to fit.
                   Positioned(
-                    left: inset,
-                    right: inset,
-                    top: inset,
+                    left: place.side,
+                    right: place.side,
+                    top: place.top,
                     child: Center(child: _island(settings, chrome, hud)),
                   ),
+                  // Corner chrome, in step with the island. A tap on one is
+                  // its own (it sits above the gesture layer).
+                  Positioned(
+                    left: inset,
+                    top: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.palette_outlined,
+                      tooltip: c.action_skins,
+                      onPressed: _openSkins,
+                      corner: Alignment.topLeft,
+                    ),
+                  ),
+                  Positioned(
+                    right: inset,
+                    top: inset,
+                    child: CornerButton(
+                      state: chrome,
+                      icon: Icons.settings_outlined,
+                      tooltip: c.action_settings,
+                      onPressed: widget.onOpenSettings,
+                      corner: Alignment.topRight,
+                    ),
+                  ),
+                  if (widget.orientationSupported)
+                    Positioned(
+                      right: inset,
+                      bottom: inset,
+                      child: CornerButton(
+                        state: chrome,
+                        icon: switch (settings.orientation) {
+                          ClockOrientation.auto =>
+                            Icons.screen_rotation_outlined,
+                          ClockOrientation.portrait =>
+                            Icons.stay_current_portrait_outlined,
+                          ClockOrientation.landscape =>
+                            Icons.stay_current_landscape_outlined,
+                        },
+                        tooltip: c.action_rotation,
+                        onPressed: _cycleRotation,
+                        corner: Alignment.bottomRight,
+                      ),
+                    ),
                   // Under the island.
                   if (_note)
                     Positioned(
                       left: 0,
                       right: 0,
-                      top: inset + Island.trayHeight + DesignSpace.s2,
+                      top: place.top + Island.trayHeight + DesignSpace.s2,
                       child: const Center(child: _FullScreenNote()),
                     ),
                 ],
@@ -623,7 +699,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   }
 }
 
-/// The stopwatch's split times under its digits, newest first: three
+/// The stopwatch's split times under its digits: a grid of as many columns
+/// as fit the widest label, newest first, left to right then down. Three
 /// rows show (at most a third of the panel), the rest scroll.
 class _Laps extends StatelessWidget {
   const _Laps({
@@ -638,38 +715,82 @@ class _Laps extends StatelessWidget {
   /// A third of the panel, so short windows keep room for the digits.
   final double maxHeight;
 
-  /// Rows visible before the list scrolls.
+  /// Rows visible before the grid scrolls.
   static const int visible = 3;
+
+  /// The widest lap a cell must fit: `Lap 99  99:59:59.9`.
+  static const int _lastNumber = 99;
+  static const Duration _longest = Duration(
+    hours: 99,
+    minutes: 59,
+    seconds: 59,
+    milliseconds: 900,
+  );
 
   @override
   Widget build(BuildContext context) {
     final fontSize = Theme.of(context).textTheme.titleMedium!.fontSize!;
     final style = skin.face.style(color: skin.digitColor, fontSize: fontSize);
+    final scaler = MediaQuery.textScalerOf(context);
     // A row is the scaled line plus a little air, so large text still fits.
-    final row =
-        MediaQuery.textScalerOf(context).scale(fontSize) * 1.5 + DesignSpace.s1;
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: math.min(row * visible, maxHeight),
+    final row = scaler.scale(fontSize) * 1.5 + DesignSpace.s1;
+    // Measured in the skin's face at the current text scale, not guessed.
+    final painter = TextPainter(
+      text: TextSpan(
+        text: strings.clock.lap_label(_lastNumber, formatStopwatch(_longest)),
+        style: style,
       ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: laps.length,
-        itemExtent: row,
-        itemBuilder: (context, i) => Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              strings.clock.lap_label(
-                laps.length - i,
-                formatStopwatch(laps[i]),
+      textScaler: scaler,
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    )..layout();
+    final cell = painter.width;
+    painter.dispose();
+    const across = DesignSpace.s4;
+    const down = DesignSpace.s2;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final fit = math.max(1, (box.maxWidth + across) ~/ (cell + across));
+        // Fewer laps than fit: just those columns, centred.
+        final columns = math.min(fit, laps.length);
+        final width = columns == fit
+            ? box.maxWidth
+            : columns * cell + (columns - 1) * across;
+        return SizedBox(
+          width: width,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: math.min(
+                row * visible + down * (visible - 1),
+                maxHeight,
               ),
-              maxLines: 1,
-              style: style,
+            ),
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisExtent: row,
+                mainAxisSpacing: down,
+                crossAxisSpacing: across,
+              ),
+              itemCount: laps.length,
+              itemBuilder: (context, i) => Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    strings.clock.lap_label(
+                      laps.length - i,
+                      formatStopwatch(laps[i]),
+                    ),
+                    maxLines: 1,
+                    style: style,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -731,10 +852,22 @@ class _ModeView extends StatelessWidget {
     final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
     // Room for the expanded island above, so it never covers the digits; a
     // tiny window gives up at most a quarter of its height.
-    final top = math.min(inset + Island.trayHeight + inset, size.height / 4);
+    // A narrow window's island sits a row lower, so it may take a third.
+    final top = math.min(
+      _islandPlace(size, inset).top + Island.trayHeight + inset,
+      size.height / (size.width < _besideCornersWidth ? 3 : 4),
+    );
+    // Room for the Rotation button below too, where it shows, so a tall
+    // stack never runs under it (same quarter-height cap).
+    final bottom = screen.orientationSupported
+        ? math.max(
+            side,
+            math.min(inset + DesignSize.cornerButton + inset, size.height / 4),
+          )
+        : side;
     final flip = onFlip;
     return Padding(
-      padding: EdgeInsets.fromLTRB(side, top, side, side),
+      padding: EdgeInsets.fromLTRB(side, top, side, bottom),
       child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,
@@ -758,6 +891,7 @@ class _ModeView extends StatelessWidget {
               size: settings.cardSize.factor,
               semanticsLabel: label,
               onFlip: flip,
+              stackable: true,
             );
             if (!settings.showDate && !skin.showDate) {
               return Center(
@@ -769,35 +903,45 @@ class _ModeView extends StatelessWidget {
             }
             final date = MaterialLocalizations.of(context).formatFullDate(now);
             final theme = Theme.of(context);
-            // The date dims with the digits, so it never outshines them.
+            // The date dims with the digits, so it never outshines them. It
+            // sits above the time, the pair centred as one block; the bottom
+            // stays free.
             return Opacity(
               opacity: settings.digitBrightness,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Center(
+              // On a cramped window the gap shrinks and the date scales down
+              // with it, so the pair never overflows.
+              child: LayoutBuilder(
+                builder: (context, box) => Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: math.min(DesignSpace.s6, box.maxHeight / 8),
+                  children: [
+                    // Read as part of the display's label below. Never more
+                    // than a quarter of the space, so the digits keep the rest.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: box.maxHeight / 4),
+                      child: ExcludeSemantics(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            date,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: skin.face.style(
+                              color: skin.digitColor.withValues(alpha: 0.7),
+                              fontSize:
+                                  theme.textTheme.headlineSmall!.fontSize!,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Flexible(
                       child: display(
                         strings.clock.current_time_and_date(text, date),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Read as part of the display's label above.
-                  ExcludeSemantics(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        date,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: skin.face.style(
-                          color: skin.digitColor.withValues(alpha: 0.7),
-                          fontSize: theme.textTheme.headlineSmall!.fontSize!,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -886,6 +1030,7 @@ class _TimerView extends StatelessWidget {
                         formatHms(shown),
                       ),
                       onFlip: onFlip,
+                      stackable: true,
                     ),
                   ),
                 ),
@@ -925,6 +1070,7 @@ class _StopwatchView extends StatelessWidget {
             semanticsLabel: strings.clock.elapsed(
               formatStopwatch(state.elapsed),
             ),
+            stackable: true,
           );
           // The laps dim with the digits, like the date line.
           return Opacity(

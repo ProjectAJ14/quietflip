@@ -22,13 +22,27 @@ dart pub add design_system
 
 ## Tokens and fonts
 
-- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignRadius`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
+- `DesignShape` (theme extension, `DesignShape.of(context)`): every corner in the app from one value, `DesignSystemWrapper(corner:)` (default 14, 0 is square). Roles `xs` / `sm` / `md` / `lg` keep the token ratios (6 / 10 / 14 / 22 at 14); `forHeight(h, role:)` caps a role at half the height, so nothing is rounder than a pill and the island dot stays a dot. `DesignShape.circular` / `radius` / `rounded` are the only way to build a radius; every Material component shape in the theme follows it. No circles or stadiums anywhere.
 - Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
 - Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.
 
 ## Chrome: the island
 
-`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) over an action tray, or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState` and morphing on `DesignMotion.islandCurve`. The tray takes `actions` and `trailing` (after a hairline) as `IslandAction(label:, icon:, onPressed:, primary:)`: an icon button, a filled primary, or a text chip when `icon` is null; an optional `status` line is announced. It scrolls sideways rather than overflow. The island is dark in every theme, takes all its text as parameters, and only cross-fades when the platform asks for reduced motion.
+`Island` is the top-centre pill: a dot, a tab bar (`tabs`, `selected`, `onSelect`, `tabsLabel`) over an action tray, or a HUD (`IslandBrightnessHud`, `IslandTitleHud`), switched by `ChromeState`. It grows on the island spring (`DesignMotion.islandCurve`) and shrinks on `DesignMotion.collapseCurve` over `islandCollapse`, with no overshoot; hiding from a bigger shape shrinks to the dot first and fades only over the last 40% (`collapseFade`), and outgoing content scales down inside the shrinking pill. Its corner is `DesignShape.lg` with a tray, else `forHeight` of its height, tweened with the size. The tray takes `actions` as `IslandAction(label:, icon:, onPressed:, primary:)`: an icon button, a filled primary, or a text chip when `icon` is null; an optional `status` line is announced. It scrolls sideways rather than overflow. `CornerButton(state:, icon:, tooltip:, onPressed:, corner:)` is a 44px button on the same surface and corner rules that follows the island's `ChromeState`: it shrinks to a 6px dot toward its `corner` and disappears with the island, on the same motion. Both are dark in every theme, and the island is dark in every theme, takes all its text as parameters, and only cross-fades when the platform asks for reduced motion.
+
+| Island token | Value | Use |
+|---|---|---|
+| `DesignSpace.islandInset` | 8 | Padding inside the island, all sides |
+| `DesignSpace.islandRowGap` | 8 | Between the tab row and the tray |
+| `DesignSpace.islandItemGap` | 8 | Between items of one group (tabs, actions, chips) |
+| `DesignSpace.islandGroupGap` | 16 | Between groups (icon actions vs chips, status vs actions); space only, no line |
+| `DesignSpace.islandItemPadding` | 16 | Horizontal padding in tabs and chips |
+| `DesignSize.cornerButton` | 44 | Height of every tab, action and chip |
+| `DesignSize.islandExpandedHeight` | 60 | Tabs only; `Island.trayHeight` (112) adds the gap and the tray row |
+| `DesignMotion.islandCollapse` / `collapseCurve` / `collapseFade` | 380 ms / ease-in-out cubic / `Interval(0.6, 1)` | Every shrink; the fade when hiding from a bigger shape |
+| `DesignColors.island` | `#1c1c1e` dark (`surfaceRaised`), `#0a0a0a` light | The island fill |
+| `DesignColors.islandElevation` | drop `0,12,32` at 45% + contact `0,2,6` at 35% black; 1px top highlight 14% white fading out by mid-height; dark adds the 1px hairline ring | Lifts the island over the clock on every ground, black included |
 
 ## Settings shell
 

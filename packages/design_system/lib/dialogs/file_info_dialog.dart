@@ -1,3 +1,4 @@
+import 'package:design_system/constants/design_shape.dart';
 import 'dart:io';
 
 import 'package:design_system/toast/toasts.dart';
@@ -52,12 +53,13 @@ class FileInfoDialog extends StatelessWidget {
     required String value,
     required ColorScheme colorScheme,
     required TextTheme textTheme,
+    required DesignShape shape,
     bool isPath = false,
     VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: DesignShape.circular(shape.sm),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
@@ -118,7 +120,7 @@ class FileInfoDialog extends StatelessWidget {
     final fileType = _getFileType(fileExtension);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: DesignShape.rounded(DesignShape.of(context).lg),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
         child: Column(
@@ -129,8 +131,8 @@ class FileInfoDialog extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+                borderRadius: BorderRadius.vertical(
+                  top: DesignShape.radius(DesignShape.of(context).lg),
                 ),
               ),
               child: Row(
@@ -172,6 +174,7 @@ class FileInfoDialog extends StatelessWidget {
                       value: fileName,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
+                      shape: DesignShape.of(context),
                       onTap: () =>
                           _copyToClipboard(context, fileName, 'File name'),
                     ),
@@ -181,6 +184,7 @@ class FileInfoDialog extends StatelessWidget {
                       value: fileType,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
+                      shape: DesignShape.of(context),
                       onTap: () =>
                           _copyToClipboard(context, fileType, 'File type'),
                     ),
@@ -190,6 +194,7 @@ class FileInfoDialog extends StatelessWidget {
                       value: '.$fileExtension',
                       colorScheme: colorScheme,
                       textTheme: textTheme,
+                      shape: DesignShape.of(context),
                       onTap: () => _copyToClipboard(
                         context,
                         '.$fileExtension',
@@ -202,6 +207,7 @@ class FileInfoDialog extends StatelessWidget {
                       value: _formatFileSize(fileSize),
                       colorScheme: colorScheme,
                       textTheme: textTheme,
+                      shape: DesignShape.of(context),
                       onTap: () => _copyToClipboard(
                         context,
                         _formatFileSize(fileSize),
@@ -214,6 +220,7 @@ class FileInfoDialog extends StatelessWidget {
                       value: file.path,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
+                      shape: DesignShape.of(context),
                       isPath: true,
                       onTap: () =>
                           _copyToClipboard(context, file.path, 'File path'),
@@ -225,7 +232,9 @@ class FileInfoDialog extends StatelessWidget {
                         color: colorScheme.surfaceContainerHighest.withValues(
                           alpha: 0.5,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: DesignShape.circular(
+                          DesignShape.of(context).sm,
+                        ),
                       ),
                       child: Row(
                         children: [

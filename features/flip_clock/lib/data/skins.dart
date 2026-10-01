@@ -60,7 +60,6 @@ abstract final class Skins {
         name: c.skin_arcade,
         face: DisplayFace.orbitron,
         digitColor: DesignSkinColors.cyan,
-        cardRadius: DesignRadius.lg,
         seconds: SkinSeconds.cards,
       ),
       Skin(
@@ -82,15 +81,9 @@ abstract final class Skins {
         name: c.skin_neon,
         face: DisplayFace.jetBrainsMono,
         digitColor: DesignSkinColors.rose,
-        cardRadius: DesignRadius.xs,
         seconds: SkinSeconds.cards,
       ),
-      Skin(
-        id: 'minimal',
-        name: c.skin_minimal,
-        seam: false,
-        cardRadius: Skin.minRadius,
-      ),
+      Skin(id: 'minimal', name: c.skin_minimal, seam: false),
     ];
   }
 
@@ -104,14 +97,12 @@ abstract final class Skins {
         name: c.skin_anton,
         face: DisplayFace.anton,
         digitColor: DesignSkinColors.yellow,
-        cardRadius: DesignRadius.sm,
       ),
       Skin(id: 'oswald', name: c.skin_oswald, face: DisplayFace.oswald),
       Skin(
         id: 'shoulders',
         name: c.skin_shoulders,
         face: DisplayFace.bigShoulders,
-        cardRadius: DesignRadius.xs,
       ),
       Skin(
         id: 'poster',
@@ -120,7 +111,6 @@ abstract final class Skins {
         digitColor: DesignSkinColors.inkPaper,
         cardColor: DesignSkinColors.cardPaper,
         groundColor: DesignSkinColors.bgPaper,
-        cardRadius: DesignRadius.xs,
       ),
       Skin(
         id: 'terminal',
@@ -128,21 +118,18 @@ abstract final class Skins {
         face: DisplayFace.jetBrainsMono,
         digitColor: DesignSkinColors.mint,
         seam: false,
-        cardRadius: DesignRadius.xs,
       ),
       Skin(
         id: 'grotesk',
         name: c.skin_grotesk,
         face: DisplayFace.spaceGrotesk,
         digitColor: DesignSkinColors.violet,
-        cardRadius: DesignRadius.lg,
       ),
       Skin(
         id: 'serif',
         name: c.skin_serif,
         face: DisplayFace.dmSerifDisplay,
         seam: false,
-        cardRadius: DesignRadius.lg,
       ),
       Skin(
         id: 'orbit',

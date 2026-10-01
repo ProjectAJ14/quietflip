@@ -315,14 +315,25 @@ void main() {
       expect(c.islandActive, const Color(0xffffffff));
       expect(c.islandOnActive, const Color(0xff000000));
     }
-    expect(dark.islandShadow.single.spreadRadius, 1);
+    // Both themes lift the island with a drop and a contact shadow and a
+    // top highlight; dark adds the hairline ring, because black eats shadows.
+    expect(dark.islandElevation.shadows.last.spreadRadius, 1);
+    expect(light.islandElevation.shadows, hasLength(2));
+    for (final c in [dark, light]) {
+      expect(c.islandElevation.shadows.first.offset, const Offset(0, 12));
+      expect(c.islandElevation.shadows.first.blurRadius, 32);
+      expect(c.islandElevation.shadows[1].offset, const Offset(0, 2));
+      expect(c.islandElevation.highlight, const Color(0x24ffffff));
+    }
+    expect(dark.island, dark.surfaceRaised);
     expect(light.sheetShadow.single.blurRadius, 48);
   });
 
   test('size and motion tokens match tokens.json', () {
     expect(ds.DesignSize.islandDot, 10);
     expect(ds.DesignSize.islandPillHeight, 36);
-    expect(ds.DesignSize.islandExpandedHeight, 52);
+    expect(ds.DesignSize.islandExpandedHeight, 60);
+    expect(ds.DesignMotion.islandCollapse, const Duration(milliseconds: 380));
     expect(ds.DesignSize.cornerButton, 44);
     expect(ds.DesignSize.cornerDot, 6);
     expect(ds.DesignSize.sidebarWidth, 300);
@@ -334,7 +345,6 @@ void main() {
     expect(ds.DesignMotion.dotIdle, const Duration(seconds: 3));
     expect(ds.DesignMotion.hudHold, const Duration(milliseconds: 1200));
     expect(ds.DesignMotion.islandSpring.stiffness, 320);
-    expect(ds.DesignRadius.md, 14);
     expect(ds.DesignSpace.s6, 24);
   });
 

@@ -1,3 +1,4 @@
+import 'package:design_system/constants/design_shape.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
@@ -39,7 +40,9 @@ class DefaultErrorView extends StatelessWidget {
                 height: 80,
                 decoration: BoxDecoration(
                   color: colorScheme.errorContainer.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: DesignShape.circular(
+                    DesignShape.of(context).lg,
+                  ),
                   border: Border.all(
                     color: colorScheme.error.withValues(alpha: 0.2),
                     width: 1,
@@ -80,7 +83,9 @@ class DefaultErrorView extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: DesignShape.circular(
+                      DesignShape.of(context).sm,
+                    ),
                     border: Border.all(
                       color: colorScheme.outline.withValues(alpha: 0.3),
                       width: 1,

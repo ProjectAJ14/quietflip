@@ -1,3 +1,4 @@
+import 'package:design_system/constants/design_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
@@ -52,7 +53,7 @@ class DateFilterChips extends StatelessWidget {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: DesignShape.circular(DesignShape.of(context).sm),
               side: BorderSide(
                 color: isSelected
                     ? colorScheme.primary

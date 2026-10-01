@@ -8,9 +8,11 @@ import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
-/// The Skins sheet: live tiles of every skin; tapping one applies it at
-/// once. Custom skins come first under Your skins, with a New skin tile.
-/// Every built-in skin is free: no locks, no ribbons.
+/// The Skins sheet: live tiles of every skin, drawn with the user's
+/// seconds and date settings; tapping one applies it at once, and the
+/// selected tile offers Customize. Custom skins come first under Your
+/// skins, with a New skin tile. Every built-in skin is free: no locks, no
+/// ribbons.
 class SkinPicker extends StatelessWidget {
   const SkinPicker({
     super.key,
@@ -30,9 +32,10 @@ class SkinPicker extends StatelessWidget {
   /// The time the tiles show.
   final DateTime now;
   final bool use24h;
+
   final ValueChanged<Skin> onSelect;
 
-  /// Opens the customizer on the current skin.
+  /// Opens the customizer on the selected skin (its tile's Customize).
   final VoidCallback onCustomize;
 
   /// Starts a new skin from the current one.
@@ -50,11 +53,6 @@ class SkinPicker extends StatelessWidget {
         SheetHeader(
           title: c.skins_title,
           leading: TextButton(onPressed: onDone, child: Text(c.skins_done)),
-          trailing: TextButton.icon(
-            onPressed: onCustomize,
-            icon: const Icon(Icons.tune_rounded),
-            label: Text(c.skins_customize),
-          ),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -76,6 +74,7 @@ class SkinPicker extends StatelessWidget {
                   now: now,
                   use24h: use24h,
                   onTap: () => onSelect(skin),
+                  onCustomize: onCustomize,
                 ),
               );
               return ListView(
@@ -193,8 +192,12 @@ class SectionHeader extends StatelessWidget {
   );
 }
 
-/// One skin: its own ground with two mini cards at the current time, the
-/// name and face below. Selected: a 2px accent ring and a check badge.
+/// One skin: its own ground with mini cards at the current time, drawn as
+/// that skin is configured (seconds only when the skin shows them, in its
+/// style: what selecting it gives; the date above only when the skin
+/// shows it), the
+/// name and face below, always in one row. Selected: a 2px accent ring, a
+/// check badge, and a Customize button in place of the face name.
 class SkinTile extends StatelessWidget {
   const SkinTile({
     super.key,
@@ -203,6 +206,7 @@ class SkinTile extends StatelessWidget {
     required this.now,
     required this.use24h,
     required this.onTap,
+    this.onCustomize,
   });
 
   final Skin skin;
@@ -211,8 +215,14 @@ class SkinTile extends StatelessWidget {
   final bool use24h;
   final VoidCallback onTap;
 
+  /// Opens the customizer on this skin; offered on the selected tile only.
+  final VoidCallback? onCustomize;
+
   /// Height of the tile's preview.
   static const double faceHeight = 118;
+
+  /// The selected tile's check badge.
+  static const double checkSize = 22;
 
   @override
   Widget build(BuildContext context) {
@@ -222,52 +232,87 @@ class SkinTile extends StatelessWidget {
     final value = clockValue(
       now,
       use24h: use24h,
-      showSeconds: false,
+      // Selecting a skin applies its seconds preset, so the tile shows it.
+      showSeconds: skin.seconds != SkinSeconds.off,
       skin: skin,
     );
+    final customize = selected ? onCustomize : null;
+    final date = skin.showDate
+        ? MaterialLocalizations.of(context).formatFullDate(now)
+        : null;
+    // The tile is one button ("Rose, selected"); Customize is its own.
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       label: skin.name,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(DesignRadius.md),
-        child: ExcludeSemantics(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: faceHeight,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignSpace.s4,
-                  vertical: DesignSpace.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: skin.groundColor,
-                  borderRadius: BorderRadius.circular(DesignRadius.md),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(color: colors.surface, spreadRadius: 2),
-                          BoxShadow(color: colors.accent, spreadRadius: 4),
-                        ]
-                      : [BoxShadow(color: colors.hairline, spreadRadius: 1)],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: FlipDisplay(
-                        cards: value.cards,
-                        meridiem: value.meridiem,
-                        skin: skin,
-                        semanticsLabel: skin.name,
+        borderRadius: DesignShape.circular(DesignShape.of(context).md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: faceHeight,
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignSpace.s4,
+                vertical: DesignSpace.s4,
+              ),
+              decoration: BoxDecoration(
+                color: skin.groundColor,
+                borderRadius: DesignShape.circular(DesignShape.of(context).md),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(color: colors.surface, spreadRadius: 2),
+                        BoxShadow(color: colors.accent, spreadRadius: 4),
+                      ]
+                    : [BoxShadow(color: colors.hairline, spreadRadius: 1)],
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ExcludeSemantics(
+                      child: Column(
+                        spacing: DesignSpace.s1,
+                        children: [
+                          if (date != null)
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                date,
+                                maxLines: 1,
+                                textScaler: TextScaler.noScaling,
+                                style: skin.face.style(
+                                  color: skin.digitColor.withValues(alpha: 0.7),
+                                  fontSize: text.fontSize!,
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: FlipDisplay(
+                              cards: value.cards,
+                              badge: value.badge,
+                              meridiem: value.meridiem,
+                              skin: skin,
+                              semanticsLabel: skin.name,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (selected)
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: CircleAvatar(
-                          radius: 11,
-                          backgroundColor: colors.accent,
+                  ),
+                  if (selected)
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.accent,
+                          borderRadius: DesignShape.circular(
+                            DesignShape.of(context).forHeight(checkSize),
+                          ),
+                        ),
+                        child: SizedBox.square(
+                          dimension: checkSize,
                           child: Icon(
                             Icons.check_rounded,
                             size: 16,
@@ -275,34 +320,58 @@ class SkinTile extends StatelessWidget {
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
-              const SizedBox(height: DesignSpace.s2),
-              Row(
+            ),
+            const SizedBox(height: DesignSpace.s1),
+            // Every caption is a hit target tall, so the selected tile's
+            // button never makes its row taller than the others.
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: DesignSize.cornerButton,
+              ),
+              child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      skin.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.copyWith(
-                        color: selected ? colors.ink : colors.inkMuted,
-                        fontWeight: FontWeight.w500,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        skin.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: text.copyWith(
+                          color: selected ? colors.ink : colors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-                  Flexible(
-                    child: Text(
-                      skin.face.family,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: text.copyWith(color: colors.inkMuted),
+                  if (customize != null)
+                    // Its own focusable button, spoken with the skin name.
+                    TextButton.icon(
+                      onPressed: customize,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: Text(
+                        strings.clock.skins_customize,
+                        semanticsLabel: strings.clock.skins_customize_named(
+                          skin.name,
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ExcludeSemantics(
+                        child: Text(
+                          skin.face.family,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: text.copyWith(color: colors.inkMuted),
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -326,7 +395,7 @@ class _NewTile extends StatelessWidget {
       label: strings.clock.skins_new,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(DesignRadius.md),
+        borderRadius: DesignShape.circular(DesignShape.of(context).md),
         child: ExcludeSemantics(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,7 +403,9 @@ class _NewTile extends StatelessWidget {
               Container(
                 height: SkinTile.faceHeight,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(DesignRadius.md),
+                  borderRadius: DesignShape.circular(
+                    DesignShape.of(context).md,
+                  ),
                   border: Border.all(color: colors.hairline, width: 1.5),
                 ),
                 child: Column(
@@ -356,7 +427,7 @@ class _NewTile extends StatelessWidget {
   }
 }
 
-/// Opens [child] as a sheet on `surface`, rounded `radius-lg` on top with a
+/// Opens [child] as a sheet on `surface`, rounded `DesignShape.lg` on top with a
 /// hairline edge, 90% of the screen tall.
 Future<T?> showSheet<T>(BuildContext context, Widget child) {
   final colors = DesignColors.of(context);
@@ -371,8 +442,8 @@ Future<T?> showSheet<T>(BuildContext context, Widget child) {
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       side: BorderSide(color: colors.hairline),
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(DesignRadius.lg),
+      borderRadius: BorderRadius.vertical(
+        top: DesignShape.radius(DesignShape.of(context).lg),
       ),
     ),
     builder: (context) => FractionallySizedBox(heightFactor: 0.9, child: child),

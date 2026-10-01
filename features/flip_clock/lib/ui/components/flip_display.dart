@@ -22,6 +22,12 @@ bool reducedMotion(BuildContext context) =>
 /// clips at large text sizes. AM/PM ([meridiem]) and small seconds
 /// ([badge]) are plain text in the skin's face, never cards, and grow with
 /// the card. The skin is drawn [Skin.forTheme] the current theme.
+///
+/// [stackable] displays (the clock screen's panels) stack the cards top to
+/// bottom, centred, when that makes them at least [stackGain] times bigger
+/// than one row, and go back to the row only once the row is [stackGain]
+/// times bigger; switching cross-fades. The display is as big as its cards,
+/// so a parent can centre it with a line above or below.
 class FlipDisplay extends StatefulWidget {
   const FlipDisplay({
     super.key,
@@ -32,6 +38,7 @@ class FlipDisplay extends StatefulWidget {
     this.meridiem,
     this.onFlip,
     this.size = 1,
+    this.stackable = false,
   });
 
   final List<String> cards;
@@ -52,6 +59,14 @@ class FlipDisplay extends StatefulWidget {
   /// Card height relative to the largest card that fits, 0.1..1
   /// (`CardSize.factor`).
   final double size;
+
+  /// May stack the cards when the space is tall (skin tiles and previews
+  /// stay in one row).
+  final bool stackable;
+
+  /// How much bigger the other layout's cards must be before it is used:
+  /// the 15% band stops flicker near square windows and during a resize.
+  static const double stackGain = 1.15;
 
   /// One card flip, top fold then bottom fold, 50/50.
   static const Duration flipDuration = DesignMotion.flip;
@@ -79,6 +94,9 @@ class FlipDisplay extends StatefulWidget {
 }
 
 class _FlipDisplayState extends State<FlipDisplay> {
+  /// The layout in use; kept while the space sits inside the band.
+  bool _stacked = false;
+
   @override
   void didUpdateWidget(FlipDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -103,11 +121,22 @@ class _FlipDisplayState extends State<FlipDisplay> {
             const gap = DesignSpace.s6;
             final width = box.maxWidth.isFinite ? box.maxWidth : 1000.0;
             final fit = (width - gap * (n - 1)) / (n * ratio);
+            final tall = box.maxHeight.isFinite;
+            // The largest card each layout fits, before the size choice.
+            final row = tall ? math.min(box.maxHeight, fit) : fit;
+            final stack = tall
+                ? math.min((box.maxHeight - gap * (n - 1)) / n, width / ratio)
+                : 0.0;
+            if (!widget.stackable || !tall || n < 2) {
+              _stacked = false;
+            } else if (_stacked
+                ? row >= stack * FlipDisplay.stackGain
+                : stack >= row * FlipDisplay.stackGain) {
+              _stacked = !_stacked;
+            }
+            final stacked = _stacked;
             final height =
-                math.max(
-                  0.0,
-                  box.maxHeight.isFinite ? math.min(box.maxHeight, fit) : fit,
-                ) *
+                math.max(0.0, stacked ? stack : row) *
                 widget.size.clamp(0.1, 1);
             final tag = skin.face.style(
               color: soft,
@@ -117,48 +146,76 @@ class _FlipDisplayState extends State<FlipDisplay> {
                 .style(color: soft, fontSize: height * FlipDisplay.badgeScale)
                 .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
             final pad = height * FlipDisplay.cornerScale;
-            // radius-md cards become radius-lg once digits reach digit-l.
+            // The app's corner: md cards become lg once digits reach digit-l.
             final large = height * FlipDisplay.digitScale >= 160;
-            final radius = math.min(
-              height / 2,
-              skin.cardRadius * (large ? DesignRadius.lg / DesignRadius.md : 1),
+            final shape = DesignShape.of(context);
+            final radius = shape.forHeight(
+              height,
+              role: large ? shape.lg : shape.md,
             );
-            return Center(
-              // Only an AM/PM beside the cards can exceed the width.
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var i = 0; i < n; i++) ...[
-                      if (i > 0) const SizedBox(width: gap),
-                      // Keyed from the right, so gaining an hour card keeps
-                      // the minute cards in place.
-                      _FlipCard(
-                        key: ValueKey(n - i),
-                        value: widget.cards[i],
-                        skin: skin,
-                        height: height,
-                        width: height * ratio,
-                        radius: radius,
-                        bottomLeft: i == 0 && skin.meridiem == SkinMeridiem.left
-                            ? _Corner(meridiem, tag, pad)
-                            : null,
-                        bottomRight: i == n - 1
-                            ? _Corner(widget.badge, badge, pad)
-                            : null,
+            Widget card(int i) => _FlipCard(
+              // Keyed from the right, so gaining an hour card keeps the
+              // minute cards in place.
+              key: ValueKey(n - i),
+              value: widget.cards[i],
+              skin: skin,
+              height: height,
+              width: height * ratio,
+              radius: radius,
+              bottomLeft: i == 0 && skin.meridiem == SkinMeridiem.left
+                  ? _Corner(meridiem, tag, pad)
+                  : null,
+              bottomRight: i == n - 1
+                  ? _Corner(widget.badge, badge, pad)
+                  : null,
+            );
+            final right =
+                meridiem != null && skin.meridiem == SkinMeridiem.right
+                ? Padding(
+                    padding: EdgeInsets.only(left: pad),
+                    child: Text(
+                      meridiem,
+                      style: tag,
+                      textScaler: TextScaler.noScaling,
+                    ),
+                  )
+                : null;
+            final Widget cards = stacked
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    // AM/PM beside the last card keeps the cards aligned.
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: gap,
+                    children: [
+                      for (var i = 0; i < n - 1; i++) card(i),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [card(n - 1), ?right],
                       ),
                     ],
-                    if (meridiem != null && skin.meridiem == SkinMeridiem.right)
-                      Padding(
-                        padding: EdgeInsets.only(left: pad),
-                        child: Text(
-                          meridiem,
-                          style: tag,
-                          textScaler: TextScaler.noScaling,
-                        ),
-                      ),
-                  ],
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < n; i++) ...[
+                        if (i > 0) const SizedBox(width: gap),
+                        card(i),
+                      ],
+                      ?right,
+                    ],
+                  );
+            return Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: AnimatedSwitcher(
+                duration: reducedMotion(context)
+                    ? Duration.zero
+                    : DesignMotion.fade,
+                // Only an AM/PM beside the cards can exceed the width.
+                child: FittedBox(
+                  key: ValueKey(stacked),
+                  fit: BoxFit.scaleDown,
+                  child: cards,
                 ),
               ),
             );
@@ -357,7 +414,7 @@ class _Half extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final r = Radius.circular(radius);
+    final r = DesignShape.radius(radius);
     return Container(
       width: width,
       height: height,

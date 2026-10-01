@@ -50,6 +50,7 @@ Future<void> startApp({
         router: router,
         appearance: flip_clock.appearance(),
         face: flip_clock.appFace(),
+        corner: flip_clock.appCorner(),
       ),
     ),
   );

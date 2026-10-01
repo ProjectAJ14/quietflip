@@ -20,6 +20,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/gesture_layer.dart';
+import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/screens/index.dart';
@@ -73,6 +74,7 @@ class Harness {
     bool doubleTap = false,
     bool reduceMotion = false,
     ThemeData? appTheme,
+    bool orientationSupported = false,
   }) => MaterialApp(
     theme: appTheme ?? theme,
     builder: reduceMotion
@@ -94,6 +96,7 @@ class Harness {
       doubleTapFullScreen: doubleTap,
       onOpenSettings: () => settingsOpened++,
       onOpenTimerSettings: () => timerSettingsOpened++,
+      orientationSupported: orientationSupported,
     ),
   );
 
@@ -184,7 +187,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('date line shows under the clock and rolls over at midnight', (
+  testWidgets('date line shows above the clock and rolls over at midnight', (
     tester,
   ) async {
     final h = Harness();
@@ -922,6 +925,18 @@ void main() {
     // The sheet's Done sits above Settings' own.
     await tester.tap(find.text(strings.clock.skins_done).last);
     await tester.pumpAndSettle();
+    // The strip's selected tile opens the customizer on that skin.
+    await tester.tap(find.text(strings.clock.skins_customize).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinCustomizer), findsOne);
+    await tester.tap(
+      find.text(
+        MaterialLocalizations.of(
+          tester.element(find.byType(SkinCustomizer)),
+        ).cancelButtonLabel,
+      ),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOne);
@@ -1396,20 +1411,33 @@ void main() {
       final island = tester.getRect(find.byType(Island));
       expect(island.center.dy, lessThan(844 / 4));
       expect(island.center.dx, closeTo(width / 2, 0.5));
-      // Every button on the screen is inside the island.
+      // Every button on the screen is the island's or a corner button's.
       for (final type in [InkWell, ButtonStyleButton, IconButton]) {
         final all = find.byType(type);
-        final inIsland = find.descendant(
-          of: find.byType(Island),
-          matching: find.byType(type),
-        );
+        int inside(Type owner) => find
+            .descendant(of: find.byType(owner), matching: find.byType(type))
+            .evaluate()
+            .length;
         expect(
           all.evaluate().length,
-          inIsland.evaluate().length,
+          inside(Island) + inside(CornerButton),
           reason: '$type',
         );
       }
-      // Tabs keep their full size (the callout line is 20px), never shrunk.
+      // Skins top-left, Settings top-right, clear of the island; no
+      // Rotation where the screen cannot be locked.
+      final skins = tester.getRect(find.byTooltip(strings.clock.action_skins));
+      final settings = tester.getRect(
+        find.byTooltip(strings.clock.action_settings),
+      );
+      expect(skins.left, lessThan(width / 4));
+      expect(settings.right, greaterThan(width * 3 / 4));
+      expect(skins.top, settings.top);
+      expect(skins.overlaps(island), isFalse);
+      expect(settings.overlaps(island), isFalse);
+      expect(find.byTooltip(strings.clock.action_rotation), findsNothing);
+      // Tabs are laid out at full size (the callout line is 20px); the
+      // painted size is checked with the real fonts under 'corner chrome'.
       expect(
         tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
         closeTo(20, 0.5),
@@ -1422,6 +1450,121 @@ void main() {
       await h.dispose(tester);
     });
   }
+
+  group('clock layout', () {
+    bool stacked(WidgetTester tester, String a, String b) =>
+        tester.getCenter(find.text(a).first).dy <
+        tester.getCenter(find.text(b).first).dy - 1;
+
+    for (final (size, stacks) in [
+      (const Size(390, 844), true),
+      (const Size(844, 390), false),
+      // Near square: inside the band, it stays the row it starts as.
+      (const Size(600, 640), false),
+    ]) {
+      for (final seconds in [false, true]) {
+        testWidgets('${size.width}x${size.height} seconds $seconds: '
+            '${stacks ? 'stacked' : 'one row'}', (tester) async {
+          tester.view
+            ..physicalSize = size
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          final h = Harness();
+          await h.settings.update(ClockSettings(showSeconds: seconds));
+          await tester.pumpWidget(h.screen());
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(stacked(tester, '09', '41'), stacks);
+          if (seconds) expect(stacked(tester, '41', '00'), stacks);
+          await h.dispose(tester);
+        });
+      }
+    }
+
+    for (final side in [SkinMeridiem.left, SkinMeridiem.right]) {
+      testWidgets('portrait 12h, AM/PM $side, text scale 2, all modes fit', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final h = Harness();
+        await h.settings.saveSkin(
+          const Skin(id: '', name: 'Side').copyWith(meridiem: side),
+        );
+        await h.settings.update(
+          h.settings.state.copyWith(use24h: false, showDate: true),
+        );
+        await tester.pumpWidget(h.screen());
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(stacked(tester, '09', '41'), isTrue);
+        expect(find.text('AM'), findsOne);
+        for (final mode in [ClockMode.pomodoro, ClockMode.stopwatch]) {
+          await h.settings.update(h.settings.state.copyWith(lastMode: mode));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: '$mode');
+        }
+        await h.dispose(tester);
+      });
+    }
+
+    testWidgets('with the date on, the digits still get the rest', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(844, 390)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showDate: true));
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      // Height-limited cards fill down to the side padding (space-2 on a
+      // phone): the date takes its line, not half the panel.
+      final panel = tester.getRect(find.byType(PageView));
+      expect(
+        tester.getRect(find.byType(FlipDisplay)).bottom,
+        closeTo(panel.bottom - DesignSpace.s2, 1),
+      );
+      await h.dispose(tester);
+    });
+
+    testWidgets('the date sits above the time, space-6 apart, bottom free', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showDate: true));
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      final date = tester.getRect(
+        find.text(
+          MaterialLocalizations.of(
+            tester.element(find.byType(FlipClockScreen)),
+          ).formatFullDate(h.wall.now),
+        ),
+      );
+      final display = tester.getRect(find.byType(FlipDisplay));
+      expect(display.top - date.bottom, closeTo(DesignSpace.s6, 0.5));
+      // Centred as one block in the free space: nothing parked below.
+      final panel = tester.getRect(find.byType(PageView));
+      // Width-limited cards leave room: the island's reserve (inset,
+      // trayHeight, inset) on top, side padding (space-8) below.
+      final above =
+          date.top - (panel.top + DesignSpace.s6 * 2 + Island.trayHeight);
+      final below = panel.bottom - DesignSpace.s8 - display.bottom;
+      expect(below, greaterThan(0));
+      expect(above, closeTo(below, 1));
+      await h.dispose(tester);
+    });
+  });
 
   testWidgets('the date and round label use the skin face', (tester) async {
     final h = Harness();
@@ -1594,13 +1737,180 @@ void main() {
     expect(failures, isEmpty);
   });
 
+  group('corner chrome', () {
+    final c = strings.clock;
+    ChromeState cornerOf(WidgetTester tester, String tooltip) => tester
+        .widget<CornerButton>(
+          find.ancestor(
+            of: find.byTooltip(tooltip),
+            matching: find.byType(CornerButton),
+          ),
+        )
+        .state;
+
+    testWidgets('Skins and Settings follow the island, frame for frame', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      for (final (expected, wait) in [
+        (ChromeState.expanded, DesignMotion.controlsIdle),
+        (ChromeState.dot, DesignMotion.dotIdle),
+        (ChromeState.hidden, Duration.zero),
+      ]) {
+        expect(chromeOf(tester), expected);
+        for (final t in [
+          c.action_skins,
+          c.action_settings,
+          c.action_rotation,
+        ]) {
+          expect(cornerOf(tester, t), expected, reason: '$t $expected');
+        }
+        await tester.pump(wait);
+        await tester.pump();
+      }
+      await h.dispose(tester);
+    });
+
+    for (final (width, below) in [
+      (390.0, true),
+      (599.0, true),
+      (600.0, false),
+      (1280.0, false),
+    ]) {
+      testWidgets('at ${width}px the island is full size, '
+          '${below ? 'below' : 'between'} the corner buttons', (tester) async {
+        tester.view
+          ..physicalSize = Size(width, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final h = Harness();
+        // The real theme and fonts, so the painted size is the real one.
+        await tester.pumpWidget(
+          DesignSystemWrapper(
+            mode: AppearanceMode.black,
+            builder: (_, t) => h.screen(appTheme: t),
+          ),
+        );
+        await tester.runAsync(GoogleFonts.pendingFonts);
+        await tester.pumpAndSettle();
+        final island = tester.getRect(find.byType(Island));
+        final skins = tester.getRect(find.byTooltip(c.action_skins));
+        final settings = tester.getRect(find.byTooltip(c.action_settings));
+        // Painted, not just laid out: never scaled down to squeeze in.
+        final tab = find
+            .ancestor(
+              of: find.text(c.mode_clock),
+              matching: find.byType(InkWell),
+            )
+            .first;
+        expect(
+          tester.getRect(tab).height,
+          closeTo(DesignSize.cornerButton, 0.5),
+        );
+        expect(island.center.dx, closeTo(width / 2, 0.5));
+        expect(skins.top, settings.top);
+        if (below) {
+          expect(island.top, closeTo(skins.bottom + DesignSpace.s2, 0.5));
+        } else {
+          expect(island.top, skins.top);
+          expect(skins.right, lessThanOrEqualTo(island.left));
+          expect(settings.left, greaterThanOrEqualTo(island.right));
+        }
+        // The digits still start below the chrome.
+        expect(
+          tester.getRect(find.byType(FlipDisplay)).top,
+          greaterThanOrEqualTo(island.bottom),
+        );
+        await h.dispose(tester);
+      });
+    }
+
+    testWidgets('a corner tap is the button\'s own, never a chrome toggle', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(c.action_settings));
+      await tester.pump();
+      expect(h.settingsOpened, 1);
+      expect(chromeOf(tester), ChromeState.expanded);
+      await tester.tap(find.byTooltip(c.action_skins));
+      await tester.pumpAndSettle();
+      expect(find.text(c.skins_title), findsOne);
+      await h.dispose(tester);
+    });
+
+    testWidgets('Rotation cycles auto, portrait, landscape and says so', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      final rotation = find.byTooltip(c.action_rotation);
+      // Bottom right.
+      final box = tester.getRect(rotation);
+      final screen = tester.getRect(find.byType(FlipClockScreen));
+      expect(box.right, greaterThan(screen.width * 3 / 4));
+      expect(box.bottom, greaterThan(screen.height * 3 / 4));
+      expect(find.byIcon(Icons.screen_rotation_outlined), findsOne);
+      for (final (orientation, name, icon, dot) in [
+        (
+          ClockOrientation.portrait,
+          c.orientation_portrait,
+          Icons.stay_current_portrait_outlined,
+          1,
+        ),
+        (
+          ClockOrientation.landscape,
+          c.orientation_landscape,
+          Icons.stay_current_landscape_outlined,
+          2,
+        ),
+        (
+          ClockOrientation.auto,
+          c.orientation_auto,
+          Icons.screen_rotation_outlined,
+          0,
+        ),
+      ]) {
+        await tester.tap(rotation);
+        await tester.pump();
+        expect(h.settings.state.orientation, orientation);
+        expect(find.byIcon(icon), findsOne);
+        final hud =
+            tester.widget<Island>(find.byType(Island)).hud! as IslandTitleHud;
+        expect(hud.title, name);
+        expect(hud.index, dot);
+        expect(hud.count, 3);
+        // The tap was the button's: the chrome stays.
+        expect(chromeOf(tester), ChromeState.expanded);
+        await tester.pump(DesignMotion.hudHold);
+      }
+      // R cycles too.
+      await key(tester, LogicalKeyboardKey.keyR);
+      expect(h.settings.state.orientation, ClockOrientation.portrait);
+      await tester.pump(DesignMotion.hudHold);
+      await h.dispose(tester);
+    });
+
+    testWidgets('no Rotation and no R where the screen cannot be locked', (
+      tester,
+    ) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      expect(find.byTooltip(c.action_rotation), findsNothing);
+      await key(tester, LogicalKeyboardKey.keyR);
+      expect(h.settings.state.orientation, ClockOrientation.auto);
+      await h.dispose(tester);
+    });
+  });
+
   group('island tray', () {
     final c = strings.clock;
-    List<String> withChrome(List<String> actions) => [
-      ...actions,
-      c.action_skins,
-      c.action_settings,
-    ];
 
     testWidgets('each mode and state offers its own actions', (tester) async {
       final h = Harness();
@@ -1611,46 +1921,43 @@ void main() {
         ),
       );
       await tester.pumpWidget(h.screen());
-      expect(trayOf(tester), withChrome([]), reason: 'clock');
+      expect(trayOf(tester), [], reason: 'clock');
 
       await h.settings.update(
         h.settings.state.copyWith(lastMode: ClockMode.pomodoro),
       );
       await tester.pumpAndSettle();
-      expect(
-        trayOf(tester),
-        withChrome([
-          c.action_start,
-          c.preset_pomodoro,
-          // Ascending: 90 s first.
-          '1:30',
-          '5m',
-          '10m',
-          '15m',
-          c.action_timer_settings,
-        ]),
-      );
+      expect(trayOf(tester), [
+        c.action_start,
+        c.preset_pomodoro,
+        // Ascending: 90 s first.
+        '1:30',
+        '5m',
+        '10m',
+        '15m',
+        c.action_timer_settings,
+      ]);
       await h.countdown.start(ninety);
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_pause, c.action_reset]));
+      expect(trayOf(tester), [c.action_pause, c.action_reset]);
       await h.countdown.pause();
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      expect(trayOf(tester), [c.action_resume, c.action_reset]);
       await h.countdown.reset();
 
       await h.settings.update(
         h.settings.state.copyWith(lastMode: ClockMode.stopwatch),
       );
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_start]));
+      expect(trayOf(tester), [c.action_start]);
       h.stopwatch.start();
       await tester.pump();
       await crossFade(tester);
-      expect(trayOf(tester), withChrome([c.action_pause, c.action_lap]));
+      expect(trayOf(tester), [c.action_pause, c.action_lap]);
       h.watch.reading = const Duration(seconds: 2);
       h.stopwatch.pause();
       await tester.pumpAndSettle();
-      expect(trayOf(tester), withChrome([c.action_resume, c.action_reset]));
+      expect(trayOf(tester), [c.action_resume, c.action_reset]);
       await tapAction(tester, c.action_reset);
       expect(h.stopwatch.state.isIdle, isTrue);
       await tapAction(tester, c.action_start);
@@ -1727,7 +2034,7 @@ void main() {
       expect(chromeOf(tester), ChromeState.expanded);
       expect(h.settings.state.lastMode, ClockMode.pomodoro);
       expect(find.text(c.times_up), findsOne);
-      expect(trayOf(tester), withChrome([c.action_restart, c.action_done]));
+      expect(trayOf(tester), [c.action_restart, c.action_done]);
       expect(h.sound.alarms, 1);
 
       await tapAction(tester, c.action_restart);
@@ -1752,6 +2059,9 @@ void main() {
     });
   });
 
+  /// Rows of laps visible before the grid scrolls.
+  const lapRows = 3;
+
   group('stopwatch laps', () {
     final c = strings.clock;
 
@@ -1770,13 +2080,13 @@ void main() {
       await tapAction(tester, c.action_lap);
       h.watch.reading = const Duration(seconds: 20);
       await tapAction(tester, c.action_lap);
-      // Newest first, numbered from the start.
+      // Newest first, numbered from the start, left to right.
       expect(find.text(c.lap_label(2, '0:00:07.6')), findsOne);
       expect(find.text(c.lap_label(1, '0:00:12.4')), findsOne);
-      expect(
-        tester.getTopLeft(find.text(c.lap_label(2, '0:00:07.6'))).dy,
-        lessThan(tester.getTopLeft(find.text(c.lap_label(1, '0:00:12.4'))).dy),
-      );
+      final newest = tester.getRect(find.text(c.lap_label(2, '0:00:07.6')));
+      final oldest = tester.getRect(find.text(c.lap_label(1, '0:00:12.4')));
+      expect(newest.right, lessThan(oldest.left));
+      expect(newest.center.dy, closeTo(oldest.center.dy, 0.5));
       await tapAction(tester, c.action_pause);
       await crossFade(tester);
       await tapAction(tester, c.action_reset);
@@ -1787,7 +2097,123 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('L laps in Stopwatch mode only; three rows show, then scroll', (
+    int columnsOf(WidgetTester tester) =>
+        (tester.widget<GridView>(find.byType(GridView)).gridDelegate
+                as SliverGridDelegateWithFixedCrossAxisCount)
+            .crossAxisCount;
+    double scrollOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(GridView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .maxScrollExtent;
+
+    /// A stopwatch on screen at [width] with [count] one-second laps.
+    Future<Harness> lapped(
+      WidgetTester tester,
+      int count, {
+      double width = 1280,
+      double textScale = 1,
+      String skinId = 'mono',
+    }) async {
+      tester.view
+        ..physicalSize = Size(width, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final h = Harness();
+      await h.settings.update(
+        ClockSettings(lastMode: ClockMode.stopwatch, skinId: skinId),
+      );
+      await tester.pumpWidget(h.screen());
+      h.stopwatch.start();
+      await tester.pump();
+      for (var i = 1; i <= count; i++) {
+        h.watch.reading = Duration(seconds: i);
+        h.stopwatch.lap();
+      }
+      await tester.pump();
+      return h;
+    }
+
+    Future<void> done(WidgetTester tester, Harness h) async {
+      h.stopwatch.reset();
+      await tester.pumpAndSettle();
+      await h.dispose(tester);
+    }
+
+    testWidgets('one column at 320px, several at 1280px', (tester) async {
+      // A wide face (Orbitron) fits one label across a phone.
+      var h = await lapped(tester, 4, width: 320, skinId: 'orbit');
+      expect(columnsOf(tester), 1);
+      await done(tester, h);
+      // A condensed face fits more: the width is measured, not guessed.
+      h = await lapped(tester, 4, width: 320);
+      expect(columnsOf(tester), 2);
+      await done(tester, h);
+      h = await lapped(tester, 12);
+      expect(columnsOf(tester), greaterThan(3));
+      expect(tester.takeException(), isNull);
+      await done(tester, h);
+    });
+
+    testWidgets('three full rows show without scrolling; one more scrolls', (
+      tester,
+    ) async {
+      var h = await lapped(tester, 1);
+      // One lap: one centred cell.
+      expect(columnsOf(tester), 1);
+      await done(tester, h);
+      h = await lapped(tester, 30);
+      final columns = columnsOf(tester);
+      await done(tester, h);
+
+      h = await lapped(tester, columns * lapRows);
+      expect(scrollOf(tester), 0);
+      await done(tester, h);
+      h = await lapped(tester, columns * lapRows + 1);
+      expect(scrollOf(tester), greaterThan(0));
+      // Newest first: the oldest is past the fold until scrolled.
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsNothing);
+      await tester.drag(find.byType(GridView), const Offset(0, -300));
+      await tester.pump();
+      expect(find.text(c.lap_label(1, '0:00:01.0')), findsOne);
+      await done(tester, h);
+    });
+
+    testWidgets('text scale 2 takes fewer columns and never clips', (
+      tester,
+    ) async {
+      var h = await lapped(tester, 30);
+      final normal = columnsOf(tester);
+      await done(tester, h);
+      h = await lapped(tester, 30, textScale: 2);
+      expect(columnsOf(tester), lessThan(normal));
+      expect(tester.takeException(), isNull);
+      // Every label fits its cell unscaled.
+      final label = find.text(c.lap_label(30, '0:00:01.0'));
+      final fitted = tester.widget<FittedBox>(
+        find.ancestor(of: label, matching: find.byType(FittedBox)).first,
+      );
+      expect(fitted.fit, BoxFit.scaleDown);
+      expect(
+        tester.getSize(label).width,
+        lessThanOrEqualTo(
+          tester
+              .getSize(
+                find.ancestor(of: label, matching: find.byType(Center)).first,
+              )
+              .width,
+        ),
+      );
+      await done(tester, h);
+    });
+
+    testWidgets('L laps in Stopwatch mode only, in the skin face', (
       tester,
     ) async {
       final h = Harness();
@@ -1802,20 +2228,9 @@ void main() {
         await key(tester, LogicalKeyboardKey.keyL);
       }
       expect(h.stopwatch.state.laps, hasLength(5));
-      // Latest three on screen, older ones below the fold.
-      for (final n in [5, 4, 3]) {
-        expect(find.text(c.lap_label(n, '0:00:01.0')), findsOne, reason: '$n');
-      }
-      expect(find.text(c.lap_label(1, '0:00:01.0')), findsNothing);
       final lap = tester.widget<Text>(find.text(c.lap_label(5, '0:00:01.0')));
       expect(lap.style!.fontFamily, startsWith('Orbitron'));
       expect(lap.style!.color, Skins.resolve('orbit', const []).digitColor);
-      await tester.drag(
-        find.text(c.lap_label(3, '0:00:01.0')),
-        const Offset(0, -300),
-      );
-      await tester.pump();
-      expect(find.text(c.lap_label(1, '0:00:01.0')), findsOne);
 
       // Elsewhere L does nothing.
       h.stopwatch.pause();

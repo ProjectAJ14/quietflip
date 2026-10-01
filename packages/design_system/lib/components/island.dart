@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -85,10 +88,12 @@ bool _reduceMotion(BuildContext context) =>
     View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
 
 /// The top-centre pill: a dot, the tab bar over an action tray, or a HUD.
-/// One dark shape that morphs between them on the island spring; a [hud]
-/// wins over [state]. Tray content cross-fades as it changes. The tray
+/// One dark shape that morphs between them: it grows on the island spring
+/// and shrinks on [DesignMotion.collapseCurve] (no bounce on the way out);
+/// a [hud] wins over [state]. Hiding from a bigger shape shrinks to the dot
+/// first, then fades it. Tray content cross-fades as it changes. The tray
 /// scrolls sideways rather than overflow a narrow window.
-class Island extends StatelessWidget {
+class Island extends StatefulWidget {
   const Island({
     super.key,
     required this.state,
@@ -98,7 +103,6 @@ class Island extends StatelessWidget {
     required this.onSelect,
     required this.tabsLabel,
     this.actions = const [],
-    this.trailing = const [],
     this.status,
   }) : assert(tabs.length <= 4);
 
@@ -123,21 +127,16 @@ class Island extends StatelessWidget {
   /// The tray under the tabs, in order: primary action, then the rest.
   final List<IslandAction> actions;
 
-  /// Tray actions after a hairline, such as Settings.
-  final List<IslandAction> trailing;
-
   /// Text at the start of the tray, announced when it changes, such as
   /// "Time's up".
   final String? status;
 
-  /// Expanded height with a tray: the tab row plus one row of actions.
+  /// Expanded height with a tray: inset, tab row, row gap, one row of
+  /// actions, inset.
   static const double trayHeight =
-      DesignSize.islandExpandedHeight +
-      DesignSize.cornerButton +
-      DesignSpace.s1;
-
-  bool get _hasTray =>
-      actions.isNotEmpty || trailing.isNotEmpty || status != null;
+      DesignSpace.islandInset * 2 +
+      DesignSize.cornerButton * 2 +
+      DesignSpace.islandRowGap;
 
   /// Page dot diameter in the title HUD (from the Island preview).
   static const double hudDot = 5;
@@ -148,59 +147,103 @@ class Island extends StatelessWidget {
   /// Brightness bar height in the HUD (from the Island preview).
   static const double hudBarHeight = 5;
 
+  bool get _hasTray => actions.isNotEmpty || status != null;
+
+  bool get _expanded => hud == null && state == ChromeState.expanded;
+
+  bool get _visible => hud != null || state != ChromeState.hidden;
+
+  double get _height => switch (hud) {
+    null when _expanded =>
+      _hasTray ? trayHeight : DesignSize.islandExpandedHeight,
+    null => DesignSize.islandDot,
+    _ => DesignSize.islandPillHeight,
+  };
+
   @override
-  Widget build(BuildContext context) {
+  State<Island> createState() => _IslandState();
+
+  Widget _build(
+    BuildContext context, {
+    required bool shrinking,
+    required bool fadeAfterShrink,
+    required double maxWidth,
+  }) {
     final colors = DesignColors.of(context);
     final text = Theme.of(context).textTheme;
     final hud = this.hud;
-    final expanded = hud == null && state == ChromeState.expanded;
-    final visible = hud != null || state != ChromeState.hidden;
-    // Two rows are too tall for a stadium: its round ends would clip the
-    // outer tabs and actions.
-    final radius = expanded && _hasTray ? DesignRadius.lg : DesignRadius.pill;
+    final expanded = _expanded;
+    final visible = _visible;
+    final reduceMotion = _reduceMotion(context);
+    final shape = DesignShape.of(context);
+    // Two rows take the large role; anything shorter is capped at half its
+    // height, so the dot stays a dot.
+    final radius = shape.forHeight(
+      _height,
+      role: expanded && _hasTray ? shape.lg : shape.md,
+    );
 
     final Widget content = switch (hud) {
-      IslandBrightnessHud() => _hud(hud.label, _brightness(hud, colors, text)),
-      IslandTitleHud() => _hud(hud.title, _title(hud, colors, text)),
-      null when expanded => _expanded(context, colors, text),
+      IslandBrightnessHud() => _hud(
+        hud.label,
+        _brightness(hud, colors, shape, text),
+      ),
+      IslandTitleHud() => _hud(hud.title, _title(hud, colors, shape, text)),
+      null when expanded => _expandedContent(context, colors, text, maxWidth),
       null => const SizedBox.square(
         key: ValueKey(ChromeState.dot),
         dimension: DesignSize.islandDot,
       ),
     };
-    final height = switch (hud) {
-      null when expanded =>
-        _hasTray ? trayHeight : DesignSize.islandExpandedHeight,
-      null => DesignSize.islandDot,
-      _ => DesignSize.islandPillHeight,
-    };
 
-    final pill = SizedBox(
-      height: height,
-      child: Material(
-        type: MaterialType.transparency,
-        child: AnimatedSwitcher(
-          duration: DesignMotion.fade + DesignMotion.fadeDelay,
-          switchInCurve: Interval(
-            DesignMotion.fadeDelay.inMicroseconds /
-                (DesignMotion.fade + DesignMotion.fadeDelay).inMicroseconds,
-            1,
-          ),
-          // Only the incoming content sizes the pill; outgoing
-          // content fades at its own size, clipped by the pill.
-          layoutBuilder: (current, previous) => Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              for (final child in previous) Positioned(child: child),
-              ?current,
-            ],
-          ),
-          child: content,
+    Widget sized(Widget? current) {
+      final box = SizedBox(height: _height, child: current);
+      return reduceMotion
+          // AnimatedSize cannot run for zero time (it re-dirties itself
+          // mid-layout), so reduced motion drops it.
+          ? box
+          : AnimatedSize(
+              duration: shrinking
+                  ? DesignMotion.islandCollapse
+                  : DesignMotion.islandMorph,
+              curve: shrinking
+                  ? DesignMotion.collapseCurve
+                  : DesignMotion.islandCurve,
+              clipBehavior: Clip.none,
+              child: box,
+            );
+    }
+
+    final pill = Material(
+      type: MaterialType.transparency,
+      child: AnimatedSwitcher(
+        duration: DesignMotion.fade + DesignMotion.fadeDelay,
+        // Outgoing content fades with the shrink, not ahead of it.
+        reverseDuration: DesignMotion.islandCollapse,
+        switchInCurve: Interval(
+          DesignMotion.fadeDelay.inMicroseconds /
+              (DesignMotion.fade + DesignMotion.fadeDelay).inMicroseconds,
+          1,
         ),
+        // Only the incoming content sizes the pill (first, so the size
+        // animation keeps its state across switches); outgoing content is
+        // laid out in the morphing pill, so it scales down as it shrinks.
+        layoutBuilder: (current, previous) => Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            sized(current),
+            for (final child in previous)
+              Positioned.fill(
+                child: FittedBox(fit: BoxFit.scaleDown, child: child),
+              ),
+          ],
+        ),
+        child: content,
       ),
     );
 
+    final fadeAfter = fadeAfterShrink && !reduceMotion;
     return IgnorePointer(
       ignoring: !expanded,
       child: ExcludeFocus(
@@ -209,26 +252,14 @@ class Island extends StatelessWidget {
           excluding: !visible || (hud == null && !expanded),
           child: AnimatedOpacity(
             opacity: visible ? 1 : 0,
-            duration: DesignMotion.fade,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.island,
-                borderRadius: BorderRadius.circular(radius),
-                boxShadow: colors.islandShadow,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(radius),
-                child: _reduceMotion(context)
-                    // AnimatedSize cannot run for zero time (it re-dirties
-                    // itself mid-layout), so reduced motion drops it.
-                    ? pill
-                    : AnimatedSize(
-                        duration: DesignMotion.islandMorph,
-                        curve: DesignMotion.islandCurve,
-                        clipBehavior: Clip.none,
-                        child: pill,
-                      ),
-              ),
+            duration: fadeAfter
+                ? DesignMotion.islandCollapse
+                : DesignMotion.fade,
+            curve: fadeAfter ? DesignMotion.collapseFade : Curves.linear,
+            child: _Surface(
+              radius: radius,
+              reduceMotion: reduceMotion,
+              child: pill,
             ),
           ),
         ),
@@ -252,6 +283,7 @@ class Island extends StatelessWidget {
   Widget _brightness(
     IslandBrightnessHud hud,
     DesignColors colors,
+    DesignShape shape,
     TextTheme text,
   ) => Row(
     mainAxisSize: MainAxisSize.min,
@@ -263,7 +295,7 @@ class Island extends StatelessWidget {
         color: colors.islandInk,
       ),
       ClipRRect(
-        borderRadius: BorderRadius.circular(DesignRadius.pill),
+        borderRadius: DesignShape.circular(shape.forHeight(hudBarHeight)),
         child: SizedBox(
           width: hudBarWidth,
           height: hudBarHeight,
@@ -285,7 +317,12 @@ class Island extends StatelessWidget {
     ],
   );
 
-  Widget _title(IslandTitleHud hud, DesignColors colors, TextTheme text) => Row(
+  Widget _title(
+    IslandTitleHud hud,
+    DesignColors colors,
+    DesignShape shape,
+    TextTheme text,
+  ) => Row(
     mainAxisSize: MainAxisSize.min,
     spacing: DesignSpace.s2,
     children: [
@@ -300,7 +337,7 @@ class Island extends StatelessWidget {
           for (var i = 0; i < hud.count; i++)
             DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: DesignShape.circular(shape.forHeight(hudDot)),
                 color: i == hud.index
                     ? colors.islandInk
                     : colors.islandInkMuted,
@@ -312,8 +349,18 @@ class Island extends StatelessWidget {
     ],
   );
 
-  Widget _expanded(BuildContext context, DesignColors colors, TextTheme text) {
-    final maxWidth = MediaQuery.sizeOf(context).width - 2 * DesignSpace.s4;
+  Widget _expandedContent(
+    BuildContext context,
+    DesignColors colors,
+    TextTheme text,
+    double available,
+  ) {
+    // Inside its own box (the corner buttons sit beside it) and never
+    // closer than space-4 to the window edges.
+    final maxWidth = math.min(
+      available,
+      MediaQuery.sizeOf(context).width - 2 * DesignSpace.s4,
+    );
     // Scales down while fading out into a smaller pill.
     return FittedBox(
       key: const ValueKey(ChromeState.expanded),
@@ -321,19 +368,23 @@ class Island extends StatelessWidget {
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth < 0 ? 0 : maxWidth),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: DesignSize.islandExpandedHeight,
-              child: _tabBar(colors, text),
-            ),
-            if (_hasTray)
+        child: Padding(
+          padding: const EdgeInsets.all(DesignSpace.islandInset),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: DesignSpace.islandRowGap,
+            children: [
               SizedBox(
-                height: trayHeight - DesignSize.islandExpandedHeight,
-                child: _tray(context, colors, text),
+                height: DesignSize.cornerButton,
+                child: _tabBar(colors, DesignShape.of(context), text),
               ),
-          ],
+              if (_hasTray)
+                SizedBox(
+                  height: DesignSize.cornerButton,
+                  child: _tray(context, colors, text),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -341,7 +392,12 @@ class Island extends StatelessWidget {
 
   Widget _tray(BuildContext context, DesignColors colors, TextTheme text) {
     final status = this.status;
-    final children = [
+    // Groups are runs of one kind (status, icon actions, chips), set apart
+    // by space alone.
+    const groupBreak = SizedBox(
+      width: DesignSpace.islandGroupGap - 2 * DesignSpace.islandItemGap,
+    );
+    final children = <Widget>[
       if (status != null)
         Semantics(
           liveRegion: true,
@@ -355,42 +411,34 @@ class Island extends StatelessWidget {
             ),
           ),
         ),
-      for (final a in actions) _action(a, colors, text),
-      if (trailing.isNotEmpty && (actions.isNotEmpty || status != null))
-        SizedBox(
-          width: 1,
-          height: DesignSpace.s6,
-          // The island is dark in both themes, so its rule is the dark one.
-          child: ColoredBox(color: DesignColors.dark.hairline),
-        ),
-      for (final a in trailing) _action(a, colors, text),
+      for (final (i, a) in actions.indexed) ...[
+        if ((i == 0 && status != null) ||
+            (i > 0 && (actions[i - 1].icon == null) != (a.icon == null)))
+          groupBreak,
+        _action(a, colors, DesignShape.of(context), text),
+      ],
     ];
     return AnimatedSwitcher(
       duration: DesignMotion.fade,
       child: SingleChildScrollView(
-        key: ValueKey(
-          [
-            status,
-            for (final a in [...actions, ...trailing]) a.label,
-          ].join('|'),
-        ),
+        key: ValueKey([status, for (final a in actions) a.label].join('|')),
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(
-          DesignSpace.s1,
-          0,
-          DesignSpace.s1,
-          DesignSpace.s1,
-        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          spacing: DesignSpace.s1,
+          spacing: DesignSpace.islandItemGap,
           children: children,
         ),
       ),
     );
   }
 
-  Widget _action(IslandAction a, DesignColors colors, TextTheme text) {
+  Widget _action(
+    IslandAction a,
+    DesignColors colors,
+    DesignShape shape,
+    TextTheme text,
+  ) {
+    final item = shape.forHeight(DesignSize.cornerButton);
     final enabled = a.onPressed != null;
     final ink = a.primary
         ? colors.islandOnActive
@@ -400,7 +448,9 @@ class Island extends StatelessWidget {
     final icon = a.icon;
     final Widget face = icon == null
         ? Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignSpace.islandItemPadding,
+            ),
             child: Center(
               widthFactor: 1,
               child: FittedBox(
@@ -428,7 +478,7 @@ class Island extends StatelessWidget {
         onTap: a.onPressed,
         child: InkWell(
           onTap: a.onPressed,
-          customBorder: const StadiumBorder(),
+          customBorder: DesignShape.rounded(item),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: a.primary
@@ -437,7 +487,7 @@ class Island extends StatelessWidget {
                   // The island is dark in both themes: the dark chip fill.
                   ? DesignColors.dark.controlOff
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(DesignRadius.pill),
+              borderRadius: DesignShape.circular(item),
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
@@ -452,7 +502,7 @@ class Island extends StatelessWidget {
     );
   }
 
-  Widget _tabBar(DesignColors colors, TextTheme text) {
+  Widget _tabBar(DesignColors colors, DesignShape shape, TextTheme text) {
     return Center(
       widthFactor: 1,
       child: FittedBox(
@@ -461,22 +511,21 @@ class Island extends StatelessWidget {
           role: SemanticsRole.tabBar,
           label: tabsLabel,
           container: true,
-          child: Padding(
-            padding: const EdgeInsets.all(DesignSpace.s1),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: DesignSpace.s2,
-              children: [
-                for (var i = 0; i < tabs.length; i++) _tab(i, colors, text),
-              ],
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: DesignSpace.islandItemGap,
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                _tab(i, colors, shape, text),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _tab(int i, DesignColors colors, TextTheme text) {
+  Widget _tab(int i, DesignColors colors, DesignShape shape, TextTheme text) {
+    final item = shape.forHeight(DesignSize.cornerButton);
     final isSelected = i == selected;
     return Semantics(
       container: true,
@@ -488,18 +537,20 @@ class Island extends StatelessWidget {
       onTap: () => onSelect(i),
       child: InkWell(
         onTap: () => onSelect(i),
-        customBorder: const StadiumBorder(),
+        customBorder: DesignShape.rounded(item),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: isSelected ? colors.islandActive : Colors.transparent,
-            borderRadius: BorderRadius.circular(DesignRadius.pill),
+            borderRadius: DesignShape.circular(item),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(
               minHeight: DesignSize.cornerButton,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignSpace.islandItemPadding,
+              ),
               child: Center(
                 widthFactor: 1,
                 child: Text(
@@ -517,4 +568,251 @@ class Island extends StatelessWidget {
       ),
     );
   }
+}
+
+class _IslandState extends State<Island> {
+  /// The last size change made the island smaller: it collapses without
+  /// overshoot. Kept until the height changes again, so a rebuild mid-morph
+  /// never swaps the curve.
+  bool _shrinking = false;
+
+  /// Hiding started from more than the dot: the fade waits for the shrink.
+  bool _fadeAfterShrink = false;
+
+  @override
+  void didUpdateWidget(Island old) {
+    super.didUpdateWidget(old);
+    if (old._height != widget._height) {
+      _shrinking = widget._height < old._height;
+    }
+    if (old._visible != widget._visible) {
+      _fadeAfterShrink = !widget._visible && old._height > DesignSize.islandDot;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => widget._build(
+      context,
+      shrinking: _shrinking,
+      fadeAfterShrink: _fadeAfterShrink,
+      maxWidth: box.maxWidth,
+    ),
+  );
+}
+
+/// A chrome button in a screen corner that follows the island's
+/// [ChromeState]: a 44px button when expanded, a [DesignSize.cornerDot] dot
+/// toward [corner] when idle, gone when hidden. It grows on the island
+/// spring and shrinks like the island (no overshoot; hiding from the button
+/// shrinks to the dot before it fades), on the same surface and corner
+/// rules. Its layout box is always [DesignSize.cornerButton] square, so
+/// neighbours never move. Only the expanded button is tappable.
+class CornerButton extends StatefulWidget {
+  const CornerButton({
+    super.key,
+    required this.state,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    required this.corner,
+  });
+
+  /// Button, dot or hidden.
+  final ChromeState state;
+
+  /// The symbol drawn when expanded.
+  final IconData icon;
+
+  /// Tooltip and spoken name.
+  final String tooltip;
+
+  /// Called when the expanded button is tapped.
+  final VoidCallback onPressed;
+
+  /// Which corner the dot shrinks toward, such as [Alignment.topLeft].
+  final Alignment corner;
+
+  double get _size => state == ChromeState.expanded
+      ? DesignSize.cornerButton
+      : DesignSize.cornerDot;
+
+  @override
+  State<CornerButton> createState() => _CornerButtonState();
+}
+
+class _CornerButtonState extends State<CornerButton> {
+  /// As in the island: the last size change was a shrink.
+  bool _shrinking = false;
+
+  /// Hiding started from the button: the fade waits for the shrink.
+  bool _fadeAfterShrink = false;
+
+  @override
+  void didUpdateWidget(CornerButton old) {
+    super.didUpdateWidget(old);
+    if (old._size != widget._size) _shrinking = widget._size < old._size;
+    final hidden = widget.state == ChromeState.hidden;
+    if ((old.state == ChromeState.hidden) != hidden) {
+      // Reset on every show, so it never delays the next fade-in.
+      _fadeAfterShrink = hidden && old.state == ChromeState.expanded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = DesignColors.of(context);
+    final shape = DesignShape.of(context);
+    final reduceMotion = _reduceMotion(context);
+    final expanded = widget.state == ChromeState.expanded;
+    final size = widget._size;
+    final fadeAfter = _fadeAfterShrink && !reduceMotion;
+    final box = AnimatedContainer(
+      duration: reduceMotion
+          ? Duration.zero
+          : _shrinking
+          ? DesignMotion.islandCollapse
+          : DesignMotion.islandMorph,
+      curve: _shrinking ? DesignMotion.collapseCurve : DesignMotion.islandCurve,
+      width: size,
+      height: size,
+      // Only the size rides the spring; the surface is drawn un-animated.
+      child: _Surface(
+        radius: shape.forHeight(size),
+        reduceMotion: reduceMotion,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: widget.onPressed,
+            customBorder: DesignShape.rounded(
+              shape.forHeight(DesignSize.cornerButton),
+            ),
+            // The symbol scales down and fades with the shrink.
+            child: AnimatedOpacity(
+              opacity: expanded ? 1 : 0,
+              duration: expanded
+                  ? DesignMotion.fade
+                  : DesignMotion.islandCollapse,
+              child: FittedBox(
+                child: SizedBox.square(
+                  dimension: DesignSize.cornerButton,
+                  child: Icon(
+                    widget.icon,
+                    size: _chromeIconSize,
+                    color: colors.islandInk,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return SizedBox.square(
+      dimension: DesignSize.cornerButton,
+      child: IgnorePointer(
+        ignoring: !expanded,
+        child: ExcludeFocus(
+          excluding: !expanded,
+          child: ExcludeSemantics(
+            excluding: !expanded,
+            child: AnimatedOpacity(
+              opacity: widget.state == ChromeState.hidden ? 0 : 1,
+              duration: fadeAfter
+                  ? DesignMotion.islandCollapse
+                  : DesignMotion.fade,
+              curve: fadeAfter ? DesignMotion.collapseFade : Curves.linear,
+              child: Align(
+                alignment: widget.corner,
+                // Always built, so the shape keeps morphing across states.
+                child: Tooltip(
+                  message: widget.tooltip,
+                  excludeFromSemantics: true,
+                  child: Semantics(
+                    button: true,
+                    label: widget.tooltip,
+                    child: box,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The island's raised dark surface (fill, [DesignColors.islandElevation]
+/// and the top highlight), clipped to [radius]. The corner is tweened on a
+/// curve that never overshoots, so it cannot snap ahead of a shrinking
+/// shape (and a decoration never lerps past 1).
+class _Surface extends StatelessWidget {
+  const _Surface({
+    required this.radius,
+    required this.reduceMotion,
+    required this.child,
+  });
+
+  final double radius;
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = DesignColors.of(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: radius),
+      duration: reduceMotion ? Duration.zero : DesignMotion.islandCollapse,
+      curve: DesignMotion.collapseCurve,
+      builder: (context, radius, child) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.island,
+          borderRadius: DesignShape.circular(radius),
+          boxShadow: colors.islandElevation.shadows,
+        ),
+        child: CustomPaint(
+          foregroundPainter: _EdgeHighlight(
+            radius,
+            colors.islandElevation.highlight,
+          ),
+          child: ClipRRect(
+            borderRadius: DesignShape.circular(radius),
+            child: child,
+          ),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// The island's 1px top-edge highlight: [color] at the top, clear by
+/// mid-height. Gives depth where shadows vanish (pure black).
+class _EdgeHighlight extends CustomPainter {
+  const _EdgeHighlight(this.radius, this.color);
+
+  final double radius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(0.5), DesignShape.radius(radius)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0, 0.5],
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_EdgeHighlight old) =>
+      old.radius != radius || old.color != color;
 }

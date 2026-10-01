@@ -40,6 +40,7 @@ class FlipClockRouter implements CoreRouter {
         logger: di.get<Logger>(),
         onOpenSettings: () => context.go(settings),
         onOpenTimerSettings: () => context.go(timerSettings),
+        orientationSupported: di.get<OrientationLock>().supported,
       ),
       routes: [
         GoRoute(
@@ -52,6 +53,13 @@ class FlipClockRouter implements CoreRouter {
             onDone: () => context.go(home),
             onSkins: () => unawaited(
               showSkins(
+                context,
+                settings: di.get<SettingsController>(),
+                now: di.get<ClockController>().state,
+              ),
+            ),
+            onCustomize: () => unawaited(
+              customizeSkin(
                 context,
                 settings: di.get<SettingsController>(),
                 now: di.get<ClockController>().state,

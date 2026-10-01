@@ -9,6 +9,7 @@ class DesignSystemWrapper extends StatefulWidget {
     required this.builder,
     this.mode = AppearanceMode.system,
     this.face,
+    this.corner = DesignShape.defaultCorner,
   });
 
   final Widget Function(BuildContext context, ThemeData theme) builder;
@@ -19,6 +20,9 @@ class DesignSystemWrapper extends StatefulWidget {
   /// Sets every text style in this face (the app following a skin); null
   /// keeps Geist.
   final DisplayFace? face;
+
+  /// The base corner radius of every shape ([DesignShape]); 0 is square.
+  final double corner;
 
   @override
   State<DesignSystemWrapper> createState() => _DesignSystemWrapperState();
@@ -49,6 +53,7 @@ class _DesignSystemWrapperState extends State<DesignSystemWrapper>
     final theme = DesignSystem(
       context,
       face: widget.face,
+      corner: widget.corner,
     ).forMode(widget.mode, brightness);
 
     return Theme(

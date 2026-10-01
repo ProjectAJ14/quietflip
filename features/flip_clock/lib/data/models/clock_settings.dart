@@ -80,6 +80,7 @@ class ClockSettings {
     this.cardSize = CardSize.large,
     this.timerPresets = defaultTimerPresets,
     this.defaultTimer = const PomodoroCycle(),
+    this.corner = DesignShape.defaultCorner,
   });
 
   /// The presets a fresh install offers.
@@ -108,6 +109,9 @@ class ClockSettings {
           const PomodoroCycle(),
         _ => preset,
       };
+
+  /// Settings steps [corner] by this much.
+  static const double cornerStep = 2;
 
   /// Dimmest and brightest [digitBrightness].
   static const double minBrightness = 0.2;
@@ -199,6 +203,14 @@ class ClockSettings {
         final int ms => _offered(Minutes(Duration(milliseconds: ms)), presets),
         _ => d.defaultTimer,
       },
+      // Clamped, then snapped to the slider's steps.
+      corner: switch (json['corner']) {
+        final num v when !v.isNaN =>
+          (v.clamp(DesignShape.minCorner, DesignShape.maxCorner) / cornerStep)
+                  .round() *
+              cornerStep,
+        _ => d.corner,
+      },
     );
   }
 
@@ -252,6 +264,11 @@ class ClockSettings {
   /// [timerPresets].
   final TimerPreset defaultTimer;
 
+  /// The one corner radius every shape in the app follows
+  /// (`DesignShape.corner`), [DesignShape.minCorner] (square) to
+  /// [DesignShape.maxCorner].
+  final double corner;
+
   Map<String, Object?> toJson() => {
     'theme': theme.name,
     'use24h': use24h,
@@ -277,6 +294,7 @@ class ClockSettings {
       PomodoroCycle() => null,
       Minutes(:final duration) => duration.inMilliseconds,
     },
+    'corner': corner,
   };
 
   /// A copy; new [timerPresets] are normalized, and a [defaultTimer] no
@@ -304,6 +322,7 @@ class ClockSettings {
     CardSize? cardSize,
     List<Duration>? timerPresets,
     TimerPreset? defaultTimer,
+    double? corner,
   }) {
     final presets = timerPresets == null
         ? this.timerPresets
@@ -330,6 +349,7 @@ class ClockSettings {
       cardSize: cardSize ?? this.cardSize,
       timerPresets: presets,
       defaultTimer: _offered(defaultTimer ?? this.defaultTimer, presets),
+      corner: corner ?? this.corner,
     );
   }
 
@@ -356,7 +376,8 @@ class ClockSettings {
       other.gestureModes == gestureModes &&
       other.cardSize == cardSize &&
       listEquals(other.timerPresets, timerPresets) &&
-      other.defaultTimer == defaultTimer;
+      other.defaultTimer == defaultTimer &&
+      other.corner == corner;
 
   @override
   int get hashCode => Object.hashAll([
@@ -381,5 +402,6 @@ class ClockSettings {
     cardSize,
     Object.hashAll(timerPresets),
     defaultTimer,
+    corner,
   ]);
 }

@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -83,6 +84,26 @@ void main() {
       const ClockSettings(digitBrightness: 0.5),
       isNot(const ClockSettings()),
     );
+  });
+
+  test('corner: default 14, round trip, clamp, per-field fallback', () {
+    expect(const ClockSettings().corner, DesignShape.defaultCorner);
+    const s = ClockSettings(corner: 6);
+    expect(s.toJson()['corner'], 6);
+    expect(ClockSettings.fromJson(s.toJson()), s);
+    expect(s.copyWith(corner: 8).corner, 8);
+    expect(s, isNot(const ClockSettings()));
+    expect(s.hashCode, isNot(const ClockSettings().hashCode));
+    double read(Object? v) => ClockSettings.fromJson({'corner': v}).corner;
+    expect(read(-4), DesignShape.minCorner);
+    expect(read(99), DesignShape.maxCorner);
+    expect(read(10), 10);
+    // Off-step values snap to the slider's 2px steps.
+    expect(read(13), 14);
+    expect(read(10.9), 10);
+    expect(read(double.nan), DesignShape.defaultCorner);
+    expect(read('round'), DesignShape.defaultCorner);
+    expect(ClockSettings.cornerStep, 2);
   });
 
   test('controls idle reads only the offered choices', () {

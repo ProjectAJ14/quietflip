@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -363,7 +364,7 @@ class _Group extends StatelessWidget {
           ),
         Material(
           color: colors.surfaceRaised,
-          borderRadius: BorderRadius.circular(DesignRadius.sm),
+          borderRadius: DesignShape.circular(DesignShape.of(context).sm),
           clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -422,10 +423,10 @@ class _NavRow extends StatelessWidget {
       button: true,
       child: Material(
         color: selected ? colors.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(DesignRadius.sm),
+        borderRadius: DesignShape.circular(DesignShape.of(context).sm),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(DesignRadius.sm),
+          borderRadius: DesignShape.circular(DesignShape.of(context).sm),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight: desktop
@@ -482,7 +483,7 @@ class _IconTile extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: inverted ? colors.onAccent : colors.controlOff,
-        borderRadius: BorderRadius.circular(DesignRadius.xs),
+        borderRadius: DesignShape.circular(DesignShape.of(context).xs),
       ),
       child: SizedBox.square(
         dimension: size,
@@ -727,6 +728,8 @@ class SettingsSliderRow extends StatelessWidget {
     this.divisions,
     required this.valueLabel,
     required this.onChanged,
+    this.minLabel,
+    this.maxLabel,
   });
 
   final String label;
@@ -734,6 +737,10 @@ class SettingsSliderRow extends StatelessWidget {
   final double min;
   final double max;
   final int? divisions;
+
+  /// Stop labels under the track's two ends, such as "Square" and "Round".
+  final String? minLabel;
+  final String? maxLabel;
 
   /// Visible and spoken value, such as "72%".
   final String valueLabel;
@@ -768,6 +775,16 @@ class SettingsSliderRow extends StatelessWidget {
             semanticFormatterCallback: (_) => valueLabel,
           ),
         ),
+        if (minLabel != null || maxLabel != null)
+          DefaultTextStyle.merge(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: DesignColors.of(context).inkMuted,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text(minLabel ?? ''), Text(maxLabel ?? '')],
+            ),
+          ),
       ],
     ),
   );
@@ -789,7 +806,7 @@ class SettingsKeyRow extends StatelessWidget {
       trailing: DecoratedBox(
         decoration: BoxDecoration(
           color: colors.bg,
-          borderRadius: BorderRadius.circular(DesignRadius.xs),
+          borderRadius: DesignShape.circular(DesignShape.of(context).xs),
           border: Border.all(color: colors.hairline),
         ),
         child: Padding(

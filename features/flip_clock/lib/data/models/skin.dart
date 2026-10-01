@@ -25,8 +25,8 @@ enum SkinMeridiem {
   right,
 }
 
-/// The look of the flip display: digit face and colours, card shape and the
-/// details it shows. Built-in skins come from `skins.dart`; custom skins are
+/// The look of the flip display: digit face and colours, the seam and the
+/// details it shows (card corners follow the app's one corner setting). Built-in skins come from `skins.dart`; custom skins are
 /// user data saved in `ClockSettings.customSkins`.
 class Skin {
   const Skin({
@@ -37,16 +37,11 @@ class Skin {
     this.cardColor = DesignSkinColors.cardInk,
     this.groundColor = DesignSkinColors.bgInk,
     this.seam = true,
-    this.cardRadius = DesignRadius.md,
     this.seconds = SkinSeconds.off,
     this.meridiem = SkinMeridiem.left,
     this.showDate = false,
     this.themed = false,
   });
-
-  /// Smallest and largest [cardRadius].
-  static const double minRadius = 0;
-  static const double maxRadius = 32;
 
   final String id;
   final String name;
@@ -60,8 +55,6 @@ class Skin {
   /// The 2px split line at half height.
   final bool seam;
 
-  /// Card corner radius at `radius-md` card sizes, [minRadius]..[maxRadius].
-  final double cardRadius;
   final SkinSeconds seconds;
   final SkinMeridiem meridiem;
 
@@ -107,10 +100,6 @@ class Skin {
       cardColor: color('cardColor', d.cardColor),
       groundColor: color('groundColor', d.groundColor),
       seam: json['seam'] is bool ? json['seam']! as bool : d.seam,
-      cardRadius: switch (json['cardRadius']) {
-        final num v when !v.isNaN => v.clamp(minRadius, maxRadius).toDouble(),
-        _ => d.cardRadius,
-      },
       seconds: pick(SkinSeconds.values, 'seconds', d.seconds),
       meridiem: pick(SkinMeridiem.values, 'meridiem', d.meridiem),
       showDate: json['showDate'] is bool
@@ -129,7 +118,6 @@ class Skin {
     'cardColor': cardColor.toARGB32(),
     'groundColor': groundColor.toARGB32(),
     'seam': seam,
-    'cardRadius': cardRadius,
     'seconds': seconds.name,
     'meridiem': meridiem.name,
     'showDate': showDate,
@@ -144,7 +132,6 @@ class Skin {
     Color? cardColor,
     Color? groundColor,
     bool? seam,
-    double? cardRadius,
     SkinSeconds? seconds,
     SkinMeridiem? meridiem,
     bool? showDate,
@@ -157,7 +144,6 @@ class Skin {
     cardColor: cardColor ?? this.cardColor,
     groundColor: groundColor ?? this.groundColor,
     seam: seam ?? this.seam,
-    cardRadius: cardRadius ?? this.cardRadius,
     seconds: seconds ?? this.seconds,
     meridiem: meridiem ?? this.meridiem,
     showDate: showDate ?? this.showDate,
@@ -181,7 +167,6 @@ class Skin {
       other.cardColor == cardColor &&
       other.groundColor == groundColor &&
       other.seam == seam &&
-      other.cardRadius == cardRadius &&
       other.seconds == seconds &&
       other.meridiem == meridiem &&
       other.showDate == showDate &&
@@ -196,7 +181,6 @@ class Skin {
     cardColor,
     groundColor,
     seam,
-    cardRadius,
     seconds,
     meridiem,
     showDate,

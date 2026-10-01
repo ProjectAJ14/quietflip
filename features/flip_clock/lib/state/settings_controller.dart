@@ -32,6 +32,13 @@ class SettingsController extends Cubit<ClockSettings> {
   /// skins keep the design system's interface font.
   ValueListenable<DisplayFace?> get face => _face;
 
+  final ValueNotifier<double> _corner = ValueNotifier(
+    DesignShape.defaultCorner,
+  );
+
+  /// The corner every shape in the app follows ([ClockSettings.corner]).
+  ValueListenable<double> get corner => _corner;
+
   /// Restores saved settings (defaults when none).
   Future<void> load() async {
     final saved = await _repository.load();
@@ -113,12 +120,14 @@ class SettingsController extends Cubit<ClockSettings> {
       change.nextState.customSkins,
     ).face;
     _face.value = face == DisplayFace.barlowCondensed ? null : face;
+    _corner.value = change.nextState.corner;
   }
 
   @override
   Future<void> close() {
     _appearance.dispose();
     _face.dispose();
+    _corner.dispose();
     return super.close();
   }
 }

@@ -643,6 +643,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get card_size_small => "Small";
   String get card_size_medium => "Medium";
   String get card_size_large => "Large";
+  String get settings_corners => "Corners";
+  String get corners_square => "Square";
+  String get corners_round => "Round";
+  String corners_value(String value) => "$value px";
   String get pomodoro => "Pomodoro";
   String pomodoro_focus(int round) => "Focus · Round $round";
   String pomodoro_break(int round) => "Break · Round $round";
@@ -652,6 +656,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get start_break => "Start break";
   String get skins_title => "Skins";
   String get skins_customize => "Customize";
+  String skins_customize_named(String name) => "Customize $name";
   String get skins_done => "Done";
   String get skins_yours => "Your skins";
   String get skins_classic => "Classic";
@@ -672,7 +677,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get customize_apply => "Apply";
   String get customize_low_contrast => "Digits may be hard to read.";
   String get customize_shape => "Shape";
-  String get customize_radius => "Corner radius";
   String get customize_seam => "Split line";
   String get customize_details => "Details";
   String get customize_seconds => "Seconds";
@@ -723,6 +727,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get action_done => "Done";
   String get action_skins => "Skins";
   String get action_settings => "Settings";
+  String get action_rotation => "Screen rotation";
   String get action_timer_settings => "Timer settings";
   String preset_minutes(int minutes) => "${minutes}m";
   String preset_minutes_seconds(int minutes, String seconds) =>
@@ -781,6 +786,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get key_hide_controls => "Hide controls";
   String get key_dim => "Dim the digits";
   String get key_lap => "Lap (stopwatch)";
+  String get key_rotation => "Screen rotation";
   String get keycap_space => "Space";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
@@ -789,6 +795,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_esc => "Esc";
   String get keycap_d => "D";
   String get keycap_l => "L";
+  String get keycap_r => "R";
   String get about_licenses => "Licenses";
   String get about_privacy => "Privacy";
   String get about_privacy_value => "No ads. No tracking.";
@@ -879,6 +886,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return card_size_medium;
       case 'card_size_large':
         return card_size_large;
+      case 'settings_corners':
+        return settings_corners;
+      case 'corners_square':
+        return corners_square;
+      case 'corners_round':
+        return corners_round;
+      case 'corners_value':
+        return corners_value;
       case 'pomodoro':
         return pomodoro;
       case 'pomodoro_focus':
@@ -897,6 +912,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skins_title;
       case 'skins_customize':
         return skins_customize;
+      case 'skins_customize_named':
+        return skins_customize_named;
       case 'skins_done':
         return skins_done;
       case 'skins_yours':
@@ -937,8 +954,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return customize_low_contrast;
       case 'customize_shape':
         return customize_shape;
-      case 'customize_radius':
-        return customize_radius;
       case 'customize_seam':
         return customize_seam;
       case 'customize_details':
@@ -1039,6 +1054,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return action_skins;
       case 'action_settings':
         return action_settings;
+      case 'action_rotation':
+        return action_rotation;
       case 'action_timer_settings':
         return action_timer_settings;
       case 'preset_minutes':
@@ -1143,6 +1160,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return key_dim;
       case 'key_lap':
         return key_lap;
+      case 'key_rotation':
+        return key_rotation;
       case 'keycap_space':
         return keycap_space;
       case 'keycap_left_right':
@@ -1159,6 +1178,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return keycap_d;
       case 'keycap_l':
         return keycap_l;
+      case 'keycap_r':
+        return keycap_r;
       case 'about_licenses':
         return about_licenses;
       case 'about_privacy':

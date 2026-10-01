@@ -27,7 +27,7 @@ class DesignColors extends ThemeExtension<DesignColors> {
     required this.controlOff,
     required this.danger,
     required this.sheetShadow,
-    required this.islandShadow,
+    required this.islandElevation,
   });
 
   /// Mono Dark, the default.
@@ -42,14 +42,23 @@ class DesignColors extends ThemeExtension<DesignColors> {
     inkMuted: Color(0xffa1a1a1),
     inkSubtle: Color(0xff7c7c7c),
     hairline: Color(0xff2c2c2e),
-    island: Color(0xff161617),
+    // One step above black cards, so the island separates from them.
+    island: Color(0xff1c1c1e),
     accent: Color(0xffffffff),
     onAccent: Color(0xff000000),
     controlOff: Color(0xff39393d),
     danger: Color(0xffff6b5e),
     // Shadows vanish on black, so dark uses a 1px hairline ring instead.
     sheetShadow: [BoxShadow(color: Color(0xff2c2c2e), spreadRadius: 1)],
-    islandShadow: [BoxShadow(color: Color(0xff2c2c2e), spreadRadius: 1)],
+    // The drop shadows still lift it off lit cards; on black the ring and
+    // the top highlight carry the depth.
+    islandElevation: DesignElevation(
+      shadows: [
+        ..._islandDrop,
+        BoxShadow(color: Color(0xff2c2c2e), spreadRadius: 1),
+      ],
+      highlight: _islandHighlight,
+    ),
   );
 
   /// Mono Light.
@@ -76,10 +85,20 @@ class DesignColors extends ThemeExtension<DesignColors> {
         blurRadius: 48,
       ),
     ],
-    islandShadow: [
-      BoxShadow(color: Color(0x38000000), offset: Offset(0, 6), blurRadius: 20),
-    ],
+    islandElevation: DesignElevation(
+      shadows: _islandDrop,
+      highlight: _islandHighlight,
+    ),
   );
+
+  /// A large soft drop shadow plus a tight contact shadow under the island.
+  static const List<BoxShadow> _islandDrop = [
+    BoxShadow(color: Color(0x73000000), offset: Offset(0, 12), blurRadius: 32),
+    BoxShadow(color: Color(0x59000000), offset: Offset(0, 2), blurRadius: 6),
+  ];
+
+  /// 14% white on the island's top edge.
+  static const Color _islandHighlight = Color(0x24ffffff);
 
   /// Clock screen and settings page ground.
   final Color bg;
@@ -129,8 +148,8 @@ class DesignColors extends ThemeExtension<DesignColors> {
   /// Skins and Customize sheets.
   final List<BoxShadow> sheetShadow;
 
-  /// The island.
-  final List<BoxShadow> islandShadow;
+  /// The island's lift over the clock.
+  final DesignElevation islandElevation;
 
   /// Labels and icons on [island].
   Color get islandInk => const Color(0xffffffff);
@@ -156,6 +175,20 @@ class DesignColors extends ThemeExtension<DesignColors> {
   @override
   DesignColors lerp(DesignColors? other, double t) =>
       other == null || t < 0.5 ? this : other;
+}
+
+/// How a raised object sits over the screen: [shadows] under it and a 1px
+/// [highlight] on its top edge that fades to clear at mid-height (the depth
+/// cue that still reads on pure black).
+@immutable
+class DesignElevation {
+  const DesignElevation({required this.shadows, required this.highlight});
+
+  /// Painted under the object, in order.
+  final List<BoxShadow> shadows;
+
+  /// Colour of the top edge, fading to clear at mid-height.
+  final Color highlight;
 }
 
 /// Digit, card and ground colours of the built-in skins (`skin-*`). Digit
@@ -190,15 +223,22 @@ abstract final class DesignSpace {
   static const double s6 = 24;
   static const double s8 = 32;
   static const double s12 = 48;
-}
 
-/// Corner radii (`radius-*`).
-abstract final class DesignRadius {
-  static const double xs = 6;
-  static const double sm = 10;
-  static const double md = 14;
-  static const double lg = 22;
-  static const double pill = 999;
+  /// Island padding, all sides.
+  static const double islandInset = s2;
+
+  /// Between the island's tab row and its tray.
+  static const double islandRowGap = s2;
+
+  /// Between the items of one group in the island (tabs, actions, chips).
+  static const double islandItemGap = s2;
+
+  /// Between groups in the island tray (actions vs chips): wide enough to
+  /// tell them apart without a line.
+  static const double islandGroupGap = s4;
+
+  /// Horizontal padding inside island tabs and chips.
+  static const double islandItemPadding = s4;
 }
 
 /// Fixed chrome sizes (`size-*`).
@@ -209,8 +249,9 @@ abstract final class DesignSize {
   /// Island HUD height (brightness, mode name).
   static const double islandPillHeight = 36;
 
-  /// Island expanded with the tabs.
-  static const double islandExpandedHeight = 52;
+  /// Island expanded with the tabs only: `islandInset`, a [cornerButton]
+  /// tab row, `islandInset`.
+  static const double islandExpandedHeight = 60;
 
   /// Corner buttons, and the minimum hit target everywhere.
   static const double cornerButton = 44;
@@ -229,6 +270,17 @@ abstract final class DesignMotion {
 
   /// Island size/shape morph on the web curve; Flutter uses [islandSpring].
   static const Duration islandMorph = Duration(milliseconds: 460);
+
+  /// Island collapse (to a dot, to a HUD, to hidden): no overshoot on the
+  /// way out, so it shrinks rather than bounces.
+  static const Duration islandCollapse = Duration(milliseconds: 380);
+
+  /// The curve of [islandCollapse].
+  static const Curve collapseCurve = Curves.easeInOutCubic;
+
+  /// When hiding from a bigger shape, the fade runs over this part of
+  /// [islandCollapse]: after the shape is small, never before.
+  static const Curve collapseFade = Interval(0.6, 1);
 
   /// Content cross-fade inside the island.
   static const Duration fade = Duration(milliseconds: 180);

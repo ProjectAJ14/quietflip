@@ -4,7 +4,9 @@ QuietFlip's whole first release: a split-flap clock, a Pomodoro panel that
 runs the Pomodoro cycle (25 min focus, 5 min break, repeating, with a round
 count) or one of your timer presets (5, 10, 15 min by default, up to six),
 and a stopwatch, plus Settings. The clock can show today's date
-under the digits (Settings > Clock > Show date). No account, network or analytics.
+above the digits (Settings > Clock > Show date). On a tall screen (a phone
+held upright) the cards stack, hours over minutes (over seconds); turned
+sideways they sit in one row. No account, network or analytics.
 
 ## Routes
 
@@ -30,7 +32,7 @@ GoRouter(routes: [...const FlipClockRouter().routes])
 
 ## Settings
 
-Settings opens from the island's Settings action. It adapts: a list you tap
+Settings opens from the Settings button in the top-right corner. It adapts: a list you tap
 into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
@@ -52,19 +54,24 @@ Everything is saved at once and restored on launch.
 - **Keep awake:** keep the screen awake; subtle movement (full screen
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a
   jump with reduced motion; it lowers, but does not prevent, burn-in risk).
-- **Shortcuts** and **About** (licences, privacy).
+- **Shortcuts** (R for rotation on phones) and **About** (licences, privacy).
 
 ## Controls
 
-Only the digits show when nobody touches the screen. A tap or click shows
-the island at the top centre, the only control on the screen: the mode tabs
-(Pomodoro, Clock, Stopwatch) over the actions of the current mode, then Skins
-and Settings. Pomodoro offers Start (your default timer), a Pomodoro chip,
+Only the digits show when nobody touches the screen. A tap or click shows,
+floating above the clock, the island at the top centre (on a phone, just
+below the corner buttons, so it is never squeezed) (the mode tabs, Pomodoro, Clock, Stopwatch,
+over the actions of the current mode, centred), Skins in the top-left
+corner, Settings in the top-right and, on phones and tablets, Rotation in
+the bottom-right. They appear, shrink and disappear together. Rotation
+picks the screen rotation whatever way the device is held: follow the
+device, portrait, landscape, round again (the island says which; the R key
+does the same). Pomodoro offers Start (your default timer), a Pomodoro chip,
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
-Pause, Lap, Resume and Reset; laps list under its digits, newest first. After 4 seconds without input the island shrinks
-to a dot, and 3 seconds later it is gone; a timer that finishes brings it
+Pause, Lap, Resume and Reset; laps fill a grid under its digits, newest first, as many columns as fit, three rows before it scrolls. After 4 seconds without input the island and
+the corner buttons shrink to dots, and 3 seconds later they are gone; a timer that finishes brings it
 back. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and
 whether a tap toggles them.
@@ -85,8 +92,11 @@ whether a tap toggles them.
 
 ## Skins
 
-The island's Skins action opens the Skins sheet: live tiles of every skin, applied
-on tap. Classic is Mono (the default, white on near-black; black on white in
+The Skins button (top-left) opens the Skins sheet: live tiles of every skin,
+drawn as each skin is configured (seconds only on skins that show them,
+which is what you get when you pick one; the date above the cards only on
+skins that show it). Tap a tile to apply it: it gets the accent ring and check,
+and its caption turns into a Customize button for that skin. Classic is Mono (the default, white on near-black; black on white in
 the Light theme) plus nine colour variations; Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
 has one skin per bundled face (Bebas, Anton, Oswald,
@@ -97,9 +107,10 @@ A skin with its own face (Bebas, Orbit, Terminal and the rest) sets the whole
 app in that face: settings, the island, sheets, the date and AM/PM. Mono and
 the Classic colour skins keep Geist for everything but the digits.
 
-Customize (or New skin) opens the customizer on the current skin: face,
-digit / card / background colour (token swatches or a hex colour), corner
-radius, split line, seconds style (off, small, cards), AM/PM (hidden, inside
+Customize on the selected tile (in the sheet or the Appearance strip), or
+New skin, opens the customizer on that skin: face, digit / card /
+background colour (token swatches or a hex colour), split line (corners
+follow Settings > Appearance > Corners for the whole app), seconds style (off, small, cards), AM/PM (hidden, inside
 the first card, beside the last) and the date line. Saving a built-in skin
 creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.
