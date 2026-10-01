@@ -161,17 +161,17 @@ function line(c, w, h, f) {
 
 const ticks = [
   { id: 'classic', name: 'Classic', mood: 'soft click', file: '../../../packages/device_services/assets/sounds/flip.wav', shape: 'spike', decay: 0.25 },
-  { id: 'split_flap', name: 'Split-flap', mood: 'flaps patter', file: 'tick_split_flap.wav', shape: 'flaps', decay: 0.35 },
-  { id: 'clockwork', name: 'Clockwork', mood: 'watch tick', file: 'tick_clockwork.wav', shape: 'double', decay: 0.2 },
-  { id: 'woodblock', name: 'Woodblock', mood: 'hollow knock', file: 'tick_woodblock.wav', shape: 'rings', o: { count: 2, speed: 2.5 }, decay: 0.4 },
-  { id: 'digital', name: 'Digital', mood: 'clean blip', file: 'tick_digital.wav', shape: 'steps', o: { cycles: 6, speed: 4 }, decay: 0.2 },
+  { id: 'split_flap', name: 'Split-flap', mood: 'flaps patter', file: '../../../packages/device_services/assets/sounds/tick_split_flap.wav', shape: 'flaps', decay: 0.35 },
+  { id: 'clockwork', name: 'Clockwork', mood: 'watch tick', file: '../../../packages/device_services/assets/sounds/tick_clockwork.wav', shape: 'double', decay: 0.2 },
+  { id: 'woodblock', name: 'Woodblock', mood: 'hollow knock', file: '../../../packages/device_services/assets/sounds/tick_woodblock.wav', shape: 'rings', o: { count: 2, speed: 2.5 }, decay: 0.4 },
+  { id: 'digital', name: 'Digital', mood: 'clean blip', file: '../../../packages/device_services/assets/sounds/tick_digital.wav', shape: 'steps', o: { cycles: 6, speed: 4 }, decay: 0.2 },
 ];
 const alarms = [
   { id: 'chime', name: 'Chime', mood: 'two tones', file: '../../../packages/device_services/assets/sounds/alarm.wav', shape: 'twin', period: 1 },
-  { id: 'bell', name: 'Bell', mood: 'struck bell', file: 'alarm_bell.wav', shape: 'rings', o: { count: 4, speed: 0.5 }, period: 2 },
-  { id: 'beeps', name: 'Beeps', mood: 'bedside', file: 'alarm_beeps.wav', shape: 'steps', o: { groups: true, cycles: 7, speed: 3 }, period: 1.1 },
-  { id: 'rising', name: 'Rising', mood: 'marimba', file: 'alarm_rising.wav', shape: 'rise', period: 1.6 },
-  { id: 'ring', name: 'Ring', mood: 'twin bells', file: 'alarm_ring.wav', shape: 'ring', period: 1.6 },
+  { id: 'bell', name: 'Bell', mood: 'struck bell', file: '../../../packages/device_services/assets/sounds/alarm_bell.wav', shape: 'rings', o: { count: 4, speed: 0.5 }, period: 2 },
+  { id: 'beeps', name: 'Beeps', mood: 'bedside', file: '../../../packages/device_services/assets/sounds/alarm_beeps.wav', shape: 'steps', o: { groups: true, cycles: 7, speed: 3 }, period: 1.1 },
+  { id: 'rising', name: 'Rising', mood: 'marimba', file: '../../../packages/device_services/assets/sounds/alarm_rising.wav', shape: 'rise', period: 1.6 },
+  { id: 'ring', name: 'Ring', mood: 'twin bells', file: '../../../packages/device_services/assets/sounds/alarm_ring.wav', shape: 'ring', period: 1.6 },
 ];
 
 let ctx, playing = null; const buffers = {};

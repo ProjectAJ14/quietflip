@@ -19,6 +19,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `plugins/*` | Native platform integrations | nothing above them |
 | `tool/check.dart` | Format + analyzer gate over every `lib/` and `test/` | - |
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
+| `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
 | `.claude/skills/` | Task playbooks: `melos-workspace`, `new-feature`, `flutter-best-practices`, `design-system`, `troubleshooting` | - |
 

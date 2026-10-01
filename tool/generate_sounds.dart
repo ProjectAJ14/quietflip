@@ -1,12 +1,12 @@
 // Synthesises Quietflip's tick and alarm sounds from scratch, so every file
 // is original work with no third-party licence. Standard library only.
 //
-//   dart run docs/design/sounds/generate_sounds.dart [outDir]
+//   dart run tool/generate_sounds.dart [outDir]
 //
 // Writes 16-bit mono 44.1 kHz WAVs. The two existing files (flip.wav as the
 // Classic tick, alarm.wav as the Chime alarm) are kept as they are and not
-// generated here. The implementer moves this script to tool/ and points it at
-// packages/device_services/assets/sounds/.
+// generated here. The default out dir is packages/device_services/assets/sounds/;
+// run it from the repository root.
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -21,7 +21,9 @@ const double alarmPeak = 0.57;
 final Random _noise = Random(14);
 
 void main(List<String> args) {
-  final out = args.isEmpty ? 'docs/design/sounds' : args.first;
+  final out = args.isEmpty
+      ? 'packages/device_services/assets/sounds'
+      : args.first;
   Directory(out).createSync(recursive: true);
   final sounds = <String, (Float64List, double)>{
     'tick_split_flap': (splitFlap(), tickPeak),

@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
+import 'package:device_services/device_services.dart';
 import 'package:device_services/src/sound/audio_sound_player.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,26 +51,57 @@ void main() {
     expect(alarm.cache, same(flip.cache));
   });
 
-  test('plays the flip click', () async {
-    await build().playFlip();
-    final source =
-        verify(() => flip.play(captureAny())).captured.single as AssetSource;
-    expect(source.path, 'flip.wav');
+  test('each tick plays its own file', () async {
+    final sounds = build();
+    for (final tick in TickSound.values) {
+      await sounds.playTick(tick);
+    }
+    final played = verify(() => flip.play(captureAny())).captured;
+    expect(
+      [for (final source in played) (source as AssetSource).path],
+      [for (final tick in TickSound.values) tick.file],
+    );
   });
 
-  test('loops the alarm until stopped', () async {
+  test('each alarm loops its own file until stopped', () async {
+    for (final sound in AlarmSound.values) {
+      final sounds = build();
+      await sounds.playAlarm(sound);
+      verify(() => alarm.setReleaseMode(ReleaseMode.loop)).called(1);
+      final source =
+          verify(() => alarm.play(captureAny())).captured.single as AssetSource;
+      expect(source.path, sound.file);
+      await sounds.stopAlarm();
+      verify(alarm.stop).called(1);
+    }
+  });
+
+  test('a new alarm replaces the looping one, never stacks', () async {
     final sounds = build();
-    await sounds.playAlarm();
-    verify(() => alarm.setReleaseMode(ReleaseMode.loop)).called(1);
-    final source =
-        verify(() => alarm.play(captureAny())).captured.single as AssetSource;
-    expect(source.path, 'alarm.wav');
-    await sounds.stopAlarm();
-    verify(alarm.stop).called(1);
+    await sounds.playAlarm(AlarmSound.bell);
+    await sounds.playAlarm(AlarmSound.beeps);
+    verifyInOrder([
+      () => alarm.play(any(that: AssetSourceMatcher(AlarmSound.bell.file))),
+      alarm.stop,
+      () => alarm.play(any(that: AssetSourceMatcher(AlarmSound.beeps.file))),
+    ]);
+  });
+
+  test('every bundled sound file exists', () {
+    final files = [
+      for (final tick in TickSound.values) tick.file,
+      for (final alarm in AlarmSound.values) alarm.file,
+    ];
+    expect(files.toSet(), hasLength(files.length));
+    for (final file in files) {
+      expect(File('assets/sounds/$file').existsSync(), isTrue, reason: file);
+    }
   });
 
   test('alarm stops by itself after the limit', () async {
-    await build(limit: const Duration(milliseconds: 5)).playAlarm();
+    await build(
+      limit: const Duration(milliseconds: 5),
+    ).playAlarm(AlarmSound.chime);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     verify(alarm.stop).called(1);
   });
@@ -77,8 +111,8 @@ void main() {
     when(() => alarm.play(any())).thenThrow(StateError('no audio'));
     when(flip.dispose).thenThrow(StateError('gone'));
     final sounds = build();
-    await sounds.playFlip();
-    await sounds.playAlarm();
+    await sounds.playTick(TickSound.classic);
+    await sounds.playAlarm(AlarmSound.chime);
     await sounds.dispose();
     expect(logger.errors, hasLength(3));
   });
@@ -88,4 +122,19 @@ void main() {
     verify(flip.dispose).called(1);
     verify(alarm.dispose).called(1);
   });
+}
+
+/// Matches an [AssetSource] by its path ([AssetSource] has no `==`).
+class AssetSourceMatcher extends Matcher {
+  AssetSourceMatcher(this.path);
+
+  final String path;
+
+  @override
+  bool matches(Object? item, Map<dynamic, dynamic> matchState) =>
+      item is AssetSource && item.path == path;
+
+  @override
+  Description describe(Description description) =>
+      description.add('AssetSource($path)');
 }

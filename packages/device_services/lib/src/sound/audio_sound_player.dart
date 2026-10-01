@@ -30,20 +30,22 @@ class AudioSoundPlayer implements SoundPlayer {
   Timer? _limit;
 
   @override
-  Future<void> playFlip() => guarded(
+  Future<void> playTick(TickSound sound) => guarded(
     _logger,
-    'flip sound',
-    () => _flip.play(AssetSource('flip.wav')),
+    'tick sound',
+    () => _flip.play(AssetSource(sound.file)),
     null,
   );
 
   @override
-  Future<void> playAlarm() async {
+  Future<void> playAlarm(AlarmSound sound) async {
+    final looping = _limit != null;
     _limit?.cancel();
     _limit = Timer(alarmLimit, stopAlarm);
     await guarded(_logger, 'alarm sound', () async {
+      if (looping) await _alarm.stop();
       await _alarm.setReleaseMode(ReleaseMode.loop);
-      await _alarm.play(AssetSource('alarm.wav'));
+      await _alarm.play(AssetSource(sound.file));
     }, null);
   }
 
