@@ -8,11 +8,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Shape code that would let a widget pick its own corner. Only
-/// `DesignShape` turns a radius into a shape.
+/// `DesignShape` turns a radius into a shape. Whitespace-tolerant, so a
+/// call the formatter splits across lines is still caught.
 final _stray = RegExp(
-  r'BorderRadius\.circular\(|Radius\.circular\(|StadiumBorder|CircleBorder|'
-  r'BoxShape\.circle|CircleAvatar',
+  r'Radius\s*\.\s*(circular|elliptical)\s*\(|StadiumBorder|CircleBorder|'
+  r'BoxShape\s*\.\s*circle\b|CircleAvatar|ClipOval|OvalBorder|StarBorder|'
+  r'BeveledRectangleBorder|ContinuousRectangleBorder|InkResponse\s*\(|'
+  r'OutlineInputBorder\s*\(\s*\)',
 );
+
+/// [source] with every comment blanked out (line count kept), so docs may
+/// name the forbidden shapes.
+String _code(String source) =>
+    source.replaceAllMapped(RegExp(r'//[^\n]*'), (m) => ' ' * m[0]!.length);
 
 double _radiusOf(Decoration? d) =>
     ((d! as BoxDecoration).borderRadius! as BorderRadius).topLeft.x;
@@ -28,20 +36,35 @@ void main() {
           .where((f) => !f.path.contains('/generated/'))
           .where((f) => !f.path.endsWith('design_shape.dart'));
       for (final file in files) {
-        final lines = file.readAsLinesSync();
-        for (var i = 0; i < lines.length; i++) {
-          final line = lines[i].trimLeft();
-          if (line.startsWith('//')) continue;
-          if (_stray.hasMatch(line)) hits.add('${file.path}:${i + 1}: $line');
+        final code = _code(file.readAsStringSync());
+        for (final m in _stray.allMatches(code)) {
+          final line = '\n'.allMatches(code.substring(0, m.start)).length + 1;
+          hits.add('${file.path}:$line: ${m[0]}');
         }
       }
     }
     expect(hits, isEmpty, reason: hits.join('\n'));
   });
 
-  test('the scan sees a stray shape', () {
-    expect(_stray.hasMatch('shape: const StadiumBorder(),'), isTrue);
+  test('the scan sees every way to pick a corner, and not DesignShape', () {
+    for (final stray in [
+      'shape: const StadiumBorder(),',
+      'BorderRadius.circular(8)',
+      'Radius.elliptical(4, 2)',
+      'ClipOval(child: x)',
+      'InkResponse(onTap: f)',
+      'border: OutlineInputBorder(),',
+      'shape: BeveledRectangleBorder(',
+      // Split by the formatter.
+      'BorderRadius\n    .circular(8)',
+      'shape: BoxShape\n.circle,',
+    ]) {
+      expect(_stray.hasMatch(_code(stray)), isTrue, reason: stray);
+    }
+    // A comment may name them.
+    expect(_stray.hasMatch(_code('// never a StadiumBorder')), isFalse);
     expect(_stray.hasMatch('DesignShape.circular(shape.md)'), isFalse);
+    expect(_stray.hasMatch('DesignShape.radius(shape.lg)'), isFalse);
   });
 
   for (final corner in [0.0, 24.0]) {

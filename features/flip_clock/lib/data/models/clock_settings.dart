@@ -203,9 +203,12 @@ class ClockSettings {
         final int ms => _offered(Minutes(Duration(milliseconds: ms)), presets),
         _ => d.defaultTimer,
       },
+      // Clamped, then snapped to the slider's steps.
       corner: switch (json['corner']) {
         final num v when !v.isNaN =>
-          v.clamp(DesignShape.minCorner, DesignShape.maxCorner).toDouble(),
+          (v.clamp(DesignShape.minCorner, DesignShape.maxCorner) / cornerStep)
+                  .round() *
+              cornerStep,
         _ => d.corner,
       },
     );

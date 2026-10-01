@@ -652,8 +652,10 @@ class _CornerButtonState extends State<CornerButton> {
   void didUpdateWidget(CornerButton old) {
     super.didUpdateWidget(old);
     if (old._size != widget._size) _shrinking = widget._size < old._size;
-    if (old.state != widget.state && widget.state == ChromeState.hidden) {
-      _fadeAfterShrink = old.state == ChromeState.expanded;
+    final hidden = widget.state == ChromeState.hidden;
+    if ((old.state == ChromeState.hidden) != hidden) {
+      // Reset on every show, so it never delays the next fade-in.
+      _fadeAfterShrink = hidden && old.state == ChromeState.expanded;
     }
   }
 

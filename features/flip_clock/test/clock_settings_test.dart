@@ -98,6 +98,9 @@ void main() {
     expect(read(-4), DesignShape.minCorner);
     expect(read(99), DesignShape.maxCorner);
     expect(read(10), 10);
+    // Off-step values snap to the slider's 2px steps.
+    expect(read(13), 14);
+    expect(read(10.9), 10);
     expect(read(double.nan), DesignShape.defaultCorner);
     expect(read('round'), DesignShape.defaultCorner);
     expect(ClockSettings.cornerStep, 2);

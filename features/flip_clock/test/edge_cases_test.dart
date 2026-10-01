@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart' show Closable;
 import 'package:core/core.dart' as core;
 import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
+import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:di/di.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
@@ -68,6 +69,8 @@ class Rig {
       doubleTapFullScreen: false,
       onOpenSettings: () {},
       onOpenTimerSettings: () {},
+      // Every corner button on screen, as on a phone.
+      orientationSupported: true,
     ),
   );
 
@@ -479,6 +482,7 @@ void main() {
   group('window resize', () {
     const sizes = [
       Size(320, 1024), // iPad slide-over
+      Size(320, 568), // smallest phone
       Size(507, 1024), // iPad split view
       Size(1024, 320),
       Size(200, 100),
@@ -513,6 +517,60 @@ void main() {
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull, reason: '$mode $size x$scale');
         }
+        await rig.dispose(tester);
+      });
+    });
+
+    testWidgets('chrome never covers the digits, the date or the laps', (
+      tester,
+    ) async {
+      await atEachSize(tester, (size, scale) async {
+        final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 23, 59)));
+        await rig.settings.update(
+          const ClockSettings(showSeconds: true, showDate: true),
+        );
+        await tester.pumpWidget(rig.screen());
+        await tester.pumpAndSettle();
+        for (final mode in ClockMode.values) {
+          await rig.settings.update(
+            rig.settings.state.copyWith(lastMode: mode),
+          );
+          if (mode == ClockMode.stopwatch) {
+            rig.stopwatch.start();
+            for (var i = 0; i < 4; i++) {
+              rig.stopwatch.lap();
+            }
+            rig.stopwatch.pause();
+          }
+          await tester.pumpAndSettle();
+          final screen = Offset.zero & size;
+          final content = [
+            for (final f in [find.byType(FlipDisplay), find.byType(GridView)])
+              for (final e in f.evaluate())
+                tester.getRect(find.byWidget(e.widget)),
+          ].where(screen.overlaps).toList();
+          expect(content, isNotEmpty, reason: '$mode $size');
+          final chrome = [
+            tester.getRect(find.byType(Island)),
+            for (final e in find.byType(CornerButton).evaluate())
+              tester.getRect(find.byWidget(e.widget)),
+          ];
+          for (final c in chrome) {
+            for (final d in content) {
+              // Short windows cap the island's reserve at a quarter of the
+              // height (documented); only check where it is not capped.
+              if (size.height / 4 < DesignSpace.s4 + Island.trayHeight) {
+                continue;
+              }
+              expect(
+                c.overlaps(d.deflate(0.5)),
+                isFalse,
+                reason: '$mode $size x$scale: chrome $c over $d',
+              );
+            }
+          }
+        }
+        rig.stopwatch.reset();
         await rig.dispose(tester);
       });
     });

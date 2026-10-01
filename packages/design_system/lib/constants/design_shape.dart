@@ -11,8 +11,9 @@ import 'package:flutter/material.dart';
 /// takes [forHeight], which never rounds past half its height.
 ///
 /// This file is the only place a radius becomes a shape ([circular],
-/// [radius], [rounded]); a test fails on `BorderRadius.circular(`,
-/// `StadiumBorder`, `BoxShape.circle` and the like anywhere else.
+/// [radius], [rounded]); `features/flip_clock/test/corner_rule_test.dart`
+/// fails on `Radius.circular(`, `StadiumBorder`, `BoxShape.circle` and the
+/// like anywhere else in `design_system` and `flip_clock`.
 @immutable
 class DesignShape extends ThemeExtension<DesignShape> {
   const DesignShape([this.corner = defaultCorner]);

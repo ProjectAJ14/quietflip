@@ -19,7 +19,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped and snapped to a step on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -216,8 +216,12 @@ lib/
   `ChromeState` in the same frame (button / dot / gone, same spring in,
   same collapse out): Skins (`palette_outlined`) top-left, Settings
   top-right, Rotation bottom-right on phones only. Each sits `inset` from
-  the safe area; the island is centred between the top two
-  (`inset + cornerButton + space-2` from each side), never under them.
+  the safe area. All of it floats above the clock. From 600px wide the
+  island is centred between the top two (`inset + cornerButton + space-2`
+  from each side); below 600px it floats just under their row
+  (`inset + cornerButton + space-2` from the top, `inset` from the sides),
+  so it is never scaled down to squeeze between them (a 390px phone draws
+  44px tabs; only text scale 2 or a 320px window still scales it).
 - The island sits top centre, `space-4` inside the safe area (`space-6`
   from 600px shortest side). Expanded, it shows the mode tabs over the
   tray (`IslandAction`s, drawn in island tokens on its dark pill, never on
@@ -235,9 +239,11 @@ lib/
   The island rebuilds on countdown/stopwatch state changes, not on ticks.
   A countdown that finishes while the chrome is hidden wakes it on the
   finished tray; the idle collapse still applies. The full-screen note
-  sits under the island. The mode view reserves `Island.trayHeight` plus
-  the inset above (at most a quarter of the height) and only side padding
-  below, so the chrome never covers the digits. A hidden chrome makes
+  sits under the island. The mode view reserves the island's top,
+  `Island.trayHeight` and an inset above (at most a quarter of the height,
+  a third below 600px wide where the island sits a row lower) and, below, side
+  padding or, where the Rotation button shows, its inset + 44 + inset (same
+  quarter cap), so the chrome never covers the digits, date or laps. A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
 - Rotation: the R key (phones only) and the Rotation corner button cycle
   the screen rotation (see Orientation).
@@ -264,8 +270,9 @@ lib/
   never word it as one.
 - No dependency on another feature; no account section in Settings.
 - Show date puts `MaterialLocalizations.formatFullDate` above the Clock
-  digits, `space-6` apart, the pair centred as one block in the free
-  space; nothing is reserved at the bottom (the date stays above a stack,
+  digits, `space-6` apart (at most an eighth of the height, and the date
+  at most a quarter of it, scaled down, so a cramped window never
+  overflows), the pair centred as one block in the free space; nothing is reserved at the bottom (the date stays above a stack,
   laps stay below the stopwatch's) (the skin's face at the headlineSmall size, 70% of the digit
   colour, scaled down, never wraps; the pomodoro round label is the skin's
   face at the titleLarge size). Every `FlipDisplay` on the clock screen gets
@@ -350,9 +357,12 @@ widget tester's clock):
   right at text scale 2 fits every mode. The band holds either layout
   (`flip_display_test.dart`).
 - **Window size:** every mode and Settings lay out without overflow at
-  320x1024, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844, text scale 1
-  and 2, and while resized mid-run (timer, full screen, stopwatch). On very
-  short windows the island's reserve is at most a quarter of the height.
+  320x1024, 320x568, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844,
+  text scale 1 and 2, and while resized mid-run (timer, full screen,
+  stopwatch). On very short windows the island's reserve is at most a
+  quarter of the height. With seconds, the date, laps and every corner
+  button on, no chrome overlaps the digits, date or laps wherever that
+  reserve is not capped.
 - **Hours on a charger:** 24 h of clock ticks keep exactly one timer, one
   emission per second, all aligned; a 12 h countdown keeps exactly two
   timers (ticker + end) and none after finishing; 3 h of the screen ticking

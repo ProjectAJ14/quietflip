@@ -769,6 +769,53 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('showing again after a hide fades in with the island', (
+      tester,
+    ) async {
+      AnimatedOpacity fade() => tester.widget<AnimatedOpacity>(
+        find
+            .descendant(
+              of: find.byType(ds.CornerButton),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
+      );
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.expanded),
+      );
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.hidden),
+      );
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        corner(ds.ChromeState.expanded),
+        settle: false,
+      );
+      // Not the delayed fade-out timing: in step with the island's fade-in.
+      expect(fade().duration, ds.DesignMotion.fade);
+      expect(fade().curve, Curves.linear);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(opacity(tester), 1);
+      final value = tester
+          .renderObject<RenderAnimatedOpacity>(
+            find
+                .descendant(
+                  of: find.byType(ds.CornerButton),
+                  matching: find.byType(AnimatedOpacity),
+                )
+                .first,
+          )
+          .opacity
+          .value;
+      expect(value, greaterThan(0.5));
+      await tester.pumpAndSettle();
+    });
+
     for (final c in [0.0, 24.0]) {
       testWidgets('takes the app corner $c, never a circle', (tester) async {
         final shape = ds.DesignShape(c);

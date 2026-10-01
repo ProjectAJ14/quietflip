@@ -499,26 +499,39 @@ void main() {
       );
       expect(stacked(tester, '09', '41'), isTrue);
       expect(stacked(tester, '41', '07'), isTrue);
-      // AM/PM beside the last card of the last row.
-      final last = tester.getRect(find.text('07').first);
+      // Card [i] of [n] (cards are keyed from the right).
+      Rect card(int i, int n) => tester.getRect(
+        find.byWidgetPredicate(
+          (w) => w.key == ValueKey(n - i) && '${w.runtimeType}' == '_FlipCard',
+        ),
+      );
+      // AM/PM beside the last card of the last row, level with it.
+      final last = card(2, 3);
       final am = tester.getRect(find.text('AM'));
-      expect(am.left, greaterThan(last.right));
+      expect(am.left, greaterThanOrEqualTo(last.right));
+      expect(am.top, greaterThanOrEqualTo(last.top));
+      expect(am.bottom, lessThanOrEqualTo(last.bottom));
+      // The badge sits inside the last card, in its bottom-right corner.
+      final badge = tester.getRect(find.text('5'));
       expect(
-        am.center.dy,
-        greaterThan(tester.getRect(find.text('41').first).bottom),
+        last.contains(badge.topLeft) &&
+            last.contains(badge.bottomRight - const Offset(0.01, 0.01)),
+        isTrue,
       );
-      // The badge stays in the last card's corner.
-      expect(
-        tester.getRect(find.text('5')).top,
-        greaterThan(tester.getRect(find.text('41').first).bottom),
-      );
+      expect(badge.center.dx, greaterThan(last.center.dx));
+      expect(badge.center.dy, greaterThan(last.center.dy));
 
       await boxed(tester, 400, 900, cards: ['09', '41'], meridiem: 'PM');
-      // Left AM/PM stays inside the first card.
-      final first = tester.getRect(find.text('09').first);
+      // Left AM/PM sits inside the first card, in its bottom-left corner.
+      final first = card(0, 2);
       final pm = tester.getRect(find.text('PM'));
-      expect(pm.center.dy, lessThan(tester.getRect(find.text('41').first).top));
-      expect(pm.left, greaterThanOrEqualTo(first.left - first.width));
+      expect(
+        first.contains(pm.topLeft) &&
+            first.contains(pm.bottomRight - const Offset(0.01, 0.01)),
+        isTrue,
+      );
+      expect(pm.center.dx, lessThan(first.center.dx));
+      expect(pm.center.dy, greaterThan(first.center.dy));
     });
 
     testWidgets('switching cross-fades; reduced motion swaps at once', (

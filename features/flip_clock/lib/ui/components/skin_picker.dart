@@ -346,15 +346,15 @@ class SkinTile extends StatelessWidget {
                     ),
                   ),
                   if (customize != null)
-                    Semantics(
-                      button: true,
-                      label: strings.clock.skins_customize_named(skin.name),
-                      excludeSemantics: true,
-                      onTap: customize,
-                      child: TextButton.icon(
-                        onPressed: customize,
-                        icon: const Icon(Icons.edit_outlined),
-                        label: Text(strings.clock.skins_customize),
+                    // Its own focusable button, spoken with the skin name.
+                    TextButton.icon(
+                      onPressed: customize,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: Text(
+                        strings.clock.skins_customize,
+                        semanticsLabel: strings.clock.skins_customize_named(
+                          skin.name,
+                        ),
                       ),
                     )
                   else

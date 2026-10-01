@@ -187,7 +187,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('date line shows under the clock and rolls over at midnight', (
+  testWidgets('date line shows above the clock and rolls over at midnight', (
     tester,
   ) async {
     final h = Harness();
@@ -1433,10 +1433,11 @@ void main() {
       expect(skins.left, lessThan(width / 4));
       expect(settings.right, greaterThan(width * 3 / 4));
       expect(skins.top, settings.top);
-      expect(skins.right, lessThanOrEqualTo(island.left));
-      expect(settings.left, greaterThanOrEqualTo(island.right));
+      expect(skins.overlaps(island), isFalse);
+      expect(settings.overlaps(island), isFalse);
       expect(find.byTooltip(strings.clock.action_rotation), findsNothing);
-      // Tabs keep their full size (the callout line is 20px), never shrunk.
+      // Tabs are laid out at full size (the callout line is 20px); the
+      // painted size is checked with the real fonts under 'corner chrome'.
       expect(
         tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
         closeTo(20, 0.5),
@@ -1510,6 +1511,27 @@ void main() {
         await h.dispose(tester);
       });
     }
+
+    testWidgets('with the date on, the digits still get the rest', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(844, 390)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showDate: true));
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      // Height-limited cards fill down to the side padding (space-2 on a
+      // phone): the date takes its line, not half the panel.
+      final panel = tester.getRect(find.byType(PageView));
+      expect(
+        tester.getRect(find.byType(FlipDisplay)).bottom,
+        closeTo(panel.bottom - DesignSpace.s2, 1),
+      );
+      await h.dispose(tester);
+    });
 
     testWidgets('the date sits above the time, space-6 apart, bottom free', (
       tester,
@@ -1750,6 +1772,60 @@ void main() {
       }
       await h.dispose(tester);
     });
+
+    for (final (width, below) in [
+      (390.0, true),
+      (599.0, true),
+      (600.0, false),
+      (1280.0, false),
+    ]) {
+      testWidgets('at ${width}px the island is full size, '
+          '${below ? 'below' : 'between'} the corner buttons', (tester) async {
+        tester.view
+          ..physicalSize = Size(width, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final h = Harness();
+        // The real theme and fonts, so the painted size is the real one.
+        await tester.pumpWidget(
+          DesignSystemWrapper(
+            mode: AppearanceMode.black,
+            builder: (_, t) => h.screen(appTheme: t),
+          ),
+        );
+        await tester.runAsync(GoogleFonts.pendingFonts);
+        await tester.pumpAndSettle();
+        final island = tester.getRect(find.byType(Island));
+        final skins = tester.getRect(find.byTooltip(c.action_skins));
+        final settings = tester.getRect(find.byTooltip(c.action_settings));
+        // Painted, not just laid out: never scaled down to squeeze in.
+        final tab = find
+            .ancestor(
+              of: find.text(c.mode_clock),
+              matching: find.byType(InkWell),
+            )
+            .first;
+        expect(
+          tester.getRect(tab).height,
+          closeTo(DesignSize.cornerButton, 0.5),
+        );
+        expect(island.center.dx, closeTo(width / 2, 0.5));
+        expect(skins.top, settings.top);
+        if (below) {
+          expect(island.top, closeTo(skins.bottom + DesignSpace.s2, 0.5));
+        } else {
+          expect(island.top, skins.top);
+          expect(skins.right, lessThanOrEqualTo(island.left));
+          expect(settings.left, greaterThanOrEqualTo(island.right));
+        }
+        // The digits still start below the chrome.
+        expect(
+          tester.getRect(find.byType(FlipDisplay)).top,
+          greaterThanOrEqualTo(island.bottom),
+        );
+        await h.dispose(tester);
+      });
+    }
 
     testWidgets('a corner tap is the button\'s own, never a chrome toggle', (
       tester,

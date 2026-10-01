@@ -34,7 +34,8 @@ any UI work.
    over minutes (over seconds) instead of one row. Strict rules decide which layout.
 9. The date moves above the time, with good spacing. The bottom stays free (later:
    weather, word of the day; nothing to build for that now).
-10. Skin gallery tiles render the real settings: seconds show in the preview when they
+10. (Superseded 2026-10-01, see Decisions: tiles follow each skin, not the settings.)
+    Skin gallery tiles render the real settings: seconds show in the preview when they
     show on the clock.
 11. Picking a skin is not intuitive: it is unclear what is selected and that it can be
     customised. Make select and customise obvious.
@@ -259,11 +260,12 @@ and the customizer preview stay in one row.
 
 - `SkinTile` hard-codes `showSeconds: false`
   (`features/flip_clock/lib/ui/components/skin_picker.dart`, `clockValue(...)` in
-  `SkinTile.build`). Pass the user's `showSeconds` (and `use24h`, already passed) from
-  `SkinPicker` and the Appearance strip, so each tile draws exactly what the clock would
-  with that skin: seconds cards for `SkinSeconds.off`/`cards`, the badge for `badge`.
-- Show the date line on the tile when the clock would show it (`showDate` setting or
-  `skin.showDate`), small, above the cards (matches stage 4).
+  `SkinTile.build`). Draw each tile as that skin is configured (what selecting it
+  applies): seconds cards for `cards`, the badge for `badge`, none for `off`, whatever
+  the Show seconds setting is (`use24h` still follows the setting).
+- Show the date line on the tile only when `skin.showDate`, small, above the cards
+  (matches stage 4). Show date does not add it to every tile.
+- (Both rules changed after review on 2026-10-01; see Decisions.)
 - Tiles stay one row (no stacking). Check three groups fit at the 196 px minimum tile
   width.
 
@@ -315,7 +317,8 @@ regenerate.
   island; taps do not toggle; rotation hidden when unsupported; cycle order; HUD; `R`.
 - Layout: date above with `s6`; stacking rule with hysteresis at the sizes listed.
 - Laps: column count, order, 3-row scroll, text scale.
-- Gallery: tiles show seconds and date per settings; select and Customize flow.
+- Gallery: tiles show seconds and date per skin, not per setting; select and
+  Customize flow, including the keyboard.
 
 ## Acceptance
 
@@ -332,7 +335,8 @@ regenerate.
 - Laps on a laptop: a grid of as many columns as fit; up to 3 rows show,
   more laps than 3 full rows scroll (decided 2026-10-01: no column cap, so
   12 laps at 1280 px fill 2 rows of 9).
-- With Show seconds on, every gallery tile shows seconds.
+- Gallery tiles show seconds and the date only on skins that show them, whatever
+  Show seconds and Show date say.
 - In the gallery it is obvious which skin is selected and how to customise it.
 
 ## Docs to update in the same PR

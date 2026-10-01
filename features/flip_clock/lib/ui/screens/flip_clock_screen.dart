@@ -25,6 +25,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
+/// Below this width the island floats under the corner buttons' row
+/// instead of between them, so it never has to shrink to fit.
+const double _besideCornersWidth = 600;
+
+/// The chrome floating above the clock on a [size] window: how far the
+/// island sits below the safe area, and how far it keeps from each side.
+({double top, double side}) _islandPlace(Size size, double inset) =>
+    size.width < _besideCornersWidth
+    ? (top: inset + DesignSize.cornerButton + DesignSpace.s2, side: inset)
+    : (top: inset, side: inset + DesignSize.cornerButton + DesignSpace.s2);
+
 /// Pomodoro / Clock / Stopwatch as swipeable panels under one
 /// [GestureLayer]: tap toggles the chrome (the island at the top: mode
 /// tabs over the current mode's actions; Skins top-left, Settings
@@ -543,6 +554,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final inset = MediaQuery.sizeOf(context).shortestSide >= 600
         ? DesignSpace.s6
         : DesignSpace.s4;
+    final place = _islandPlace(MediaQuery.sizeOf(context), inset);
     // Never while a sheet or route covers the clock or the app is away.
     final flip = settings.flipSound && _visible && _resumed
         ? widget.sound.playFlip
@@ -618,11 +630,12 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(child: content),
-                  // Between the corner buttons, never under them.
+                  // Between the corner buttons, or below their row on a narrow
+                  // window; never under them, never scaled down to fit.
                   Positioned(
-                    left: inset + DesignSize.cornerButton + DesignSpace.s2,
-                    right: inset + DesignSize.cornerButton + DesignSpace.s2,
-                    top: inset,
+                    left: place.side,
+                    right: place.side,
+                    top: place.top,
                     child: Center(child: _island(settings, chrome, hud)),
                   ),
                   // Corner chrome, in step with the island. A tap on one is
@@ -673,7 +686,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                     Positioned(
                       left: 0,
                       right: 0,
-                      top: inset + Island.trayHeight + DesignSpace.s2,
+                      top: place.top + Island.trayHeight + DesignSpace.s2,
                       child: const Center(child: _FullScreenNote()),
                     ),
                 ],
@@ -839,10 +852,22 @@ class _ModeView extends StatelessWidget {
     final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
     // Room for the expanded island above, so it never covers the digits; a
     // tiny window gives up at most a quarter of its height.
-    final top = math.min(inset + Island.trayHeight + inset, size.height / 4);
+    // A narrow window's island sits a row lower, so it may take a third.
+    final top = math.min(
+      _islandPlace(size, inset).top + Island.trayHeight + inset,
+      size.height / (size.width < _besideCornersWidth ? 3 : 4),
+    );
+    // Room for the Rotation button below too, where it shows, so a tall
+    // stack never runs under it (same quarter-height cap).
+    final bottom = screen.orientationSupported
+        ? math.max(
+            side,
+            math.min(inset + DesignSize.cornerButton + inset, size.height / 4),
+          )
+        : side;
     final flip = onFlip;
     return Padding(
-      padding: EdgeInsets.fromLTRB(side, top, side, side),
+      padding: EdgeInsets.fromLTRB(side, top, side, bottom),
       child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,
@@ -883,31 +908,40 @@ class _ModeView extends StatelessWidget {
             // stays free.
             return Opacity(
               opacity: settings.digitBrightness,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: DesignSpace.s6,
-                children: [
-                  // Read as part of the display's label below.
-                  ExcludeSemantics(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        date,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: skin.face.style(
-                          color: skin.digitColor.withValues(alpha: 0.7),
-                          fontSize: theme.textTheme.headlineSmall!.fontSize!,
+              // On a cramped window the gap shrinks and the date scales down
+              // with it, so the pair never overflows.
+              child: LayoutBuilder(
+                builder: (context, box) => Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: math.min(DesignSpace.s6, box.maxHeight / 8),
+                  children: [
+                    // Read as part of the display's label below. Never more
+                    // than a quarter of the space, so the digits keep the rest.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: box.maxHeight / 4),
+                      child: ExcludeSemantics(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            date,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: skin.face.style(
+                              color: skin.digitColor.withValues(alpha: 0.7),
+                              fontSize:
+                                  theme.textTheme.headlineSmall!.fontSize!,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Flexible(
-                    child: display(
-                      strings.clock.current_time_and_date(text, date),
+                    Flexible(
+                      child: display(
+                        strings.clock.current_time_and_date(text, date),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

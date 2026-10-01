@@ -64,10 +64,14 @@ Everything, including `Toast`, is exported from
   `forHeight`. No widget picks its own radius, nothing is a circle or a
   stadium. `features/flip_clock/test/corner_rule_test.dart` scans this
   package's and flip_clock's `lib/` and fails on `BorderRadius.circular(`,
-  `Radius.circular(`, `StadiumBorder`, `CircleBorder`, `BoxShape.circle`
-  or `CircleAvatar` outside `design_shape.dart`. The only exceptions:
+  `Radius.circular(` / `elliptical(`, `StadiumBorder`, `CircleBorder`,
+  `BoxShape.circle`, `CircleAvatar`, `ClipOval`, `OvalBorder`, `StarBorder`,
+  `BeveledRectangleBorder`, `ContinuousRectangleBorder`, `InkResponse(`
+  (circular splash) or a default `OutlineInputBorder()` outside
+  `design_shape.dart`. The only exceptions:
   - Material `Switch` (stadium track, round thumb) and `Slider` (round
-    thumb, rounded track ends): Material offers no corner for them, and
+    thumb, rounded track ends, and its value-indicator bubble, which no
+    slider in the app shows): Material offers no corner for them, and
     replacing either is more than an hour of work.
   - `CircularProgressIndicator` in the loaders: a spinner, not a shape.
   - `Toast.notification` has no `BuildContext` (it is raised from a push

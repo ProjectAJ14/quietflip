@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:core/core.dart' as core;
 import 'package:core/core.dart' show Logger;
@@ -13,6 +14,7 @@ import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
@@ -548,10 +550,14 @@ void main() {
         rose.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
         isTrue,
       );
-      expect(
-        find.bySemanticsLabel(c.skins_customize_named(c.skin_rose)),
-        findsOne,
-      );
+      final named = tester
+          .getSemantics(
+            find.bySemanticsLabel(c.skins_customize_named(c.skin_rose)),
+          )
+          .getSemanticsData();
+      expect(named.flagsCollection.isButton, isTrue);
+      // Focusable: its focus state is tracked (not `none`).
+      expect(named.flagsCollection.isFocused, isNot(Tristate.none));
 
       await tester.tap(customize);
       await tester.pumpAndSettle();
@@ -561,6 +567,49 @@ void main() {
       expect(customizer.start.id, 'rose');
       expect(customizer.onDelete, isNull);
       semantics.dispose();
+      await close(tester);
+    });
+
+    testWidgets('keyboard: Enter on a tile applies it, Tab reaches Customize', (
+      tester,
+    ) async {
+      await open(tester, size: const Size(1200, 900));
+      // Focus Rose's tile (its InkWell) and press Enter.
+      final rose = find.descendant(
+        of: tile(c.skin_rose),
+        matching: find.byType(InkWell),
+      );
+      // Its focus node, found from inside the InkWell.
+      Focus.of(
+        tester.element(
+          find.descendant(of: rose.first, matching: find.byType(Column)).first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(settings.state.skinId, 'rose');
+      // The next stop is Rose's own Customize button.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final customize = find.descendant(
+        of: tile(c.skin_rose),
+        matching: find.byType(TextButton),
+      );
+      expect(
+        Focus.of(
+          tester.element(
+            find.descendant(of: customize, matching: find.byType(Text)),
+          ),
+        ).hasPrimaryFocus,
+        isTrue,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SkinCustomizer>(find.byType(SkinCustomizer)).start.id,
+        'rose',
+      );
       await close(tester);
     });
 

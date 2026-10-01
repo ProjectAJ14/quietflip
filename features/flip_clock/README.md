@@ -58,8 +58,9 @@ Everything is saved at once and restored on launch.
 
 ## Controls
 
-Only the digits show when nobody touches the screen. A tap or click shows
-the island at the top centre (the mode tabs, Pomodoro, Clock, Stopwatch,
+Only the digits show when nobody touches the screen. A tap or click shows,
+floating above the clock, the island at the top centre (on a phone, just
+below the corner buttons, so it is never squeezed) (the mode tabs, Pomodoro, Clock, Stopwatch,
 over the actions of the current mode, centred), Skins in the top-left
 corner, Settings in the top-right and, on phones and tablets, Rotation in
 the bottom-right. They appear, shrink and disappear together. Rotation
