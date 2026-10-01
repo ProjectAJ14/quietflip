@@ -106,7 +106,7 @@ lib/
                                            Delete tooltips are spoken in full),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
                                            showSheet, SkinCustomizer (parseHex/hexOf),
-                                           SubtleMovement
+                                           SubtleMovement, SoundWave (sound_wave.dart)
 ```
 
 ## Rules
@@ -367,6 +367,18 @@ widget tester's clock):
   emission per second, all aligned; a 12 h countdown keeps exactly two
   timers (ticker + end) and none after finishing; 3 h of the screen ticking
   keeps the element count flat and the wake lock on (released on dispose).
+
+- Sound waves: `SoundWave.tick(TickSound)` / `.alarm(AlarmSound)`, one
+  `CustomPainter` per sound, the motion ported from the `shapes` object in
+  `docs/design/sounds/index.html` (that page is the spec; change both
+  together). A designed motif timed to the sound, not an audio meter
+  (`audioplayers` has no amplitude stream). At rest (`playing` null) it
+  paints a still pose (0.12 s, energy 0.25) with no ticker running; a new
+  `playing` value starts one from 0: ticks pulse
+  `0.25 + 0.75 e^(-p / decay)` on ticks at 0, 1, 2 s, alarms hold 1 for two
+  loops, then 0.4 s at rest energy and the ticker stops. Reduced motion
+  (`reducedMotion`) keeps the still pose. Line 1.6 px, round joins, the
+  colour passed in; sized by its parent.
 
 ## Gotchas
 
