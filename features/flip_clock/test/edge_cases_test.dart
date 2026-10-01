@@ -67,6 +67,7 @@ class Rig {
       logger: di.get<Logger>(),
       doubleTapFullScreen: false,
       onOpenSettings: () {},
+      onOpenTimerSettings: () {},
     ),
   );
 
@@ -516,6 +517,27 @@ void main() {
       });
     });
 
+    testWidgets('stopwatch laps lay out at every size and text scale', (
+      tester,
+    ) async {
+      await atEachSize(tester, (size, scale) async {
+        final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9)));
+        await rig.settings.update(
+          const ClockSettings(lastMode: ClockMode.stopwatch),
+        );
+        await tester.pumpWidget(rig.screen());
+        rig.stopwatch.start();
+        for (var i = 0; i < 5; i++) {
+          rig.stopwatch.lap();
+        }
+        rig.stopwatch.pause();
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: '$size x$scale');
+        rig.stopwatch.reset();
+        await rig.dispose(tester);
+      });
+    });
+
     testWidgets('settings lays out at every size and text scale', (
       tester,
     ) async {
@@ -539,7 +561,9 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       tester.view.devicePixelRatio = 1;
       final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9)));
-      await rig.settings.update(const ClockSettings(lastMode: ClockMode.timer));
+      await rig.settings.update(
+        const ClockSettings(lastMode: ClockMode.pomodoro),
+      );
       await tester.pumpWidget(rig.screen());
       await rig.countdown.start(const Duration(minutes: 10));
       rig.stopwatch.start();

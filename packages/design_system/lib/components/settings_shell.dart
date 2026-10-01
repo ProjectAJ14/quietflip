@@ -54,6 +54,7 @@ class SettingsShell extends StatefulWidget {
     this.onDone,
     this.desktop = false,
     this.initialCategory = 0,
+    this.openInitialCategory = false,
   }) : assert(categories.length > 0),
        assert(initialCategory >= 0 && initialCategory < categories.length);
 
@@ -74,6 +75,10 @@ class SettingsShell extends StatefulWidget {
 
   /// Category selected first in the split and desktop layouts.
   final int initialCategory;
+
+  /// The phone layout also starts on [initialCategory]'s page (a deep
+  /// link), with Done beside its title so closing returns to the caller.
+  final bool openInitialCategory;
 
   /// Split layout from this width.
   static const double splitBreakpoint = 600;
@@ -99,7 +104,10 @@ class SettingsShell extends StatefulWidget {
 
 class _SettingsShellState extends State<SettingsShell> {
   /// Category open on the phone layout; null shows the root.
-  int? _open;
+  late int? _open = widget.openInitialCategory ? widget.initialCategory : null;
+
+  /// The phone layout is still on the page it was opened on.
+  late bool _direct = widget.openInitialCategory;
 
   /// Category selected in the split and desktop layouts.
   late int _selected = widget.initialCategory;
@@ -147,7 +155,7 @@ class _SettingsShellState extends State<SettingsShell> {
     return PopScope(
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) setState(() => _open = null);
+        if (!didPop) _root();
       },
       child: open == null
           ? ListView(
@@ -194,7 +202,7 @@ class _SettingsShellState extends State<SettingsShell> {
                       child: Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: TextButton.icon(
-                          onPressed: () => setState(() => _open = null),
+                          onPressed: _root,
                           icon: const Icon(Icons.chevron_left_rounded),
                           label: Text(widget.title),
                         ),
@@ -207,8 +215,16 @@ class _SettingsShellState extends State<SettingsShell> {
                         style: text.titleMedium?.copyWith(color: colors.ink),
                       ),
                     ),
-                    // Balances the back button so the title stays centred.
-                    const Expanded(child: SizedBox.shrink()),
+                    // Balances the back button so the title stays centred;
+                    // holds Done on a page opened directly.
+                    Expanded(
+                      child: _direct
+                          ? Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: _done(),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                   ],
                 ),
                 Expanded(
@@ -221,6 +237,11 @@ class _SettingsShellState extends State<SettingsShell> {
             ),
     );
   }
+
+  void _root() => setState(() {
+    _open = null;
+    _direct = false;
+  });
 
   Widget _split(BuildContext context, DesignColors colors, bool desktop) {
     final text = Theme.of(context).textTheme;
@@ -601,18 +622,25 @@ class SettingsSwitchRow extends StatelessWidget {
   );
 }
 
-/// A label with a muted value; a chevron and tap target when [onTap] is set.
+/// A label with a muted value; a chevron and tap target when [onTap] is
+/// set; an optional [trailing] control (such as a delete button) at the end.
 class SettingsValueRow extends StatelessWidget {
   const SettingsValueRow({
     super.key,
     required this.label,
     this.value,
     this.onTap,
+    this.trailing,
+    this.semanticsLabel,
   });
 
   final String label;
   final String? value;
   final VoidCallback? onTap;
+  final Widget? trailing;
+
+  /// Spoken instead of [label] when the label is an abbreviation.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -635,9 +663,15 @@ class SettingsValueRow extends StatelessWidget {
             ),
           if (onTap != null)
             Icon(Icons.chevron_right_rounded, color: colors.inkSubtle),
+          ?trailing,
         ],
       ),
-      child: _Label(label),
+      child: Semantics(
+        container: semanticsLabel != null,
+        label: semanticsLabel,
+        excludeSemantics: semanticsLabel != null,
+        child: _Label(label),
+      ),
     );
   }
 }

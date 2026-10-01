@@ -150,16 +150,73 @@ void main() {
     });
   });
 
-  test('a second showHud before release cancels it', () {
+  test('a late showHud after releaseHud still clears after hudHold', () {
     _run((async, c, _) {
       c.hide();
       c.showHud(_hud);
       c.releaseHud();
       async.elapse(const Duration(milliseconds: 1000));
+      // The last drag update resolving after the finger lifted.
+      c.showHud(_hud);
+      async.elapse(const Duration(milliseconds: 1199));
+      expect(c.state.hud, _hud);
+      async.elapse(const Duration(milliseconds: 1));
+      expect(c.state, const Chrome(ChromeState.hidden));
+    });
+  });
+
+  test('a new gesture after release holds the hud until its own release', () {
+    _run((async, c, _) {
+      c.hide();
+      c.showHud(_hud);
+      c.releaseHud();
+      async.elapse(const Duration(milliseconds: 1000));
+      c.activity();
       const next = IslandTitleHud('Timer', 1, 3);
       c.showHud(next);
       async.elapse(const Duration(seconds: 5));
       expect(c.state, const Chrome(ChromeState.hidden, next));
+    });
+  });
+
+  test('a click right after a hover showed the chrome keeps it shown', () {
+    _run((async, c, _) {
+      c.hide();
+      c.hover();
+      expect(_state(c), ChromeState.expanded);
+      // Moved onto the clock and clicked in one motion.
+      async.elapse(const Duration(milliseconds: 299));
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.expanded);
+      // The next click toggles as usual.
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+    });
+  });
+
+  test('a click after the grace, or a hover over shown chrome, toggles', () {
+    _run((async, c, _) {
+      c.hide();
+      c.hover();
+      async.elapse(ChromeController.hoverGrace);
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+      // Already shown: a hover arms nothing, so a quick click hides it.
+      c.wake();
+      c.hover();
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+      // A touch tap with no hover toggles.
+      c.tap();
+      expect(_state(c), ChromeState.expanded);
     });
   });
 

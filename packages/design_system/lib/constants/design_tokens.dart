@@ -111,7 +111,7 @@ class DesignColors extends ThemeExtension<DesignColors> {
   /// Row separators, sheet borders, the island outline on black.
   final Color hairline;
 
-  /// Island and corner buttons (dark in both themes).
+  /// The island (dark in both themes).
   final Color island;
 
   /// The only interactive colour: switch on, slider fill, selection, focus.
@@ -129,7 +129,7 @@ class DesignColors extends ThemeExtension<DesignColors> {
   /// Skins and Customize sheets.
   final List<BoxShadow> sheetShadow;
 
-  /// Island and corner buttons.
+  /// The island.
   final List<BoxShadow> islandShadow;
 
   /// Labels and icons on [island].

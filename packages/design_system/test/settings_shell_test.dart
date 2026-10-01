@@ -346,6 +346,61 @@ void main() {
     expect(find.text('Done'), findsNothing);
   });
 
+  testWidgets('openInitialCategory: the phone starts on that page with Done', (
+    tester,
+  ) async {
+    var done = 0;
+    ds.SettingsShell shell() => ds.SettingsShell(
+      title: 'Settings',
+      doneLabel: 'Done',
+      onDone: () => done++,
+      initialCategory: 1,
+      openInitialCategory: true,
+      categories: _shell().categories,
+    );
+    await _pump(tester, shell());
+    expect(find.text('Theme'), findsOneWidget);
+    expect(find.text('Looks'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    expect(done, 1);
+    // Back reaches the root, whose Done stays; the page no longer has one.
+    await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('General'), findsOneWidget);
+    await tester.tap(find.text('Looks'));
+    await tester.pumpAndSettle();
+    expect(find.text('Theme'), findsOneWidget);
+    expect(find.text('Done'), findsNothing);
+    // Split layouts just select it.
+    await _pump(tester, shell(), width: 820);
+    expect(find.text('Theme'), findsOneWidget);
+  });
+
+  testWidgets('a value row can end with its own control', (tester) async {
+    var taps = 0;
+    await _pump(
+      tester,
+      Scaffold(
+        body: ds.SettingsValueRow(
+          label: '5m',
+          semanticsLabel: '5 minute timer',
+          trailing: IconButton(
+            tooltip: 'Delete',
+            onPressed: () => taps++,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('Delete'));
+    expect(taps, 1);
+    expect(find.bySemanticsLabel('5 minute timer'), findsOneWidget);
+    expect(
+      tester.getTopRight(find.byTooltip('Delete')).dx,
+      greaterThan(tester.getTopRight(find.text('5m')).dx),
+    );
+  });
+
   for (final width in [375.0, 820.0]) {
     testWidgets('Done calls onDone at $width', (tester) async {
       var done = 0;

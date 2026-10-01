@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:device_services/device_services.dart';
 import 'package:flutter/foundation.dart';
 
@@ -124,6 +126,9 @@ class FakeScreenBrightness implements ScreenBrightness {
   /// Operations (`current`, `set`, `reset`) that throw.
   final Set<String> failing = {};
 
+  /// While set, `set` waits for it: a platform call still in flight.
+  Completer<void>? hold;
+
   void _call(String operation) {
     calls.add(operation);
     if (failing.contains(operation)) {
@@ -140,6 +145,7 @@ class FakeScreenBrightness implements ScreenBrightness {
   @override
   Future<void> set(double value) async {
     _call('set');
+    await hold?.future;
     level = value;
   }
 

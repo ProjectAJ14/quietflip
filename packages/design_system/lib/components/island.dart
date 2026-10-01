@@ -2,7 +2,7 @@ import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
-/// How much of the chrome (island and corner buttons) is showing.
+/// How much of the chrome (the island) is showing.
 enum ChromeState {
   /// Invisible, not tappable, not announced.
   hidden,
@@ -10,8 +10,38 @@ enum ChromeState {
   /// Collapsed to a dot that only hints the chrome is there.
   dot,
 
-  /// Full controls: the island's tabs, the corner buttons.
+  /// Full controls: the island's tabs and action tray.
   expanded,
+}
+
+/// One control in the island's action tray. With an [icon] it is a round
+/// icon button ([label] is its tooltip and spoken name); without one it is
+/// a text chip showing [label].
+@immutable
+class IslandAction {
+  const IslandAction({
+    required this.label,
+    this.icon,
+    this.onPressed,
+    this.primary = false,
+    this.semanticsLabel,
+  });
+
+  /// Tooltip and spoken name; the visible text of a chip.
+  final String label;
+
+  /// Spoken name when [label] is an abbreviation, such as "5 minute timer"
+  /// for a `5m` chip.
+  final String? semanticsLabel;
+
+  /// The symbol; null makes a text chip.
+  final IconData? icon;
+
+  /// Null draws the action disabled.
+  final VoidCallback? onPressed;
+
+  /// The main action: a filled button.
+  final bool primary;
 }
 
 /// A transient readout the island shows in place of its tabs.
@@ -46,7 +76,7 @@ final class IslandTitleHud extends IslandHud {
   final int count;
 }
 
-/// Icon size in the island and the corners (brand book: 22px symbols).
+/// Icon size in the island (brand book: 22px symbols).
 const double _chromeIconSize = 22;
 
 /// Whether chrome should skip its spring and only cross-fade.
@@ -54,8 +84,10 @@ bool _reduceMotion(BuildContext context) =>
     MediaQuery.disableAnimationsOf(context) ||
     View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
 
-/// The top-centre pill: a dot, the tab bar, or a HUD. One dark shape that
-/// morphs between them on the island spring; a [hud] wins over [state].
+/// The top-centre pill: a dot, the tab bar over an action tray, or a HUD.
+/// One dark shape that morphs between them on the island spring; a [hud]
+/// wins over [state]. Tray content cross-fades as it changes. The tray
+/// scrolls sideways rather than overflow a narrow window.
 class Island extends StatelessWidget {
   const Island({
     super.key,
@@ -65,6 +97,9 @@ class Island extends StatelessWidget {
     required this.selected,
     required this.onSelect,
     required this.tabsLabel,
+    this.actions = const [],
+    this.trailing = const [],
+    this.status,
   }) : assert(tabs.length <= 4);
 
   /// Dot, expanded tabs or hidden; ignored while [hud] is set.
@@ -85,6 +120,25 @@ class Island extends StatelessWidget {
   /// Spoken name of the tab bar.
   final String tabsLabel;
 
+  /// The tray under the tabs, in order: primary action, then the rest.
+  final List<IslandAction> actions;
+
+  /// Tray actions after a hairline, such as Settings.
+  final List<IslandAction> trailing;
+
+  /// Text at the start of the tray, announced when it changes, such as
+  /// "Time's up".
+  final String? status;
+
+  /// Expanded height with a tray: the tab row plus one row of actions.
+  static const double trayHeight =
+      DesignSize.islandExpandedHeight +
+      DesignSize.cornerButton +
+      DesignSpace.s1;
+
+  bool get _hasTray =>
+      actions.isNotEmpty || trailing.isNotEmpty || status != null;
+
   /// Page dot diameter in the title HUD (from the Island preview).
   static const double hudDot = 5;
 
@@ -101,18 +155,22 @@ class Island extends StatelessWidget {
     final hud = this.hud;
     final expanded = hud == null && state == ChromeState.expanded;
     final visible = hud != null || state != ChromeState.hidden;
+    // Two rows are too tall for a stadium: its round ends would clip the
+    // outer tabs and actions.
+    final radius = expanded && _hasTray ? DesignRadius.lg : DesignRadius.pill;
 
     final Widget content = switch (hud) {
       IslandBrightnessHud() => _hud(hud.label, _brightness(hud, colors, text)),
       IslandTitleHud() => _hud(hud.title, _title(hud, colors, text)),
-      null when expanded => _tabBar(context, colors, text),
+      null when expanded => _expanded(context, colors, text),
       null => const SizedBox.square(
         key: ValueKey(ChromeState.dot),
         dimension: DesignSize.islandDot,
       ),
     };
     final height = switch (hud) {
-      null when expanded => DesignSize.islandExpandedHeight,
+      null when expanded =>
+        _hasTray ? trayHeight : DesignSize.islandExpandedHeight,
       null => DesignSize.islandDot,
       _ => DesignSize.islandPillHeight,
     };
@@ -155,11 +213,11 @@ class Island extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colors.island,
-                borderRadius: BorderRadius.circular(DesignRadius.pill),
+                borderRadius: BorderRadius.circular(radius),
                 boxShadow: colors.islandShadow,
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(DesignRadius.pill),
+                borderRadius: BorderRadius.circular(radius),
                 child: _reduceMotion(context)
                     // AnimatedSize cannot run for zero time (it re-dirties
                     // itself mid-layout), so reduced motion drops it.
@@ -254,11 +312,149 @@ class Island extends StatelessWidget {
     ],
   );
 
-  Widget _tabBar(BuildContext context, DesignColors colors, TextTheme text) {
+  Widget _expanded(BuildContext context, DesignColors colors, TextTheme text) {
     final maxWidth = MediaQuery.sizeOf(context).width - 2 * DesignSpace.s4;
-    return ConstrainedBox(
+    // Scales down while fading out into a smaller pill.
+    return FittedBox(
       key: const ValueKey(ChromeState.expanded),
-      constraints: BoxConstraints(maxWidth: maxWidth < 0 ? 0 : maxWidth),
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth < 0 ? 0 : maxWidth),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: DesignSize.islandExpandedHeight,
+              child: _tabBar(colors, text),
+            ),
+            if (_hasTray)
+              SizedBox(
+                height: trayHeight - DesignSize.islandExpandedHeight,
+                child: _tray(context, colors, text),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tray(BuildContext context, DesignColors colors, TextTheme text) {
+    final status = this.status;
+    final children = [
+      if (status != null)
+        Semantics(
+          liveRegion: true,
+          container: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s2),
+            child: Text(
+              status,
+              maxLines: 1,
+              style: text.labelLarge?.copyWith(color: colors.islandInk),
+            ),
+          ),
+        ),
+      for (final a in actions) _action(a, colors, text),
+      if (trailing.isNotEmpty && (actions.isNotEmpty || status != null))
+        SizedBox(
+          width: 1,
+          height: DesignSpace.s6,
+          // The island is dark in both themes, so its rule is the dark one.
+          child: ColoredBox(color: DesignColors.dark.hairline),
+        ),
+      for (final a in trailing) _action(a, colors, text),
+    ];
+    return AnimatedSwitcher(
+      duration: DesignMotion.fade,
+      child: SingleChildScrollView(
+        key: ValueKey(
+          [
+            status,
+            for (final a in [...actions, ...trailing]) a.label,
+          ].join('|'),
+        ),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          DesignSpace.s1,
+          0,
+          DesignSpace.s1,
+          DesignSpace.s1,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: DesignSpace.s1,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _action(IslandAction a, DesignColors colors, TextTheme text) {
+    final enabled = a.onPressed != null;
+    final ink = a.primary
+        ? colors.islandOnActive
+        : enabled
+        ? colors.islandInk
+        : colors.islandInkMuted;
+    final icon = a.icon;
+    final Widget face = icon == null
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s3),
+            child: Center(
+              widthFactor: 1,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  a.label,
+                  maxLines: 1,
+                  style: text.labelLarge?.copyWith(color: ink),
+                ),
+              ),
+            ),
+          )
+        : SizedBox.square(
+            dimension: DesignSize.cornerButton,
+            child: Icon(icon, size: _chromeIconSize, color: ink),
+          );
+    return Tooltip(
+      message: a.label,
+      excludeFromSemantics: true,
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: a.semanticsLabel ?? a.label,
+        excludeSemantics: true,
+        onTap: a.onPressed,
+        child: InkWell(
+          onTap: a.onPressed,
+          customBorder: const StadiumBorder(),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: a.primary
+                  ? colors.islandActive
+                  : icon == null
+                  // The island is dark in both themes: the dark chip fill.
+                  ? DesignColors.dark.controlOff
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(DesignRadius.pill),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: DesignSize.cornerButton,
+                minHeight: DesignSize.cornerButton,
+              ),
+              child: face,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tabBar(DesignColors colors, TextTheme text) {
+    return Center(
+      widthFactor: 1,
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Semantics(
@@ -321,93 +517,4 @@ class Island extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A round chrome button that sits in a screen corner and collapses to a
-/// dot toward that corner. Its layout box is always
-/// [DesignSize.cornerButton] square, so neighbours never move.
-class CornerButton extends StatelessWidget {
-  const CornerButton({
-    super.key,
-    required this.state,
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    required this.corner,
-  });
-
-  /// Button, dot or hidden. Only the button is tappable.
-  final ChromeState state;
-
-  /// The symbol drawn when expanded.
-  final IconData icon;
-
-  /// Tooltip and spoken name.
-  final String tooltip;
-
-  /// Called when the expanded button is tapped.
-  final VoidCallback onPressed;
-
-  /// Which corner the dot shrinks toward, such as [Alignment.topLeft].
-  final Alignment corner;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = DesignColors.of(context);
-    final expanded = state == ChromeState.expanded;
-    final size = expanded ? DesignSize.cornerButton : DesignSize.cornerDot;
-
-    final circle = AnimatedContainer(
-      duration: _reduceMotion(context)
-          ? Duration.zero
-          : DesignMotion.islandMorph,
-      curve: DesignMotion.islandCurve,
-      width: size,
-      height: size,
-      // The spring overshoots past 1: only the size may ride it. A shadow
-      // lerped past 1 (Mono Dark's ring to Mono Light's blur on a theme
-      // switch mid-morph) gets a negative blur and asserts.
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.island,
-          shape: BoxShape.circle,
-          boxShadow: colors.islandShadow,
-        ),
-        child: ClipOval(child: _content(expanded, colors)),
-      ),
-    );
-    return SizedBox.square(
-      dimension: DesignSize.cornerButton,
-      child: IgnorePointer(
-        ignoring: !expanded,
-        child: ExcludeSemantics(
-          excluding: !expanded,
-          child: AnimatedOpacity(
-            opacity: state == ChromeState.hidden ? 0 : 1,
-            duration: DesignMotion.fade,
-            child: Align(
-              alignment: corner,
-              // Always built, so the circle keeps animating across states.
-              child: Tooltip(
-                message: tooltip,
-                excludeFromSemantics: true,
-                child: Semantics(button: true, label: tooltip, child: circle),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget? _content(bool expanded, DesignColors colors) => expanded
-      ? Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Icon(icon, size: _chromeIconSize, color: colors.islandInk),
-          ),
-        )
-      : null;
 }

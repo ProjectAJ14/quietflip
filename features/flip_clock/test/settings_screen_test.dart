@@ -7,6 +7,8 @@ import 'package:di/di.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/ui/components/display_value.dart';
+import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +44,7 @@ void main() {
     bool? desktop = true,
     bool isWeb = true,
     bool orientation = true,
+    bool openTimers = false,
   }) async {
     tester.view
       ..physicalSize = size
@@ -63,6 +66,8 @@ void main() {
             desktop: desktop,
             onDone: () => done++,
             onSkins: () => skins++,
+            openTimers: openTimers,
+            now: () => DateTime(2026, 9, 29, 9, 41),
           ),
         ),
       ),
@@ -91,7 +96,7 @@ void main() {
     final c = strings.clock;
 
     // Appearance.
-    await tap(tester, c.settings_skin);
+    await tap(tester, c.skins_view_all);
     expect(skins, 1);
     expect(find.text(c.skin_mono), findsOne);
     await tap(tester, c.theme_system);
@@ -170,7 +175,12 @@ void main() {
 
     // Shortcuts.
     await tap(tester, c.settings_shortcuts);
-    for (final key in [c.keycap_space, c.keycap_left_right, c.keycap_esc]) {
+    for (final key in [
+      c.keycap_space,
+      c.keycap_left_right,
+      c.keycap_esc,
+      c.keycap_l,
+    ]) {
       expect(find.text(key), findsOne);
     }
 
@@ -284,4 +294,181 @@ void main() {
       });
     }
   }
+
+  group('Timers', () {
+    final c = strings.clock;
+    const m = Duration(minutes: 1);
+    Finder segment(String label) => find.descendant(
+      of: find.byType(SegmentedButton<TimerPreset>),
+      matching: find.text(label),
+    );
+    Finder delete(Duration preset) =>
+        find.byTooltip(c.timers_delete(presetSpoken(preset)));
+
+    for (final width in [375.0, 820.0, 1280.0]) {
+      testWidgets('default choice, delete, default falls back ($width)', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await open(tester, size: Size(width, 900));
+        await tap(tester, c.settings_timers);
+        for (final label in [c.preset_pomodoro, '5m', '10m', '15m']) {
+          expect(segment(label), findsOne, reason: label);
+        }
+        // Rows say what the abbreviation means.
+        expect(find.bySemanticsLabel(presetSpoken(m * 10)), findsOne);
+        await tester.tap(segment('10m'));
+        await tester.pumpAndSettle();
+        expect(settings.state.defaultTimer, Minutes(m * 10));
+
+        await tester.tap(delete(m * 10));
+        await tester.pumpAndSettle();
+        expect(settings.state.timerPresets, [m * 5, m * 15]);
+        expect(settings.state.defaultTimer, const PomodoroCycle());
+        expect(segment('10m'), findsNothing);
+        expect(tester.takeException(), isNull);
+        semantics.dispose();
+        await close(tester);
+      });
+
+      testWidgets(
+        'Add timer: pick, cancel, refuse zero and duplicates ($width)',
+        (tester) async {
+          await open(tester, size: Size(width, 900));
+          await tap(tester, c.settings_timers);
+          Future<void> enter(int field, String value) async {
+            await tester.enterText(find.byType(TextField).at(field), value);
+            await tester.pump();
+          }
+
+          Finder ok() => find.widgetWithText(TextButton, strings.generic.ok);
+          bool canConfirm() =>
+              tester.widget<TextButton>(ok()).onPressed != null;
+
+          await tap(tester, c.timers_add);
+          await tap(tester, strings.generic.cancel);
+          expect(
+            settings.state.timerPresets,
+            ClockSettings.defaultTimerPresets,
+          );
+
+          await tap(tester, c.timers_add);
+          // It opens on 5:00, which is already a preset.
+          expect(canConfirm(), isFalse);
+          expect(find.text(c.timers_duplicate), findsOne);
+          await enter(0, '75');
+          await enter(1, '30');
+          expect(find.text(c.timers_duplicate), findsNothing);
+          await tap(tester, strings.generic.ok);
+          expect(settings.state.timerPresets, [
+            m * 5,
+            m * 10,
+            m * 15,
+            const Duration(minutes: 75, seconds: 30),
+          ]);
+          expect(find.widgetWithText(SettingsValueRow, '75:30'), findsOne);
+
+          // 0:00 and 60 seconds cannot be confirmed; letters never land.
+          await tap(tester, c.timers_add);
+          await enter(0, '');
+          expect(canConfirm(), isFalse);
+          await enter(0, '1');
+          await enter(1, '60');
+          expect(canConfirm(), isFalse);
+          await enter(1, 'ab');
+          expect(canConfirm(), isTrue);
+          await tap(tester, strings.generic.cancel);
+          await close(tester);
+        },
+      );
+
+      testWidgets('six presets: Add is off and the footer says why ($width)', (
+        tester,
+      ) async {
+        await settings.update(
+          const ClockSettings().copyWith(
+            timerPresets: [for (var i = 1; i <= 6; i++) m * i],
+          ),
+        );
+        await open(tester, size: Size(width, 900));
+        await tap(tester, c.settings_timers);
+        await tester.scrollUntilVisible(
+          find.text(c.timers_limit_footer),
+          100,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tap(tester, c.timers_add);
+        expect(find.byType(AlertDialog), findsNothing);
+        await tester.tap(delete(m));
+        await tester.pumpAndSettle();
+        expect(find.text(c.timers_limit_footer), findsNothing);
+        await close(tester);
+      });
+    }
+
+    test('spoken preset names', () {
+      expect(presetSpoken(m * 5), c.preset_spoken_minutes(5));
+      expect(
+        presetSpoken(const Duration(seconds: 45)),
+        c.preset_spoken_seconds(45),
+      );
+      expect(
+        presetSpoken(const Duration(minutes: 1, seconds: 30)),
+        c.preset_spoken_both(1, 30),
+      );
+    });
+
+    testWidgets('openTimers starts on Timers, and Done closes', (tester) async {
+      await open(tester, size: const Size(375, 800), openTimers: true);
+      expect(find.text(c.timers_presets.toUpperCase()), findsOne);
+      expect(find.text(c.timers_minutes(25)), findsOne);
+      await tap(tester, strings.generic.done);
+      expect(done, 1);
+      await close(tester);
+    });
+  });
+
+  group('Appearance skins strip', () {
+    final c = strings.clock;
+    for (final width in [375.0, 820.0, 1280.0]) {
+      testWidgets('shows five skins, applies one, View all ($width)', (
+        tester,
+      ) async {
+        await open(tester, size: Size(width, 900));
+        // The phone layout starts on the category list.
+        if (width < SettingsShell.splitBreakpoint) {
+          await tap(tester, c.settings_appearance);
+        }
+        final tiles = find.byType(SkinTile);
+        expect(tiles, findsNWidgets(SettingsScreen.skinStrip));
+        expect(tester.widget<SkinTile>(tiles.first).selected, isTrue);
+        await tester.tap(find.bySemanticsLabel(c.skin_paper));
+        await tester.pumpAndSettle();
+        expect(settings.state.skinId, 'paper');
+        expect(
+          tester
+              .widgetList<SkinTile>(tiles)
+              .where((t) => t.selected)
+              .map((t) => t.skin.id),
+          ['paper'],
+        );
+        await tap(tester, c.skins_view_all);
+        expect(skins, 1);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
+    }
+
+    testWidgets('a selected skin further down the list is always shown', (
+      tester,
+    ) async {
+      await settings.selectSkin('orbit');
+      await open(tester);
+      final tiles = tester.widgetList<SkinTile>(find.byType(SkinTile));
+      expect(tiles.first.skin.id, 'orbit');
+      expect(tiles.first.selected, isTrue);
+      expect(tiles, hasLength(SettingsScreen.skinStrip));
+      await close(tester);
+    });
+  });
 }

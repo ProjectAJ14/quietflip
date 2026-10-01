@@ -78,8 +78,10 @@ table.
 
 ### Keyboard shortcuts
 
-`F` full screen, `Esc` leave full screen, `Space` start/pause the timer or
-stopwatch, `1` / `2` / `3` switch to Clock / Timer / Stopwatch.
+`Space` start/pause the Pomodoro timer or stopwatch, `←` / `→` change mode
+(Pomodoro, Clock, Stopwatch), `↑` / `↓` brightness, `S` show seconds (Clock),
+`L` lap (Stopwatch), `D` dim the digits, `F` full screen, `Esc` leave full
+screen or hide the controls.
 
 ### Known limitations
 

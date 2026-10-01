@@ -166,15 +166,11 @@ void main() {
       await c.pause();
       await c.resume();
       expect(c.state.status, CountdownStatus.idle);
-      await c.setDuration(Duration.zero);
       expect(store.data, isEmpty);
-      await c.setDuration(const Duration(minutes: 2));
-      expect(c.state.duration, const Duration(minutes: 2));
-      expect(saved()['durationMs'], 120000);
 
       await c.start(const Duration(seconds: 10));
       await c.start(const Duration(seconds: 50));
-      await c.setDuration(const Duration(seconds: 50));
+      await c.startPreset(const Minutes(Duration(seconds: 50)));
       await c.resume();
       expect(c.state.duration, const Duration(seconds: 10));
       expect(c.state.status, CountdownStatus.running);
@@ -184,10 +180,15 @@ void main() {
     testWidgets('toggle walks idle -> running -> paused -> running -> done', (
       tester,
     ) async {
+      settings = const ClockSettings().copyWith(
+        timerPresets: [const Duration(seconds: 3)],
+        defaultTimer: const Minutes(Duration(seconds: 3)),
+      );
       final c = countdown();
-      await c.setDuration(const Duration(seconds: 3));
       await c.toggle();
       expect(c.state.status, CountdownStatus.running);
+      expect(c.state.duration, const Duration(seconds: 3));
+      expect(c.state.pomodoro, isNull);
       await c.toggle();
       expect(c.state.status, CountdownStatus.paused);
       await c.toggle();
@@ -212,24 +213,41 @@ void main() {
       await c.close();
     });
 
-    testWidgets('an invalid entry keeps Space from starting', (tester) async {
+    testWidgets('restart runs a finished timer again; ignored otherwise', (
+      tester,
+    ) async {
       final c = countdown();
-      await c.setDuration(null);
-      await c.toggle();
+      await c.restart();
       expect(c.state.status, CountdownStatus.idle);
-      await c.setDuration(Duration.zero);
-      await c.toggle();
-      expect(c.state.status, CountdownStatus.idle);
-      await c.setDuration(const Duration(seconds: 4));
-      await c.toggle();
+      await c.start(const Duration(seconds: 3));
+      await c.restart();
       expect(c.state.status, CountdownStatus.running);
-      expect(c.state.duration, const Duration(seconds: 4));
+      expect(sound.stops, 0);
+      clock.advance(const Duration(seconds: 3));
+      await c.check();
+      expect(c.state.status, CountdownStatus.finished);
+      await c.restart();
+      expect(c.state.status, CountdownStatus.running);
+      expect(c.state.remaining, const Duration(seconds: 3));
+      expect(sound.stops, 1);
+      await c.close();
+    });
 
-      // Reset brings back a valid input.
-      await c.setDuration(null);
-      await c.reset();
+    testWidgets('Space on idle starts the default timer; presets start', (
+      tester,
+    ) async {
+      final c = countdown();
+      // The cycle by default.
       await c.toggle();
+      expect(c.state.pomodoro, const Pomodoro());
+      await c.reset();
+      await c.startPreset(const Minutes(Duration(minutes: 10)));
       expect(c.state.status, CountdownStatus.running);
+      expect(c.state.duration, const Duration(minutes: 10));
+      expect(c.state.pomodoro, isNull);
+      await c.reset();
+      await c.startPreset(const PomodoroCycle());
+      expect(c.state.pomodoro, const Pomodoro());
       await c.close();
     });
 
@@ -350,7 +368,8 @@ void main() {
       tester,
     ) async {
       final c = countdown();
-      await c.setDuration(const Duration(seconds: 90));
+      await c.start(const Duration(seconds: 90));
+      await c.reset();
       await c.startPomodoro();
       expect(c.state.status, CountdownStatus.running);
       expect(c.state.pomodoro, const Pomodoro());
@@ -367,9 +386,10 @@ void main() {
       expect(alerts.scheduled[id], clock.now.add(rest));
       expect(alerts.shown, [strings.clock.pomodoro]);
       expect(sound.alarms, 1);
-      expect(sound.stops, 0);
+      // One stop is the reset that left the 90 s timer.
+      expect(sound.stops, 1);
       await tester.pump(const Duration(seconds: 5));
-      expect(sound.stops, 1, reason: 'the chime is brief');
+      expect(sound.stops, 2, reason: 'the chime is brief');
 
       clock.advance(rest);
       await tester.pump(tick);
@@ -380,7 +400,6 @@ void main() {
       // Ignored while a phase runs.
       await c.startPomodoro();
       await c.startNextPhase();
-      await c.setDuration(const Duration(seconds: 10));
       expect(c.state.pomodoro, const Pomodoro(round: 2));
       expect(c.state.duration, focus);
 
@@ -435,7 +454,8 @@ void main() {
       tester,
     ) async {
       var c = countdown();
-      await c.setDuration(const Duration(seconds: 90));
+      await c.start(const Duration(seconds: 90));
+      await c.reset();
       await c.startPomodoro();
       await c.close();
 
@@ -554,6 +574,40 @@ void main() {
       c.reset();
       expect(c.state, const StopwatchState());
       c.start();
+      await c.close();
+    });
+
+    testWidgets('laps: splits newest first, only while running, reset clears', (
+      tester,
+    ) async {
+      final watch = FakeStopwatch();
+      final c = StopwatchController(stopwatch: watch);
+      c.lap();
+      expect(c.state.laps, isEmpty, reason: 'idle');
+      c.start();
+      watch.reading = const Duration(seconds: 12);
+      c.lap();
+      watch.reading = const Duration(seconds: 20);
+      c.lap();
+      expect(c.state.laps, const [Duration(seconds: 8), Duration(seconds: 12)]);
+      c.pause();
+      watch.reading = const Duration(seconds: 25);
+      c.lap();
+      expect(c.state.laps, hasLength(2), reason: 'ignored while paused');
+      expect(
+        c.state,
+        isNot(const StopwatchState(elapsed: Duration(seconds: 20))),
+      );
+      expect(
+        c.state,
+        StopwatchState(
+          elapsed: const Duration(seconds: 20),
+          laps: c.state.laps,
+        ),
+      );
+      c.reset();
+      expect(c.state.laps, isEmpty);
+      expect(c.state, const StopwatchState());
       await c.close();
     });
 

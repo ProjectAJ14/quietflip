@@ -15,11 +15,14 @@ import 'package:go_router/go_router.dart';
 class FlipClockRouter implements CoreRouter {
   const FlipClockRouter();
 
-  /// Clock / Timer / Stopwatch screen. The app launches here.
+  /// Pomodoro / Clock / Stopwatch screen. The app launches here.
   static const String home = '/clock';
 
   /// Settings screen, stacked on [home] so going back restores it.
   static const String settings = '/clock/settings';
+
+  /// Settings opened on the Timers category.
+  static const String timerSettings = '$settings?category=timers';
 
   @override
   List<RouteBase> get routes => [
@@ -36,12 +39,15 @@ class FlipClockRouter implements CoreRouter {
         brightness: di.get<ScreenBrightness>(),
         logger: di.get<Logger>(),
         onOpenSettings: () => context.go(settings),
+        onOpenTimerSettings: () => context.go(timerSettings),
       ),
       routes: [
         GoRoute(
           path: 'settings',
-          builder: (context, _) => SettingsScreen(
+          builder: (context, state) => SettingsScreen(
             settings: di.get<SettingsController>(),
+            openTimers: state.uri.queryParameters['category'] == 'timers',
+            now: () => di.get<ClockController>().state,
             orientationSupported: di.get<OrientationLock>().supported,
             onDone: () => context.go(home),
             onSkins: () => unawaited(
