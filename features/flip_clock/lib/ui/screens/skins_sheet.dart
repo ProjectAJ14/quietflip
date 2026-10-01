@@ -11,8 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';
 
-/// Opens the Skins sheet over the clock. Selecting applies at once;
-/// Customize and New skin open the customizer on top.
+/// Opens the Skins sheet over the clock. Selecting applies at once; the
+/// selected tile's Customize and New skin open the customizer on top.
 Future<void> showSkins(
   BuildContext context, {
   required SettingsController settings,
@@ -26,11 +26,12 @@ Future<void> showSkins(
       selectedId: settings.skin.id,
       now: now,
       use24h: s.use24h,
+      showSeconds: s.showSeconds,
+      showDate: s.showDate,
       onSelect: (skin) => unawaited(settings.selectSkin(skin.id)),
       onDone: () => Navigator.of(context).pop(),
-      onCustomize: () => unawaited(
-        _customize(context, settings, now, _asDrawn(context, settings)),
-      ),
+      onCustomize: () =>
+          unawaited(customizeSkin(context, settings: settings, now: now)),
       onNew: () => unawaited(
         _customize(
           context,
@@ -46,6 +47,14 @@ Future<void> showSkins(
     ),
   ),
 );
+
+/// Opens the customizer on the selected skin (a custom one can be deleted
+/// there), from its tile in the Skins sheet or the Appearance strip.
+Future<void> customizeSkin(
+  BuildContext context, {
+  required SettingsController settings,
+  required DateTime now,
+}) => _customize(context, settings, now, _asDrawn(context, settings));
 
 /// The selected skin in the colours it shows now, as explicit colours: a
 /// custom skin made from Mono in Mono Light keeps the light look it was

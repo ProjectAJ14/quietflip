@@ -27,6 +27,7 @@ class SettingsScreen extends StatefulWidget {
     this.desktop,
     this.onDone,
     this.onSkins,
+    this.onCustomize,
     this.openTimers = false,
     this.now = DateTime.now,
   });
@@ -47,6 +48,9 @@ class SettingsScreen extends StatefulWidget {
 
   /// Opens the Skins sheet (Appearance > Skins > View all).
   final VoidCallback? onSkins;
+
+  /// Opens the customizer on the selected skin (its tile's Customize).
+  final VoidCallback? onCustomize;
 
   /// Opens straight on the Timers category (the island's tune icon).
   final bool openTimers;
@@ -125,8 +129,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               selectedId: widget.settings.skin.id,
               now: widget.now(),
               use24h: s.use24h,
+              showSeconds: s.showSeconds,
+              showDate: s.showDate,
               onSelect: (skin) =>
                   unawaited(widget.settings.selectSkin(skin.id)),
+              onCustomize: widget.onCustomize,
             ),
             SettingsValueRow(label: c.skins_view_all, onTap: widget.onSkins),
           ],
@@ -520,14 +527,20 @@ class _SkinStrip extends StatelessWidget {
     required this.selectedId,
     required this.now,
     required this.use24h,
+    required this.showSeconds,
+    required this.showDate,
     required this.onSelect,
+    required this.onCustomize,
   });
 
   final List<Skin> skins;
   final String selectedId;
   final DateTime now;
   final bool use24h;
+  final bool showSeconds;
+  final bool showDate;
   final ValueChanged<Skin> onSelect;
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
@@ -546,7 +559,10 @@ class _SkinStrip extends StatelessWidget {
               selected: skin.id == selectedId,
               now: now,
               use24h: use24h,
+              showSeconds: showSeconds,
+              showDate: showDate,
               onTap: () => onSelect(skin),
+              onCustomize: onCustomize,
             ),
           ),
       ],

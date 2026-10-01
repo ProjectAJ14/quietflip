@@ -20,6 +20,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/gesture_layer.dart';
+import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/screens/index.dart';
@@ -923,6 +924,18 @@ void main() {
     expect(find.byType(SkinPicker), findsOne);
     // The sheet's Done sits above Settings' own.
     await tester.tap(find.text(strings.clock.skins_done).last);
+    await tester.pumpAndSettle();
+    // The strip's selected tile opens the customizer on that skin.
+    await tester.tap(find.text(strings.clock.skins_customize).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinCustomizer), findsOne);
+    await tester.tap(
+      find.text(
+        MaterialLocalizations.of(
+          tester.element(find.byType(SkinCustomizer)),
+        ).cancelButtonLabel,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();

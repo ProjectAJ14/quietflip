@@ -76,10 +76,13 @@ lib/
                                            where supported; owned ChromeController), tap
                                            toggle, date line,
                                            full-screen note, keys, wake lock
-  ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on top
+  ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on
+                                           top; customizeSkin: the customizer on the selected
+                                           skin (Settings' strip, via the router)
   ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skins strip: the
                                            first 5 SkinTiles, yours first, the selected one
-                                           always in it, tap applies; View all -> Skins sheet;
+                                           always in it, tap applies, the selected tile's
+                                           Customize -> `onCustomize`; View all -> Skins sheet;
                                            theme Dark/Light/Match system, card size, digit
                                            brightness; Corners: a live sample of a button,
                                            a chip and a mini flip card over a 0..24 slider,
@@ -173,7 +176,16 @@ lib/
   asks for it. AM/PM placement is the skin's.
 - Sheets (`showSheet`) use `surface`, `DesignShape.lg` top corners and a
   hairline, full width (Material's 640px cap is lifted). Skin tiles are at
-  least 196px wide.
+  least 196px wide (three groups and the date fit) and draw what the clock
+  would with that skin: the user's `use24h` and `showSeconds` (cards for
+  `off`/`cards`, the badge for `badge`), the date line small above the
+  cards when `showDate` or `skin.showDate`; always one row. Select vs
+  customise: a tap applies the skin; the selected tile gets the accent
+  ring, the check and, in place of the face name, a Customize button (pencil
+  + label, its own focusable button spoken "Customize <name>"; the tile is
+  "<name>, selected"), which opens the customizer on that skin (custom
+  skins with Delete). The sheet header keeps only Done and the title. The
+  Appearance strip uses the same tile.
 - Subtle movement (burn-in) always wraps the panels and moves only while
   full screen and the setting are both on (`enabled`; off it sits centred
   with the same padding). It is driven by the screen's `ClockController` (no

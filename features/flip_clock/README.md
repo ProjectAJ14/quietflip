@@ -91,8 +91,11 @@ whether a tap toggles them.
 
 ## Skins
 
-The island's Skins action opens the Skins sheet: live tiles of every skin, applied
-on tap. Classic is Mono (the default, white on near-black; black on white in
+The Skins button (top-left) opens the Skins sheet: live tiles of every skin,
+drawn exactly as the clock would draw them with your settings (seconds when
+Show seconds is on, the date above the cards when Show date is on or the
+skin shows it). Tap a tile to apply it: it gets the accent ring and check,
+and its caption turns into a Customize button for that skin. Classic is Mono (the default, white on near-black; black on white in
 the Light theme) plus nine colour variations; Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
 has one skin per bundled face (Bebas, Anton, Oswald,
@@ -103,9 +106,10 @@ A skin with its own face (Bebas, Orbit, Terminal and the rest) sets the whole
 app in that face: settings, the island, sheets, the date and AM/PM. Mono and
 the Classic colour skins keep Geist for everything but the digits.
 
-Customize (or New skin) opens the customizer on the current skin: face,
-digit / card / background colour (token swatches or a hex colour), corner
-radius, split line, seconds style (off, small, cards), AM/PM (hidden, inside
+Customize on the selected tile (in the sheet or the Appearance strip), or
+New skin, opens the customizer on that skin: face, digit / card /
+background colour (token swatches or a hex colour), split line (corners
+follow Settings > Appearance > Corners for the whole app), seconds style (off, small, cards), AM/PM (hidden, inside
 the first card, beside the last) and the date line. Saving a built-in skin
 creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.

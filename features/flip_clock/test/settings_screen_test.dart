@@ -35,6 +35,7 @@ void main() {
 
   var done = 0;
   var skins = 0;
+  var customized = 0;
 
   Future<void> open(
     WidgetTester tester, {
@@ -54,6 +55,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     done = 0;
     skins = 0;
+    customized = 0;
     await tester.pumpWidget(
       DesignSystemWrapper(
         mode: mode,
@@ -66,6 +68,7 @@ void main() {
             desktop: desktop,
             onDone: () => done++,
             onSkins: () => skins++,
+            onCustomize: () => customized++,
             openTimers: openTimers,
             now: () => DateTime(2026, 9, 29, 9, 41),
           ),
@@ -98,6 +101,10 @@ void main() {
     // Appearance.
     await tap(tester, c.skins_view_all);
     expect(skins, 1);
+    // The strip's selected tile offers Customize, and only that one.
+    expect(find.text(c.skins_customize), findsOne);
+    await tap(tester, c.skins_customize);
+    expect(customized, 1);
     expect(find.text(c.skin_mono), findsOne);
     await tap(tester, c.theme_system);
     expect(settings.state.theme, ClockTheme.system);

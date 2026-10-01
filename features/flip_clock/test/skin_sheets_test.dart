@@ -407,11 +407,154 @@ void main() {
     await open(tester, size: const Size(1200, 800));
     final title = tester.getCenter(find.text(strings.clock.skins_title));
     expect(title.dx, closeTo(600, 1));
-    // Customize sits at the right end.
+    // The header keeps Done and the title only: Customize is on the tile.
     expect(
-      tester.getRect(find.text(strings.clock.skins_customize)).right,
-      greaterThan(1200 - 80),
+      find.descendant(
+        of: find.byType(SheetHeader),
+        matching: find.text(strings.clock.skins_customize),
+      ),
+      findsNothing,
     );
     await close(tester);
+  });
+
+  group('gallery', () {
+    final c = strings.clock;
+
+    /// Cards drawn by [name]'s tile (a card is two halves of one text).
+    Set<String> cardsOf(WidgetTester tester, String name) => {
+      for (final t in tester.widgetList<Text>(
+        find.descendant(
+          of: find.descendant(
+            of: tile(name),
+            matching: find.byType(FlipDisplay),
+          ),
+          matching: find.byType(Text),
+        ),
+      ))
+        t.data!,
+    };
+
+    testWidgets('tiles draw the seconds and date the clock would', (
+      tester,
+    ) async {
+      final date = DateTime(2026, 9, 30);
+      await open(tester);
+      final mono = c.skin_mono;
+      expect(cardsOf(tester, mono), {'17', '14'});
+      final formatted = MaterialLocalizations.of(
+        tester.element(find.byType(SkinPicker)),
+      ).formatFullDate(date);
+      expect(
+        find.descendant(of: tile(mono), matching: find.text(formatted)),
+        findsNothing,
+      );
+      await settings.update(
+        settings.state.copyWith(showSeconds: true, showDate: true),
+      );
+      await tester.pumpAndSettle();
+      // Mono shows seconds as a card; every tile shows the date.
+      expect(cardsOf(tester, mono), {'17', '14', '00'});
+      expect(
+        find.descendant(of: tile(mono), matching: find.text(formatted)),
+        findsOne,
+      );
+      expect(tester.takeException(), isNull);
+      await close(tester);
+    });
+
+    testWidgets('three groups fit the narrowest tile', (tester) async {
+      await settings.update(
+        settings.state.copyWith(showSeconds: true, showDate: true),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(colorScheme: DesignSystem.blackScheme()),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: SkinPicker.minTileWidth,
+                child: SkinTile(
+                  skin: Skins.resolve(Skins.monoId, const []),
+                  selected: true,
+                  now: now,
+                  use24h: false,
+                  showSeconds: true,
+                  showDate: true,
+                  onTap: () {},
+                  onCustomize: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      final cards = tester.getRect(find.byType(FlipDisplay));
+      expect(cards.width, lessThanOrEqualTo(SkinPicker.minTileWidth));
+      await close(tester);
+    });
+
+    testWidgets('tap selects; Customize sits on that tile only and opens it', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await open(tester, size: const Size(1200, 900));
+      final customize = find.text(c.skins_customize);
+      expect(
+        find.descendant(of: tile(c.skin_mono), matching: customize),
+        findsOne,
+      );
+      expect(customize, findsOne);
+
+      await tester.tap(tile(c.skin_rose));
+      await tester.pumpAndSettle();
+      expect(settings.state.skinId, 'rose');
+      expect(
+        find.descendant(of: tile(c.skin_rose), matching: customize),
+        findsOne,
+      );
+      expect(customize, findsOne);
+      // "Rose, selected" and its own "Customize Rose" button.
+      final rose = tester.getSemantics(find.bySemanticsLabel(c.skin_rose));
+      expect(
+        rose.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
+        isTrue,
+      );
+      expect(
+        find.bySemanticsLabel(c.skins_customize_named(c.skin_rose)),
+        findsOne,
+      );
+
+      await tester.tap(customize);
+      await tester.pumpAndSettle();
+      final customizer = tester.widget<SkinCustomizer>(
+        find.byType(SkinCustomizer),
+      );
+      expect(customizer.start.id, 'rose');
+      expect(customizer.onDelete, isNull);
+      semantics.dispose();
+      await close(tester);
+    });
+
+    testWidgets('a custom skin\'s Customize opens its editor with Delete', (
+      tester,
+    ) async {
+      await settings.saveSkin(const Skin(id: '', name: 'Mine'));
+      await open(tester);
+      await tester.tap(
+        find.descendant(
+          of: tile('Mine'),
+          matching: find.text(c.skins_customize),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final customizer = tester.widget<SkinCustomizer>(
+        find.byType(SkinCustomizer),
+      );
+      expect(customizer.start.name, 'Mine');
+      expect(customizer.onDelete, isNotNull);
+      await close(tester);
+    });
   });
 }

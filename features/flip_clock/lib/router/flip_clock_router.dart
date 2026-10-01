@@ -58,6 +58,13 @@ class FlipClockRouter implements CoreRouter {
                 now: di.get<ClockController>().state,
               ),
             ),
+            onCustomize: () => unawaited(
+              customizeSkin(
+                context,
+                settings: di.get<SettingsController>(),
+                now: di.get<ClockController>().state,
+              ),
+            ),
           ),
         ),
       ],
