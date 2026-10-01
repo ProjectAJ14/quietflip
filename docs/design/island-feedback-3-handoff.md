@@ -355,3 +355,9 @@ if keys are listed there.
   most common action); long-press to customise (invisible, same problem as today).
 - **Stacked threshold** is 1.15x with the same 15% band back. Tune after using it.
 - **Lap order** newest first, row-major, matching the list it replaces.
+- **Gallery seconds follow the skin, not Show seconds** (changed after
+  review, 2026-10-01). A tile shows seconds only when that skin is
+  configured to (`cards` or `badge`), because selecting it applies that
+  preset; Show seconds does not turn them on in every preview. This
+  replaces item 10's "seconds show in the preview when they show on the
+  clock".

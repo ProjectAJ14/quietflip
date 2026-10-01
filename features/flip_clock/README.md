@@ -92,9 +92,9 @@ whether a tap toggles them.
 ## Skins
 
 The Skins button (top-left) opens the Skins sheet: live tiles of every skin,
-drawn exactly as the clock would draw them with your settings (seconds when
-Show seconds is on, the date above the cards when Show date is on or the
-skin shows it). Tap a tile to apply it: it gets the accent ring and check,
+drawn as each skin is configured (seconds only on skins that show them,
+which is what you get when you pick one; the date above the cards when
+Show date is on or the skin shows it). Tap a tile to apply it: it gets the accent ring and check,
 and its caption turns into a Customize button for that skin. Classic is Mono (the default, white on near-black; black on white in
 the Light theme) plus nine colour variations; Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type

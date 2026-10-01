@@ -435,11 +435,12 @@ void main() {
         t.data!,
     };
 
-    testWidgets('tiles draw the seconds and date the clock would', (
+    testWidgets('tiles show seconds only for skins that show them', (
       tester,
     ) async {
       final date = DateTime(2026, 9, 30);
-      await open(tester);
+      // Tall enough that every tile is built.
+      await open(tester, size: const Size(1400, 3000));
       final mono = c.skin_mono;
       expect(cardsOf(tester, mono), {'17', '14'});
       final formatted = MaterialLocalizations.of(
@@ -449,12 +450,27 @@ void main() {
         find.descendant(of: tile(mono), matching: find.text(formatted)),
         findsNothing,
       );
+      final cards = Skins.builtIn().firstWhere(
+        (k) => k.seconds == SkinSeconds.cards,
+      );
+      final badge = Skins.builtIn().firstWhere(
+        (k) => k.seconds == SkinSeconds.badge,
+      );
+      expect(cardsOf(tester, cards.name), {'17', '14', '00'});
+      // A badge skin: two cards plus the small seconds in the corner.
+      expect(cardsOf(tester, badge.name), containsAll(['17', '14', '00']));
+      expect(
+        find.descendant(of: tile(badge.name), matching: find.text('00')),
+        findsOne,
+      );
+      // The Show seconds setting does not leak into previews: Mono has no
+      // seconds, so its tile stays HH MM. The date follows Show date.
       await settings.update(
         settings.state.copyWith(showSeconds: true, showDate: true),
       );
       await tester.pumpAndSettle();
-      // Mono shows seconds as a card; every tile shows the date.
-      expect(cardsOf(tester, mono), {'17', '14', '00'});
+      expect(cardsOf(tester, mono), {'17', '14'});
+      expect(cardsOf(tester, cards.name), {'17', '14', '00'});
       expect(
         find.descendant(of: tile(mono), matching: find.text(formatted)),
         findsOne,
@@ -475,11 +491,12 @@ void main() {
               child: SizedBox(
                 width: SkinPicker.minTileWidth,
                 child: SkinTile(
-                  skin: Skins.resolve(Skins.monoId, const []),
+                  skin: Skins.builtIn().firstWhere(
+                    (k) => k.seconds == SkinSeconds.cards,
+                  ),
                   selected: true,
                   now: now,
                   use24h: false,
-                  showSeconds: true,
                   showDate: true,
                   onTap: () {},
                   onCustomize: () {},

@@ -20,7 +20,6 @@ class SkinPicker extends StatelessWidget {
     required this.selectedId,
     required this.now,
     required this.use24h,
-    required this.showSeconds,
     required this.showDate,
     required this.onSelect,
     required this.onCustomize,
@@ -35,9 +34,7 @@ class SkinPicker extends StatelessWidget {
   final DateTime now;
   final bool use24h;
 
-  /// The Show seconds and Show date settings, so tiles draw what the clock
-  /// would.
-  final bool showSeconds;
+  /// The Show date setting, so tiles draw the date when the clock would.
   final bool showDate;
   final ValueChanged<Skin> onSelect;
 
@@ -79,7 +76,6 @@ class SkinPicker extends StatelessWidget {
                   selected: skin.id == selectedId,
                   now: now,
                   use24h: use24h,
-                  showSeconds: showSeconds,
                   showDate: showDate,
                   onTap: () => onSelect(skin),
                   onCustomize: onCustomize,
@@ -200,9 +196,10 @@ class SectionHeader extends StatelessWidget {
   );
 }
 
-/// One skin: its own ground with mini cards at the current time, drawn
-/// exactly as the clock would with it (seconds per [showSeconds] in the
-/// skin's style, the date above when [showDate] or the skin asks), the
+/// One skin: its own ground with mini cards at the current time, drawn as
+/// that skin is configured (seconds only when the skin shows them, in its
+/// style: what selecting it gives; the date above when [showDate] or the
+/// skin asks), the
 /// name and face below, always in one row. Selected: a 2px accent ring, a
 /// check badge, and a Customize button in place of the face name.
 class SkinTile extends StatelessWidget {
@@ -213,7 +210,6 @@ class SkinTile extends StatelessWidget {
     required this.now,
     required this.use24h,
     required this.onTap,
-    this.showSeconds = false,
     this.showDate = false,
     this.onCustomize,
   });
@@ -222,7 +218,6 @@ class SkinTile extends StatelessWidget {
   final bool selected;
   final DateTime now;
   final bool use24h;
-  final bool showSeconds;
   final bool showDate;
   final VoidCallback onTap;
 
@@ -243,7 +238,8 @@ class SkinTile extends StatelessWidget {
     final value = clockValue(
       now,
       use24h: use24h,
-      showSeconds: showSeconds,
+      // Selecting a skin applies its seconds preset, so the tile shows it.
+      showSeconds: skin.seconds != SkinSeconds.off,
       skin: skin,
     );
     final customize = selected ? onCustomize : null;

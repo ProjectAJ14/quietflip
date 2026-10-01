@@ -129,7 +129,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               selectedId: widget.settings.skin.id,
               now: widget.now(),
               use24h: s.use24h,
-              showSeconds: s.showSeconds,
               showDate: s.showDate,
               onSelect: (skin) =>
                   unawaited(widget.settings.selectSkin(skin.id)),
@@ -527,7 +526,6 @@ class _SkinStrip extends StatelessWidget {
     required this.selectedId,
     required this.now,
     required this.use24h,
-    required this.showSeconds,
     required this.showDate,
     required this.onSelect,
     required this.onCustomize,
@@ -537,7 +535,6 @@ class _SkinStrip extends StatelessWidget {
   final String selectedId;
   final DateTime now;
   final bool use24h;
-  final bool showSeconds;
   final bool showDate;
   final ValueChanged<Skin> onSelect;
   final VoidCallback? onCustomize;
@@ -559,7 +556,6 @@ class _SkinStrip extends StatelessWidget {
               selected: skin.id == selectedId,
               now: now,
               use24h: use24h,
-              showSeconds: showSeconds,
               showDate: showDate,
               onTap: () => onSelect(skin),
               onCustomize: onCustomize,

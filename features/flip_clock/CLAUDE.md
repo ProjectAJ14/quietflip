@@ -176,10 +176,11 @@ lib/
   asks for it. AM/PM placement is the skin's.
 - Sheets (`showSheet`) use `surface`, `DesignShape.lg` top corners and a
   hairline, full width (Material's 640px cap is lifted). Skin tiles are at
-  least 196px wide (three groups and the date fit) and draw what the clock
-  would with that skin: the user's `use24h` and `showSeconds` (cards for
-  `off`/`cards`, the badge for `badge`), the date line small above the
-  cards when `showDate` or `skin.showDate`; always one row. Select vs
+  least 196px wide (three groups and the date fit) and draw the skin as it
+  is configured: the user's `use24h`, seconds only when the skin shows them
+  (`cards` -> a card, `badge` -> the badge, `off` -> none, whatever Show
+  seconds says; selecting a skin applies that preset), the date line small
+  above the cards when `showDate` or `skin.showDate`; always one row. Select vs
   customise: a tap applies the skin; the selected tile gets the accent
   ring, the check and, in place of the face name, a Customize button (pencil
   + label, its own focusable button spoken "Customize <name>"; the tile is
