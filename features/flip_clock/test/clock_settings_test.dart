@@ -1,4 +1,5 @@
 import 'package:design_system/design_system.dart';
+import 'package:device_services/device_services.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -23,6 +24,8 @@ void main() {
     expect(s.gestureBrightness, isTrue);
     expect(s.gestureModes, isTrue);
     expect(s.cardSize, CardSize.large);
+    expect(s.tickSound, TickSound.classic);
+    expect(s.alarmSound, AlarmSound.chime);
   });
 
   test('round-trips through json and copyWith', () {
@@ -44,6 +47,8 @@ void main() {
       gestureBrightness: false,
       gestureModes: false,
       cardSize: CardSize.small,
+      tickSound: TickSound.woodblock,
+      alarmSound: AlarmSound.beeps,
     );
     expect(ClockSettings.fromJson(s.toJson()), s);
     expect(ClockSettings.fromJson(s.toJson()).hashCode, s.hashCode);
@@ -170,6 +175,43 @@ void main() {
       expect(read.cardSize, CardSize.large, reason: '$bad');
       expect(read.use24h, isFalse);
     }
+  });
+
+  test('sound picks: json by name, unknown or missing keeps the default', () {
+    const picked = ClockSettings(
+      tickSound: TickSound.splitFlap,
+      alarmSound: AlarmSound.ring,
+    );
+    expect(picked.toJson()['tickSound'], 'splitFlap');
+    expect(picked.toJson()['alarmSound'], 'ring');
+    expect(ClockSettings.fromJson(picked.toJson()), picked);
+    expect(
+      picked.copyWith(tickSound: TickSound.digital).tickSound,
+      TickSound.digital,
+    );
+    for (final changed in [
+      const ClockSettings(tickSound: TickSound.digital),
+      const ClockSettings(alarmSound: AlarmSound.bell),
+    ]) {
+      expect(changed, isNot(const ClockSettings()));
+      expect(changed.hashCode, isNot(const ClockSettings().hashCode));
+    }
+    for (final bad in [null, 'kazoo', 2]) {
+      final read = ClockSettings.fromJson({
+        'tickSound': bad,
+        'alarmSound': bad,
+        'flipSound': true,
+      });
+      expect(read.tickSound, TickSound.classic, reason: '$bad');
+      expect(read.alarmSound, AlarmSound.chime, reason: '$bad');
+      expect(read.flipSound, isTrue, reason: 'other fields still read');
+    }
+    final old = ClockSettings.fromJson({
+      'flipSound': true,
+      'alertSound': false,
+    });
+    expect(old.tickSound, TickSound.classic, reason: 'an old install');
+    expect(old.alarmSound, AlarmSound.chime);
   });
 
   test('routes are fixed', () {

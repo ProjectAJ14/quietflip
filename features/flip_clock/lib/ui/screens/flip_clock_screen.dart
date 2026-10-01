@@ -557,7 +557,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     final place = _islandPlace(MediaQuery.sizeOf(context), inset);
     // Never while a sheet or route covers the clock or the app is away.
     final flip = settings.flipSound && _visible && _resumed
-        ? () => widget.sound.playTick(TickSound.classic)
+        ? () => widget.sound.playTick(settings.tickSound)
         : null;
     // Every wrapper above the PageView stays in the tree whatever the
     // chrome, full screen or settings: a wrapper coming or going rebuilds

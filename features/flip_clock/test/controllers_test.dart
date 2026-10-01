@@ -4,6 +4,7 @@ import 'package:core/core.dart' as core;
 import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
 import 'package:di/di.dart';
+import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flip_clock/state/clock_controller.dart';
@@ -116,7 +117,7 @@ void main() {
       await tester.pump(tick);
       expect(c.state.status, CountdownStatus.finished);
       expect(c.state.remaining, Duration.zero);
-      expect(sound.alarms, 1);
+      expect(sound.played, [AlarmSound.chime]);
       expect(alerts.shown, hasLength(1));
       expect(saved()['status'], 'finished');
 
@@ -130,6 +131,38 @@ void main() {
       expect(sound.stops, 1);
       expect(alerts.cancelled, [CountdownController.alertId]);
       await c.close();
+    });
+
+    testWidgets('a finished timer plays the picked alarm', (tester) async {
+      settings = const ClockSettings(alarmSound: AlarmSound.bell);
+      final c = countdown();
+      await c.start(const Duration(seconds: 3));
+      clock.advance(const Duration(seconds: 3));
+      await tester.pump(tick);
+      expect(c.state.status, CountdownStatus.finished);
+      expect(sound.played, [AlarmSound.bell]);
+      await tester.pump(const Duration(seconds: 30));
+      expect(sound.stops, 0, reason: 'a timer alarm loops until dismissed');
+      await c.close();
+    });
+
+    testWidgets('a Pomodoro phase end is a short chime with any alarm', (
+      tester,
+    ) async {
+      for (final alarm in AlarmSound.values) {
+        settings = ClockSettings(alarmSound: alarm);
+        sound.played.clear();
+        sound.stops = 0;
+        final c = countdown();
+        await c.startPomodoro();
+        clock.advance(const Duration(minutes: 25));
+        await tester.pump(tick);
+        expect(sound.played, [alarm]);
+        await tester.pump(const Duration(seconds: 5));
+        expect(sound.stops, 1, reason: '$alarm is cut short');
+        await c.reset();
+        await c.close();
+      }
     });
 
     testWidgets('pause, resume and reset; alerts follow', (tester) async {
