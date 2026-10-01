@@ -23,6 +23,7 @@ FlipDisplay display(
   String? meridiem,
   VoidCallback? onFlip,
   double size = 1,
+  bool stackable = false,
 }) => FlipDisplay(
   cards: cards,
   skin: skin,
@@ -31,6 +32,7 @@ FlipDisplay display(
   meridiem: meridiem,
   onFlip: onFlip,
   size: size,
+  stackable: stackable,
 );
 
 double fontSizeOf(WidgetTester tester, String text) =>
@@ -408,6 +410,131 @@ void main() {
         closeTo(expected * FlipDisplay.digitScale, 0.01),
       );
     }
+  });
+
+  group('stacked layout', () {
+    /// Pumps a stackable 12 34 display in a [w] x [h] box.
+    Future<void> boxed(
+      WidgetTester tester,
+      double w,
+      double h, {
+      List<String> cards = const ['12', '34'],
+      String? meridiem,
+      String? badge,
+      Skin skin = mono,
+      bool stackable = true,
+      bool reduceMotion = false,
+    }) async {
+      tester.view
+        ..physicalSize = const Size(1400, 1400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        host(
+          SizedBox(
+            width: w,
+            height: h,
+            child: display(
+              cards,
+              meridiem: meridiem,
+              badge: badge,
+              skin: skin,
+              stackable: stackable,
+            ),
+          ),
+          reduceMotion: reduceMotion,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool stacked(WidgetTester tester, String first, String last) =>
+        tester.getCenter(find.text(first).first).dy <
+        tester.getCenter(find.text(last).first).dy - 1;
+
+    testWidgets('tall stacks hours over minutes, wide stays one row', (
+      tester,
+    ) async {
+      await boxed(tester, 400, 600);
+      expect(stacked(tester, '12', '34'), isTrue);
+      expect(
+        tester.getCenter(find.text('12').first).dx,
+        closeTo(tester.getCenter(find.text('34').first).dx, 0.5),
+      );
+      await boxed(tester, 800, 300);
+      expect(stacked(tester, '12', '34'), isFalse);
+      // Tiles and previews never stack.
+      await boxed(tester, 400, 600, stackable: false);
+      expect(stacked(tester, '12', '34'), isFalse);
+    });
+
+    testWidgets('the 15% band keeps whichever layout is showing', (
+      tester,
+    ) async {
+      // 400 wide: one row fits 188px cards. At 420 high the stack fits 198
+      // (inside the band), at 500 238 (stack), at 300 138 (row).
+      await boxed(tester, 400, 420);
+      expect(stacked(tester, '12', '34'), isFalse, reason: 'starts a row');
+      await boxed(tester, 400, 500);
+      expect(stacked(tester, '12', '34'), isTrue);
+      await boxed(tester, 400, 420);
+      expect(stacked(tester, '12', '34'), isTrue, reason: 'stays stacked');
+      await boxed(tester, 400, 300);
+      expect(stacked(tester, '12', '34'), isFalse);
+      await boxed(tester, 400, 420);
+      expect(stacked(tester, '12', '34'), isFalse, reason: 'stays a row');
+    });
+
+    testWidgets('three groups stack; badge and AM/PM keep their places', (
+      tester,
+    ) async {
+      await boxed(
+        tester,
+        400,
+        900,
+        cards: ['09', '41', '07'],
+        meridiem: 'AM',
+        badge: '5',
+        skin: mono.copyWith(meridiem: SkinMeridiem.right),
+      );
+      expect(stacked(tester, '09', '41'), isTrue);
+      expect(stacked(tester, '41', '07'), isTrue);
+      // AM/PM beside the last card of the last row.
+      final last = tester.getRect(find.text('07').first);
+      final am = tester.getRect(find.text('AM'));
+      expect(am.left, greaterThan(last.right));
+      expect(
+        am.center.dy,
+        greaterThan(tester.getRect(find.text('41').first).bottom),
+      );
+      // The badge stays in the last card's corner.
+      expect(
+        tester.getRect(find.text('5')).top,
+        greaterThan(tester.getRect(find.text('41').first).bottom),
+      );
+
+      await boxed(tester, 400, 900, cards: ['09', '41'], meridiem: 'PM');
+      // Left AM/PM stays inside the first card.
+      final first = tester.getRect(find.text('09').first);
+      final pm = tester.getRect(find.text('PM'));
+      expect(pm.center.dy, lessThan(tester.getRect(find.text('41').first).top));
+      expect(pm.left, greaterThanOrEqualTo(first.left - first.width));
+    });
+
+    testWidgets('switching cross-fades; reduced motion swaps at once', (
+      tester,
+    ) async {
+      AnimatedSwitcher switcher() => tester.widget<AnimatedSwitcher>(
+        find.descendant(
+          of: find.byType(FlipDisplay),
+          matching: find.byType(AnimatedSwitcher),
+        ),
+      );
+      await boxed(tester, 400, 600);
+      expect(switcher().duration, DesignMotion.fade);
+      await boxed(tester, 400, 600, reduceMotion: true);
+      expect(switcher().duration, Duration.zero);
+    });
   });
 
   testWidgets('a themed skin draws light tokens in Mono Light', (tester) async {

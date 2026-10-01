@@ -1437,6 +1437,100 @@ void main() {
     });
   }
 
+  group('clock layout', () {
+    bool stacked(WidgetTester tester, String a, String b) =>
+        tester.getCenter(find.text(a).first).dy <
+        tester.getCenter(find.text(b).first).dy - 1;
+
+    for (final (size, stacks) in [
+      (const Size(390, 844), true),
+      (const Size(844, 390), false),
+      // Near square: inside the band, it stays the row it starts as.
+      (const Size(600, 640), false),
+    ]) {
+      for (final seconds in [false, true]) {
+        testWidgets('${size.width}x${size.height} seconds $seconds: '
+            '${stacks ? 'stacked' : 'one row'}', (tester) async {
+          tester.view
+            ..physicalSize = size
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          final h = Harness();
+          await h.settings.update(ClockSettings(showSeconds: seconds));
+          await tester.pumpWidget(h.screen());
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(stacked(tester, '09', '41'), stacks);
+          if (seconds) expect(stacked(tester, '41', '00'), stacks);
+          await h.dispose(tester);
+        });
+      }
+    }
+
+    for (final side in [SkinMeridiem.left, SkinMeridiem.right]) {
+      testWidgets('portrait 12h, AM/PM $side, text scale 2, all modes fit', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final h = Harness();
+        await h.settings.saveSkin(
+          const Skin(id: '', name: 'Side').copyWith(meridiem: side),
+        );
+        await h.settings.update(
+          h.settings.state.copyWith(use24h: false, showDate: true),
+        );
+        await tester.pumpWidget(h.screen());
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(stacked(tester, '09', '41'), isTrue);
+        expect(find.text('AM'), findsOne);
+        for (final mode in [ClockMode.pomodoro, ClockMode.stopwatch]) {
+          await h.settings.update(h.settings.state.copyWith(lastMode: mode));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: '$mode');
+        }
+        await h.dispose(tester);
+      });
+    }
+
+    testWidgets('the date sits above the time, space-6 apart, bottom free', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showDate: true));
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      final date = tester.getRect(
+        find.text(
+          MaterialLocalizations.of(
+            tester.element(find.byType(FlipClockScreen)),
+          ).formatFullDate(h.wall.now),
+        ),
+      );
+      final display = tester.getRect(find.byType(FlipDisplay));
+      expect(display.top - date.bottom, closeTo(DesignSpace.s6, 0.5));
+      // Centred as one block in the free space: nothing parked below.
+      final panel = tester.getRect(find.byType(PageView));
+      // Width-limited cards leave room: the island's reserve (inset,
+      // trayHeight, inset) on top, side padding (space-8) below.
+      final above =
+          date.top - (panel.top + DesignSpace.s6 * 2 + Island.trayHeight);
+      final below = panel.bottom - DesignSpace.s8 - display.bottom;
+      expect(below, greaterThan(0));
+      expect(above, closeTo(below, 1));
+      await h.dispose(tester);
+    });
+  });
+
   testWidgets('the date and round label use the skin face', (tester) async {
     final h = Harness();
     await h.settings.saveSkin(

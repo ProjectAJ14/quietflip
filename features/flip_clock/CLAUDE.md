@@ -152,6 +152,18 @@ lib/
   fitted card height; everything inside follows. It draws
   `skin.forTheme(DesignColors.of(context))`, as do SkinTile and the
   customizer preview.
+- Stacked layout: the clock, Pomodoro and stopwatch displays are
+  `stackable` (skin tiles and the customizer preview are not). A display
+  works out the largest card for one row and for a stack (same gaps, same
+  `CardSize.factor`) and stacks the groups (HH over MM over SS, centred)
+  when the stack's card is at least `FlipDisplay.stackGain` (1.15) times
+  the row's; it goes back to the row only when the row's is 1.15 times the
+  stack's, so near-square windows and resizes never flicker. Left AM/PM
+  stays in the first card, right AM/PM beside the last card of the last
+  row, the badge in the last card. A switch cross-fades
+  (`DesignMotion.fade`; instant with reduced motion); flips are per card
+  as before. A display is as big as its cards (so the date can sit above
+  it as one centred block).
 - The hour card is always two digits, in 12-hour time too (`09 41 AM`), so
   it never sits half empty; the text label keeps `9:41 AM`.
 - Seconds show when `showSeconds` is on, in the skin's style (a skin with
@@ -233,8 +245,10 @@ lib/
   under Keep screen awake. Full screen is not a lock screen or screensaver:
   never word it as one.
 - No dependency on another feature; no account section in Settings.
-- Show date puts `MaterialLocalizations.formatFullDate` under the Clock
-  digits (the skin's face at the headlineSmall size, 70% of the digit
+- Show date puts `MaterialLocalizations.formatFullDate` above the Clock
+  digits, `space-6` apart, the pair centred as one block in the free
+  space; nothing is reserved at the bottom (the date stays above a stack,
+  laps stay below the stopwatch's) (the skin's face at the headlineSmall size, 70% of the digit
   colour, scaled down, never wraps; the pomodoro round label is the skin's
   face at the titleLarge size). Every `FlipDisplay` on the clock screen gets
   `size: settings.cardSize.factor`, and the screen draws
@@ -313,6 +327,10 @@ widget tester's clock):
   re-saves the snapshot and re-schedules the system alert at the new end
   (`check()` and `load()`), so no stale alert fires later. Relaunch after a
   jump past the end shows finished-while-away.
+- **Stacking:** 390x844 stacks, 844x390 is a row, 600x640 stays the row
+  it starts as, with seconds on and off; portrait 12h with AM/PM left and
+  right at text scale 2 fits every mode. The band holds either layout
+  (`flip_display_test.dart`).
 - **Window size:** every mode and Settings lay out without overflow at
   320x1024, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844, text scale 1
   and 2, and while resized mid-run (timer, full screen, stopwatch). On very

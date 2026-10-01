@@ -821,6 +821,7 @@ class _ModeView extends StatelessWidget {
               size: settings.cardSize.factor,
               semanticsLabel: label,
               onFlip: flip,
+              stackable: true,
             );
             if (!settings.showDate && !skin.showDate) {
               return Center(
@@ -832,20 +833,16 @@ class _ModeView extends StatelessWidget {
             }
             final date = MaterialLocalizations.of(context).formatFullDate(now);
             final theme = Theme.of(context);
-            // The date dims with the digits, so it never outshines them.
+            // The date dims with the digits, so it never outshines them. It
+            // sits above the time, the pair centred as one block; the bottom
+            // stays free.
             return Opacity(
               opacity: settings.digitBrightness,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: DesignSpace.s6,
                 children: [
-                  Expanded(
-                    child: Center(
-                      child: display(
-                        strings.clock.current_time_and_date(text, date),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Read as part of the display's label above.
+                  // Read as part of the display's label below.
                   ExcludeSemantics(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -858,6 +855,11 @@ class _ModeView extends StatelessWidget {
                           fontSize: theme.textTheme.headlineSmall!.fontSize!,
                         ),
                       ),
+                    ),
+                  ),
+                  Flexible(
+                    child: display(
+                      strings.clock.current_time_and_date(text, date),
                     ),
                   ),
                 ],
@@ -949,6 +951,7 @@ class _TimerView extends StatelessWidget {
                         formatHms(shown),
                       ),
                       onFlip: onFlip,
+                      stackable: true,
                     ),
                   ),
                 ),
@@ -988,6 +991,7 @@ class _StopwatchView extends StatelessWidget {
             semanticsLabel: strings.clock.elapsed(
               formatStopwatch(state.elapsed),
             ),
+            stackable: true,
           );
           // The laps dim with the digits, like the date line.
           return Opacity(

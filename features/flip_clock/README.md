@@ -4,7 +4,9 @@ QuietFlip's whole first release: a split-flap clock, a Pomodoro panel that
 runs the Pomodoro cycle (25 min focus, 5 min break, repeating, with a round
 count) or one of your timer presets (5, 10, 15 min by default, up to six),
 and a stopwatch, plus Settings. The clock can show today's date
-under the digits (Settings > Clock > Show date). No account, network or analytics.
+above the digits (Settings > Clock > Show date). On a tall screen (a phone
+held upright) the cards stack, hours over minutes (over seconds); turned
+sideways they sit in one row. No account, network or analytics.
 
 ## Routes
 
