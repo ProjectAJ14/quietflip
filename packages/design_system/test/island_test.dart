@@ -68,7 +68,11 @@ List<ds.IslandAction> _actions([List<String>? log]) => [
     onPressed: () => log?.add('Start'),
   ),
   const ds.IslandAction(label: 'Reset', icon: Icons.restart_alt_rounded),
-  ds.IslandAction(label: '5m', onPressed: () => log?.add('5m')),
+  ds.IslandAction(
+    label: '5m',
+    semanticsLabel: '5 minute timer',
+    onPressed: () => log?.add('5m'),
+  ),
   ds.IslandAction(label: '10m', onPressed: () => log?.add('10m')),
   ds.IslandAction(
     label: 'Timers',
@@ -292,6 +296,9 @@ void main() {
           expect(find.byTooltip(label), findsOneWidget, reason: label);
         }
         expect(find.text('5m'), findsOneWidget);
+        // An abbreviated chip is spoken in full; others by their label.
+        expect(find.bySemanticsLabel('5 minute timer'), findsOneWidget);
+        expect(find.bySemanticsLabel('10m'), findsOneWidget);
         expect(_rule, findsOneWidget);
         final status = tester.getSemantics(find.bySemanticsLabel("Time's up"));
         expect(status.getSemanticsData().flagsCollection.isLiveRegion, isTrue);

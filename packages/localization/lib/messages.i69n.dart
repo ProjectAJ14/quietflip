@@ -728,6 +728,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
   String get preset_pomodoro => "Pomodoro";
+  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
+  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String preset_spoken_both(int minutes, int seconds) =>
+      "$minutes minute $seconds second timer";
   String get action_lap => "Lap";
   String lap_label(int number, String time) => "Lap $number  $time";
   String brightness_value(String percent) => "$percent%";
@@ -759,7 +763,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get timers_add => "Add timer";
   String get timers_limit_footer =>
       "Six timers fit the island. Delete one to add another.";
-  String get timers_delete => "Delete timer";
+  String timers_delete(String timer) => "Delete $timer";
+  String get timers_duplicate => "You already have this timer.";
   String get timers_picker_minutes => "Minutes";
   String get timers_picker_seconds => "Seconds";
   String get skins_view_all => "View all";
@@ -1042,6 +1047,12 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return preset_minutes_seconds;
       case 'preset_pomodoro':
         return preset_pomodoro;
+      case 'preset_spoken_minutes':
+        return preset_spoken_minutes;
+      case 'preset_spoken_seconds':
+        return preset_spoken_seconds;
+      case 'preset_spoken_both':
+        return preset_spoken_both;
       case 'action_lap':
         return action_lap;
       case 'lap_label':
@@ -1100,6 +1111,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return timers_limit_footer;
       case 'timers_delete':
         return timers_delete;
+      case 'timers_duplicate':
+        return timers_duplicate;
       case 'timers_picker_minutes':
         return timers_picker_minutes;
       case 'timers_picker_seconds':

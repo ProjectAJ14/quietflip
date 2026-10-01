@@ -24,10 +24,15 @@ class IslandAction {
     this.icon,
     this.onPressed,
     this.primary = false,
+    this.semanticsLabel,
   });
 
   /// Tooltip and spoken name; the visible text of a chip.
   final String label;
+
+  /// Spoken name when [label] is an abbreviation, such as "5 minute timer"
+  /// for a `5m` chip.
+  final String? semanticsLabel;
 
   /// The symbol; null makes a text chip.
   final IconData? icon;
@@ -418,7 +423,7 @@ class Island extends StatelessWidget {
       child: Semantics(
         button: true,
         enabled: enabled,
-        label: a.label,
+        label: a.semanticsLabel ?? a.label,
         excludeSemantics: true,
         onTap: a.onPressed,
         child: InkWell(

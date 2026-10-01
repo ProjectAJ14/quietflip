@@ -269,7 +269,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _addPreset() async {
-    final picked = await showTimerPicker(context);
+    final picked = await showTimerPicker(
+      context,
+      existing: widget.settings.state.timerPresets,
+    );
     if (picked == null || !mounted) return;
     // Settings may have changed while the dialog was open.
     final now = widget.settings.state;
@@ -304,8 +307,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             for (final p in s.timerPresets)
               SettingsValueRow(
                 label: presetLabel(p),
+                semanticsLabel: presetSpoken(p),
                 trailing: IconButton(
-                  tooltip: c.timers_delete,
+                  tooltip: c.timers_delete(presetSpoken(p)),
                   icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: () => _update(
                     s.copyWith(

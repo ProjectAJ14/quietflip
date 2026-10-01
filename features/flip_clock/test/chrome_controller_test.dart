@@ -179,6 +179,47 @@ void main() {
     });
   });
 
+  test('a click right after a hover showed the chrome keeps it shown', () {
+    _run((async, c, _) {
+      c.hide();
+      c.hover();
+      expect(_state(c), ChromeState.expanded);
+      // Moved onto the clock and clicked in one motion.
+      async.elapse(const Duration(milliseconds: 299));
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.expanded);
+      // The next click toggles as usual.
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+    });
+  });
+
+  test('a click after the grace, or a hover over shown chrome, toggles', () {
+    _run((async, c, _) {
+      c.hide();
+      c.hover();
+      async.elapse(ChromeController.hoverGrace);
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+      // Already shown: a hover arms nothing, so a quick click hides it.
+      c.wake();
+      c.hover();
+      c
+        ..pointerDown()
+        ..tap();
+      expect(_state(c), ChromeState.hidden);
+      // A touch tap with no hover toggles.
+      c.tap();
+      expect(_state(c), ChromeState.expanded);
+    });
+  });
+
   test('setIdle(zero) never collapses', () {
     _run((async, c, out) {
       c.setIdle(Duration.zero);

@@ -396,6 +396,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
           for (final preset in settings.timerPresets)
             IslandAction(
               label: presetLabel(preset),
+              semanticsLabel: presetSpoken(preset),
               onPressed: () => unawaited(down.start(preset)),
             ),
           act(
@@ -585,8 +586,8 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       onKeyEvent: _onKey,
       child: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _chrome.activity(),
-        onPointerHover: (_) => _chrome.wake(),
+        onPointerDown: (_) => _chrome.pointerDown(),
+        onPointerHover: (_) => _chrome.hover(),
         // Status bar icons that stay visible on the skin's ground.
         child: AnnotatedRegion<SystemUiOverlayStyle>(
           value: skin.groundColor.computeLuminance() < 0.5

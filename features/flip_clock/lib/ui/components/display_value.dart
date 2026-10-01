@@ -6,6 +6,17 @@ typedef DisplayValue = ({List<String> cards, String? badge, String? meridiem});
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
+/// How a screen reader names a preset: `5 minute timer`, `90 second
+/// timer` under a minute, `1 minute 30 second timer`.
+String presetSpoken(Duration preset) {
+  final minutes = preset.inMinutes;
+  final seconds = preset.inSeconds.remainder(60);
+  final c = strings.clock;
+  if (seconds == 0) return c.preset_spoken_minutes(minutes);
+  if (minutes == 0) return c.preset_spoken_seconds(seconds);
+  return c.preset_spoken_both(minutes, seconds);
+}
+
 /// A timer preset's short name: `5m` for whole minutes, else `1:30`.
 String presetLabel(Duration preset) {
   final seconds = preset.inSeconds.remainder(60);

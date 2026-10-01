@@ -91,7 +91,10 @@ lib/
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
                                            display_value (clock/duration/stopwatch -> cards),
                                            TimerPicker (showTimerPicker: minutes + seconds
-                                           fields, 0:01..99:59), presetLabel (`5m` / `1:30`),
+                                           fields, 0:01..99:59, refuses a preset that already exists
+                                           with a live-region message), presetLabel (`5m` / `1:30`),
+                                           presetSpoken (`5 minute timer`: chips, rows and
+                                           Delete tooltips are spoken in full),
                                            SkinPicker + SkinTile + SheetHeader + SectionHeader +
                                            showSheet, SkinCustomizer (parseHex/hexOf),
                                            SubtleMovement
@@ -165,7 +168,9 @@ lib/
   idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
   mouse move or any key expands, Esc leaves full screen first, otherwise
   hides. A tap or mouse click on the clock toggles (when
-  `tapToggleControls`); hovering still shows a hidden chrome. A tap on a
+  `tapToggleControls`); hovering still shows a hidden chrome, and the first
+  press within `ChromeController.hoverGrace` (300 ms) of that hover does not
+  hide it again (moving to the clock and clicking is one motion). A tap on a
   tray action is the action's (the island sits above the gesture layer).
 - The island is the only control on the clock screen. It sits top centre,
   `space-4` inside the safe area (`space-6` from 600px shortest side).

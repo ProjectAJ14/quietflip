@@ -13,6 +13,7 @@ import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
 import 'package:flip_clock/flip_clock.dart';
+import 'package:flip_clock/state/chrome_controller.dart';
 import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
@@ -1316,7 +1317,7 @@ void main() {
       tester,
     ) async {
       final h = await withSound(tester);
-      // Idle for a minute: any key brings the corner buttons back.
+      // Idle for a minute: any key brings the island back.
       await key(tester, LogicalKeyboardKey.keyQ);
       await tester.pumpAndSettle();
       await tester.tap(action(strings.clock.action_skins));
@@ -1468,7 +1469,7 @@ void main() {
       await h.settings.selectSkin(skin);
       await tester.pumpWidget(h.screen(appTheme: light));
       expect(ground(), want.$1, reason: '$skin light');
-      // A fresh tree: the design system's corner buttons cannot animate
+      // A fresh tree: the design system's island cannot animate
       // their shadow between two themes mid-flight.
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(h.screen(appTheme: black));
@@ -1516,11 +1517,17 @@ void main() {
     expect(chromeOf(tester), ChromeState.hidden);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: const Offset(400, 350));
-    // Moving there still shows it (desktop discoverability).
+    // Moving there shows it (desktop discoverability)...
     await mouse.moveTo(const Offset(410, 360));
     await tester.pump();
     expect(chromeOf(tester), ChromeState.expanded);
-    // A click hides it, the next shows it again.
+    // ...and a click in the same motion does not hide it again.
+    await mouse.down(const Offset(410, 360));
+    await mouse.up();
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.expanded);
+    // Later clicks toggle both ways.
+    await tester.pump(ChromeController.hoverGrace);
     await mouse.down(const Offset(410, 360));
     await mouse.up();
     await tester.pump();
@@ -1666,6 +1673,10 @@ void main() {
         const ClockSettings(lastMode: ClockMode.pomodoro),
       );
       await tester.pumpWidget(h.screen());
+      // The chip reads in full to a screen reader.
+      final semantics = tester.ensureSemantics();
+      expect(find.bySemanticsLabel(c.preset_spoken_minutes(10)), findsOne);
+      semantics.dispose();
       await tapAction(tester, '10m');
       expect(h.countdown.state.status, CountdownStatus.running);
       expect(h.countdown.state.duration, const Duration(minutes: 10));

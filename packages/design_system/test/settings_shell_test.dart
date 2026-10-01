@@ -383,6 +383,7 @@ void main() {
       Scaffold(
         body: ds.SettingsValueRow(
           label: '5m',
+          semanticsLabel: '5 minute timer',
           trailing: IconButton(
             tooltip: 'Delete',
             onPressed: () => taps++,
@@ -393,6 +394,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('Delete'));
     expect(taps, 1);
+    expect(find.bySemanticsLabel('5 minute timer'), findsOneWidget);
     expect(
       tester.getTopRight(find.byTooltip('Delete')).dx,
       greaterThan(tester.getTopRight(find.text('5m')).dx),

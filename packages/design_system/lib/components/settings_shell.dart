@@ -631,12 +631,16 @@ class SettingsValueRow extends StatelessWidget {
     this.value,
     this.onTap,
     this.trailing,
+    this.semanticsLabel,
   });
 
   final String label;
   final String? value;
   final VoidCallback? onTap;
   final Widget? trailing;
+
+  /// Spoken instead of [label] when the label is an abbreviation.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -662,7 +666,12 @@ class SettingsValueRow extends StatelessWidget {
           ?trailing,
         ],
       ),
-      child: _Label(label),
+      child: Semantics(
+        container: semanticsLabel != null,
+        label: semanticsLabel,
+        excludeSemantics: semanticsLabel != null,
+        child: _Label(label),
+      ),
     );
   }
 }
