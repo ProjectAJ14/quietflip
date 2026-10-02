@@ -132,6 +132,14 @@ Future<void> modeTab(WidgetTester tester, String name) async {
   await tester.pump();
 }
 
+/// Shows the chrome, which launch keeps hidden, the way a key press does,
+/// and waits for the island to open.
+Future<void> showChrome(WidgetTester tester) async {
+  await key(tester, LogicalKeyboardKey.keyQ);
+  await tester.pump(DesignMotion.islandMorph);
+  await tester.pump();
+}
+
 /// The stopwatch panel at zero.
 String get stopwatchZero => strings.clock.elapsed('0:00:00.0');
 
@@ -172,6 +180,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     expect(
       find.bySemanticsLabel(strings.clock.current_time('09:41')),
       findsOne,
@@ -262,6 +271,7 @@ void main() {
       ),
     );
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await modeTab(tester, strings.clock.mode_pomodoro);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
     // Idle shows the default timer.
@@ -332,6 +342,7 @@ void main() {
     await h.countdown.check();
     expect(h.settings.state.lastMode, ClockMode.clock);
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump();
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
     expect(find.text(strings.clock.times_up), findsOne);
@@ -346,6 +357,7 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.pomodoro));
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump();
     expect(
       find.bySemanticsLabel(strings.clock.time_remaining('00:25:00')),
@@ -392,6 +404,7 @@ void main() {
     });
     await h.countdown.load();
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
@@ -416,6 +429,7 @@ void main() {
     });
     await h.countdown.load();
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump();
     expect(action(strings.clock.start_break), findsOne);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
@@ -433,6 +447,7 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump();
     await key(tester, LogicalKeyboardKey.tab);
     await key(tester, LogicalKeyboardKey.space);
@@ -441,12 +456,48 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('screen readers get "show controls" once the chrome hides', (
+  testWidgets('launch shows the clock alone until a tap', (tester) async {
+    final h = Harness();
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
+    await tester.pumpWidget(h.screen(orientationSupported: true));
+    final c = strings.clock;
+    List<ChromeState> corners() => [
+      for (final b in tester.widgetList<CornerButton>(
+        find.byType(CornerButton),
+      ))
+        b.state,
+    ];
+    expect(chromeOf(tester), ChromeState.hidden);
+    expect(corners(), List.filled(3, ChromeState.hidden));
+    expect(action(c.action_start), findsNothing);
+    // Watched past the idle window: nothing comes up on its own.
+    await tester.pump(const Duration(seconds: 10));
+    expect(chromeOf(tester), ChromeState.hidden);
+
+    // The first tap shows the full controls, which collapse as before.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.expanded);
+    expect(corners(), List.filled(3, ChromeState.expanded));
+    await tester.pump(DesignMotion.islandMorph);
+    expect(action(c.action_start), findsOne);
+    await tester.pump(DesignMotion.controlsIdle);
+    expect(chromeOf(tester), ChromeState.dot);
+    await tester.pump(DesignMotion.dotIdle);
+    expect(chromeOf(tester), ChromeState.hidden);
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('screen readers get "show controls" while the chrome hides', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
     final h = Harness();
     await tester.pumpWidget(h.screen());
+    // Hidden from launch.
+    expect(find.bySemanticsLabel(strings.clock.show_controls), findsOne);
+    await showChrome(tester);
     expect(find.bySemanticsLabel(strings.clock.show_controls), findsNothing);
     await tester.pump(const Duration(seconds: 8));
     await tester.pumpAndSettle();
@@ -466,6 +517,19 @@ void main() {
     final h = Harness();
     await tester.pumpWidget(h.screen());
     final note = find.text(strings.clock.full_screen_note);
+    expect(note, findsNothing);
+
+    // Full screen entered without a key (a double tap, the system) still
+    // shows the chrome that launch kept hidden.
+    expect(chromeOf(tester), ChromeState.hidden);
+    h.full.value.value = true;
+    await tester.pump();
+    expect(chromeOf(tester), ChromeState.expanded);
+    expect(note, findsOne);
+    h.full.value.value = false;
+    await tester.pump();
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(chromeOf(tester), ChromeState.hidden);
     expect(note, findsNothing);
 
     await key(tester, LogicalKeyboardKey.keyF);
@@ -577,6 +641,7 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     final start = action(strings.clock.action_start);
     expect(chromeOf(tester), ChromeState.expanded);
     expect(start, findsOne);
@@ -633,6 +698,7 @@ void main() {
       ),
     );
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pump(const Duration(seconds: 2));
     expect(chromeOf(tester), ChromeState.dot);
     await tester.tapAt(const Offset(400, 300));
@@ -653,6 +719,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await modeTab(tester, strings.clock.stopwatch);
     expect(h.settings.state.lastMode, ClockMode.stopwatch);
     await tester.tap(action(strings.clock.action_settings));
@@ -820,6 +887,7 @@ void main() {
         ..devicePixelRatio = 1;
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       expect(tester.takeException(), isNull, reason: '$size');
       expect(find.text(strings.clock.stopwatch), findsOne, reason: '$size');
       await h.dispose(tester);
@@ -1015,6 +1083,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(theme: theme, routerConfig: router),
     );
+    await showChrome(tester);
     expect(find.byType(FlipDisplay), findsOne);
     await tester.tap(action(strings.clock.action_settings));
     await tester.pumpAndSettle();
@@ -1102,6 +1171,7 @@ void main() {
   ) async {
     final h = Harness();
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     Color ground() =>
         tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor!;
     expect(ground(), DesignSkinColors.bgInk);
@@ -1236,6 +1306,7 @@ void main() {
         const ClockSettings(lastMode: ClockMode.stopwatch),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tester.pumpAndSettle();
       await tester.dragFrom(const Offset(200, 300), const Offset(400, 0));
       await expectMorphInPlace(tester);
@@ -1267,6 +1338,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tester.pumpAndSettle();
       await key(tester, LogicalKeyboardKey.arrowRight);
       await expectMorphInPlace(tester);
@@ -1296,6 +1368,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tester.tap(action(strings.clock.action_skins));
       await tester.pumpAndSettle();
       final layer = tester.widget<GestureLayer>(find.byType(GestureLayer));
@@ -1400,6 +1473,7 @@ void main() {
       for (final MapEntry(key: way, value: go) in ways.entries) {
         final h = Harness();
         await tester.pumpWidget(h.screen());
+        await showChrome(tester);
         expectMode(tester, h, ClockMode.clock);
         await go();
         expectMode(tester, h, ClockMode.stopwatch);
@@ -1416,6 +1490,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tabTo(tester, ClockMode.pomodoro);
       await h.countdown.start(const Duration(minutes: 5));
       await tester.pump();
@@ -1436,6 +1511,7 @@ void main() {
       final h = Harness();
       await h.settings.update(const ClockSettings(subtleMovement: true));
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tabTo(tester, ClockMode.stopwatch);
       await key(tester, LogicalKeyboardKey.keyF);
       expect(
@@ -1458,6 +1534,7 @@ void main() {
     testWidgets('opening and closing the Skins sheet stays', (tester) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tabTo(tester, ClockMode.stopwatch);
       await tester.tap(action(strings.clock.action_skins));
       await tester.pumpAndSettle();
@@ -1474,6 +1551,7 @@ void main() {
       for (final mode in [ClockMode.pomodoro, ClockMode.stopwatch]) {
         final h = Harness();
         await tester.pumpWidget(h.screen());
+        await showChrome(tester);
         await tabTo(tester, mode);
         await idle(tester);
         expectMode(tester, h, mode);
@@ -1586,6 +1664,7 @@ void main() {
     final h = Harness();
     await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
     await tester.pumpWidget(h.screen());
+    await showChrome(tester);
     await tester.pumpAndSettle();
     await tester.tap(action(strings.clock.action_start));
     await tester.pump(const Duration(milliseconds: 50));
@@ -1607,6 +1686,7 @@ void main() {
         const ClockSettings(lastMode: ClockMode.stopwatch),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tester.pumpAndSettle();
       final island = tester.getRect(find.byType(Island));
       expect(island.center.dy, lessThan(844 / 4));
@@ -1806,6 +1886,7 @@ void main() {
       final h = Harness();
       await h.settings.update(const ClockSettings(showSeconds: true));
       await tester.pumpWidget(h.screen(orientationSupported: true));
+      await showChrome(tester);
       await tester.pumpAndSettle();
       for (final mode in ClockMode.values) {
         await h.settings.update(h.settings.state.copyWith(lastMode: mode));
@@ -1890,6 +1971,7 @@ void main() {
         const ClockSettings(showSeconds: true, showDate: true),
       );
       await tester.pumpWidget(h.screen(orientationSupported: true));
+      await showChrome(tester);
       await tester.pumpAndSettle();
       final date = find.text(
         MaterialLocalizations.of(
@@ -2094,6 +2176,7 @@ void main() {
           ClockSettings(skinId: skin.id, lastMode: ClockMode.pomodoro),
         );
         await tester.pumpWidget(h.screen(appTheme: t));
+        await showChrome(tester);
         void check(String state) {
           final island = find.byType(Island);
           // The selected tab's pill is drawn behind the label, not around it.
@@ -2157,6 +2240,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen(orientationSupported: true));
+      await showChrome(tester);
       await tester.pumpAndSettle();
       for (final (expected, wait) in [
         (ChromeState.expanded, DesignMotion.controlsIdle),
@@ -2197,6 +2281,7 @@ void main() {
             builder: (_, t) => h.screen(appTheme: t),
           ),
         );
+        await showChrome(tester);
         await tester.runAsync(GoogleFonts.pendingFonts);
         await tester.pumpAndSettle();
         final island = tester.getRect(find.byType(Island));
@@ -2236,6 +2321,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(c.action_settings));
       await tester.pump();
@@ -2252,6 +2338,7 @@ void main() {
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen(orientationSupported: true));
+      await showChrome(tester);
       await tester.pumpAndSettle();
       final rotation = find.byTooltip(c.action_rotation);
       // Bottom right.
@@ -2338,6 +2425,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       expect(trayOf(tester), [], reason: 'clock');
 
       await h.settings.update(
@@ -2397,6 +2485,7 @@ void main() {
         const ClockSettings(lastMode: ClockMode.pomodoro),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       // The chip reads in full to a screen reader.
       final semantics = tester.ensureSemantics();
       expect(find.bySemanticsLabel(c.preset_spoken_minutes(10)), findsOne);
@@ -2428,6 +2517,7 @@ void main() {
         ).copyWith(defaultTimer: const Minutes(m)),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       expect(find.bySemanticsLabel(c.time_remaining('00:15:00')), findsOne);
       await tapAction(tester, c.action_start);
       expect(h.countdown.state.duration, m);
@@ -2490,6 +2580,7 @@ void main() {
         const ClockSettings(lastMode: ClockMode.stopwatch),
       );
       await tester.pumpWidget(h.screen());
+      await showChrome(tester);
       await tapAction(tester, c.action_start);
       await crossFade(tester);
       expect(trayOf(tester).take(2), [c.action_pause, c.action_lap]);
@@ -2553,6 +2644,10 @@ void main() {
         h.watch.reading = Duration(seconds: i);
         h.stopwatch.lap();
       }
+      // The laps reach the panel on the stream, after this frame; the next
+      // one draws them (nothing else schedules a frame while the chrome is
+      // hidden).
+      await tester.pump();
       await tester.pump();
       return h;
     }

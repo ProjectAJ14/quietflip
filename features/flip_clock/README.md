@@ -114,7 +114,7 @@ sliding across; a swipe that springs back changes nothing. Pomodoro offers Start
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
-Pause, Lap, Resume and Reset; laps fill a grid under its digits, newest first, as many columns as fit, three rows before it scrolls. After 4 seconds without input the island and
+Pause, Lap, Resume and Reset; laps fill a grid under its digits, newest first, as many columns as fit, three rows before it scrolls. The app opens on the clock alone: tap it (or move the mouse, or press any key) to show the island and the corner buttons. After 4 seconds without input the island and
 the corner buttons shrink to dots, and 3 seconds later they are gone; a timer that finishes brings it
 back. Any key or a
 mouse move shows them; Esc hides them. Settings sets the idle time and

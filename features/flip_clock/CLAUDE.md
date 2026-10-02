@@ -69,7 +69,7 @@ lib/
                                            memory only), reset clears laps
   state/clock_controller.dart              Cubit<DateTime>; ticks on each second boundary
   state/chrome_controller.dart             Cubit<Chrome> (design_system `ChromeState` + optional
-                                           `IslandHud`); starts expanded, -> dot after idle, -> hidden
+                                           `IslandHud`); starts hidden, expanded -> dot after idle, -> hidden
                                            after dotIdle; activity/wake/tap/hide, showHud/releaseHud
                                            (hudHold; a showHud after releaseHud re-arms the hold, activity()
                                            starts a new gesture), setIdle (zero = never)
@@ -268,7 +268,9 @@ lib/
   a focused button keeps its own Space activation. On an idle Pomodoro panel
   it starts `defaultTimer`.
 - Chrome: the screen owns a `ChromeController` (idle from
-  `ClockSettings.controlsIdle`, updated on change). Launch is expanded; 4 s
+  `ClockSettings.controlsIdle`, updated on change). Launch is hidden: the
+  clock shows alone (no island, dot or corner buttons) until a tap, mouse
+  move or key; screen readers get the "show controls" button. Once shown, 4 s
   idle -> dots, 3 s more -> hidden. Pointer down restarts the idle timer, a
   mouse move or any key expands, Esc leaves full screen first, otherwise
   hides. A tap or mouse click on the clock toggles (when

@@ -58,6 +58,8 @@ class DesignColors extends ThemeExtension<DesignColors> {
         BoxShadow(color: Color(0xff2c2c2e), spreadRadius: 1),
       ],
       highlight: _islandHighlight,
+      lowlight: _islandLowlight,
+      sheen: _islandSheen,
     ),
   );
 
@@ -88,17 +90,27 @@ class DesignColors extends ThemeExtension<DesignColors> {
     islandElevation: DesignElevation(
       shadows: _islandDrop,
       highlight: _islandHighlight,
+      lowlight: _islandLowlight,
+      sheen: _islandSheen,
     ),
   );
 
-  /// A large soft drop shadow plus a tight contact shadow under the island.
+  /// Three layers under the island, widest first: a wide soft ambient
+  /// shadow, a mid key shadow and a tight contact shadow at its base.
   static const List<BoxShadow> _islandDrop = [
-    BoxShadow(color: Color(0x73000000), offset: Offset(0, 12), blurRadius: 32),
-    BoxShadow(color: Color(0x59000000), offset: Offset(0, 2), blurRadius: 6),
+    BoxShadow(color: Color(0x66000000), offset: Offset(0, 18), blurRadius: 44),
+    BoxShadow(color: Color(0x4d000000), offset: Offset(0, 6), blurRadius: 14),
+    BoxShadow(color: Color(0x80000000), offset: Offset(0, 1), blurRadius: 2),
   ];
 
-  /// 14% white on the island's top edge.
-  static const Color _islandHighlight = Color(0x24ffffff);
+  /// 22% white on the island's top edge.
+  static const Color _islandHighlight = Color(0x38ffffff);
+
+  /// 55% black on its bottom edge.
+  static const Color _islandLowlight = Color(0x8c000000);
+
+  /// 6% white washed over the top half of its fill.
+  static const Color _islandSheen = Color(0x0fffffff);
 
   /// Clock screen and settings page ground.
   final Color bg;
@@ -177,18 +189,40 @@ class DesignColors extends ThemeExtension<DesignColors> {
       other == null || t < 0.5 ? this : other;
 }
 
-/// How a raised object sits over the screen: [shadows] under it and a 1px
-/// [highlight] on its top edge that fades to clear at mid-height (the depth
-/// cue that still reads on pure black).
+/// How a raised object sits over the screen: [shadows] under it, a 1px
+/// rim lit with [highlight] on top and shaded with [lowlight] below (each
+/// clear by mid-height), and a [sheen] over the top half of its fill. The
+/// rim and sheen are the depth cues that still read on pure black.
 @immutable
 class DesignElevation {
-  const DesignElevation({required this.shadows, required this.highlight});
+  const DesignElevation({
+    required this.shadows,
+    required this.highlight,
+    required this.lowlight,
+    required this.sheen,
+  });
+
+  /// The lift of a collapsed dot: its shadows at this fraction of the open
+  /// object's, so it sits close to the clock and rises as it opens.
+  static const double dotLift = 0.4;
 
   /// Painted under the object, in order.
   final List<BoxShadow> shadows;
 
   /// Colour of the top edge, fading to clear at mid-height.
   final Color highlight;
+
+  /// Colour of the bottom edge, fading to clear at mid-height.
+  final Color lowlight;
+
+  /// Colour washed over the top of the fill, clear by mid-height.
+  final Color sheen;
+
+  /// [shadows] at [lift] (0..1): each blurred shadow's offset and blur
+  /// scale with it; an unblurred ring (an outline) stays as it is.
+  List<BoxShadow> shadowsAt(double lift) => [
+    for (final s in shadows) s.blurRadius == 0 ? s : s.scale(lift),
+  ];
 }
 
 /// Digit, card and ground colours of the built-in skins (`skin-*`). Digit
