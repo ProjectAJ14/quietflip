@@ -103,7 +103,10 @@ void main() {
     expect(find.text(c.skins_yours.toUpperCase()), findsOne);
     expect(find.text(c.skins_classic.toUpperCase()), findsOne);
     expect(find.text(c.skins_new), findsOne);
-    expect(tester.widget<SkinTile>(tile(c.skin_mono)).selected, isTrue);
+    // In use and its place under Classic.
+    expect(tile(c.skin_mono), findsNWidgets(2));
+    await tester.scrollUntilVisible(tile(c.skin_mono).last, 300);
+    expect(tester.widget<SkinTile>(tile(c.skin_mono).last).selected, isTrue);
     await tester.scrollUntilVisible(tile(c.skin_orbit), 300);
     expect(find.text(c.skins_type.toUpperCase()), findsOne);
     expect(find.byIcon(Icons.lock_outline), findsNothing);
@@ -112,13 +115,17 @@ void main() {
 
   testWidgets('tapping a tile applies it; Done closes', (tester) async {
     await open(tester);
+    await tester.ensureVisible(tile(strings.clock.skin_paper));
+    await tester.pumpAndSettle();
     await tester.tap(tile(strings.clock.skin_paper));
     await tester.pumpAndSettle();
     expect(settings.state.skinId, 'paper');
     expect(
-      tester.widget<SkinTile>(tile(strings.clock.skin_paper)).selected,
+      tester.widget<SkinTile>(tile(strings.clock.skin_paper).last).selected,
       isTrue,
     );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 2000));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(strings.clock.skins_done));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsNothing);
@@ -142,10 +149,14 @@ void main() {
     tester,
   ) async {
     await open(tester);
+    await tester.ensureVisible(tile(strings.clock.skin_paper));
+    await tester.pumpAndSettle();
     await tester.tap(tile(strings.clock.skin_paper));
     await tester.pump(const Duration(milliseconds: 50));
     expect(settings.state.skinId, 'paper');
     expect(liveInk(tester), isEmpty);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 2000));
     await tester.pumpAndSettle();
     await tester.tap(find.text(strings.clock.skins_done));
     await tester.pump(const Duration(milliseconds: 50));
@@ -160,14 +171,14 @@ void main() {
   ) async {
     await open(tester);
     // 342px inside the gutters fits one 196px-minimum column.
-    final phone = tester.getSize(tile(strings.clock.skin_mono)).width;
+    final phone = tester.getSize(tile(strings.clock.skin_mono).first).width;
     expect(phone, 390 - 2 * DesignSpace.s6);
     await close(tester);
   });
 
   testWidgets('wide screens get five or more columns', (tester) async {
     await open(tester, size: const Size(1280, 800));
-    final desk = tester.getSize(tile(strings.clock.skin_mono)).width;
+    final desk = tester.getSize(tile(strings.clock.skin_mono).first).width;
     expect(desk, greaterThanOrEqualTo(SkinPicker.minTileWidth));
     expect(desk * 5, lessThan(1280));
     await close(tester);
@@ -214,8 +225,8 @@ void main() {
     expect(saved.meridiem, SkinMeridiem.right);
     expect(saved.seam, isFalse);
     expect(saved.showDate, isTrue);
-    // It shows first, under Your skins.
-    expect(tile('Night shift'), findsOne);
+    // It is in use, and first under Your skins.
+    expect(tile('Night shift'), findsNWidgets(2));
     await close(tester);
   });
 
@@ -380,7 +391,7 @@ void main() {
     final c = strings.clock;
     const light = DesignColors.light;
     final mono = find.descendant(
-      of: tile(c.skin_mono),
+      of: tile(c.skin_mono).first,
       matching: fill(light.bg),
     );
     expect(mono, findsOne);
@@ -449,6 +460,118 @@ void main() {
       findsNothing,
     );
     await close(tester);
+  });
+
+  group('In use', () {
+    final c = strings.clock;
+
+    /// The In use tile: the first in the sheet.
+    SkinTile inUse(WidgetTester tester) =>
+        tester.widget<SkinTile>(find.byType(SkinTile).first);
+
+    /// Every section tile's rect, in order (the In use tile left out).
+    List<Rect> sectionRects(WidgetTester tester) => [
+      for (final e in find.byType(SkinTile).evaluate().skip(1))
+        tester.getRect(find.byWidget(e.widget)),
+    ];
+
+    testWidgets('comes first with the selected built-in skin', (tester) async {
+      await settings.selectSkin('orbit');
+      await open(tester);
+      final header = find.text(c.skins_in_use.toUpperCase());
+      expect(header, findsOne);
+      expect(
+        tester.getTopLeft(header).dy,
+        lessThan(tester.getTopLeft(find.text(c.skins_yours.toUpperCase())).dy),
+      );
+      final tile = inUse(tester);
+      expect(tile.skin.id, 'orbit');
+      expect(tile.selected, isTrue);
+      expect(tile.onCustomize, isNotNull);
+      // Customize sits on the In use tile only.
+      expect(find.text(c.skins_customize), findsOne);
+      expect(
+        find.descendant(
+          of: find.byType(SkinTile).first,
+          matching: find.text(c.skins_customize),
+        ),
+        findsOne,
+      );
+      // Same width as the grid's tiles.
+      expect(
+        tester.getSize(find.byType(SkinTile).first).width,
+        tester.getSize(find.byType(SkinTile).at(1)).width,
+      );
+      await close(tester);
+    });
+
+    testWidgets('shows a selected custom skin', (tester) async {
+      await settings.saveSkin(const Skin(id: '', name: 'Mine'));
+      await open(tester);
+      expect(inUse(tester).skin.name, 'Mine');
+      expect(inUse(tester).selected, isTrue);
+      // Above Your skins, where Mine also sits.
+      expect(
+        tester.getTopLeft(find.byType(SkinTile).first).dy,
+        lessThan(tester.getTopLeft(find.text(c.skins_yours.toUpperCase())).dy),
+      );
+      expect(tile('Mine'), findsNWidgets(2));
+      await close(tester);
+    });
+
+    testWidgets('a tap updates it; the tiles below stay put, the selected '
+        'one ringed in place', (tester) async {
+      await open(tester, size: const Size(1280, 900));
+      expect(inUse(tester).skin.id, Skins.monoId);
+      final before = sectionRects(tester);
+      await tester.tap(tile(c.skin_rose));
+      await tester.pumpAndSettle();
+      expect(settings.state.skinId, 'rose');
+      expect(inUse(tester).skin.id, 'rose');
+      expect(sectionRects(tester), before);
+      // The section tile is ringed where it was, and Mono's is not.
+      expect(tester.widget<SkinTile>(tile(c.skin_rose).last).selected, isTrue);
+      expect(tester.widget<SkinTile>(tile(c.skin_mono)).selected, isFalse);
+      await close(tester);
+    });
+
+    testWidgets('cross-fades to the new skin', (tester) async {
+      await open(tester, size: const Size(1280, 900));
+      await tester.tap(tile(c.skin_rose));
+      await tester.pump();
+      await tester.pump(DesignMotion.fade ~/ 2);
+      // Both are drawn half way: Mono fading out, Rose in.
+      final fading = find.ancestor(
+        of: find.byType(SkinTile),
+        matching: find.byType(FadeTransition),
+      );
+      final opacities = [
+        for (final f in tester.widgetList<FadeTransition>(fading))
+          f.opacity.value,
+      ];
+      expect(opacities, hasLength(2));
+      for (final o in opacities) {
+        expect(o, inExclusiveRange(0, 1));
+      }
+      await tester.pumpAndSettle();
+      expect(tester.widgetList(fading), hasLength(1));
+      await close(tester);
+    });
+
+    testWidgets('swaps at once with reduced motion', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(reduceMotion: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester, size: const Size(1280, 900));
+      await tester.tap(tile(c.skin_rose));
+      await tester.pump();
+      await tester.pump();
+      expect(inUse(tester).skin.id, 'rose');
+      expect(tile(c.skin_mono), findsOne);
+      await close(tester);
+    });
   });
 
   group('gallery', () {
@@ -555,94 +678,120 @@ void main() {
       await close(tester);
     });
 
-    testWidgets('tap selects; Customize sits on that tile only and opens it', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      await open(tester, size: const Size(1200, 900));
-      final customize = find.text(c.skins_customize);
-      expect(
-        find.descendant(of: tile(c.skin_mono), matching: customize),
-        findsOne,
-      );
-      expect(customize, findsOne);
+    testWidgets(
+      'tap selects; Customize sits on the In use tile only and opens it',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await open(tester, size: const Size(1200, 900));
+        final customize = find.text(c.skins_customize);
+        expect(
+          find.descendant(of: tile(c.skin_mono), matching: customize),
+          findsOne,
+        );
+        expect(customize, findsOne);
 
-      await tester.tap(tile(c.skin_rose));
-      await tester.pumpAndSettle();
-      expect(settings.state.skinId, 'rose');
-      expect(
-        find.descendant(of: tile(c.skin_rose), matching: customize),
-        findsOne,
-      );
-      expect(customize, findsOne);
-      // "Rose, selected" and its own "Customize Rose" button.
-      final rose = tester.getSemantics(find.bySemanticsLabel(c.skin_rose));
-      expect(
-        rose.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
-        isTrue,
-      );
-      final named = tester
-          .getSemantics(
-            find.bySemanticsLabel(c.skins_customize_named(c.skin_rose)),
-          )
-          .getSemanticsData();
-      expect(named.flagsCollection.isButton, isTrue);
-      // Focusable: its focus state is tracked (not `none`).
-      expect(named.flagsCollection.isFocused, isNot(Tristate.none));
+        await tester.tap(tile(c.skin_rose));
+        await tester.pumpAndSettle();
+        expect(settings.state.skinId, 'rose');
+        expect(
+          find.descendant(of: tile(c.skin_rose), matching: customize),
+          findsOne,
+        );
+        expect(customize, findsOne);
+        // "Rose, selected" and its own "Customize Rose" button.
+        final rose = tester.getSemantics(
+          find.bySemanticsLabel(c.skin_rose).first,
+        );
+        expect(
+          rose.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
+          isTrue,
+        );
+        final named = tester
+            .getSemantics(
+              find.bySemanticsLabel(c.skins_customize_named(c.skin_rose)),
+            )
+            .getSemanticsData();
+        expect(named.flagsCollection.isButton, isTrue);
+        // Focusable: its focus state is tracked (not `none`).
+        expect(named.flagsCollection.isFocused, isNot(Tristate.none));
 
-      await tester.tap(customize);
-      await tester.pumpAndSettle();
-      final customizer = tester.widget<SkinCustomizer>(
-        find.byType(SkinCustomizer),
-      );
-      expect(customizer.start.id, 'rose');
-      expect(customizer.onDelete, isNull);
-      semantics.dispose();
-      await close(tester);
-    });
+        await tester.tap(customize);
+        await tester.pumpAndSettle();
+        final customizer = tester.widget<SkinCustomizer>(
+          find.byType(SkinCustomizer),
+        );
+        expect(customizer.start.id, 'rose');
+        expect(customizer.onDelete, isNull);
+        semantics.dispose();
+        await close(tester);
+      },
+    );
 
-    testWidgets('keyboard: Enter on a tile applies it, Tab reaches Customize', (
-      tester,
-    ) async {
-      await open(tester, size: const Size(1200, 900));
-      // Focus Rose's tile (its Pressable) and press Enter.
-      final rose = find.descendant(
-        of: tile(c.skin_rose),
-        matching: find.byType(Pressable),
-      );
-      // Its focus node, found from inside the Pressable.
-      Focus.of(
-        tester.element(
-          find.descendant(of: rose.first, matching: find.byType(Column)).first,
-        ),
-      ).requestFocus();
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(settings.state.skinId, 'rose');
-      // The next stop is Rose's own Customize button.
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      final customize = find.descendant(
-        of: tile(c.skin_rose),
-        matching: find.byType(AppButton),
-      );
-      expect(
+    testWidgets(
+      'keyboard: Enter on a tile applies it, Tab reaches In use Customize',
+      (tester) async {
+        await open(tester, size: const Size(1200, 900));
+        // Focus Rose's tile (its Pressable) and press Enter.
+        final rose = find.descendant(
+          of: tile(c.skin_rose),
+          matching: find.byType(Pressable),
+        );
+        // Its focus node, found from inside the Pressable.
         Focus.of(
           tester.element(
-            find.descendant(of: customize, matching: find.byType(Text)),
+            find
+                .descendant(of: rose.first, matching: find.byType(Column))
+                .first,
           ),
-        ).hasPrimaryFocus,
-        isTrue,
-      );
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<SkinCustomizer>(find.byType(SkinCustomizer)).start.id,
-        'rose',
-      );
-      await close(tester);
-    });
+        ).requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(settings.state.skinId, 'rose');
+        // The In use tile is Rose now; the stop after it is its Customize.
+        final inUse = find.byType(SkinTile).first;
+        expect(tester.widget<SkinTile>(inUse).skin.id, 'rose');
+        Focus.of(
+          tester.element(
+            find
+                .descendant(
+                  of: find.descendant(
+                    of: inUse,
+                    matching: find.byType(Pressable),
+                  ),
+                  matching: find.byType(Column),
+                )
+                .first,
+          ),
+        ).requestFocus();
+        await tester.pump();
+        // Enter on it re-applies Rose; the next stop is its Customize.
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(settings.state.skinId, 'rose');
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final customize = find.descendant(
+          of: inUse,
+          matching: find.byType(AppButton),
+        );
+        expect(
+          Focus.of(
+            tester.element(
+              find.descendant(of: customize, matching: find.byType(Text)),
+            ),
+          ).hasPrimaryFocus,
+          isTrue,
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<SkinCustomizer>(find.byType(SkinCustomizer)).start.id,
+          'rose',
+        );
+        await close(tester);
+      },
+    );
 
     testWidgets('a custom skin\'s Customize opens its editor with Delete', (
       tester,

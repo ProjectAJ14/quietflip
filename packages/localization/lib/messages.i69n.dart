@@ -688,6 +688,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skins_customize => "Customize";
   String skins_customize_named(String name) => "Customize $name";
   String get skins_done => "Done";
+  String get skins_in_use => "In use";
   String get skins_yours => "Your skins";
   String get skins_classic => "Classic";
   String get skins_bold => "Bold";
@@ -999,6 +1000,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skins_customize_named;
       case 'skins_done':
         return skins_done;
+      case 'skins_in_use':
+        return skins_in_use;
       case 'skins_yours':
         return skins_yours;
       case 'skins_classic':

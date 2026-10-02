@@ -9,10 +9,16 @@ abstract final class Skins {
   static const String monoId = 'mono';
 
   /// Colour variations on the default face (the picker's Classic section).
+  /// Paper and Cyan show seconds as a badge, Violet and Amber as cards;
+  /// Mono (the default) and the rest show none.
   static List<Skin> classic() {
     final c = strings.clock;
-    Skin tint(String id, String name, Color digits) =>
-        Skin(id: id, name: name, digitColor: digits);
+    Skin tint(
+      String id,
+      String name,
+      Color digits, [
+      SkinSeconds seconds = SkinSeconds.off,
+    ]) => Skin(id: id, name: name, digitColor: digits, seconds: seconds);
     return [
       // Follows the app theme: ink on card in Mono Light.
       Skin(id: monoId, name: c.skin_mono, themed: true),
@@ -22,14 +28,15 @@ abstract final class Skins {
         digitColor: DesignSkinColors.inkPaper,
         cardColor: DesignSkinColors.cardPaper,
         groundColor: DesignSkinColors.bgPaper,
+        seconds: SkinSeconds.badge,
       ),
       tint('rose', c.skin_rose, DesignSkinColors.rose),
-      tint('violet', c.skin_violet, DesignSkinColors.violet),
-      tint('amber', c.skin_amber, DesignSkinColors.amber),
+      tint('violet', c.skin_violet, DesignSkinColors.violet, SkinSeconds.cards),
+      tint('amber', c.skin_amber, DesignSkinColors.amber, SkinSeconds.cards),
       tint('signal', c.skin_signal, DesignSkinColors.red),
       tint('field', c.skin_field, DesignSkinColors.green),
       tint('mint', c.skin_mint, DesignSkinColors.mint),
-      tint('cyan', c.skin_cyan, DesignSkinColors.cyan),
+      tint('cyan', c.skin_cyan, DesignSkinColors.cyan, SkinSeconds.badge),
       tint('taxi', c.skin_taxi, DesignSkinColors.yellow),
     ];
   }

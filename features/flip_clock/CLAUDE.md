@@ -40,7 +40,9 @@ lib/
                                            `contrast`; `forTheme(colors)`: a themed skin (Mono)
                                            is `ink` on `card` over `bg` in Mono Light
   data/skins.dart                          Skins: built-in catalogue (Classic, Bold, Type) from
-                                           `DesignSkinColors`, `resolve` (unknown -> Mono),
+                                           `DesignSkinColors` (Classic seconds: Paper and Cyan
+                                           badge, Violet and Amber cards, Mono and the rest
+                                           off), `resolve` (unknown -> Mono),
                                            custom ids `custom-<n>`
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
                                            (keys flip_clock.settings, flip_clock.countdown;
@@ -220,7 +222,14 @@ lib/
   + label, its own focusable button spoken "Customize <name>"; the tile is
   "<name>, selected"), which opens the customizer on that skin (custom
   skins with Delete). The sheet header keeps only Done and the title. The
-  Appearance strip uses the same tile.
+  Appearance strip uses the same tile. The sheet opens on an "In use"
+  section (`skins_in_use`): one tile, the selected skin (built-in or custom,
+  via `Skins.resolve`) at the grid's tile width, the only tile in the sheet
+  with Customize. The sections below (Your skins, Classic, Bold, Type) keep
+  their order and ring the selected tile in place without Customize, so a
+  tap never reflows a tile under the finger; the In use tile cross-fades to
+  the new skin over `DesignMotion.fade` (an `AnimatedSwitcher` keyed by the
+  skin id; instant under `reducedMotion`).
 - Subtle movement (burn-in) always wraps the panels and moves only while
   full screen and the setting are both on (`enabled`; off it sits centred
   with the same padding). It is driven by the screen's `ClockController` (no

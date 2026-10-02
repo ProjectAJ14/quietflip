@@ -9,10 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
 /// The Skins sheet: live tiles of every skin, drawn with the user's
-/// seconds and date settings; tapping one applies it at once, and the
-/// selected tile offers Customize. Custom skins come first under Your
-/// skins, with a New skin tile. Every built-in skin is free: no locks, no
-/// ribbons.
+/// seconds and date settings; tapping one applies it at once. In use comes
+/// first: the selected skin's tile, with Customize, cross-fading when the
+/// selection changes. The sections below never reflow (their selected tile
+/// is ringed in place). Custom skins come first under Your skins, with a
+/// New skin tile. Every built-in skin is free: no locks, no ribbons.
 class SkinPicker extends StatelessWidget {
   const SkinPicker({
     super.key,
@@ -66,7 +67,7 @@ class SkinPicker extends StatelessWidget {
               final width = (inner - gap * (columns - 1)) / columns;
               Widget grid(List<Widget> tiles) =>
                   Wrap(spacing: gap, runSpacing: gap, children: tiles);
-              Widget tile(Skin skin) => SizedBox(
+              Widget tile(Skin skin, {VoidCallback? onCustomize}) => SizedBox(
                 width: width,
                 child: SkinTile(
                   skin: skin,
@@ -77,6 +78,7 @@ class SkinPicker extends StatelessWidget {
                   onCustomize: onCustomize,
                 ),
               );
+              final selected = Skins.resolve(selectedId, custom);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(
                   DesignSpace.s6,
@@ -85,6 +87,18 @@ class SkinPicker extends StatelessWidget {
                   DesignSpace.s8,
                 ),
                 children: [
+                  SectionHeader(c.skins_in_use),
+                  grid([
+                    AnimatedSwitcher(
+                      duration: reducedMotion(context)
+                          ? Duration.zero
+                          : DesignMotion.fade,
+                      child: KeyedSubtree(
+                        key: ValueKey(selected.id),
+                        child: tile(selected, onCustomize: onCustomize),
+                      ),
+                    ),
+                  ]),
                   SectionHeader(c.skins_yours),
                   grid([
                     ...custom.map(tile),

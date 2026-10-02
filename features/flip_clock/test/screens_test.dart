@@ -1042,7 +1042,10 @@ void main() {
     await tester.tap(action(strings.clock.action_skins));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsOne);
-    await tester.tap(find.widgetWithText(SkinTile, strings.clock.skin_paper));
+    final paper = find.widgetWithText(SkinTile, strings.clock.skin_paper);
+    await tester.ensureVisible(paper);
+    await tester.pumpAndSettle();
+    await tester.tap(paper);
     await tester.pumpAndSettle();
     await tester.tap(find.text(strings.clock.skins_done));
     await tester.pumpAndSettle();

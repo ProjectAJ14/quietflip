@@ -229,6 +229,7 @@ clock:
   skins_customize: "Customize"
   skins_customize_named(String name): "Customize $name"
   skins_done: "Done"
+  skins_in_use: "In use"
   skins_yours: "Your skins"
   skins_classic: "Classic"
   skins_bold: "Bold"

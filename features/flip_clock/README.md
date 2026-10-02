@@ -134,8 +134,13 @@ The Skins button (top-left) opens the Skins sheet: live tiles of every skin,
 drawn as each skin is configured (seconds only on skins that show them,
 which is what you get when you pick one; the date above the cards only on
 skins that show it). Tap a tile to apply it: it gets the accent ring and check,
-and its caption turns into a Customize button for that skin. Classic is Mono (the default, white on near-black; black on white in
-the Light theme) plus nine colour variations; Bold has presets that show off
+and the "In use" tile at the top of the sheet cross-fades to it (at once
+with reduced motion). In use always shows the skin you have on, built-in or
+your own, with a Customize button; the sections below never move when you
+tap, and ring the selected tile where it sits. Classic is Mono (the default, white on near-black; black on white in
+the Light theme) plus nine colour variations (Paper and Cyan show seconds
+as a small badge, Violet and Amber as cards; picking one turns Show seconds
+on); Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
 has one skin per bundled face (Bebas, Anton, Oswald,
 Shoulders, Poster, Terminal, Grotesk, Serif, Orbit). Every built-in skin is
@@ -145,7 +150,8 @@ A skin with its own face (Bebas, Orbit, Terminal and the rest) sets the whole
 app in that face: settings, the island, sheets, the date and AM/PM. Mono and
 the Classic colour skins keep Geist for everything but the digits.
 
-Customize on the selected tile (in the sheet or the Appearance strip), or
+Customize on the In use tile (in the sheet) or the selected tile in the
+Appearance strip, or
 New skin, opens the customizer on that skin: face, digit / card /
 background colour (token swatches or a hex colour), split line (corners
 follow Settings > Appearance > Corners for the whole app), seconds style (off, small, cards), AM/PM (hidden, inside
