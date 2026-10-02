@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:design_system/components/app_button.dart';
+import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +61,12 @@ class SettingsGroup {
 /// An optional [pinned] category is drawn as its own card ([pinnedCard]):
 /// after the list on the phone, at the bottom of the sidebar (outside its
 /// scroll) in the split layouts. It opens like any other category.
+///
+/// The shell owns the horizontal safe insets (`MediaQuery.paddingOf`), so
+/// callers wrap it in `SafeArea(left: false, right: false)`. In the split
+/// layouts the sidebar fill runs to the left edge (widened by the inset,
+/// its content padded by it) and the detail runs to the right edge, its
+/// padding `max(s8, inset)`. On the phone every page pads `max(s4, inset)`.
 class SettingsShell extends StatefulWidget {
   const SettingsShell({
     super.key,
@@ -189,15 +197,18 @@ class _SettingsShellState extends State<SettingsShell> {
       ? null
       : Align(
           alignment: AlignmentDirectional.centerStart,
-          child: TextButton(
+          child: AppButton.text(
+            label: widget.doneLabel!,
             onPressed: widget.onDone,
-            child: Text(widget.doneLabel!),
           ),
         );
 
   Widget _phone(BuildContext context, DesignColors colors) {
     final text = Theme.of(context).textTheme;
     final open = _open;
+    final inset = MediaQuery.paddingOf(context);
+    final left = math.max(DesignSpace.s4, inset.left);
+    final right = math.max(DesignSpace.s4, inset.right);
     return PopScope(
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
@@ -205,7 +216,12 @@ class _SettingsShellState extends State<SettingsShell> {
       },
       child: open == null
           ? ListView(
-              padding: const EdgeInsets.all(DesignSpace.s4),
+              padding: EdgeInsets.fromLTRB(
+                left,
+                DesignSpace.s4,
+                right,
+                DesignSpace.s4,
+              ),
               children: [
                 ?_done(),
                 Padding(
@@ -250,39 +266,53 @@ class _SettingsShellState extends State<SettingsShell> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: TextButton.icon(
-                          onPressed: _root,
-                          icon: const Icon(Icons.chevron_left_rounded),
-                          label: Text(widget.title),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: inset.left,
+                    right: inset.right,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: AppButton.text(
+                            onPressed: _root,
+                            icon: Icons.chevron_left_rounded,
+                            label: widget.title,
+                          ),
                         ),
                       ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        _category(open).label,
-                        textAlign: TextAlign.center,
-                        style: text.titleMedium?.copyWith(color: colors.ink),
+                      Flexible(
+                        child: Text(
+                          _category(open).label,
+                          textAlign: TextAlign.center,
+                          style: text.titleMedium?.copyWith(color: colors.ink),
+                        ),
                       ),
-                    ),
-                    // Balances the back button so the title stays centred;
-                    // holds Done on a page opened directly.
-                    Expanded(
-                      child: _direct
-                          ? Align(
-                              alignment: AlignmentDirectional.centerEnd,
-                              child: _done(),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
+                      // Balances the back button so the title stays centred;
+                      // holds Done on a page opened directly.
+                      Expanded(
+                        child: _direct
+                            ? Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: _done(),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
                 Expanded(
-                  child: _Detail(_category(open), padding: DesignSpace.s4),
+                  child: _Detail(
+                    _category(open),
+                    padding: EdgeInsets.fromLTRB(
+                      left,
+                      DesignSpace.s4,
+                      right,
+                      DesignSpace.s4,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -296,6 +326,7 @@ class _SettingsShellState extends State<SettingsShell> {
 
   Widget _split(BuildContext context, DesignColors colors, bool desktop) {
     final text = Theme.of(context).textTheme;
+    final inset = MediaQuery.paddingOf(context);
     // The list may have shrunk since the selection was made.
     final selected = math.min(
       _selected,
@@ -309,9 +340,11 @@ class _SettingsShellState extends State<SettingsShell> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          width: desktop
-              ? SettingsShell.desktopSidebarWidth
-              : DesignSize.sidebarWidth,
+          width:
+              inset.left +
+              (desktop
+                  ? SettingsShell.desktopSidebarWidth
+                  : DesignSize.sidebarWidth),
           child: ColoredBox(
             color: colors.surfaceSidebar,
             child: Column(
@@ -319,7 +352,12 @@ class _SettingsShellState extends State<SettingsShell> {
               children: [
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.all(DesignSpace.s3),
+                    padding: EdgeInsets.fromLTRB(
+                      inset.left + DesignSpace.s3,
+                      DesignSpace.s3,
+                      DesignSpace.s3,
+                      DesignSpace.s3,
+                    ),
                     children: [
                       ?_done(),
                       Padding(
@@ -343,7 +381,12 @@ class _SettingsShellState extends State<SettingsShell> {
                 ),
                 if (pinned != null)
                   Padding(
-                    padding: const EdgeInsets.all(DesignSpace.s4),
+                    padding: EdgeInsets.fromLTRB(
+                      inset.left + DesignSpace.s4,
+                      DesignSpace.s4,
+                      DesignSpace.s4,
+                      DesignSpace.s4,
+                    ),
                     child: pinned,
                   ),
               ],
@@ -354,7 +397,12 @@ class _SettingsShellState extends State<SettingsShell> {
         Expanded(
           child: _Detail(
             _category(selected),
-            padding: DesignSpace.s8,
+            padding: EdgeInsets.fromLTRB(
+              DesignSpace.s8,
+              DesignSpace.s8,
+              math.max(DesignSpace.s8, inset.right),
+              DesignSpace.s8,
+            ),
             title: true,
           ),
         ),
@@ -383,12 +431,12 @@ class _Detail extends StatelessWidget {
   const _Detail(this.category, {required this.padding, this.title = false});
 
   final SettingsCategory category;
-  final double padding;
+  final EdgeInsets padding;
   final bool title;
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: EdgeInsets.all(padding),
+    padding: padding,
     children: [
       if (title)
         Text(
@@ -500,31 +548,30 @@ class _PinnedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
-    return Semantics(
+    final radius = DesignShape.of(context).md;
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      button: true,
+      focusRadius: DesignShape.circular(radius),
       child: Material(
         color: colors.surfaceRaised,
         clipBehavior: Clip.antiAlias,
         shape: DesignShape.rounded(
-          DesignShape.of(context).md,
+          radius,
           side: BorderSide(
             color: selected ? colors.accent : colors.hairline,
             width: selected ? 2 : 1,
           ),
         ),
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: SettingsShell.pinnedCardHeight,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(DesignSpace.s4),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: child,
-              ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: SettingsShell.pinnedCardHeight,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(DesignSpace.s4),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: child,
             ),
           ),
         ),
@@ -551,43 +598,41 @@ class _NavRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
     final text = Theme.of(context).textTheme;
-    return Semantics(
+    final radius = DesignShape.circular(DesignShape.of(context).sm);
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      button: true,
+      focusRadius: radius,
       child: Material(
         color: selected ? colors.accent : Colors.transparent,
-        borderRadius: DesignShape.circular(DesignShape.of(context).sm),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: DesignShape.circular(DesignShape.of(context).sm),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: desktop
-                  ? SettingsShell.desktopNavHeight
-                  : DesignSize.cornerButton,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s2),
-              child: Row(
-                spacing: DesignSpace.s3,
-                children: [
-                  _IconTile(
-                    category.icon,
-                    size: desktop ? 20 : SettingsShell.iconTileSize,
-                    iconSize: desktop ? 14 : 20,
-                    inverted: selected,
+        borderRadius: radius,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: desktop
+                ? SettingsShell.desktopNavHeight
+                : DesignSize.cornerButton,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s2),
+            child: Row(
+              spacing: DesignSpace.s3,
+              children: [
+                _IconTile(
+                  category.icon,
+                  size: desktop ? 20 : SettingsShell.iconTileSize,
+                  iconSize: desktop ? 14 : 20,
+                  inverted: selected,
+                ),
+                Expanded(
+                  child: Text(
+                    category.label,
+                    style: (desktop ? text.bodyMedium : text.bodyLarge)
+                        ?.copyWith(
+                          color: selected ? colors.onAccent : colors.ink,
+                        ),
                   ),
-                  Expanded(
-                    child: Text(
-                      category.label,
-                      style: (desktop ? text.bodyMedium : text.bodyLarge)
-                          ?.copyWith(
-                            color: selected ? colors.onAccent : colors.ink,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -672,37 +717,37 @@ class _Cell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final desktop = _SettingsDensity.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: desktop
-              ? SettingsShell.desktopRowHeight
-              : DesignSize.cornerButton,
+    final cell = ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: desktop
+            ? SettingsShell.desktopRowHeight
+            : DesignSize.cornerButton,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: desktop ? DesignSpace.s3 : DesignSpace.s4,
+          vertical: desktop ? DesignSpace.s1 : DesignSpace.s2,
         ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: desktop ? DesignSpace.s3 : DesignSpace.s4,
-            vertical: desktop ? DesignSpace.s1 : DesignSpace.s2,
-          ),
-          child: Row(
+        child: LayoutBuilder(
+          builder: (context, box) => Row(
             spacing: DesignSpace.s3,
             children: [
               ?leading,
               Expanded(child: child),
-              // Values and switches sit at the row's end.
+              // Values and switches sit at the row's end, as wide as they
+              // are up to half the row; the label gets the rest.
               if (trailing != null)
-                Flexible(
-                  child: Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: trailing,
-                  ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
+                  child: trailing,
                 ),
             ],
           ),
         ),
       ),
     );
+    final onTap = this.onTap;
+    return onTap == null ? cell : Pressable(onTap: onTap, child: cell);
   }
 }
 
@@ -757,13 +802,15 @@ class SettingsSwitchRow extends StatelessWidget {
 }
 
 /// A label with a muted value; a chevron and tap target when [onTap] is
-/// set; an optional [trailing] control (such as a delete button) at the end.
+/// set; an optional [leading] picture (such as a `GestureGlyph`) before the
+/// label and [trailing] control (such as a delete button) at the end.
 class SettingsValueRow extends StatelessWidget {
   const SettingsValueRow({
     super.key,
     required this.label,
     this.value,
     this.onTap,
+    this.leading,
     this.trailing,
     this.semanticsLabel,
   });
@@ -771,6 +818,7 @@ class SettingsValueRow extends StatelessWidget {
   final String label;
   final String? value;
   final VoidCallback? onTap;
+  final Widget? leading;
   final Widget? trailing;
 
   /// Spoken instead of [label] when the label is an abbreviation.
@@ -782,6 +830,7 @@ class SettingsValueRow extends StatelessWidget {
     final value = this.value;
     return _Cell(
       onTap: onTap,
+      leading: leading,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

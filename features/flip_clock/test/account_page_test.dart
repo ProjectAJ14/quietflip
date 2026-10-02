@@ -122,7 +122,7 @@ void main() {
     expect(find.text(s.what_syncs.toUpperCase()), findsOneWidget);
     expect(find.text(s.what_syncs_body), findsOneWidget);
     expect(find.text(s.stays_body), findsOneWidget);
-    final button = find.widgetWithText(FilledButton, s.sign_in);
+    final button = find.widgetWithText(AppButton, s.sign_in);
     expect(tester.getSize(button).width, lessThanOrEqualTo(320));
     await tester.tap(button);
     expect(signIns, 1);

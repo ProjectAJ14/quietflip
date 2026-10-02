@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | Symbol | Kind | Notes |
 |---|---|---|
 | `init({sync})` | function | Registers `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()` and `device_services.init()` |
-| `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`. Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
+| `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`, `shortcutsFor(platform, shortestSide)` (Settings > Shortcuts groups: iOS/Android touch, plus keys from `tabletSide` 600; macOS/Windows/Linux keys only; the settings route passes `defaultTargetPlatform`, so a phone browser counts as touch, and `MediaQuery.sizeOf` through a `Builder`, so a resize re-picks). Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
 | `AccountDeletion` | enum | `deleted`, `needsSignIn` (Firebase wants a recent sign-in; the app has signed out), `failed` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
@@ -40,7 +40,9 @@ lib/
                                            `contrast`; `forTheme(colors)`: a themed skin (Mono)
                                            is `ink` on `card` over `bg` in Mono Light
   data/skins.dart                          Skins: built-in catalogue (Classic, Bold, Type) from
-                                           `DesignSkinColors`, `resolve` (unknown -> Mono),
+                                           `DesignSkinColors` (Classic seconds: Paper and Cyan
+                                           badge, Violet and Amber cards, Mono and the rest
+                                           off), `resolve` (unknown -> Mono),
                                            custom ids `custom-<n>`
   data/repositories/settings_repository*.dart  contract + imp over KeyValueStore
                                            (keys flip_clock.settings, flip_clock.countdown;
@@ -87,15 +89,17 @@ lib/
   ui/components/account_page.dart          accountCategory (the pinned Account page), LastSyncedRow,
                                            AccountDeletion
   ui/components/sync_card.dart             SyncCard (the pinned card), syncedWhen, failureText
-  ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skins strip: the
-                                           first 5 SkinTiles, yours first, the selected one
-                                           always in it, tap applies, the selected tile's
-                                           Customize -> `onCustomize`; View all -> Skins sheet;
-                                           theme Dark/Light/Match system, card size, digit
+  ui/screens/settings_screen.dart          SettingsShell content: Appearance, top to bottom
+                                           (no header: theme Dark/Light/Match system,
+                                           Orientation where supported; Skins: a strip of 5
+                                           SkinTiles, the selected one first, then the others
+                                           in picker order (yours first), tap applies, the
+                                           selected tile's Customize -> `onCustomize`, View
+                                           all -> Skins sheet; no header: card size, digit
                                            brightness; Corners: a live sample of a button,
                                            a chip and a mini flip card over a 0..24 slider,
                                            Square .. Round) /
-                                           Clock (24h, seconds, date, orientation) / Gestures
+                                           Clock (24h, seconds, date) / Gestures
                                            (swipes, tap, hide-after) / Timers (Default timer: segmented
                                            Pomodoro + presets; Presets: a row each with delete,
                                            Add timer -> TimerPicker, off at 6 with a footer;
@@ -105,7 +109,14 @@ lib/
                                            switch, then five sound tiles with a live
                                            SoundWave each; see Sound picker) /
                                            Keep awake (+ full-screen note) /
-                                           Shortcuts (keycaps) / About (licences, privacy); Done
+                                           Shortcuts (`touchShortcuts` / `keyboardShortcuts`
+                                           from the router: Touch rows with a GestureGlyph
+                                           each (tap = Show or hide controls, swipe sideways =
+                                           Change mode, swipe up/down = Brightness; always
+                                           listed, "Off" while the setting is off; no double
+                                           tap), then keycaps; Touch / Keyboard headers only
+                                           when both show; touch_app icon when Touch leads,
+                                           else keyboard) / About (licences, privacy); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
@@ -122,6 +133,19 @@ lib/
 
 ## Rules
 
+- Every tap presses down: buttons are `AppButton` (the sheet headers' Done
+  and Cancel, dialog actions, the customizer footer, Sign in to sync, the
+  preset delete icon), every other tappable is a `Pressable` (skin, New,
+  face, swatch and sound tiles, account rows). No Material button,
+  `InkWell`, `ListTile(onTap:)`, `SwitchListTile` or
+  `GestureDetector(onTap:)` in `lib/`; `test/press_rule_test.dart` scans
+  this feature, `design_system` and `auth` and fails with `file:line`.
+  `gesture_layer.dart` is exempt (drags and swipes on the clock face). The
+  customizer's Seam and Show date switches are a local `_SwitchRow` (a
+  `Pressable` row, flush with the sheet's other controls;
+  `SettingsSwitchRow`'s `space-4` cell padding would indent it). The
+  Rotation corner button sits in a `MergeSemantics` so its live-region
+  value and the button are one node.
 - State management is `Cubit` (`flutter_bloc`), one per concern, collaborators
   (repository, `Countdown`, `Stopwatch`, `now`, device_services contracts,
   `Logger`) injected through the constructor.
@@ -133,16 +157,23 @@ lib/
   dismiss; `init()` also calls `syncAlert()` whenever System notifications is
   switched, so a running countdown gains or loses its alert; permission is
   requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
+- Tick warm-up: while the tick sound (`flipSound`) is on, `init()` calls
+  `SoundPlayer.warmTick` for the selected `tickSound` at start and on every
+  distinct change of the pair (sound changed or switch turned on;
+  unawaited), so the first tick plays without a load delay.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
-  distinct change. Settings > Clock shows the Orientation control, the
+  distinct change. Settings > Appearance shows the Orientation control
+  (under Theme), the
   clock screen its Rotation corner button and the R key, only when
   `OrientationLock.supported` (Android/iOS), passed in by the router (the
   widgets never `di.get`). Rotation and R cycle `orientation` auto ->
   portrait -> landscape -> auto (the button's icon shows the current one:
-  `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`) and
-  show the mode name in an `IslandTitleHud` with three dots; nothing new in
-  the model, and the Settings row stays in sync.
+  `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`);
+  the button carries a live-region `Semantics` value naming the current one
+  (`orientation_*`), so screen readers hear the change. No HUD (it would
+  collapse an open island); nothing new in the model, and the Settings row
+  stays in sync.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
 - Every string from `strings.clock.*`; chrome colours from
@@ -198,7 +229,14 @@ lib/
   + label, its own focusable button spoken "Customize <name>"; the tile is
   "<name>, selected"), which opens the customizer on that skin (custom
   skins with Delete). The sheet header keeps only Done and the title. The
-  Appearance strip uses the same tile.
+  Appearance strip uses the same tile. The sheet opens on an "In use"
+  section (`skins_in_use`): one tile, the selected skin (built-in or custom,
+  via `Skins.resolve`) at the grid's tile width, the only tile in the sheet
+  with Customize. The sections below (Your skins, Classic, Bold, Type) keep
+  their order and ring the selected tile in place without Customize, so a
+  tap never reflows a tile under the finger; the In use tile cross-fades to
+  the new skin over `DesignMotion.fade` (an `AnimatedSwitcher` keyed by the
+  skin id; instant under `reducedMotion`).
 - Subtle movement (burn-in) always wraps the panels and moves only while
   full screen and the setting are both on (`enabled`; off it sits centred
   with the same padding). It is driven by the screen's `ClockController` (no
@@ -250,11 +288,15 @@ lib/
   The island rebuilds on countdown/stopwatch state changes, not on ticks.
   A countdown that finishes while the chrome is hidden wakes it on the
   finished tray; the idle collapse still applies. The full-screen note
-  sits under the island. The mode view reserves the island's top,
-  `Island.trayHeight` and an inset above (at most a quarter of the height,
-  a third below 600px wide where the island sits a row lower) and, below, side
-  padding or, where the Rotation button shows, its inset + 44 + inset (same
-  quarter cap), so the chrome never covers the digits, date or laps. A hidden chrome makes
+  sits under the island. The chrome is an overlay: the mode view pads the
+  safe area by the same `space-4` on every side below 400px shortest side
+  (`space-8` from 400px), plus `SubtleMovement`'s constant 16px, with no
+  term for the island, the corner buttons or the Rotation button, and the
+  display (with its date or laps) centres in that box both ways. The
+  expanded island and the corner buttons draw over the top and bottom
+  cards (the island's surface keeps it legible) and nothing reflows when
+  the chrome expands, collapses or hides (iPhone 15 Pro, Large: 221px
+  stacked H:M:S, 343.5px stacked H:M, 324px landscape row). A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
 - Rotation: the R key (phones only) and the Rotation corner button cycle
   the screen rotation (see Orientation).
@@ -292,14 +334,14 @@ lib/
   pending/waiting, `cloud_off_outlined`, `error_outline` in `danger`) and
   the status or "Last synced …" (title `bodyLarge` 600 `ink`, subtitle
   `bodyMedium` `inkSubtle`, `danger` when failed); one merged semantics node.
-  The page signed out: headline, body, Sign in to sync (`FilledButton`, full
+  The page signed out: headline, body, Sign in to sync (`AppButton.filled`, full
   width up to 320), What syncs / Stays on this device. Signed in: email and
   provider, Sync settings switch, `LastSyncedRow` ("Just now" < 60 s, "N min
   ago" < 60 min, "Today at 14:05" by `use24h`, else the medium date; one
   `Timer.periodic` of 30 s, cancelled on dispose), a status line (live
   region; pending, waiting, failed offline / denied (taps to sign in) /
   unknown (Try again -> `CloudSync.retry`), switch off), Sign out and
-  Delete account (each behind an `AlertDialog`), "Signing out keeps your
+  Delete account (each behind an `AlertDialog` with `AppButton.text` actions; Delete in `danger`), "Signing out keeps your
   settings on this device". `needsSignIn` shows "Sign in again to delete
   your account", then `onSignIn`; `failed` says so. **No toast, snackbar or
   system notification for any sync outcome.**
@@ -324,8 +366,12 @@ lib/
   horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
   12 px. Off while the clock route is not current (sheets, Settings). `gestureBrightness` / `gestureModes` switch each
   axis off. Double tap toggles full screen on desktop/web only (it delays
-  taps). Island HUD: brightness while dragging / Up / Down, the mode name
-  after a swipe or Left / Right; both release after `hudHold`. The device
+  taps). Island HUD: brightness while dragging / Up / Down only, released
+  after `hudHold`. A mode change from any source (tab, swipe, Left / Right)
+  only sets `lastMode`: an expanded island stays expanded and morphs in
+  place (the tab pill slides, the tray swaps, the height follows); a dot or
+  hidden chrome stays so, and the panel slide is the feedback. A swipe that
+  springs back to its start page calls no `onPage`. The device
   brightness is reset on pause, detach and dispose. A mode change from tabs
   or keys slides the panel (jumps with reduced motion).
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
@@ -385,12 +431,18 @@ lib/
   unless its key goes in `SettingsSync.deviceOnly` (then also name it in
   `strings.sync.stays_body`).
 - **Add a keyboard shortcut:** the handler in `FlipClockScreen`, a
-  `key_*` label and `keycap_*` row in Settings > Shortcuts, a widget test
-  sending the key.
+  `key_*` label and `keycap_*` row in the Keyboard group of Settings >
+  Shortcuts, a widget test sending the key.
+- **Add a touch gesture row:** the gesture in `GestureLayer`, a row in the
+  Touch group of Settings > Shortcuts with its `GestureGlyph` kind (a new
+  kind goes in `design_system`) and "Off" bound to its setting, a test in
+  `settings_screen_test.dart`.
 
 ## Tests
 
-`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+
+`press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit
@@ -423,10 +475,12 @@ widget tester's clock):
 - **Window size:** every mode and Settings lay out without overflow at
   320x1024, 320x568, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844,
   text scale 1 and 2, and while resized mid-run (timer, full screen,
-  stopwatch). On very short windows the island's reserve is at most a
-  quarter of the height. With seconds, the date, laps and every corner
-  button on, no chrome overlaps the digits, date or laps wherever that
-  reserve is not capped.
+  stopwatch). The chrome floats over the clock: with seconds, the date,
+  laps and every corner button on, the digits and laps stay inside the
+  window and do not move when the chrome hides. At 393x852 with phone
+  insets the display's centre is the safe area's centre in every mode,
+  chrome open or hidden; 320x568 at text scale 1 and 2 fits the date and
+  digits inside the `space-4` box.
 - **Hours on a charger:** 24 h of clock ticks keep exactly one timer, one
   emission per second, all aligned; a 12 h countdown keeps exactly two
   timers (ticker + end) and none after finishing; 3 h of the screen ticking
@@ -445,7 +499,9 @@ widget tester's clock):
   "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
   saves the pick, turns its kind's switch on and previews it: ticks at 0,
   1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
-  `stopAlarm`. One preview at a time: a new tap cancels its timers and
+  `stopAlarm`. A pick builds from `settings.state`, not the state the
+  frame drew, so two taps in one frame never revert a change made between
+  them. One preview at a time: a new tap cancels its timers and
   stops its alarm; leaving Settings does the same, and calls `stopAlarm`
   only for an alarm the preview started and that is still looping. A
   switch off dims its tiles to 45%; they stay tappable.

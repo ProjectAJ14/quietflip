@@ -1,3 +1,4 @@
+import 'package:design_system/components/app_button.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
@@ -117,32 +118,14 @@ class ErrorScreen extends StatelessWidget {
                     alignment: WrapAlignment.center,
                     children: [
                       if (onRetry != null)
-                        FilledButton(
+                        AppButton.filled(
                           onPressed: onRetry,
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            minimumSize: const Size(88, 44),
-                          ),
-                          child: Text(strings.generic.try_again),
+                          label: strings.generic.try_again,
                         ),
                       if (onGoHome != null)
-                        OutlinedButton(
+                        AppButton.outlined(
                           onPressed: onGoHome,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            minimumSize: const Size(88, 44),
-                            side: BorderSide(
-                              color: colorScheme.outline,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(strings.generic.retry),
+                          label: strings.generic.retry,
                         ),
                     ],
                   ),

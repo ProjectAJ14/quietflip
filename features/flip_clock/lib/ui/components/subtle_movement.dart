@@ -1,5 +1,5 @@
 import 'package:flip_clock/state/clock_controller.dart';
-import 'package:flip_clock/ui/components/flip_display.dart';
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

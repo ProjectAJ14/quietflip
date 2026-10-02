@@ -24,6 +24,7 @@ import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/screens/index.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,7 @@ import 'package:timekeeping/timekeeping.dart';
 
 import 'contrast.dart';
 import 'fakes.dart';
+import 'ink.dart';
 
 final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
 
@@ -314,8 +316,7 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
-    // Once any mode name has gone, the finished tray shows.
-    await tester.pump(DesignMotion.hudHold);
+    // No mode HUD in the way: the finished tray shows at once.
     expect(find.text(strings.clock.times_up), findsOne);
     await h.countdown.reset();
     await tester.pumpAndSettle();
@@ -394,8 +395,7 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
-    // Once any mode name has gone, the finished tray shows.
-    await tester.pump(DesignMotion.hudHold);
+    // No mode HUD in the way: the finished tray shows at once.
     expect(find.text(strings.clock.times_up), findsOne);
     expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
     await tester.tap(action(strings.clock.start_focus));
@@ -513,8 +513,6 @@ void main() {
     expect(find.bySemanticsLabel(strings.clock.elapsed('0:00:02.0')), findsOne);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.stopwatch.state.running, isFalse);
-    // The mode name from the key gives way to the tray.
-    await tester.pump(DesignMotion.hudHold);
     await tester.pumpAndSettle();
     expect(action(strings.clock.action_resume), findsOne);
     await tester.tap(action(strings.clock.action_reset));
@@ -857,6 +855,105 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('init loads the selected tick ahead while the tick is on', (
+    tester,
+  ) async {
+    final sound = FakeSound();
+    di
+      ..register<KeyValueStore>(
+        FakeStore()
+          ..data[SettingsRepositoryImp.settingsKey] =
+              '{"flipSound":true,"tickSound":"clockwork"}',
+      )
+      ..register<LocalAlerts>(FakeAlerts())
+      ..register<SoundPlayer>(sound)
+      ..register<OrientationLock>(FakeOrientation());
+    await flip_clock.init();
+    expect(sound.warmed, [TickSound.clockwork], reason: 'warmed at start');
+    final settings = di.get<SettingsController>();
+    Future<void> change(ClockSettings Function(ClockSettings) edit) async {
+      await settings.update(edit(settings.state));
+      await tester.pump();
+    }
+
+    await change((s) => s.copyWith(tickSound: TickSound.digital));
+    await change((s) => s.copyWith(use24h: !s.use24h));
+    await change((s) => s.copyWith(flipSound: false));
+    await change((s) => s.copyWith(tickSound: TickSound.woodblock));
+    expect(sound.warmed, [
+      TickSound.clockwork,
+      TickSound.digital,
+    ], reason: 'a new sound warms; other fields and a silent tick do not');
+    await change((s) => s.copyWith(flipSound: true));
+    expect(sound.warmed.last, TickSound.woodblock, reason: 'turning it on');
+    expect(sound.ticks, isEmpty, reason: 'warming plays nothing');
+  });
+
+  test('shortcut groups follow the platform and the shortest side', () {
+    for (final (platform, side, touch, keyboard) in [
+      (TargetPlatform.iOS, 393.0, true, false), // iPhone, and web on one
+      (TargetPlatform.android, 599.0, true, false),
+      (TargetPlatform.iOS, 600.0, true, true), // iPad mini and up
+      (TargetPlatform.android, 800.0, true, true),
+      (TargetPlatform.macOS, 393.0, false, true),
+      (TargetPlatform.windows, 1080.0, false, true),
+      (TargetPlatform.linux, 1080.0, false, true),
+    ]) {
+      expect(FlipClockRouter.shortcutsFor(platform, side), (
+        touch: touch,
+        keyboard: keyboard,
+      ), reason: '$platform at $side');
+    }
+  });
+
+  testWidgets('the settings route passes the shortcut groups, on resize too', (
+    tester,
+  ) async {
+    di
+      ..register<KeyValueStore>(FakeStore())
+      ..register<LocalAlerts>(FakeAlerts())
+      ..register<SoundPlayer>(FakeSound())
+      ..register<FullScreenController>(FakeFullScreen())
+      ..register<ScreenWake>(FakeWake())
+      ..register<OrientationLock>(FakeOrientation())
+      ..register<ScreenBrightness>(FakeScreenBrightness());
+    await flip_clock.init();
+    // defaultTargetPlatform is iOS on an iPhone, in the app or a browser.
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    tester.view
+      ..physicalSize = const Size(393, 852)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: FlipClockRouter.settings,
+      routes: const FlipClockRouter().routes,
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    SettingsScreen screen() =>
+        tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+    expect(
+      (screen().touchShortcuts, screen().keyboardShortcuts),
+      (true, false),
+    );
+    // Turned into an iPad-sized window: keys join the touch gestures.
+    tester.view.physicalSize = const Size(820, 1180);
+    await tester.pumpAndSettle();
+    expect((screen().touchShortcuts, screen().keyboardShortcuts), (true, true));
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    tester.view.physicalSize = const Size(1280, 800);
+    await tester.pumpAndSettle();
+    expect(
+      (screen().touchShortcuts, screen().keyboardShortcuts),
+      (false, true),
+    );
+    debugDefaultTargetPlatformOverride = null;
+    await tester.pumpWidget(const SizedBox());
+    unawaited(di.reset());
+    await tester.pump();
+  });
+
   testWidgets('init registers everything; routes open settings and back', (
     tester,
   ) async {
@@ -1011,7 +1108,10 @@ void main() {
     await tester.tap(action(strings.clock.action_skins));
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsOne);
-    await tester.tap(find.widgetWithText(SkinTile, strings.clock.skin_paper));
+    final paper = find.widgetWithText(SkinTile, strings.clock.skin_paper);
+    await tester.ensureVisible(paper);
+    await tester.pumpAndSettle();
+    await tester.tap(paper);
     await tester.pumpAndSettle();
     await tester.tap(find.text(strings.clock.skins_done));
     await tester.pumpAndSettle();
@@ -1110,20 +1210,70 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('a sideways swipe changes mode and names it in the island', (
+    /// Pumps 16 ms frames across the island morph: in every frame the
+    /// island stays open, shows no HUD and is never shorter than its
+    /// tabs-only height (the smaller of Clock's and Stopwatch's).
+    Future<void> expectMorphInPlace(WidgetTester tester) async {
+      const frame = Duration(milliseconds: 16);
+      final island = find.byType(Island);
+      for (var t = Duration.zero; t <= DesignMotion.islandMorph; t += frame) {
+        await tester.pump(frame);
+        expect(hudOf(tester), isNull, reason: '$t');
+        expect(chromeOf(tester), ChromeState.expanded, reason: '$t');
+        expect(
+          tester.getSize(island).height,
+          greaterThanOrEqualTo(DesignSize.islandExpandedHeight),
+          reason: '$t',
+        );
+      }
+    }
+
+    testWidgets('a swipe changes mode in the open island, no HUD', (
+      tester,
+    ) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.stopwatch),
+      );
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      await tester.dragFrom(const Offset(200, 300), const Offset(400, 0));
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.clock);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Island)).height,
+        DesignSize.islandExpandedHeight,
+      );
+      expect(tester.widget<Island>(find.byType(Island)).selected, 1);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a swipe that springs back changes nothing', (tester) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      final before = h.settings.state;
+      await tester.dragFrom(const Offset(600, 300), const Offset(-100, 0));
+      await tester.pump();
+      expect(hudOf(tester), isNull);
+      await tester.pumpAndSettle();
+      expect(h.settings.state, same(before));
+      await h.dispose(tester);
+    });
+
+    testWidgets('Left/Right change mode in the open island, no HUD', (
       tester,
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
-      await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
-      await tester.pump();
-      expect(h.settings.state.lastMode, ClockMode.stopwatch);
-      final hud = hudOf(tester)! as IslandTitleHud;
-      expect(hud.title, strings.clock.mode_stopwatch);
-      expect(hud.index, ClockMode.stopwatch.index);
-      expect(hud.count, 3);
       await tester.pumpAndSettle();
-      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.stopwatch);
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.clock);
       await h.dispose(tester);
     });
 
@@ -1432,6 +1582,18 @@ void main() {
     });
   });
 
+  testWidgets('a tray action presses down without ink', (tester) async {
+    final h = Harness();
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
+    await tester.pumpWidget(h.screen());
+    await tester.pumpAndSettle();
+    await tester.tap(action(strings.clock.action_start));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(h.stopwatch.state.running, isTrue);
+    expect(liveInk(tester), isEmpty);
+    await h.dispose(tester);
+  });
+
   for (final width in [375.0, 1280.0]) {
     testWidgets('the island is the only control, top centre ($width)', (
       tester,
@@ -1450,7 +1612,7 @@ void main() {
       expect(island.center.dy, lessThan(844 / 4));
       expect(island.center.dx, closeTo(width / 2, 0.5));
       // Every button on the screen is the island's or a corner button's.
-      for (final type in [InkWell, ButtonStyleButton, IconButton]) {
+      for (final type in [Pressable]) {
         final all = find.byType(type);
         int inside(Type owner) => find
             .descendant(of: find.byType(owner), matching: find.byType(type))
@@ -1480,10 +1642,11 @@ void main() {
         tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
         closeTo(20, 0.5),
       );
-      // The digits start below the chrome.
+      // The chrome floats over the clock: the digits centre in the panel,
+      // nothing is reserved for the island.
       expect(
-        tester.getRect(find.byType(FlipDisplay)).top,
-        greaterThanOrEqualTo(island.bottom),
+        tester.getCenter(find.byType(FlipDisplay)).dy,
+        closeTo(tester.getCenter(find.byType(PageView)).dy, 1),
       );
       await h.dispose(tester);
     });
@@ -1561,12 +1724,12 @@ void main() {
       await h.settings.update(const ClockSettings(showDate: true));
       await tester.pumpWidget(h.screen());
       await tester.pumpAndSettle();
-      // Height-limited cards fill down to the side padding (space-2 on a
+      // Height-limited cards fill down to the padding (space-4 on a
       // phone): the date takes its line, not half the panel.
       final panel = tester.getRect(find.byType(PageView));
       expect(
         tester.getRect(find.byType(FlipDisplay)).bottom,
-        closeTo(panel.bottom - DesignSpace.s2, 1),
+        closeTo(panel.bottom - DesignSpace.s4, 1),
       );
       await h.dispose(tester);
     });
@@ -1593,15 +1756,202 @@ void main() {
       expect(display.top - date.bottom, closeTo(DesignSpace.s6, 0.5));
       // Centred as one block in the free space: nothing parked below.
       final panel = tester.getRect(find.byType(PageView));
-      // Width-limited cards leave room: the island's reserve (inset,
-      // trayHeight, inset) on top, side padding (space-8) below.
-      final above =
-          date.top - (panel.top + DesignSpace.s6 * 2 + Island.trayHeight);
+      // Width-limited cards leave room: the same padding (space-8) on
+      // every side; the island floats over it, nothing is reserved for it.
+      final above = date.top - (panel.top + DesignSpace.s8);
       final below = panel.bottom - DesignSpace.s8 - display.bottom;
       expect(below, greaterThan(0));
       expect(above, closeTo(below, 1));
       await h.dispose(tester);
     });
+  });
+
+  group('the clock fills the screen; the chrome floats over it', () {
+    /// A phone window: [size] with its notch / home-bar [insets].
+    void phone(
+      WidgetTester tester,
+      Size size, {
+      double top = 0,
+      double bottom = 0,
+      double side = 0,
+    }) {
+      final insets = FakeViewPadding(
+        left: side,
+        top: top,
+        right: side,
+        bottom: bottom,
+      );
+      tester.view
+        ..physicalSize = size
+        ..devicePixelRatio = 1
+        ..padding = insets
+        ..viewPadding = insets;
+      addTearDown(tester.view.reset);
+    }
+
+    /// One card's height: a stack is [n] cards with space-6 between them.
+    double cardHeight(WidgetTester tester, int n, {required bool stacked}) {
+      final display = tester.getSize(find.byType(FlipDisplay));
+      return stacked
+          ? (display.height - DesignSpace.s6 * (n - 1)) / n
+          : display.height;
+    }
+
+    testWidgets('the display sits in the safe area centre in every mode', (
+      tester,
+    ) async {
+      phone(tester, const Size(393, 852), top: 59, bottom: 34);
+      // The safe area: 393 x 759 from y 59.
+      const centre = Offset(393 / 2, 59 + 759 / 2);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showSeconds: true));
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      for (final mode in ClockMode.values) {
+        await h.settings.update(h.settings.state.copyWith(lastMode: mode));
+        await tester.pump();
+        await tester.pump(DesignMotion.islandMorph);
+        expect(chromeOf(tester), ChromeState.expanded);
+        final open = tester.getCenter(find.byType(FlipDisplay));
+        expect(open.dx, closeTo(centre.dx, 1), reason: '$mode expanded');
+        expect(open.dy, closeTo(centre.dy, 1), reason: '$mode expanded');
+        await tester.pump(const Duration(seconds: 8));
+        await tester.pumpAndSettle();
+        expect(chromeOf(tester), ChromeState.hidden);
+        final hidden = tester.getCenter(find.byType(FlipDisplay));
+        expect(hidden.dx, closeTo(centre.dx, 1), reason: '$mode hidden');
+        expect(hidden.dy, closeTo(centre.dy, 1), reason: '$mode hidden');
+        await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pumpAndSettle();
+      }
+      await h.dispose(tester);
+    });
+
+    for (final (name, size, insets, seconds, n, stacks, want) in [
+      // The brief's table (226 / 351 / 339) leaves out SubtleMovement's
+      // constant 16 px (8 a side, on or off), so each box is 16 px smaller.
+      // Height-bound: 759 safe - 2 x 16 - 16, less two 24 gaps, over three.
+      (
+        'portrait H:M:S',
+        const Size(393, 852),
+        (top: 59.0, bottom: 34.0, side: 0.0),
+        true,
+        3,
+        true,
+        221.0,
+      ),
+      // The two-card stack: (711 - 24) / 2, under the 345 width / 1.0.
+      (
+        'portrait H:M',
+        const Size(393, 852),
+        (top: 59.0, bottom: 34.0, side: 0.0),
+        false,
+        2,
+        true,
+        343.5,
+      ),
+      // Height-bound row: 393 - 21 - 2 x 16 - 16 (width allows 331).
+      (
+        'landscape H:M',
+        const Size(852, 393),
+        (top: 0.0, bottom: 21.0, side: 59.0),
+        false,
+        2,
+        false,
+        324.0,
+      ),
+    ]) {
+      testWidgets('iPhone 15 Pro $name cards are about $want px', (
+        tester,
+      ) async {
+        phone(
+          tester,
+          size,
+          top: insets.top,
+          bottom: insets.bottom,
+          side: insets.side,
+        );
+        final h = Harness();
+        await h.settings.update(ClockSettings(showSeconds: seconds));
+        await tester.pumpWidget(h.screen(orientationSupported: true));
+        await tester.pumpAndSettle();
+        expect(cardHeight(tester, n, stacked: stacks), closeTo(want, 2));
+        await h.dispose(tester);
+      });
+    }
+
+    testWidgets('nothing moves as the chrome expands, collapses or hides', (
+      tester,
+    ) async {
+      phone(tester, const Size(393, 852), top: 59, bottom: 34);
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(showSeconds: true, showDate: true),
+      );
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      final date = find.text(
+        MaterialLocalizations.of(
+          tester.element(find.byType(FlipClockScreen)),
+        ).formatFullDate(h.wall.now),
+      );
+      List<Rect> layout() => [
+        tester.getRect(find.byType(FlipDisplay)),
+        tester.getRect(date),
+      ];
+      final expanded = layout();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.dot);
+      expect(layout(), expanded);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.hidden);
+      expect(layout(), expanded);
+      await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.expanded);
+      expect(layout(), expanded);
+      await h.dispose(tester);
+    });
+
+    for (final scale in const [1.0, 2.0]) {
+      testWidgets('320 x 568 at text scale $scale fits, date included', (
+        tester,
+      ) async {
+        phone(tester, const Size(320, 568), top: 20);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final h = Harness();
+        await h.settings.update(
+          const ClockSettings(showSeconds: true, showDate: true),
+        );
+        await tester.pumpWidget(h.screen(orientationSupported: true));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        // Inside the space-4 box in the safe area, the date above.
+        final box = const Rect.fromLTRB(
+          0,
+          20,
+          320,
+          568,
+        ).deflate(DesignSpace.s4);
+        final display = tester.getRect(find.byType(FlipDisplay));
+        final date = tester.getRect(
+          find.text(
+            MaterialLocalizations.of(
+              tester.element(find.byType(FlipClockScreen)),
+            ).formatFullDate(h.wall.now),
+          ),
+        );
+        for (final r in [display, date]) {
+          expect(box.inflate(0.5).contains(r.topLeft), isTrue, reason: '$r');
+          expect(box.inflate(0.5).contains(r.bottomRight), isTrue);
+        }
+        expect(date.bottom, lessThanOrEqualTo(display.top));
+        await h.dispose(tester);
+      });
+    }
   });
 
   testWidgets('the date and round label use the skin face', (tester) async {
@@ -1745,6 +2095,21 @@ void main() {
         await tester.pumpWidget(h.screen(appTheme: t));
         void check(String state) {
           final island = find.byType(Island);
+          // The selected tab's pill is drawn behind the label, not around it.
+          final pill = find.descendant(
+            of: find.byType(AnimatedPositionedDirectional),
+            matching: find.byType(DecoratedBox),
+          );
+          final pillRect = tester.getRect(pill);
+          final pillColor =
+              (tester.widget<DecoratedBox>(pill).decoration as BoxDecoration)
+                  .color!;
+          Color backdrop(Element e) =>
+              pillRect.contains(
+                tester.getRect(find.byElementPredicate((x) => x == e)).center,
+              )
+              ? pillColor
+              : backdropOfElement(e);
           for (final e in [
             ...find
                 .descendant(of: island, matching: find.byType(Icon))
@@ -1755,7 +2120,7 @@ void main() {
           ]) {
             final w = e.widget;
             final ink = w is Icon ? w.color! : (w as Text).style!.color!;
-            final ratio = contrastOf(ink, backdropOfElement(e));
+            final ratio = contrastOf(ink, backdrop(e));
             if (ratio < 4.5) failures.add('$name/${skin.id}/$state $w $ratio');
           }
         }
@@ -1840,7 +2205,7 @@ void main() {
         final tab = find
             .ancestor(
               of: find.text(c.mode_clock),
-              matching: find.byType(InkWell),
+              matching: find.byType(Pressable),
             )
             .first;
         expect(
@@ -1856,10 +2221,10 @@ void main() {
           expect(skins.right, lessThanOrEqualTo(island.left));
           expect(settings.left, greaterThanOrEqualTo(island.right));
         }
-        // The digits still start below the chrome.
+        // The island floats over the clock, which stays centred.
         expect(
-          tester.getRect(find.byType(FlipDisplay)).top,
-          greaterThanOrEqualTo(island.bottom),
+          tester.getCenter(find.byType(FlipDisplay)).dy,
+          closeTo(tester.getCenter(find.byType(PageView)).dy, 1),
         );
         await h.dispose(tester);
       });
@@ -1894,43 +2259,56 @@ void main() {
       expect(box.right, greaterThan(screen.width * 3 / 4));
       expect(box.bottom, greaterThan(screen.height * 3 / 4));
       expect(find.byIcon(Icons.screen_rotation_outlined), findsOne);
-      for (final (orientation, name, icon, dot) in [
+      final semantics = tester.ensureSemantics();
+      // The button speaks its current rotation, and says the new one.
+      final button = find.ancestor(
+        of: rotation,
+        matching: find.byType(CornerButton),
+      );
+      expect(
+        tester.getSemantics(button),
+        isSemantics(
+          label: c.action_rotation,
+          value: c.orientation_auto,
+          isButton: true,
+          isLiveRegion: true,
+        ),
+      );
+      for (final (orientation, name, icon) in [
         (
           ClockOrientation.portrait,
           c.orientation_portrait,
           Icons.stay_current_portrait_outlined,
-          1,
         ),
         (
           ClockOrientation.landscape,
           c.orientation_landscape,
           Icons.stay_current_landscape_outlined,
-          2,
         ),
         (
           ClockOrientation.auto,
           c.orientation_auto,
           Icons.screen_rotation_outlined,
-          0,
         ),
       ]) {
         await tester.tap(rotation);
         await tester.pump();
         expect(h.settings.state.orientation, orientation);
         expect(find.byIcon(icon), findsOne);
-        final hud =
-            tester.widget<Island>(find.byType(Island)).hud! as IslandTitleHud;
-        expect(hud.title, name);
-        expect(hud.index, dot);
-        expect(hud.count, 3);
-        // The tap was the button's: the chrome stays.
-        expect(chromeOf(tester), ChromeState.expanded);
-        await tester.pump(DesignMotion.hudHold);
+        expect(
+          tester.getSemantics(button),
+          isSemantics(value: name, isLiveRegion: true),
+        );
+        // No HUD; the tap was the button's: the open island stays.
+        final island = tester.widget<Island>(find.byType(Island));
+        expect(island.hud, isNull);
+        expect(island.state, ChromeState.expanded);
       }
-      // R cycles too.
+      // R cycles too, also without a HUD.
       await key(tester, LogicalKeyboardKey.keyR);
       expect(h.settings.state.orientation, ClockOrientation.portrait);
-      await tester.pump(DesignMotion.hudHold);
+      expect(tester.widget<Island>(find.byType(Island)).hud, isNull);
+      semantics.dispose();
       await h.dispose(tester);
     });
 

@@ -47,13 +47,13 @@ into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
 
-- **Appearance:** Skins (the first five as live thumbnails, tap to apply;
-  View all opens the Skins sheet), Theme (Dark, the default
-  even when the OS is light; Light; Match system), Digit brightness (20% to
-  100%; dims only the digits and the date line, never the controls; the D
-  key cycles 100%, 50%, 20%).
-- **Clock:** 24-hour time, Show seconds (also the S key), Show date,
-  Orientation (Auto / Landscape / Portrait; phones and tablets only).
+- **Appearance:** Theme (Dark, the default even when the OS is light;
+  Light; Match system) and Orientation (Auto / Landscape / Portrait; phones
+  and tablets only), then Skins (five live thumbnails, the selected one
+  first; tap to apply; View all opens the Skins sheet), then Card size and
+  Digit brightness (20% to 100%; dims only the digits and the date line,
+  never the controls; the D key cycles 100%, 50%, 20%), then Corners.
+- **Clock:** 24-hour time, Show seconds (also the S key), Show date.
 - **Gestures:** swipe up or down for brightness, swipe sideways to change
   mode, tap to show controls, hide controls after 2 s / 4 s / 8 s / Never.
 - **Timers:** the default timer Start runs (Pomodoro or a preset), your
@@ -71,7 +71,13 @@ Everything is saved at once and restored on launch.
 - **Keep awake:** keep the screen awake; subtle movement (full screen
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a
   jump with reduced motion; it lowers, but does not prevent, burn-in risk).
-- **Shortcuts** (R for rotation on phones) and **About** (licences, privacy).
+- **Shortcuts:** what this device can do. Phones list the touch gestures,
+  each with a small animation (tap to show or hide the controls, swipe
+  sideways to change mode, swipe up or down for brightness; "Off" when that
+  gesture is turned off in Gestures). Tablets list the gestures, then the
+  keys; Mac, Windows and Linux list the keys (R for rotation only where the
+  screen can rotate). A phone's browser counts as a phone.
+- **About** (licences, privacy).
 - **Account** (a card at the bottom of the list on phones, at the bottom of
   the sidebar on tablets and desktop; only when Firebase is configured):
   signed out, it explains that you only need to sign in to get your
@@ -92,15 +98,19 @@ has never synced takes the cloud copy when it first signs in.
 
 ## Controls
 
-Only the digits show when nobody touches the screen. A tap or click shows,
-floating above the clock, the island at the top centre (on a phone, just
+The clock fills the screen and sits in its centre; the controls float over
+it and never push it around. Only the digits show when nobody touches the
+screen. A tap or click shows, drawn over the clock, the island at the top centre (on a phone, just
 below the corner buttons, so it is never squeezed) (the mode tabs, Pomodoro, Clock, Stopwatch,
 over the actions of the current mode, centred), Skins in the top-left
 corner, Settings in the top-right and, on phones and tablets, Rotation in
 the bottom-right. They appear, shrink and disappear together. Rotation
 picks the screen rotation whatever way the device is held: follow the
-device, portrait, landscape, round again (the island says which; the R key
-does the same). Pomodoro offers Start (your default timer), a Pomodoro chip,
+device, portrait, landscape, round again (the button's icon shows which,
+and screen readers hear the new one; the R key does the same). Changing
+mode by tab, swipe or Left / Right keeps the island as it is: open, it
+changes straight into the next mode's tabs and actions, the selected tab
+sliding across; a swipe that springs back changes nothing. Pomodoro offers Start (your default timer), a Pomodoro chip,
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,
@@ -130,8 +140,13 @@ The Skins button (top-left) opens the Skins sheet: live tiles of every skin,
 drawn as each skin is configured (seconds only on skins that show them,
 which is what you get when you pick one; the date above the cards only on
 skins that show it). Tap a tile to apply it: it gets the accent ring and check,
-and its caption turns into a Customize button for that skin. Classic is Mono (the default, white on near-black; black on white in
-the Light theme) plus nine colour variations; Bold has presets that show off
+and the "In use" tile at the top of the sheet cross-fades to it (at once
+with reduced motion). In use always shows the skin you have on, built-in or
+your own, with a Customize button; the sections below never move when you
+tap, and ring the selected tile where it sits. Classic is Mono (the default, white on near-black; black on white in
+the Light theme) plus nine colour variations (Paper and Cyan show seconds
+as a small badge, Violet and Amber as cards; picking one turns Show seconds
+on); Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
 has one skin per bundled face (Bebas, Anton, Oswald,
 Shoulders, Poster, Terminal, Grotesk, Serif, Orbit). Every built-in skin is
@@ -141,7 +156,8 @@ A skin with its own face (Bebas, Orbit, Terminal and the rest) sets the whole
 app in that face: settings, the island, sheets, the date and AM/PM. Mono and
 the Classic colour skins keep Geist for everything but the digits.
 
-Customize on the selected tile (in the sheet or the Appearance strip), or
+Customize on the In use tile (in the sheet) or the selected tile in the
+Appearance strip, or
 New skin, opens the customizer on that skin: face, digit / card /
 background colour (token swatches or a hex colour), split line (corners
 follow Settings > Appearance > Corners for the whole app), seconds style (off, small, cards), AM/PM (hidden, inside
@@ -163,6 +179,8 @@ lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 ## Keyboard
 
+Listed in Settings > Shortcuts on tablets and desktops.
+
 F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
 pomodoro phase after one ended while the app was closed), Left / Right
 change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mode), L lap (Stopwatch), D dim the digits
@@ -173,7 +191,7 @@ change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mod
 Daylight-saving jumps, time-zone changes while open, the wall clock jumping
 forward or back during a countdown (the end, saved snapshot and system alert
 move together), iPad split view / resized windows down to 200x100 at text
-scale 2, and hours of ticking on a charger (one aligned timer, wake lock
+scale 2 (the clock stays put as the controls come and go), and hours of ticking on a charger (one aligned timer, wake lock
 held). Details in `CLAUDE.md`; tests in `test/edge_cases_test.dart`.
 
 See `CLAUDE.md` for rules and tests.

@@ -12,10 +12,13 @@ Future<void> _pump(
   Widget child, {
   ds.AppearanceMode mode = ds.AppearanceMode.black,
   double width = 375,
+  double height = 900,
+  double sideInset = 0,
   double textScale = 1,
 }) async {
-  tester.view.physicalSize = Size(width, 900);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
+  tester.view.padding = FakeViewPadding(left: sideInset, right: sideInset);
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ds.DesignSystemWrapper(
@@ -170,7 +173,10 @@ void main() {
           ds.SettingsShell.desktopSidebarWidth,
         );
         final nav = find
-            .ancestor(of: _inSidebar('Looks'), matching: find.byType(InkWell))
+            .ancestor(
+              of: _inSidebar('Looks'),
+              matching: find.byType(ds.Pressable),
+            )
             .first;
         expect(tester.getSize(nav).height, ds.SettingsShell.desktopNavHeight);
         expect(
@@ -406,6 +412,68 @@ void main() {
     );
   });
 
+  testWidgets('a value row can start with a leading widget', (tester) async {
+    await _pump(
+      tester,
+      const Scaffold(
+        body: ds.SettingsValueRow(
+          leading: Icon(Icons.touch_app_outlined),
+          label: 'Show or hide controls',
+          value: 'Off',
+        ),
+      ),
+      textScale: 2,
+    );
+    expect(
+      tester.getTopRight(find.byType(Icon)).dx,
+      lessThan(tester.getTopLeft(find.text('Show or hide controls')).dx),
+    );
+    expect(find.text('Off'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a short value leaves the label the rest of the row', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const Scaffold(
+        body: Column(
+          children: [
+            ds.SettingsValueRow(
+              leading: Icon(Icons.touch_app_outlined),
+              label: 'Show or hide controls',
+              value: 'Off',
+            ),
+            ds.SettingsValueRow(label: 'Change mode'),
+          ],
+        ),
+      ),
+    );
+    final line = tester.getSize(find.text('Change mode')).height;
+    expect(
+      tester.getSize(find.text('Show or hide controls')).height,
+      line,
+      reason: 'one line: "Off" takes only its own width',
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a long value still stops at half the row', (tester) async {
+    const long = 'A value long enough to need more than half the row';
+    await _pump(
+      tester,
+      const Scaffold(
+        body: ds.SettingsValueRow(label: 'Label', value: long),
+      ),
+    );
+    final row = tester.getSize(find.byType(ds.SettingsValueRow)).width;
+    expect(tester.getSize(find.text(long)).width, lessThanOrEqualTo(row / 2));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final width in [375.0, 820.0]) {
     testWidgets('Done calls onDone at $width', (tester) async {
       var done = 0;
@@ -577,6 +645,77 @@ void main() {
     expect(style.foregroundColor!.resolve({}), theme.colorScheme.onSurface);
   });
 
+  group('side insets (iPhone landscape, 59 each side)', () {
+    testWidgets('split: the sidebar fills to the left edge, the detail to the '
+        'right; the inset replaces the detail padding', (tester) async {
+      await _pump(
+        tester,
+        _pinnedShell(),
+        width: 852,
+        height: 393,
+        sideInset: 59,
+      );
+      final fill = tester.getRect(
+        find.ancestor(of: _sidebar, matching: find.byType(ColoredBox)).first,
+      );
+      expect(fill.left, 0);
+      expect(fill.width, ds.DesignSize.sidebarWidth + 59);
+      expect(
+        tester.getRect(_inSidebar('Settings')).left,
+        59 + ds.DesignSpace.s3 + ds.DesignSpace.s2,
+      );
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(ds.Pressable),
+            )
+            .first,
+      );
+      expect(card.left, 59 + ds.DesignSpace.s4);
+      expect(card.right, fill.right - ds.DesignSpace.s4);
+      final cell = _cell(tester, 'Version');
+      expect(cell.right, 852 - 59);
+      expect(cell.left, fill.right + 1 + ds.DesignSpace.s8);
+    });
+
+    testWidgets('phone: lists take the larger of s4 and the inset', (
+      tester,
+    ) async {
+      await _pump(tester, _pinnedShell(), width: 500, sideInset: 59);
+      final root = _cell(tester, 'General');
+      expect(root.left, 59);
+      expect(root.right, 500 - 59);
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(ds.Pressable),
+            )
+            .first,
+      );
+      expect(card.left, 59);
+      expect(card.right, 500 - 59);
+      expect(tester.getRect(find.text('Done')).left, greaterThan(59));
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      final detail = _cell(tester, 'Version');
+      expect(detail.left, 59);
+      expect(detail.right, 500 - 59);
+      expect(
+        tester.getRect(find.byIcon(Icons.chevron_left_rounded)).left,
+        greaterThan(59),
+      );
+    });
+
+    testWidgets('phone: an inset under s4 keeps s4', (tester) async {
+      await _pump(tester, _pinnedShell(), width: 500, sideInset: 10);
+      final root = _cell(tester, 'General');
+      expect(root.left, ds.DesignSpace.s4);
+      expect(root.right, 500 - ds.DesignSpace.s4);
+    });
+  });
+
   group('pinned category', () {
     testWidgets('phone: its own card after the list, opening its page', (
       tester,
@@ -589,7 +728,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );
@@ -614,7 +753,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );
@@ -718,3 +857,8 @@ BorderSide _cardSide(WidgetTester tester) =>
                 .shape!
             as RoundedRectangleBorder)
         .side;
+
+/// The grouped cell around [text] (the raised `Material`).
+Rect _cell(WidgetTester tester, String text) => tester.getRect(
+  find.ancestor(of: find.text(text), matching: find.byType(Material)).first,
+);

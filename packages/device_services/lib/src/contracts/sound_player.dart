@@ -28,8 +28,13 @@ enum AlarmSound {
 
 /// Short UI sounds bundled with this package (`assets/sounds/`).
 abstract interface class SoundPlayer {
-  /// Plays [sound] once.
+  /// Plays [sound] once. Switching to a different sound stops the previous
+  /// one first, so two ticks never layer.
   Future<void> playTick(TickSound sound);
+
+  /// Loads [sound] ahead of its first [playTick] so that tick has no load
+  /// delay. Plays nothing.
+  Future<void> warmTick(TickSound sound);
 
   /// Loops [sound] until [stopAlarm] or 60 seconds. A new call while one
   /// loops switches to [sound]; two alarms never play at once.

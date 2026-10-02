@@ -172,7 +172,7 @@ void main() {
       c.releaseHud();
       async.elapse(const Duration(milliseconds: 1000));
       c.activity();
-      const next = IslandTitleHud('Timer', 1, 3);
+      const next = IslandBrightnessHud(0.7, '70%');
       c.showHud(next);
       async.elapse(const Duration(seconds: 5));
       expect(c.state, const Chrome(ChromeState.hidden, next));

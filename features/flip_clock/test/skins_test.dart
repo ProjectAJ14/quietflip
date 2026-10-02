@@ -131,6 +131,22 @@ void main() {
       );
     });
 
+    test('Classic: Paper and Cyan show a badge, Violet and Amber cards', () {
+      final seconds = {for (final s in Skins.classic()) s.id: s.seconds};
+      expect(seconds, {
+        Skins.monoId: SkinSeconds.off,
+        'paper': SkinSeconds.badge,
+        'rose': SkinSeconds.off,
+        'violet': SkinSeconds.cards,
+        'amber': SkinSeconds.cards,
+        'signal': SkinSeconds.off,
+        'field': SkinSeconds.off,
+        'mint': SkinSeconds.off,
+        'cyan': SkinSeconds.badge,
+        'taxi': SkinSeconds.off,
+      });
+    });
+
     test('Bold presets each show a different mix of options', () {
       final bold = Skins.bold();
       expect(bold.length, greaterThanOrEqualTo(6));
@@ -260,6 +276,14 @@ void main() {
       await c.selectSkin('nightstand');
       expect(c.state.showSeconds, isTrue);
       await c.selectSkin('desk');
+      expect(c.state.showSeconds, isTrue);
+      await c.selectSkin(Skins.monoId);
+      expect(c.state.showSeconds, isFalse);
+      await c.selectSkin('paper');
+      expect(c.state.showSeconds, isTrue);
+      await c.selectSkin('rose');
+      expect(c.state.showSeconds, isFalse);
+      await c.selectSkin('violet');
       expect(c.state.showSeconds, isTrue);
       await c.selectSkin(Skins.monoId);
       expect(c.state.showSeconds, isFalse);

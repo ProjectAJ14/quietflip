@@ -166,8 +166,20 @@ class DesignSystem {
 
   ThemeData _baseTheme(ThemeData base, DesignColors colors) {
     final control = DesignShape.rounded(shape.sm);
+    // No ink anywhere: taps press down (`Pressable`), so stock and
+    // third-party Material widgets (sign-in, licences) draw no ripple,
+    // highlight or hover wash either.
+    const noInk = WidgetStatePropertyAll<Color>(Colors.transparent);
     return base.copyWith(
       extensions: [colors, shape],
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      switchTheme: base.switchTheme.copyWith(overlayColor: noInk),
+      checkboxTheme: base.checkboxTheme.copyWith(overlayColor: noInk),
+      radioTheme: base.radioTheme.copyWith(overlayColor: noInk),
+      sliderTheme: base.sliderTheme.copyWith(overlayColor: Colors.transparent),
       // Every Material component takes its corner from [shape]. Switch and
       // Slider thumbs cannot take one (see CLAUDE.md, exceptions).
       cardTheme: CardThemeData(shape: DesignShape.rounded(shape.md)),
@@ -197,6 +209,7 @@ class DesignSystem {
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           shape: DesignShape.rounded(shape.forHeight(40, role: shape.sm)),
+          overlayColor: Colors.transparent,
         ),
       ),
       inputDecorationTheme: base.inputDecorationTheme.copyWith(
@@ -229,6 +242,7 @@ class DesignSystem {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: base.colorScheme.surface,
         surfaceTintColor: Colors.transparent,
+        overlayColor: noInk,
         elevation: 0,
         height: 70,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -266,11 +280,16 @@ class DesignSystem {
           foregroundColor: base.colorScheme.onSurface,
           side: BorderSide(color: base.colorScheme.outlineVariant),
           shape: control,
+          overlayColor: Colors.transparent,
         ),
       ),
+      // Our own buttons are `AppButton`. These style the Material buttons
+      // third-party screens still draw (FirebaseUI sign-in, the licence
+      // page, stock dialogs), with no ink.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           shape: control,
+          overlayColor: Colors.transparent,
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -283,11 +302,13 @@ class DesignSystem {
             fontWeight: FontWeight.w600,
           ),
           shape: control,
+          overlayColor: Colors.transparent,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           shape: control,
+          overlayColor: Colors.transparent,
           textStyle: base.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -300,6 +321,7 @@ class DesignSystem {
             fontWeight: FontWeight.w600,
           ),
           shape: control,
+          overlayColor: Colors.transparent,
           side: BorderSide(color: base.colorScheme.primary, width: 1.5),
         ),
       ),

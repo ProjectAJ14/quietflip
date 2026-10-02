@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
-import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';

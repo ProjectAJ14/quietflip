@@ -164,23 +164,20 @@ Future<bool> _confirm(
   required String action,
   bool danger = false,
 }) async {
-  final colors = DesignColors.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: title == null ? null : Text(title),
       content: Text(body),
       actions: [
-        TextButton(
+        AppButton.text(
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
         ),
-        TextButton(
-          style: danger
-              ? TextButton.styleFrom(foregroundColor: colors.danger)
-              : null,
+        AppButton.text(
+          danger: danger,
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(action),
+          label: action,
         ),
       ],
     ),
@@ -193,9 +190,9 @@ Future<void> _tell(BuildContext context, String message) => showDialog<void>(
   builder: (context) => AlertDialog(
     content: Text(message),
     actions: [
-      TextButton(
+      AppButton.text(
         onPressed: () => Navigator.of(context).pop(),
-        child: Text(MaterialLocalizations.of(context).okButtonLabel),
+        label: MaterialLocalizations.of(context).okButtonLabel,
       ),
     ],
   ),
@@ -240,7 +237,7 @@ class _SignedOut extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: buttonWidth),
             child: SizedBox(
               width: double.infinity,
-              child: FilledButton(onPressed: onSignIn, child: Text(s.sign_in)),
+              child: AppButton.filled(onPressed: onSignIn, label: s.sign_in),
             ),
           ),
         ],
@@ -314,33 +311,32 @@ class _StatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignSpace.s4,
-          vertical: DesignSpace.s2,
-        ),
-        child: Row(
-          spacing: DesignSpace.s3,
-          children: [
-            Expanded(
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  text,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: failed ? colors.danger : colors.inkMuted,
-                  ),
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignSpace.s4,
+        vertical: DesignSpace.s2,
+      ),
+      child: Row(
+        spacing: DesignSpace.s3,
+        children: [
+          Expanded(
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: failed ? colors.danger : colors.inkMuted,
                 ),
               ),
             ),
-            if (onRetry case final retry?)
-              TextButton(onPressed: retry, child: Text(strings.sync.try_again)),
-          ],
-        ),
+          ),
+          if (onRetry case final retry?)
+            AppButton.text(onPressed: retry, label: strings.sync.try_again),
+        ],
       ),
     );
+    final onTap = this.onTap;
+    return onTap == null ? row : Pressable(onTap: onTap, child: row);
   }
 }
 
@@ -352,7 +348,7 @@ class _DangerRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) => Pressable(
     onTap: onTap,
     child: ConstrainedBox(
       constraints: const BoxConstraints(minHeight: DesignSize.cornerButton),

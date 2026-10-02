@@ -612,7 +612,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get theme_light => "Light";
   String get use_24h => "24-hour time";
   String get show_seconds => "Show seconds";
-  String get sound_and_alerts => "Sound & alerts";
   String get sound_tick_group => "Tick";
   String get sound_tick_hint => "plays on every flip";
   String get sound_alarm_group => "Alarm";
@@ -688,6 +687,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get skins_customize => "Customize";
   String skins_customize_named(String name) => "Customize $name";
   String get skins_done => "Done";
+  String get skins_in_use => "In use";
   String get skins_yours => "Your skins";
   String get skins_classic => "Classic";
   String get skins_bold => "Bold";
@@ -808,6 +808,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String timers_minutes(int minutes) => "$minutes min";
   String get sound_footer =>
       "The in-app alert always plays, even with notifications off.";
+  String get shortcuts_touch => "Touch";
+  String get shortcuts_keyboard => "Keyboard";
+  String get touch_controls => "Show or hide controls";
+  String get shortcut_off => "Off";
   String get key_start_pause => "Start or pause";
   String get key_change_mode => "Change mode";
   String get key_brightness => "Brightness";
@@ -863,8 +867,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return use_24h;
       case 'show_seconds':
         return show_seconds;
-      case 'sound_and_alerts':
-        return sound_and_alerts;
       case 'sound_tick_group':
         return sound_tick_group;
       case 'sound_tick_hint':
@@ -999,6 +1001,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return skins_customize_named;
       case 'skins_done':
         return skins_done;
+      case 'skins_in_use':
+        return skins_in_use;
       case 'skins_yours':
         return skins_yours;
       case 'skins_classic':
@@ -1227,6 +1231,14 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return timers_minutes;
       case 'sound_footer':
         return sound_footer;
+      case 'shortcuts_touch':
+        return shortcuts_touch;
+      case 'shortcuts_keyboard':
+        return shortcuts_keyboard;
+      case 'touch_controls':
+        return touch_controls;
+      case 'shortcut_off':
+        return shortcut_off;
       case 'key_start_pause':
         return key_start_pause;
       case 'key_change_mode':

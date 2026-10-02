@@ -208,25 +208,12 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     return [c.mode_pomodoro, c.mode_clock, c.mode_stopwatch];
   }
 
-  /// Shows [mode]'s name and page dots in the island for a moment.
-  void _modeHud(ClockMode mode) {
-    _chrome
-      ..showHud(
-        IslandTitleHud(
-          _modeNames[mode.index],
-          mode.index,
-          ClockMode.values.length,
-        ),
-      )
-      ..releaseHud();
-  }
-
-  /// The mode [step] panels away, if there is one (no wrap-around).
+  /// The mode [step] panels away, if there is one (no wrap-around). Only
+  /// the mode changes: an open island morphs in place, no HUD.
   void _stepMode(int step) {
     final i = widget.settings.state.lastMode.index + step;
     if (i < 0 || i >= ClockMode.values.length) return;
     _setMode(ClockMode.values[i]);
-    _modeHud(ClockMode.values[i]);
   }
 
   /// Follows mode changes from tabs, keys and a finishing timer.
@@ -258,8 +245,9 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     if (release) _chrome.releaseHud();
   }
 
-  /// Rotation cycles follow the device -> portrait -> landscape and says
-  /// which in the island. `init()` applies it through `OrientationLock`.
+  /// Rotation cycles follow the device -> portrait -> landscape; the corner
+  /// button's icon and spoken value say which (no HUD). `init()` applies it
+  /// through `OrientationLock`.
   static const List<ClockOrientation> _rotations = [
     ClockOrientation.auto,
     ClockOrientation.portrait,
@@ -275,11 +263,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   void _cycleRotation() {
     final s = widget.settings.state;
     final i = (_rotations.indexOf(s.orientation) + 1) % _rotations.length;
-    final next = _rotations[i];
-    unawaited(widget.settings.update(s.copyWith(orientation: next)));
-    _chrome
-      ..showHud(IslandTitleHud(_rotationName(next), i, _rotations.length))
-      ..releaseHud();
+    unawaited(widget.settings.update(s.copyWith(orientation: _rotations[i])));
   }
 
   void _toggleSeconds() {
@@ -573,7 +557,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
             screen: widget,
             settings: settings,
             skin: skin,
-            inset: inset,
             onFlip: flip,
           ),
       ],
@@ -598,10 +581,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       onGestureStart: _chrome.activity,
       onBrightness: (delta) => unawaited(_brighten(delta)),
       onBrightnessEnd: _chrome.releaseHud,
-      onPage: (i) {
-        _setMode(ClockMode.values[i]);
-        _modeHud(ClockMode.values[i]);
-      },
+      onPage: (i) => _setMode(ClockMode.values[i]),
       child: content,
     );
     // Screen readers cannot tap "anywhere", so a hidden chrome makes the
@@ -666,19 +646,31 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                     Positioned(
                       right: inset,
                       bottom: inset,
-                      child: CornerButton(
-                        state: chrome,
-                        icon: switch (settings.orientation) {
-                          ClockOrientation.auto =>
-                            Icons.screen_rotation_outlined,
-                          ClockOrientation.portrait =>
-                            Icons.stay_current_portrait_outlined,
-                          ClockOrientation.landscape =>
-                            Icons.stay_current_landscape_outlined,
-                        },
-                        tooltip: c.action_rotation,
-                        onPressed: _cycleRotation,
-                        corner: Alignment.bottomRight,
+                      // The new rotation is announced; nothing is spoken
+                      // while the button is not there.
+                      child: ExcludeSemantics(
+                        excluding: chrome != ChromeState.expanded,
+                        // One node: the button, its name and the rotation.
+                        child: MergeSemantics(
+                          child: Semantics(
+                            liveRegion: true,
+                            value: _rotationName(settings.orientation),
+                            child: CornerButton(
+                              state: chrome,
+                              icon: switch (settings.orientation) {
+                                ClockOrientation.auto =>
+                                  Icons.screen_rotation_outlined,
+                                ClockOrientation.portrait =>
+                                  Icons.stay_current_portrait_outlined,
+                                ClockOrientation.landscape =>
+                                  Icons.stay_current_landscape_outlined,
+                              },
+                              tooltip: c.action_rotation,
+                              onPressed: _cycleRotation,
+                              corner: Alignment.bottomRight,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   // Under the island.
@@ -823,15 +815,16 @@ class _FullScreenNote extends StatelessWidget {
   }
 }
 
-/// The active mode, clear of the chrome, with padding that shrinks on tiny
-/// windows.
+/// The active mode, filling the safe area with the same padding on every
+/// side (less on tiny windows). The chrome floats over it: nothing here
+/// makes room for the island, the corner buttons or the Rotation button,
+/// so the clock never moves when they expand, collapse or hide.
 class _ModeView extends StatelessWidget {
   const _ModeView({
     required this.mode,
     required this.screen,
     required this.settings,
     required this.skin,
-    required this.inset,
     required this.onFlip,
   });
 
@@ -840,34 +833,17 @@ class _ModeView extends StatelessWidget {
   final ClockSettings settings;
   final Skin skin;
 
-  /// The island's distance from the safe area.
-  final double inset;
-
   /// The flip sound, or null while it must not play.
   final VoidCallback? onFlip;
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
-    // Room for the expanded island above, so it never covers the digits; a
-    // tiny window gives up at most a quarter of its height.
-    // A narrow window's island sits a row lower, so it may take a third.
-    final top = math.min(
-      _islandPlace(size, inset).top + Island.trayHeight + inset,
-      size.height / (size.width < _besideCornersWidth ? 3 : 4),
-    );
-    // Room for the Rotation button below too, where it shows, so a tall
-    // stack never runs under it (same quarter-height cap).
-    final bottom = screen.orientationSupported
-        ? math.max(
-            side,
-            math.min(inset + DesignSize.cornerButton + inset, size.height / 4),
-          )
-        : side;
+    final pad = MediaQuery.sizeOf(context).shortestSide < 400
+        ? DesignSpace.s4
+        : DesignSpace.s8;
     final flip = onFlip;
     return Padding(
-      padding: EdgeInsets.fromLTRB(side, top, side, bottom),
+      padding: EdgeInsets.all(pad),
       child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,

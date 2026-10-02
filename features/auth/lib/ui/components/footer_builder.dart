@@ -1,5 +1,6 @@
 import 'package:auth/constants/index.dart';
 import 'package:core/logger/logger.dart';
+import 'package:design_system/design_system.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -56,16 +57,7 @@ class _AuthFooter extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(title),
-          GestureDetector(
-            onTap: onTap,
-            child: Text(
-              linkText,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          AppButton.text(label: linkText, onPressed: onTap),
         ],
       ),
     );

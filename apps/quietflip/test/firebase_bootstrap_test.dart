@@ -252,7 +252,7 @@ void main() {
           App(router: router, appearance: flip_clock.appearance()),
         );
         await tester.pumpAndSettle();
-        final context = tester.element(find.byType(OutlinedButton));
+        final context = tester.element(find.text(strings.generic.retry));
         final route = router.configuration.routes
             .whereType<GoRoute>()
             .firstWhere((r) => r.path == auth.AuthRoutes.signIn);

@@ -32,6 +32,8 @@ class SettingsScreen extends StatefulWidget {
     required this.sound,
     this.isWeb = kIsWeb,
     this.orientationSupported = false,
+    this.touchShortcuts = false,
+    this.keyboardShortcuts = true,
     this.desktop,
     this.onDone,
     this.onSkins,
@@ -54,6 +56,12 @@ class SettingsScreen extends StatefulWidget {
 
   /// Shows the Orientation control (phones and tablets only).
   final bool orientationSupported;
+
+  /// Lists the touch gestures in Shortcuts, first (phones and tablets).
+  final bool touchShortcuts;
+
+  /// Lists the keyboard shortcuts in Shortcuts (tablets and desktops).
+  final bool keyboardShortcuts;
 
   /// Pointer density. Null: on desktop and web.
   final bool? desktop;
@@ -136,9 +144,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [tick] (turning Tick sound on) and plays it three times, a
-  /// second apart, the way the clock ticks.
-  void _pickTick(ClockSettings s, TickSound tick) {
-    _update(s.copyWith(tickSound: tick, flipSound: true));
+  /// second apart, the way the clock ticks. Builds from the current state,
+  /// not the one this frame drew, so two taps in one frame never revert a
+  /// change made between them.
+  void _pickTick(TickSound tick) {
+    _update(widget.settings.state.copyWith(tickSound: tick, flipSound: true));
     _stopPreview();
     unawaited(widget.sound.playTick(tick));
     for (final second in [1, 2]) {
@@ -153,8 +163,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [alarm] (turning Alarm sound on) and plays two loops of it.
-  void _pickAlarm(ClockSettings s, AlarmSound alarm) {
-    _update(s.copyWith(alarmSound: alarm, alertSound: true));
+  /// Builds from the current state, as [_pickTick] does.
+  void _pickAlarm(AlarmSound alarm) {
+    _update(
+      widget.settings.state.copyWith(alarmSound: alarm, alertSound: true),
+    );
     _stopPreview();
     unawaited(widget.sound.playAlarm(alarm));
     _previewAlarm = true;
@@ -188,7 +201,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    // The shell pads the sides itself, so its fills reach the screen edges.
     body: SafeArea(
+      left: false,
+      right: false,
       child: BlocBuilder<SettingsController, ClockSettings>(
         bloc: widget.settings,
         builder: (context, s) {
@@ -200,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             timers,
             _sound(s),
             _awake(s),
-            _shortcuts(),
+            _shortcuts(s),
             _about(context),
           ];
           final sync = widget.sync;
@@ -261,6 +277,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       label: c.settings_appearance,
       groups: [
         SettingsGroup(
+          rows: [
+            SettingsSegmentedRow<ClockTheme>(
+              label: c.theme,
+              options: [
+                (ClockTheme.dark, c.theme_dark),
+                (ClockTheme.light, c.theme_light),
+                (ClockTheme.system, c.theme_system),
+              ],
+              selected: s.theme,
+              onChanged: (v) => _update(s.copyWith(theme: v)),
+            ),
+            if (widget.orientationSupported)
+              SettingsSegmentedRow<ClockOrientation>(
+                label: c.orientation,
+                options: [
+                  (ClockOrientation.auto, c.orientation_auto),
+                  (ClockOrientation.landscape, c.orientation_landscape),
+                  (ClockOrientation.portrait, c.orientation_portrait),
+                ],
+                selected: s.orientation,
+                onChanged: (v) => _update(s.copyWith(orientation: v)),
+              ),
+          ],
+        ),
+        SettingsGroup(
           header: c.skins_title,
           rows: [
             _SkinStrip(
@@ -277,16 +318,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         SettingsGroup(
           rows: [
-            SettingsSegmentedRow<ClockTheme>(
-              label: c.theme,
-              options: [
-                (ClockTheme.dark, c.theme_dark),
-                (ClockTheme.light, c.theme_light),
-                (ClockTheme.system, c.theme_system),
-              ],
-              selected: s.theme,
-              onChanged: (v) => _update(s.copyWith(theme: v)),
-            ),
             SettingsSegmentedRow<CardSize>(
               label: c.settings_card_size,
               options: [
@@ -354,17 +385,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: s.showDate,
               onChanged: (v) => _update(s.copyWith(showDate: v)),
             ),
-            if (widget.orientationSupported)
-              SettingsSegmentedRow<ClockOrientation>(
-                label: c.orientation,
-                options: [
-                  (ClockOrientation.auto, c.orientation_auto),
-                  (ClockOrientation.landscape, c.orientation_landscape),
-                  (ClockOrientation.portrait, c.orientation_portrait),
-                ],
-                selected: s.orientation,
-                onChanged: (v) => _update(s.copyWith(orientation: v)),
-              ),
           ],
         ),
       ],
@@ -422,14 +442,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// The first [SettingsScreen.skinStrip] skins (yours first, as in the
-  /// picker), always including the selected one.
+  /// [SettingsScreen.skinStrip] skins: the selected one first, then the
+  /// others in the picker's order (yours first).
   List<Skin> _strip(ClockSettings s) {
-    final all = [...s.customSkins, ...Skins.builtIn()];
-    final first = all.take(SettingsScreen.skinStrip).toList();
     final selected = widget.settings.skin;
-    if (first.any((skin) => skin.id == selected.id)) return first;
-    return [selected, ...first.take(SettingsScreen.skinStrip - 1)];
+    return [
+      selected,
+      ...[
+        ...s.customSkins,
+        ...Skins.builtIn(),
+      ].where((skin) => skin.id != selected.id),
+    ].take(SettingsScreen.skinStrip).toList();
   }
 
   Future<void> _addPreset() async {
@@ -472,9 +495,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsValueRow(
                 label: presetLabel(p),
                 semanticsLabel: presetSpoken(p),
-                trailing: IconButton(
+                trailing: AppButton.icon(
                   tooltip: c.timers_delete(presetSpoken(p)),
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: Icons.delete_outline_rounded,
                   onPressed: () => _update(
                     s.copyWith(
                       timerPresets: [
@@ -533,7 +556,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     text: _tickText(tick),
                     selected: tick == s.tickSound,
                     playing: _previewing == tick,
-                    onTap: () => _pickTick(s, tick),
+                    onTap: () => _pickTick(tick),
                     wave: SoundWave.tick(
                       tick,
                       playing: _since(tick),
@@ -562,7 +585,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     text: _alarmText(alarm),
                     selected: alarm == s.alarmSound,
                     playing: _previewing == alarm,
-                    onTap: () => _pickAlarm(s, alarm),
+                    onTap: () => _pickAlarm(alarm),
                     wave: SoundWave.alarm(
                       alarm,
                       playing: _since(alarm),
@@ -637,28 +660,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  SettingsCategory _shortcuts() {
+  /// Touch gestures (each always listed, "Off" while its setting is off)
+  /// and keys, as the platform has them. Headers only when both show.
+  SettingsCategory _shortcuts(ClockSettings s) {
     final c = strings.clock;
+    final touch = widget.touchShortcuts;
+    final keyboard = widget.keyboardShortcuts;
+    final both = touch && keyboard;
     return SettingsCategory(
-      icon: Icons.keyboard_outlined,
+      icon: touch ? Icons.touch_app_outlined : Icons.keyboard_outlined,
       label: c.settings_shortcuts,
       groups: [
-        SettingsGroup(
-          rows: [
-            for (final (label, key) in [
-              (c.key_start_pause, c.keycap_space),
-              (c.key_change_mode, c.keycap_left_right),
-              (c.key_brightness, c.keycap_up_down),
-              (c.key_show_seconds, c.keycap_s),
-              (c.key_dim, c.keycap_d),
-              (c.key_lap, c.keycap_l),
-              if (widget.orientationSupported) (c.key_rotation, c.keycap_r),
-              (c.key_full_screen, c.keycap_f),
-              (c.key_hide_controls, c.keycap_esc),
-            ])
-              SettingsKeyRow(label: label, keycap: key),
-          ],
-        ),
+        if (touch)
+          SettingsGroup(
+            header: both ? c.shortcuts_touch : null,
+            rows: [
+              for (final (kind, label, on) in [
+                (GestureKind.tap, c.touch_controls, s.tapToggleControls),
+                (
+                  GestureKind.swipeHorizontal,
+                  c.key_change_mode,
+                  s.gestureModes,
+                ),
+                (
+                  GestureKind.swipeVertical,
+                  c.key_brightness,
+                  s.gestureBrightness,
+                ),
+              ])
+                SettingsValueRow(
+                  leading: GestureGlyph(kind),
+                  label: label,
+                  value: on ? null : c.shortcut_off,
+                ),
+            ],
+          ),
+        if (keyboard)
+          SettingsGroup(
+            header: both ? c.shortcuts_keyboard : null,
+            rows: [
+              for (final (label, key) in [
+                (c.key_start_pause, c.keycap_space),
+                (c.key_change_mode, c.keycap_left_right),
+                (c.key_brightness, c.keycap_up_down),
+                (c.key_show_seconds, c.keycap_s),
+                (c.key_dim, c.keycap_d),
+                (c.key_lap, c.keycap_l),
+                if (widget.orientationSupported) (c.key_rotation, c.keycap_r),
+                (c.key_full_screen, c.keycap_f),
+                (c.key_hide_controls, c.keycap_esc),
+              ])
+                SettingsKeyRow(label: label, keycap: key),
+            ],
+          ),
       ],
     );
   }
@@ -707,9 +761,9 @@ class _CornerSample extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: DesignSpace.s4,
           children: [
-            FilledButton(
+            AppButton.filled(
               onPressed: () {},
-              child: Text(strings.clock.action_start),
+              label: strings.clock.action_start,
             ),
             Chip(label: Text(presetLabel(const Duration(minutes: 5)))),
             SizedBox.square(
@@ -832,14 +886,13 @@ class _SoundTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final corner = DesignShape.circular(DesignShape.of(context).sm);
     final (name, mood) = text;
-    return Semantics(
-      container: true,
-      inMutuallyExclusiveGroup: true,
-      checked: selected,
-      label: '$name, $mood',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: corner,
+    return Pressable(
+      onTap: onTap,
+      semanticsLabel: '$name, $mood',
+      focusRadius: corner,
+      child: Semantics(
+        inMutuallyExclusiveGroup: true,
+        checked: selected,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

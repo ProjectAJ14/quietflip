@@ -20,6 +20,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 
 import 'fakes.dart';
+import 'ink.dart';
 
 void main() {
   late FakeAlerts alerts;
@@ -51,6 +52,8 @@ void main() {
     bool? desktop = true,
     bool isWeb = true,
     bool orientation = true,
+    bool touch = false,
+    bool keyboard = true,
     String? category,
   }) async {
     tester.view
@@ -72,6 +75,8 @@ void main() {
             sound: sound,
             isWeb: isWeb,
             orientationSupported: orientation,
+            touchShortcuts: touch,
+            keyboardShortcuts: keyboard,
             desktop: desktop,
             onDone: () => done++,
             onSkins: () => skins++,
@@ -101,6 +106,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('a sidebar row presses down without ink', (tester) async {
+    await open(tester);
+    await tester.tap(find.text(strings.clock.settings_sound).last);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(liveInk(tester), isEmpty);
+    await tester.pumpAndSettle();
+    expect(find.text(strings.clock.sound_tick_hint), findsOne);
+    await close(tester);
+  });
+
   testWidgets('every category saves its settings', (tester) async {
     await open(tester);
     final c = strings.clock;
@@ -118,6 +133,9 @@ void main() {
     expect(settings.appearance.value, AppearanceMode.system);
     await tap(tester, c.theme_light);
     expect(settings.appearance.value, AppearanceMode.light);
+    // Orientation sits under Theme.
+    await tap(tester, c.orientation_landscape);
+    expect(settings.state.orientation, ClockOrientation.landscape);
     // Card size, after Theme; starts Large, so each tap is a change.
     expect(find.text(c.settings_card_size), findsOne);
     for (final (size, label) in [
@@ -141,8 +159,8 @@ void main() {
     expect(find.text(c.corners_value('14')), findsOne);
     expect(find.text('12'), findsWidgets);
     // The sample is look only: its button is drawn enabled and does nothing.
-    final sample = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, c.action_start),
+    final sample = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, c.action_start),
     );
     final before = settings.state;
     sample.onPressed!();
@@ -161,11 +179,11 @@ void main() {
     await tap(tester, c.use_24h);
     await tap(tester, c.show_seconds);
     await tap(tester, c.show_date);
-    await tap(tester, c.orientation_landscape);
     expect(settings.state.use24h, isFalse);
     expect(settings.state.showSeconds, isTrue);
     expect(settings.state.showDate, isTrue);
-    expect(settings.state.orientation, ClockOrientation.landscape);
+    // Orientation moved to Appearance.
+    expect(find.text(c.orientation), findsNothing);
 
     // Gestures.
     await tap(tester, c.settings_gestures);
@@ -232,6 +250,159 @@ void main() {
     await close(tester);
   });
 
+  /// Opens Shortcuts. Its gesture glyphs loop, so this pumps a fixed time
+  /// instead of settling.
+  Future<void> shortcuts(WidgetTester tester) async {
+    await tester.tap(find.text(strings.clock.settings_shortcuts).last);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+  }
+
+  List<GestureKind> glyphs(WidgetTester tester) => [
+    for (final g in tester.widgetList<GestureGlyph>(find.byType(GestureGlyph)))
+      g.kind,
+  ];
+
+  const iPhone = Size(393, 852);
+  const iPad = Size(820, 1180);
+  final c = strings.clock;
+  final touchHeader = c.shortcuts_touch.toUpperCase();
+  final keysHeader = c.shortcuts_keyboard.toUpperCase();
+
+  testWidgets('iPhone (and web on one): touch gestures only', (tester) async {
+    await open(
+      tester,
+      size: iPhone,
+      desktop: false,
+      isWeb: false,
+      touch: true,
+      keyboard: false,
+    );
+    expect(find.byIcon(Icons.touch_app_outlined), findsOne);
+    expect(find.byIcon(Icons.keyboard_outlined), findsNothing);
+    await shortcuts(tester);
+    expect(glyphs(tester), [
+      GestureKind.tap,
+      GestureKind.swipeHorizontal,
+      GestureKind.swipeVertical,
+    ]);
+    for (final label in [
+      c.touch_controls,
+      c.key_change_mode,
+      c.key_brightness,
+    ]) {
+      expect(find.text(label), findsOne);
+    }
+    expect(find.text(c.key_start_pause), findsNothing);
+    expect(find.text(c.keycap_space), findsNothing);
+    expect(find.text(c.shortcut_off), findsNothing);
+    // One group needs no header: the page title already says Shortcuts.
+    expect(find.text(touchHeader), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('iPad: touch gestures, then keys', (tester) async {
+    await open(tester, size: iPad, desktop: false, isWeb: false, touch: true);
+    expect(find.byIcon(Icons.touch_app_outlined), findsOne);
+    await shortcuts(tester);
+    expect(glyphs(tester), hasLength(3));
+    expect(
+      tester.getTopLeft(find.text(touchHeader)).dy,
+      lessThan(tester.getTopLeft(find.text(keysHeader)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text(c.touch_controls)).dy,
+      lessThan(tester.getTopLeft(find.text(c.keycap_space)).dy),
+    );
+    expect(find.text(c.keycap_esc), findsOne);
+    await close(tester);
+  });
+
+  testWidgets('macOS: keys only, with the keyboard icon', (tester) async {
+    await open(tester, isWeb: false);
+    expect(find.byIcon(Icons.keyboard_outlined), findsOne);
+    expect(find.byIcon(Icons.touch_app_outlined), findsNothing);
+    await shortcuts(tester);
+    expect(glyphs(tester), isEmpty);
+    expect(find.text(c.keycap_space), findsOne);
+    expect(find.text(c.touch_controls), findsNothing);
+    expect(find.text(keysHeader), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('"Off" follows each gesture setting', (tester) async {
+    await open(
+      tester,
+      size: iPhone,
+      desktop: false,
+      isWeb: false,
+      touch: true,
+      keyboard: false,
+    );
+    await shortcuts(tester);
+    Finder offIn(String label) => find.descendant(
+      of: find.ancestor(
+        of: find.text(label),
+        matching: find.byType(SettingsValueRow),
+      ),
+      matching: find.text(c.shortcut_off),
+    );
+    for (final (label, off) in [
+      (c.touch_controls, settings.state.copyWith(tapToggleControls: false)),
+      (c.key_change_mode, settings.state.copyWith(gestureModes: false)),
+      (c.key_brightness, settings.state.copyWith(gestureBrightness: false)),
+    ]) {
+      final before = settings.state;
+      await settings.update(off);
+      await tester.pump();
+      expect(offIn(label), findsOne, reason: label);
+      expect(find.text(c.shortcut_off), findsOne, reason: label);
+      // Still listed while off.
+      expect(find.text(label), findsOne);
+      await settings.update(before);
+      await tester.pump();
+      expect(find.text(c.shortcut_off), findsNothing, reason: label);
+    }
+    await close(tester);
+  });
+
+  for (final mode in [AppearanceMode.black, AppearanceMode.light]) {
+    testWidgets('touch shortcuts fit at text scale 2 ($mode)', (tester) async {
+      await open(
+        tester,
+        size: iPhone,
+        mode: mode,
+        textScale: 2,
+        desktop: false,
+        isWeb: false,
+        touch: true,
+      );
+      await shortcuts(tester);
+      await settings.update(settings.state.copyWith(gestureModes: false));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(glyphs(tester), hasLength(3));
+      expect(find.text(c.shortcut_off), findsOne);
+      final colors = mode == AppearanceMode.black
+          ? DesignColors.dark
+          : DesignColors.light;
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find
+                        .descendant(
+                          of: find.byType(GestureGlyph),
+                          matching: find.byType(CustomPaint),
+                        )
+                        .first,
+                  )
+                  .painter!
+              as GestureGlyphPainter;
+      expect(painter.color, colors.ink);
+      await close(tester);
+    });
+  }
+
   testWidgets('Theme Light repaints the settings page on the light bg', (
     tester,
   ) async {
@@ -295,10 +466,35 @@ void main() {
     await close(tester);
   });
 
+  testWidgets('iPhone landscape: the shell reaches both side edges', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+    await open(
+      tester,
+      size: const Size(852, 393),
+      desktop: false,
+      isWeb: false,
+    );
+    expect(tester.getRect(find.byType(SettingsShell)).width, 852);
+    final sidebar = tester.getRect(
+      find
+          .byWidgetPredicate(
+            (w) =>
+                w is ColoredBox && w.color == DesignColors.dark.surfaceSidebar,
+          )
+          .first,
+    );
+    expect(sidebar.left, 0);
+    await close(tester);
+  });
+
   testWidgets('orientation is hidden where the lock is unsupported', (
     tester,
   ) async {
     await open(tester, orientation: false, isWeb: false);
+    expect(find.text(strings.clock.orientation), findsNothing);
+    expect(find.text(strings.clock.orientation_auto), findsNothing);
     await tap(tester, strings.clock.settings_clock);
     expect(find.text(strings.clock.orientation), findsNothing);
     await tap(tester, strings.clock.settings_sound);
@@ -387,9 +583,8 @@ void main() {
             await tester.pump();
           }
 
-          Finder ok() => find.widgetWithText(TextButton, strings.generic.ok);
-          bool canConfirm() =>
-              tester.widget<TextButton>(ok()).onPressed != null;
+          Finder ok() => find.widgetWithText(AppButton, strings.generic.ok);
+          bool canConfirm() => tester.widget<AppButton>(ok()).onPressed != null;
 
           await tap(tester, c.timers_add);
           await tap(tester, strings.generic.cancel);
@@ -474,8 +669,60 @@ void main() {
     });
   });
 
+  testWidgets('Appearance: Theme, Orientation, Skins, sizes, Corners', (
+    tester,
+  ) async {
+    await open(tester, size: const Size(1280, 2000));
+    final c = strings.clock;
+    double top(Finder f) => tester.getTopLeft(f.first).dy;
+    final order = [
+      top(find.text(c.theme)),
+      top(find.text(c.orientation)),
+      top(find.text(c.skins_title.toUpperCase())),
+      top(find.byType(SkinTile)),
+      top(find.text(c.skins_view_all)),
+      top(find.text(c.settings_card_size)),
+      top(find.text(c.digit_brightness)),
+      top(find.text(c.settings_corners.toUpperCase())),
+      top(find.widgetWithText(AppButton, c.action_start)),
+      top(find.byType(Slider).last),
+    ];
+    expect(order, [...order]..sort());
+    expect(order.toSet(), hasLength(order.length));
+    // Theme and Orientation have no header above them.
+    expect(find.text(c.theme.toUpperCase()), findsNothing);
+    await close(tester);
+  });
+
   group('Appearance skins strip', () {
     final c = strings.clock;
+
+    List<String> strip(WidgetTester tester) => [
+      for (final t in tester.widgetList<SkinTile>(find.byType(SkinTile)))
+        t.skin.id,
+    ];
+
+    testWidgets('starts with a selected skin from the first five', (
+      tester,
+    ) async {
+      await settings.selectSkin('violet');
+      await open(tester);
+      expect(strip(tester), ['violet', 'mono', 'paper', 'rose', 'amber']);
+      expect(
+        tester.widget<SkinTile>(find.byType(SkinTile).first).selected,
+        isTrue,
+      );
+      await close(tester);
+    });
+
+    testWidgets('starts with a selected skin outside the first five', (
+      tester,
+    ) async {
+      await settings.selectSkin('orbit');
+      await open(tester);
+      expect(strip(tester), ['orbit', 'mono', 'paper', 'rose', 'violet']);
+      await close(tester);
+    });
     for (final width in [375.0, 820.0, 1280.0]) {
       testWidgets('shows five skins, applies one, View all ($width)', (
         tester,
@@ -540,6 +787,15 @@ void main() {
 
     Future<void> wait(WidgetTester tester, int ms) =>
         tester.pump(Duration(milliseconds: ms));
+
+    testWidgets('a sound tile presses down without ink', (tester) async {
+      await openSound(tester);
+      await pick(tester, c.tick_digital);
+      await wait(tester, 50);
+      expect(settings.state.tickSound, TickSound.digital);
+      expect(liveInk(tester), isEmpty);
+      await close(tester);
+    });
 
     testWidgets('two rows of five tiles, Classic and Chime selected', (
       tester,
@@ -630,6 +886,37 @@ void main() {
       await close(tester);
     });
 
+    for (final (kind, first, second, picked) in [
+      (
+        'tick',
+        c.tick_woodblock,
+        c.tick_digital,
+        () => settings.state.tickSound == TickSound.digital,
+      ),
+      (
+        'alarm',
+        c.alarm_bell,
+        c.alarm_beeps,
+        () => settings.state.alarmSound == AlarmSound.beeps,
+      ),
+    ]) {
+      testWidgets('two $kind taps in one frame both land, keeping a change '
+          'made between them', (tester) async {
+        await openSound(tester);
+        await tester.ensureVisible(find.text(first));
+        await tester.pump();
+        final use24h = settings.state.use24h;
+        // No pump between: the second tap runs on the frame the first saw.
+        await tester.tap(find.text(first));
+        unawaited(settings.update(settings.state.copyWith(use24h: !use24h)));
+        await tester.tap(find.text(second));
+        await tester.pump();
+        expect(picked(), isTrue, reason: 'the second tap wins');
+        expect(settings.state.use24h, !use24h, reason: 'nothing reverted');
+        await close(tester);
+      });
+    }
+
     testWidgets('leaving cancels the preview, stopping only its own alarm', (
       tester,
     ) async {
@@ -663,7 +950,10 @@ void main() {
       await openSound(tester);
       double opacityOver(String name) => tester
           .widget<Opacity>(
-            find.ancestor(of: find.text(name), matching: find.byType(Opacity)),
+            find
+                .ancestor(of: find.text(name), matching: find.byType(Opacity))
+                // The dim, outside the tile's own press opacity.
+                .last,
           )
           .opacity;
       expect(opacityOver(c.tick_classic), 0.45, reason: 'tick is off');

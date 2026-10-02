@@ -53,7 +53,8 @@ class GestureLayer extends StatefulWidget {
   final ValueChanged<double>? onBrightness;
   final VoidCallback? onBrightnessEnd;
 
-  /// The page a swipe settles on, once per swipe, even when it springs back.
+  /// The page a swipe settles on, once per swipe; not called when it springs
+  /// back to the page it started on.
   final ValueChanged<int>? onPage;
   final VoidCallback? onSwipeEnd;
 
@@ -130,7 +131,8 @@ class _GestureLayerState extends State<GestureLayer> {
       duration: DesignMotion.islandMorph,
       curve: DesignMotion.islandCurve,
     );
-    widget.onPage?.call(target);
+    // A swipe that snaps back changes nothing.
+    if (target != current) widget.onPage?.call(target);
     widget.onSwipeEnd?.call();
   }
 

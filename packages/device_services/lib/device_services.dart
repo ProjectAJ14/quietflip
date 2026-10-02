@@ -97,11 +97,7 @@ Future<void> init({
       config: alerts,
     ),
   );
-  final sounds = AudioSoundPlayer(
-    flip: audioPlayer(),
-    alarm: audioPlayer(),
-    logger: logger,
-  );
+  final sounds = AudioSoundPlayer(alarm: audioPlayer(), logger: logger);
   di.register<SoundPlayer>(sounds, dispose: (_) => sounds.dispose());
   di.register<KeyValueStore>(
     PreferencesKeyValueStore(

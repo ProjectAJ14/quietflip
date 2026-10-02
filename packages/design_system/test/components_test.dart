@@ -91,8 +91,8 @@ void main() {
       ),
     );
     expect(find.text('Unavailable'), findsOneWidget);
-    await tester.tap(find.byType(FilledButton));
-    await tester.tap(find.byType(OutlinedButton));
+    await tester.tap(find.text(strings.generic.try_again));
+    await tester.tap(find.text(strings.generic.retry));
     expect(retries, 1);
     expect(homes, 1);
   });

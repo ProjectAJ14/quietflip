@@ -5,13 +5,6 @@ import 'package:flip_clock/data/models/skin.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// True when the user asked for less motion: Android "Remove animations" and
-/// web `prefers-reduced-motion` (`disableAnimations`), or iOS Reduce Motion
-/// (`reduceMotion`, which does not set `disableAnimations`).
-bool reducedMotion(BuildContext context) =>
-    MediaQuery.disableAnimationsOf(context) ||
-    View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
-
 /// Split-flap cards styled entirely by [skin]: one card per entry of
 /// [cards] (usually a pair of digits). Only cards whose value changed fold
 /// (top half down, then bottom half, [flipDuration]); the new value is

@@ -246,7 +246,7 @@ abstract final class DesignSize {
   /// Island collapsed to a single dot.
   static const double islandDot = 10;
 
-  /// Island HUD height (brightness, mode name).
+  /// Island HUD height (brightness).
   static const double islandPillHeight = 36;
 
   /// Island expanded with the tabs only: `islandInset`, a [cornerButton]
@@ -307,7 +307,52 @@ abstract final class DesignMotion {
   /// [islandSpring] over [islandMorph] as a [Curve], for implicit animations
   /// (`AnimatedSize`, `AnimatedContainer`). Overshoots slightly.
   static const Curve islandCurve = SpringCurve(islandSpring, islandMorph);
+
+  /// A `Pressable` scales its child to this while pressed.
+  static const double pressScale = 0.96;
+
+  /// [pressScale] for children 48 px or smaller, so the press still shows.
+  static const double pressScaleSmall = 0.92;
+
+  /// Under reduced motion a press dips the child to this opacity instead.
+  static const double pressOpacity = 0.7;
+
+  /// Press in: starts on pointer down, eases out over [pressIn].
+  static const Duration pressIn = Duration(milliseconds: 90);
+
+  /// The curve of [pressIn].
+  static const Curve pressInCurve = Curves.easeOut;
+
+  /// Release: springs back over [pressOut], no overshoot.
+  static const Duration pressOut = Duration(milliseconds: 180);
+
+  /// The curve of [pressOut].
+  static const Curve pressOutCurve = Curves.easeOutCubic;
+
+  /// One loop of a `GestureGlyph`; the rest of the loop after its motion is
+  /// a pause.
+  static const Duration gestureLoop = Duration(milliseconds: 1600);
+
+  /// A glyph's fingertip presses (tap) or fades in and out (swipes) over
+  /// this; a swipe's trail lags the fingertip by it.
+  static const Duration gestureFade = Duration(milliseconds: 150);
+
+  /// A tap glyph's ring grows and fades over this, after the press.
+  static const Duration gestureRing = Duration(milliseconds: 450);
+
+  /// A swipe glyph's fingertip travels over this, after fading in.
+  static const Duration gestureTravel = Duration(milliseconds: 600);
+
+  /// The curve of [gestureTravel].
+  static const Curve gestureTravelCurve = Curves.easeInOutCubic;
 }
+
+/// True when the user asked for less motion: Android "Remove animations" and
+/// web `prefers-reduced-motion` (`disableAnimations`), or iOS Reduce Motion
+/// (`reduceMotion`, which does not set `disableAnimations`).
+bool reducedMotion(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context) ||
+    View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
 
 /// A [Curve] that plays [spring] from 0 to 1 at rest over [duration]:
 /// `transform(t)` is the spring's position `t * duration` after release. It

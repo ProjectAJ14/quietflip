@@ -60,6 +60,9 @@ class FakeSound implements SoundPlayer {
   /// Every tick and alarm played, in order.
   final List<TickSound> ticks = [];
   final List<AlarmSound> played = [];
+
+  /// Every tick loaded ahead with [warmTick], in order.
+  final List<TickSound> warmed = [];
   int stops = 0;
 
   int get flips => ticks.length;
@@ -67,6 +70,9 @@ class FakeSound implements SoundPlayer {
 
   @override
   Future<void> playTick(TickSound sound) async => ticks.add(sound);
+
+  @override
+  Future<void> warmTick(TickSound sound) async => warmed.add(sound);
 
   @override
   Future<void> playAlarm(AlarmSound sound) async => played.add(sound);

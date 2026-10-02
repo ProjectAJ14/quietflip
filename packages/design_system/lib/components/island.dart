@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
@@ -64,28 +65,8 @@ final class IslandBrightnessHud extends IslandHud {
   final String label;
 }
 
-/// Name of the current page, with one dot per page.
-final class IslandTitleHud extends IslandHud {
-  const IslandTitleHud(this.title, this.index, this.count)
-    : assert(index >= 0 && index < count);
-
-  /// Visible and spoken name of the page.
-  final String title;
-
-  /// Which dot is lit.
-  final int index;
-
-  /// How many dots.
-  final int count;
-}
-
 /// Icon size in the island (brand book: 22px symbols).
 const double _chromeIconSize = 22;
-
-/// Whether chrome should skip its spring and only cross-fade.
-bool _reduceMotion(BuildContext context) =>
-    MediaQuery.disableAnimationsOf(context) ||
-    View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
 
 /// The top-centre pill: a dot, the tab bar over an action tray, or a HUD.
 /// One dark shape that morphs between them: it grows on the island spring
@@ -138,9 +119,6 @@ class Island extends StatefulWidget {
       DesignSize.cornerButton * 2 +
       DesignSpace.islandRowGap;
 
-  /// Page dot diameter in the title HUD (from the Island preview).
-  static const double hudDot = 5;
-
   /// Brightness bar width in the HUD (from the Island preview).
   static const double hudBarWidth = 70;
 
@@ -174,7 +152,7 @@ class Island extends StatefulWidget {
     final hud = this.hud;
     final expanded = _expanded;
     final visible = _visible;
-    final reduceMotion = _reduceMotion(context);
+    final reduceMotion = reducedMotion(context);
     final shape = DesignShape.of(context);
     // Two rows take the large role; anything shorter is capped at half its
     // height, so the dot stays a dot.
@@ -188,7 +166,6 @@ class Island extends StatefulWidget {
         hud.label,
         _brightness(hud, colors, shape, text),
       ),
-      IslandTitleHud() => _hud(hud.title, _title(hud, colors, shape, text)),
       null when expanded => _expandedContent(context, colors, text, maxWidth),
       null => const SizedBox.square(
         key: ValueKey(ChromeState.dot),
@@ -317,38 +294,6 @@ class Island extends StatefulWidget {
     ],
   );
 
-  Widget _title(
-    IslandTitleHud hud,
-    DesignColors colors,
-    DesignShape shape,
-    TextTheme text,
-  ) => Row(
-    mainAxisSize: MainAxisSize.min,
-    spacing: DesignSpace.s2,
-    children: [
-      Text(
-        hud.title,
-        style: text.labelMedium?.copyWith(color: colors.islandInk),
-      ),
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: DesignSpace.s1,
-        children: [
-          for (var i = 0; i < hud.count; i++)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: DesignShape.circular(shape.forHeight(hudDot)),
-                color: i == hud.index
-                    ? colors.islandInk
-                    : colors.islandInkMuted,
-              ),
-              child: const SizedBox.square(dimension: hudDot),
-            ),
-        ],
-      ),
-    ],
-  );
-
   Widget _expandedContent(
     BuildContext context,
     DesignColors colors,
@@ -376,7 +321,7 @@ class Island extends StatefulWidget {
             children: [
               SizedBox(
                 height: DesignSize.cornerButton,
-                child: _tabBar(colors, DesignShape.of(context), text),
+                child: _tabBar(context, colors, text),
               ),
               if (_hasTray)
                 SizedBox(
@@ -476,9 +421,9 @@ class Island extends StatefulWidget {
         label: a.semanticsLabel ?? a.label,
         excludeSemantics: true,
         onTap: a.onPressed,
-        child: InkWell(
+        child: Pressable(
           onTap: a.onPressed,
-          customBorder: DesignShape.rounded(item),
+          focusRadius: DesignShape.circular(item),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: a.primary
@@ -502,7 +447,31 @@ class Island extends StatefulWidget {
     );
   }
 
-  Widget _tabBar(DesignColors colors, DesignShape shape, TextTheme text) {
+  /// The tab row: every tab as wide as the widest label, over one
+  /// selected pill that slides to [selected] on the island spring while
+  /// the labels cross-fade their colours.
+  Widget _tabBar(BuildContext context, DesignColors colors, TextTheme text) {
+    final shape = DesignShape.of(context);
+    final item = shape.forHeight(DesignSize.cornerButton);
+    final reduceMotion = reducedMotion(context);
+    // Measured as the labels draw (the ambient style under labelLarge, at
+    // the current text scale), so no tab is wider than another.
+    final style = DefaultTextStyle.of(context).style.merge(text.labelLarge);
+    final painter = TextPainter(
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    );
+    var widest = 0.0;
+    for (final tab in tabs) {
+      painter
+        ..text = TextSpan(text: tab, style: style)
+        ..layout();
+      widest = math.max(widest, painter.width);
+    }
+    painter.dispose();
+    final width = widest.ceilToDouble() + 2 * DesignSpace.islandItemPadding;
+    const gap = DesignSpace.islandItemGap;
     return Center(
       widthFactor: 1,
       child: FittedBox(
@@ -511,21 +480,53 @@ class Island extends StatefulWidget {
           role: SemanticsRole.tabBar,
           label: tabsLabel,
           container: true,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: DesignSpace.islandItemGap,
-            children: [
-              for (var i = 0; i < tabs.length; i++)
-                _tab(i, colors, shape, text),
-            ],
+          child: SizedBox(
+            width: tabs.length * width + (tabs.length - 1) * gap,
+            height: DesignSize.cornerButton,
+            child: Stack(
+              // The spring overshoots: the pill may pass the row's ends.
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedPositionedDirectional(
+                  // Reduced motion: the pill jumps.
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : DesignMotion.islandMorph,
+                  curve: DesignMotion.islandCurve,
+                  start: selected * (width + gap),
+                  top: 0,
+                  width: width,
+                  height: DesignSize.cornerButton,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.islandActive,
+                      borderRadius: DesignShape.circular(item),
+                    ),
+                  ),
+                ),
+                Row(
+                  spacing: gap,
+                  children: [
+                    for (var i = 0; i < tabs.length; i++)
+                      _tab(i, width, item, colors, style, reduceMotion),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _tab(int i, DesignColors colors, DesignShape shape, TextTheme text) {
-    final item = shape.forHeight(DesignSize.cornerButton);
+  Widget _tab(
+    int i,
+    double width,
+    double item,
+    DesignColors colors,
+    TextStyle style,
+    bool reduceMotion,
+  ) {
     final isSelected = i == selected;
     return Semantics(
       container: true,
@@ -535,32 +536,24 @@ class Island extends StatefulWidget {
       label: tabs[i],
       excludeSemantics: true,
       onTap: () => onSelect(i),
-      child: InkWell(
+      child: Pressable(
         onTap: () => onSelect(i),
-        customBorder: DesignShape.rounded(item),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: isSelected ? colors.islandActive : Colors.transparent,
-            borderRadius: DesignShape.circular(item),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: DesignSize.cornerButton,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignSpace.islandItemPadding,
+        selected: isSelected,
+        focusRadius: DesignShape.circular(item),
+        child: SizedBox(
+          width: width,
+          height: DesignSize.cornerButton,
+          child: Center(
+            // Colours only, so the fade never overshoots.
+            child: TweenAnimationBuilder<Color?>(
+              tween: ColorTween(
+                end: isSelected ? colors.islandOnActive : colors.islandInkMuted,
               ),
-              child: Center(
-                widthFactor: 1,
-                child: Text(
-                  tabs[i],
-                  style: text.labelLarge?.copyWith(
-                    color: isSelected
-                        ? colors.islandOnActive
-                        : colors.islandInkMuted,
-                  ),
-                ),
+              duration: reduceMotion ? Duration.zero : DesignMotion.fade,
+              builder: (context, color, _) => Text(
+                tabs[i],
+                maxLines: 1,
+                style: style.copyWith(color: color),
               ),
             ),
           ),
@@ -578,6 +571,22 @@ class _IslandState extends State<Island> {
 
   /// Hiding started from more than the dot: the fade waits for the shrink.
   bool _fadeAfterShrink = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tab widths are measured in build; a font that loads later (bundled
+    // fonts load asynchronously) changes them.
+    PaintingBinding.instance.systemFonts.addListener(_fontsChanged);
+  }
+
+  @override
+  void dispose() {
+    PaintingBinding.instance.systemFonts.removeListener(_fontsChanged);
+    super.dispose();
+  }
+
+  void _fontsChanged() => setState(() {});
 
   @override
   void didUpdateWidget(Island old) {
@@ -663,7 +672,7 @@ class _CornerButtonState extends State<CornerButton> {
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
     final shape = DesignShape.of(context);
-    final reduceMotion = _reduceMotion(context);
+    final reduceMotion = reducedMotion(context);
     final expanded = widget.state == ChromeState.expanded;
     final size = widget._size;
     final fadeAfter = _fadeAfterShrink && !reduceMotion;
@@ -680,28 +689,17 @@ class _CornerButtonState extends State<CornerButton> {
       child: _Surface(
         radius: shape.forHeight(size),
         reduceMotion: reduceMotion,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: widget.onPressed,
-            customBorder: DesignShape.rounded(
-              shape.forHeight(DesignSize.cornerButton),
-            ),
-            // The symbol scales down and fades with the shrink.
-            child: AnimatedOpacity(
-              opacity: expanded ? 1 : 0,
-              duration: expanded
-                  ? DesignMotion.fade
-                  : DesignMotion.islandCollapse,
-              child: FittedBox(
-                child: SizedBox.square(
-                  dimension: DesignSize.cornerButton,
-                  child: Icon(
-                    widget.icon,
-                    size: _chromeIconSize,
-                    color: colors.islandInk,
-                  ),
-                ),
+        // The symbol scales down and fades with the shrink.
+        child: AnimatedOpacity(
+          opacity: expanded ? 1 : 0,
+          duration: expanded ? DesignMotion.fade : DesignMotion.islandCollapse,
+          child: FittedBox(
+            child: SizedBox.square(
+              dimension: DesignSize.cornerButton,
+              child: Icon(
+                widget.icon,
+                size: _chromeIconSize,
+                color: colors.islandInk,
               ),
             ),
           ),
@@ -728,9 +726,12 @@ class _CornerButtonState extends State<CornerButton> {
                 child: Tooltip(
                   message: widget.tooltip,
                   excludeFromSemantics: true,
-                  child: Semantics(
-                    button: true,
-                    label: widget.tooltip,
+                  child: Pressable(
+                    onTap: widget.onPressed,
+                    semanticsLabel: widget.tooltip,
+                    focusRadius: DesignShape.circular(
+                      shape.forHeight(DesignSize.cornerButton),
+                    ),
                     child: box,
                   ),
                 ),

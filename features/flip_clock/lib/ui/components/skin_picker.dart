@@ -9,10 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
 /// The Skins sheet: live tiles of every skin, drawn with the user's
-/// seconds and date settings; tapping one applies it at once, and the
-/// selected tile offers Customize. Custom skins come first under Your
-/// skins, with a New skin tile. Every built-in skin is free: no locks, no
-/// ribbons.
+/// seconds and date settings; tapping one applies it at once. In use comes
+/// first: the selected skin's tile, with Customize, cross-fading when the
+/// selection changes. The sections below never reflow (their selected tile
+/// is ringed in place). Custom skins come first under Your skins, with a
+/// New skin tile. Every built-in skin is free: no locks, no ribbons.
 class SkinPicker extends StatelessWidget {
   const SkinPicker({
     super.key,
@@ -52,7 +53,7 @@ class SkinPicker extends StatelessWidget {
       children: [
         SheetHeader(
           title: c.skins_title,
-          leading: TextButton(onPressed: onDone, child: Text(c.skins_done)),
+          leading: AppButton.text(onPressed: onDone, label: c.skins_done),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -66,7 +67,7 @@ class SkinPicker extends StatelessWidget {
               final width = (inner - gap * (columns - 1)) / columns;
               Widget grid(List<Widget> tiles) =>
                   Wrap(spacing: gap, runSpacing: gap, children: tiles);
-              Widget tile(Skin skin) => SizedBox(
+              Widget tile(Skin skin, {VoidCallback? onCustomize}) => SizedBox(
                 width: width,
                 child: SkinTile(
                   skin: skin,
@@ -77,6 +78,7 @@ class SkinPicker extends StatelessWidget {
                   onCustomize: onCustomize,
                 ),
               );
+              final selected = Skins.resolve(selectedId, custom);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(
                   DesignSpace.s6,
@@ -85,6 +87,18 @@ class SkinPicker extends StatelessWidget {
                   DesignSpace.s8,
                 ),
                 children: [
+                  SectionHeader(c.skins_in_use),
+                  grid([
+                    AnimatedSwitcher(
+                      duration: reducedMotion(context)
+                          ? Duration.zero
+                          : DesignMotion.fade,
+                      child: KeyedSubtree(
+                        key: ValueKey(selected.id),
+                        child: tile(selected, onCustomize: onCustomize),
+                      ),
+                    ),
+                  ]),
                   SectionHeader(c.skins_yours),
                   grid([
                     ...custom.map(tile),
@@ -273,118 +287,112 @@ class SkinTile extends StatelessWidget {
         ? MaterialLocalizations.of(context).formatFullDate(now)
         : null;
     // The tile is one button ("Rose, selected"); Customize is its own.
-    return Semantics(
-      container: true,
-      button: true,
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      label: skin.name,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: DesignShape.circular(DesignShape.of(context).md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: faceHeight,
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignSpace.s4,
-                vertical: DesignSpace.s4,
-              ),
-              decoration: BoxDecoration(
-                color: skin.groundColor,
-                borderRadius: DesignShape.circular(DesignShape.of(context).md),
-                boxShadow: selectionRing(colors, selected: selected),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ExcludeSemantics(
-                      child: Column(
-                        spacing: DesignSpace.s1,
-                        children: [
-                          if (date != null)
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                date,
-                                maxLines: 1,
-                                textScaler: TextScaler.noScaling,
-                                style: skin.face.style(
-                                  color: skin.digitColor.withValues(alpha: 0.7),
-                                  fontSize: text.fontSize!,
-                                ),
+      semanticsLabel: skin.name,
+      focusRadius: DesignShape.circular(DesignShape.of(context).md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            height: faceHeight,
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignSpace.s4,
+              vertical: DesignSpace.s4,
+            ),
+            decoration: BoxDecoration(
+              color: skin.groundColor,
+              borderRadius: DesignShape.circular(DesignShape.of(context).md),
+              boxShadow: selectionRing(colors, selected: selected),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ExcludeSemantics(
+                    child: Column(
+                      spacing: DesignSpace.s1,
+                      children: [
+                        if (date != null)
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              date,
+                              maxLines: 1,
+                              textScaler: TextScaler.noScaling,
+                              style: skin.face.style(
+                                color: skin.digitColor.withValues(alpha: 0.7),
+                                fontSize: text.fontSize!,
                               ),
                             ),
-                          Expanded(
-                            child: FlipDisplay(
-                              cards: value.cards,
-                              badge: value.badge,
-                              meridiem: value.meridiem,
-                              skin: skin,
-                              semanticsLabel: skin.name,
-                            ),
                           ),
-                        ],
+                        Expanded(
+                          child: FlipDisplay(
+                            cards: value.cards,
+                            badge: value.badge,
+                            meridiem: value.meridiem,
+                            skin: skin,
+                            semanticsLabel: skin.name,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (selected)
+                  const Align(
+                    alignment: Alignment.topRight,
+                    child: SelectionCheck(),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: DesignSpace.s1),
+          // Every caption is a hit target tall, so the selected tile's
+          // button never makes its row taller than the others.
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: DesignSize.cornerButton,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      skin.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.copyWith(
+                        color: selected ? colors.ink : colors.inkMuted,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  if (selected)
-                    const Align(
-                      alignment: Alignment.topRight,
-                      child: SelectionCheck(),
+                ),
+                if (customize != null)
+                  // Its own focusable button, spoken with the skin name.
+                  AppButton.text(
+                    onPressed: customize,
+                    icon: Icons.edit_outlined,
+                    label: strings.clock.skins_customize,
+                    semanticsLabel: strings.clock.skins_customize_named(
+                      skin.name,
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: DesignSpace.s1),
-            // Every caption is a hit target tall, so the selected tile's
-            // button never makes its row taller than the others.
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: DesignSize.cornerButton,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
+                  )
+                else
+                  Flexible(
                     child: ExcludeSemantics(
                       child: Text(
-                        skin.name,
+                        skin.face.family,
                         overflow: TextOverflow.ellipsis,
-                        style: text.copyWith(
-                          color: selected ? colors.ink : colors.inkMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        textAlign: TextAlign.end,
+                        style: text.copyWith(color: colors.inkMuted),
                       ),
                     ),
                   ),
-                  if (customize != null)
-                    // Its own focusable button, spoken with the skin name.
-                    TextButton.icon(
-                      onPressed: customize,
-                      icon: const Icon(Icons.edit_outlined),
-                      label: Text(
-                        strings.clock.skins_customize,
-                        semanticsLabel: strings.clock.skins_customize_named(
-                          skin.name,
-                        ),
-                      ),
-                    )
-                  else
-                    Flexible(
-                      child: ExcludeSemantics(
-                        child: Text(
-                          skin.face.family,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: text.copyWith(color: colors.inkMuted),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -402,37 +410,32 @@ class _NewTile extends StatelessWidget {
     final text = Theme.of(
       context,
     ).textTheme.bodySmall!.copyWith(color: colors.inkMuted);
-    return Semantics(
-      button: true,
-      label: strings.clock.skins_new,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: DesignShape.circular(DesignShape.of(context).md),
-        child: ExcludeSemantics(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: SkinTile.faceHeight,
-                decoration: BoxDecoration(
-                  borderRadius: DesignShape.circular(
-                    DesignShape.of(context).md,
-                  ),
-                  border: Border.all(color: colors.hairline, width: 1.5),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add_rounded, color: colors.inkMuted),
-                    const SizedBox(height: DesignSpace.s1),
-                    Text(strings.clock.skins_new, style: text),
-                  ],
-                ),
+    return Pressable(
+      onTap: onTap,
+      semanticsLabel: strings.clock.skins_new,
+      focusRadius: DesignShape.circular(DesignShape.of(context).md),
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: SkinTile.faceHeight,
+              decoration: BoxDecoration(
+                borderRadius: DesignShape.circular(DesignShape.of(context).md),
+                border: Border.all(color: colors.hairline, width: 1.5),
               ),
-              const SizedBox(height: DesignSpace.s2),
-              Text(strings.clock.skins_from_current, style: text),
-            ],
-          ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_rounded, color: colors.inkMuted),
+                  const SizedBox(height: DesignSpace.s1),
+                  Text(strings.clock.skins_new, style: text),
+                ],
+              ),
+            ),
+            const SizedBox(height: DesignSpace.s2),
+            Text(strings.clock.skins_from_current, style: text),
+          ],
         ),
       ),
     );

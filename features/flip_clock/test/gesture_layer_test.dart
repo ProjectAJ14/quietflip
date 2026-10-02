@@ -134,7 +134,8 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     expect(log.brightness, isEmpty);
-    expect(log.pages, [1]);
+    // Sprang back to the start page: no page change.
+    expect(log.pages, isEmpty);
     expect(log.swipeEnds, 1);
   });
 
@@ -145,11 +146,11 @@ void main() {
     expect(log.brightnessEnds, 1);
   });
 
-  testWidgets('24% springs back and reports the same page', (tester) async {
+  testWidgets('24% springs back and reports no page change', (tester) async {
     await pump(tester);
     await drag(tester, List.filled(4, const Offset(-width * 0.06, 0)));
     expect(pages.page, 0);
-    expect(log.pages, [0]);
+    expect(log.pages, isEmpty);
     expect(log.swipeEnds, 1);
   });
 
@@ -176,7 +177,7 @@ void main() {
     await tester.fling(layer, const Offset(50, 0), 1000);
     await tester.pumpAndSettle();
     expect(pages.page, 0);
-    expect(log.pages, [0, 1, 0]);
+    expect(log.pages, [1, 0]);
   });
 
   testWidgets('swipes never wrap around', (tester) async {
@@ -186,7 +187,7 @@ void main() {
     pages.jumpToPage(3);
     await drag(tester, const [Offset(-300, 0)]);
     expect(pages.page, 3);
-    expect(log.pages, [0, 3]);
+    expect(log.pages, isEmpty);
   });
 
   testWidgets('a disabled layer ignores taps and drags', (tester) async {

@@ -1,3 +1,5 @@
+import 'package:design_system/components/app_button.dart';
+import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'dart:io';
 
@@ -55,49 +57,49 @@ class FileInfoDialog extends StatelessWidget {
     required TextTheme textTheme,
     required DesignShape shape,
     bool isPath = false,
-    VoidCallback? onTap,
+    required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: DesignShape.circular(shape.sm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    value,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontFamily: isPath ? 'monospace' : null,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  value,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontFamily: isPath ? 'monospace' : null,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (onTap != null)
-              Icon(
-                Icons.copy,
-                size: 16,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-          ],
-        ),
+          ),
+          Icon(
+            Icons.copy,
+            size: 16,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ],
       ),
+    );
+    return Pressable(
+      onTap: onTap,
+      focusRadius: DesignShape.circular(shape.sm),
+      child: row,
     );
   }
 
@@ -151,12 +153,12 @@ class FileInfoDialog extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconButton(
+                  AppButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(
-                      Icons.close,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
+                    icon: Icons.close,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
                   ),
                 ],
               ),

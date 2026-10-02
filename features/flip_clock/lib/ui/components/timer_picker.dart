@@ -95,13 +95,13 @@ class _TimerPickerState extends State<TimerPicker> {
         ],
       ),
       actions: [
-        TextButton(
+        AppButton.text(
           onPressed: () => Navigator.pop(context),
-          child: Text(strings.generic.cancel),
+          label: strings.generic.cancel,
         ),
-        TextButton(
+        AppButton.text(
           onPressed: value == null ? null : () => Navigator.pop(context, value),
-          child: Text(strings.generic.ok),
+          label: strings.generic.ok,
         ),
       ],
     );
