@@ -55,6 +55,10 @@ class SettingsGroup {
 ///   selected category's detail.
 /// - **Desktop density** (1100 or wider, or [desktop]): the split layout
 ///   with a narrower sidebar and denser rows.
+///
+/// An optional [pinned] category is drawn as its own card ([pinnedCard]):
+/// after the list on the phone, at the bottom of the sidebar (outside its
+/// scroll) in the split layouts. It opens like any other category.
 class SettingsShell extends StatefulWidget {
   const SettingsShell({
     super.key,
@@ -65,8 +69,14 @@ class SettingsShell extends StatefulWidget {
     this.desktop = false,
     this.initialCategory = 0,
     this.openInitialCategory = false,
+    this.pinned,
+    this.pinnedCard,
   }) : assert(categories.length > 0),
-       assert(initialCategory >= 0 && initialCategory < categories.length);
+       assert((pinned == null) == (pinnedCard == null)),
+       assert(
+         initialCategory >= 0 &&
+             initialCategory < categories.length + (pinned == null ? 0 : 1),
+       );
 
   /// Large title on the phone root, sidebar title, and the back label.
   final String title;
@@ -83,12 +93,22 @@ class SettingsShell extends StatefulWidget {
   /// Forces desktop density at any width (pass true on desktop and web).
   final bool desktop;
 
-  /// Category selected first in the split and desktop layouts.
+  /// Category selected first in the split and desktop layouts;
+  /// `categories.length` addresses [pinned].
   final int initialCategory;
 
   /// The phone layout also starts on [initialCategory]'s page (a deep
   /// link), with Done beside its title so closing returns to the caller.
   final bool openInitialCategory;
+
+  /// A category kept apart from [categories], opened from [pinnedCard].
+  final SettingsCategory? pinned;
+
+  /// What the pinned card shows (the shell draws the card around it).
+  final Widget? pinnedCard;
+
+  /// Minimum height of the pinned card.
+  static const double pinnedCardHeight = 72;
 
   /// Split layout from this width.
   static const double splitBreakpoint = 600;
@@ -121,6 +141,22 @@ class _SettingsShellState extends State<SettingsShell> {
 
   /// Category selected in the split and desktop layouts.
   late int _selected = widget.initialCategory;
+
+  /// Index of the pinned category: one past the list.
+  int get _pinnedIndex => widget.categories.length;
+
+  SettingsCategory _category(int i) =>
+      i < widget.categories.length ? widget.categories[i] : widget.pinned!;
+
+  Widget? _pinnedCard({required bool selected, required VoidCallback onTap}) =>
+      switch (widget.pinnedCard) {
+        final card? => _PinnedCard(
+          selected: selected,
+          onTap: onTap,
+          child: card,
+        ),
+        null => null,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -201,6 +237,14 @@ class _SettingsShellState extends State<SettingsShell> {
                     ],
                   ),
                 ),
+                if (_pinnedCard(
+                      selected: false,
+                      onTap: () => setState(() => _open = _pinnedIndex),
+                    )
+                    case final card?) ...[
+                  const SizedBox(height: DesignSpace.s6),
+                  card,
+                ],
               ],
             )
           : Column(
@@ -220,7 +264,7 @@ class _SettingsShellState extends State<SettingsShell> {
                     ),
                     Flexible(
                       child: Text(
-                        widget.categories[open].label,
+                        _category(open).label,
                         textAlign: TextAlign.center,
                         style: text.titleMedium?.copyWith(color: colors.ink),
                       ),
@@ -238,10 +282,7 @@ class _SettingsShellState extends State<SettingsShell> {
                   ],
                 ),
                 Expanded(
-                  child: _Detail(
-                    widget.categories[open],
-                    padding: DesignSpace.s4,
-                  ),
+                  child: _Detail(_category(open), padding: DesignSpace.s4),
                 ),
               ],
             ),
@@ -256,7 +297,14 @@ class _SettingsShellState extends State<SettingsShell> {
   Widget _split(BuildContext context, DesignColors colors, bool desktop) {
     final text = Theme.of(context).textTheme;
     // The list may have shrunk since the selection was made.
-    final selected = math.min(_selected, widget.categories.length - 1);
+    final selected = math.min(
+      _selected,
+      widget.categories.length - (widget.pinned == null ? 1 : 0),
+    );
+    final pinned = _pinnedCard(
+      selected: selected == _pinnedIndex,
+      onTap: () => setState(() => _selected = _pinnedIndex),
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -266,23 +314,37 @@ class _SettingsShellState extends State<SettingsShell> {
               : DesignSize.sidebarWidth,
           child: ColoredBox(
             color: colors.surfaceSidebar,
-            child: ListView(
-              padding: const EdgeInsets.all(DesignSpace.s3),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ?_done(),
-                Padding(
-                  padding: const EdgeInsets.all(DesignSpace.s2),
-                  child: Text(
-                    widget.title,
-                    style: text.headlineSmall?.copyWith(color: colors.ink),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(DesignSpace.s3),
+                    children: [
+                      ?_done(),
+                      Padding(
+                        padding: const EdgeInsets.all(DesignSpace.s2),
+                        child: Text(
+                          widget.title,
+                          style: text.headlineSmall?.copyWith(
+                            color: colors.ink,
+                          ),
+                        ),
+                      ),
+                      for (var i = 0; i < widget.categories.length; i++)
+                        _NavRow(
+                          widget.categories[i],
+                          selected: i == selected,
+                          desktop: desktop,
+                          onTap: () => setState(() => _selected = i),
+                        ),
+                    ],
                   ),
                 ),
-                for (var i = 0; i < widget.categories.length; i++)
-                  _NavRow(
-                    widget.categories[i],
-                    selected: i == selected,
-                    desktop: desktop,
-                    onTap: () => setState(() => _selected = i),
+                if (pinned != null)
+                  Padding(
+                    padding: const EdgeInsets.all(DesignSpace.s4),
+                    child: pinned,
                   ),
               ],
             ),
@@ -291,7 +353,7 @@ class _SettingsShellState extends State<SettingsShell> {
         VerticalDivider(width: 1, thickness: 1, color: colors.hairline),
         Expanded(
           child: _Detail(
-            widget.categories[selected],
+            _category(selected),
             padding: DesignSpace.s8,
             title: true,
           ),
@@ -417,6 +479,56 @@ class _Group extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The pinned category's card: raised surface, hairline border (an accent
+/// ring when selected), the app's `md` corner, at least
+/// [SettingsShell.pinnedCardHeight] tall. Focusable; Enter or Space opens it.
+class _PinnedCard extends StatelessWidget {
+  const _PinnedCard({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = DesignColors.of(context);
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Material(
+        color: colors.surfaceRaised,
+        clipBehavior: Clip.antiAlias,
+        shape: DesignShape.rounded(
+          DesignShape.of(context).md,
+          side: BorderSide(
+            color: selected ? colors.accent : colors.hairline,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: SettingsShell.pinnedCardHeight,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(DesignSpace.s4),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

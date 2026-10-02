@@ -1,5 +1,6 @@
 import 'package:design_system/design_system.dart' as ds;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _long =
@@ -575,4 +576,145 @@ void main() {
     );
     expect(style.foregroundColor!.resolve({}), theme.colorScheme.onSurface);
   });
+
+  group('pinned category', () {
+    testWidgets('phone: its own card after the list, opening its page', (
+      tester,
+    ) async {
+      await _pump(tester, _pinnedShell());
+      final card = tester.getRect(find.text('Card body'));
+      final row = tester.getRect(find.text('General'));
+      expect(card.top, greaterThan(row.bottom + ds.DesignSpace.s6));
+      final cardBox = tester.getSize(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      expect(
+        cardBox.height,
+        greaterThanOrEqualTo(ds.SettingsShell.pinnedCardHeight),
+      );
+      expect(_cardSide(tester).color, ds.DesignColors.dark.hairline);
+      await tester.tap(find.text('Card body'));
+      await tester.pumpAndSettle();
+      expect(find.text('Account page'), findsOneWidget);
+      expect(find.text('Account'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Card body'), findsOneWidget);
+    });
+
+    testWidgets('split: pinned to the sidebar bottom, selected with the '
+        'accent ring', (tester) async {
+      await _pump(tester, _pinnedShell(), width: 820);
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      expect(card.bottom, closeTo(900 - ds.DesignSpace.s4, 1));
+      expect(card.left, closeTo(ds.DesignSpace.s4, 1));
+      expect(find.text('Account page'), findsNothing);
+      await tester.tap(find.text('Card body'));
+      await tester.pumpAndSettle();
+      expect(find.text('Account page'), findsOneWidget);
+      final side = _cardSide(tester);
+      expect(side.color, ds.DesignColors.dark.accent);
+      expect(side.width, 2);
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      expect(find.text('Account page'), findsNothing);
+      expect(_cardSide(tester).width, 1);
+    });
+
+    testWidgets('Enter and Space open it from the keyboard', (tester) async {
+      for (final (width, key) in [
+        (375.0, LogicalKeyboardKey.enter),
+        (820.0, LogicalKeyboardKey.space),
+      ]) {
+        await _pump(tester, _pinnedShell(), width: width);
+        Focus.of(tester.element(find.text('Card body'))).requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+        expect(find.text('Account page'), findsOneWidget, reason: '$key');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('initialCategory past the list addresses it', (tester) async {
+      await _pump(tester, _pinnedShell(initialCategory: 1, open: true));
+      expect(find.text('Account page'), findsOneWidget);
+      await _pump(tester, _pinnedShell(initialCategory: 1), width: 1280);
+      expect(find.text('Account page'), findsOneWidget);
+      expect(_cardSide(tester).width, 2);
+    });
+
+    testWidgets('fits at text scale 2 in Mono Light', (tester) async {
+      await _pump(
+        tester,
+        _pinnedShell(),
+        mode: ds.AppearanceMode.light,
+        textScale: 2,
+      );
+      expect(tester.takeException(), isNull);
+      expect(_cardSide(tester).color, ds.DesignColors.light.hairline);
+      await _pump(
+        tester,
+        _pinnedShell(),
+        mode: ds.AppearanceMode.light,
+        width: 820,
+        textScale: 2,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
+
+ds.SettingsShell _pinnedShell({int initialCategory = 0, bool open = false}) =>
+    ds.SettingsShell(
+      title: 'Settings',
+      initialCategory: initialCategory,
+      openInitialCategory: open,
+      doneLabel: 'Done',
+      categories: const [
+        ds.SettingsCategory(
+          icon: Icons.tune,
+          label: 'General',
+          groups: [
+            ds.SettingsGroup(
+              rows: [ds.SettingsValueRow(label: 'Version', value: '1.0')],
+            ),
+          ],
+        ),
+      ],
+      pinned: const ds.SettingsCategory(
+        icon: Icons.cloud_outlined,
+        label: 'Account',
+        groups: [
+          ds.SettingsGroup(rows: [ds.SettingsNoteRow(text: 'Account page')]),
+        ],
+      ),
+      pinnedCard: const Text('Card body'),
+    );
+
+/// The pinned card's outline.
+BorderSide _cardSide(WidgetTester tester) =>
+    (tester
+                .widget<Material>(
+                  find
+                      .ancestor(
+                        of: find.text('Card body'),
+                        matching: find.byType(Material),
+                      )
+                      .first,
+                )
+                .shape!
+            as RoundedRectangleBorder)
+        .side;
