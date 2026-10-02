@@ -1,0 +1,27 @@
+# Native launch screen (iOS, Android incl. 12+, web), shown until Flutter
+# draws its first frame. Regenerate from this directory after changing it or
+# the logo:
+#
+#   dart run flutter_native_splash:create
+#
+# The generated platform files are committed; never hand-edit them.
+#
+# One colour on purpose: the app opens in Black whatever the OS brightness,
+# and lib/ui/splash_screen.dart draws the same logo, at the same size
+# (152 logical px wide, centred), on DesignColors.dark.bg (#000000), so the
+# hand-off from native to Flutter does not jump.
+#
+# The images are 4x: the tool divides by 4 for 1x. quietflip-logo.png is
+# 608px wide (152 at 1x). The Android 12+ icon is the same logo centred on a
+# 1152px (288dp) canvas, inside the 768px (192dp) circle the OS keeps.
+flutter_native_splash:
+  color: "#000000"
+  image: assets/splash/quietflip-logo.png
+  android_12:
+    color: "#000000"
+    image: assets/splash/quietflip-logo-android12.png
+  android: true
+  ios: true
+  web: true
+  web_image_mode: center
+  fullscreen: false
