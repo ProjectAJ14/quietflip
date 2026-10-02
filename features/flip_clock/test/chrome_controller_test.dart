@@ -7,13 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _hud = IslandBrightnessHud(0.5, '50%');
 
-/// Runs [body] in fake time with a fresh controller and its emissions.
+/// Runs [body] in fake time with a fresh controller and its emissions,
+/// shown (launch is hidden) unless [shown] is false.
 void _run(
   void Function(FakeAsync async, ChromeController c, List<Chrome> out) body, {
   Duration idle = DesignMotion.controlsIdle,
+  bool shown = true,
 }) {
   fakeAsync((async) {
     final c = ChromeController(idle: idle);
+    if (shown) c.wake();
     final out = <Chrome>[];
     final sub = c.stream.listen(out.add);
     body(async, c, out);
@@ -26,9 +29,9 @@ void _run(
 ChromeState _state(ChromeController c) => c.state.state;
 
 void main() {
-  test('starts expanded with no hud; equality', () {
+  test('starts hidden with no hud and no timer; equality', () {
     final c = ChromeController();
-    expect(c.state, const Chrome(ChromeState.expanded));
+    expect(c.state, const Chrome(ChromeState.hidden));
     expect(c.state.hud, isNull);
     expect(
       const Chrome(ChromeState.dot, _hud).hashCode,
@@ -43,6 +46,20 @@ void main() {
       isNot(const Chrome(ChromeState.dot, _hud)),
     );
     unawaited(c.close());
+  });
+
+  test('launch stays hidden; the first tap shows the controls', () {
+    _run(shown: false, (async, c, out) {
+      expect(async.pendingTimers, isEmpty);
+      async.elapse(const Duration(seconds: 30));
+      expect(out, isEmpty);
+      c.tap();
+      expect(_state(c), ChromeState.expanded);
+      async.elapse(const Duration(seconds: 4));
+      expect(_state(c), ChromeState.dot);
+      async.elapse(const Duration(seconds: 3));
+      expect(_state(c), ChromeState.hidden);
+    });
   });
 
   test('tap toggles: expanded -> hidden -> expanded, dot -> expanded', () {
@@ -241,7 +258,7 @@ void main() {
 
   test('close cancels timers; nothing is emitted after', () {
     fakeAsync((async) {
-      final c = ChromeController();
+      final c = ChromeController()..wake();
       final out = <Chrome>[];
       c.stream.listen(out.add);
       c

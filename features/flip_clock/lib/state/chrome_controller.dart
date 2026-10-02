@@ -25,8 +25,8 @@ class Chrome {
 
 /// Shows and collapses the chrome: expanded -> dot after [idle], dot ->
 /// hidden after `dotIdle` more; a hidden chrome has no timer. Starts
-/// expanded, so launch shows the controls, then they collapse. An [idle] of
-/// [Duration.zero] never collapses.
+/// hidden, so launch shows the clock alone until a tap, hover or key. An
+/// [idle] of [Duration.zero] never collapses.
 class ChromeController extends Cubit<Chrome> {
   ChromeController({
     Duration idle = DesignMotion.controlsIdle,
@@ -35,9 +35,7 @@ class ChromeController extends Cubit<Chrome> {
   }) : _idle = idle,
        _dotIdle = dotIdle,
        _hudHold = hudHold,
-       super(const Chrome(ChromeState.expanded)) {
-    _restartIdle();
-  }
+       super(const Chrome(ChromeState.hidden));
 
   Duration _idle;
   final Duration _dotIdle;
