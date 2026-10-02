@@ -117,6 +117,7 @@ lib/
 | `notification_lifecycle_test.dart` | init after first frame, init again and badge on resume, no badge after dispose, errors logged, null client |
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
 | `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |
+| `export_compliance_test.dart` | iOS and macOS `Info.plist` declare `ITSAppUsesNonExemptEncryption` = `false` |
 
 Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInterfaceMixin`, `tearDown(di.reset)`.
 
@@ -128,6 +129,12 @@ Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInter
   `android/app/build.gradle.kts` (plus the Kotlin package folder), both
   Xcode projects, `macos/Runner/Configs/AppInfo.xcconfig` and
   `bootstrap.dart`. Change all at once; stores treat a new id as a new app.
+- **Export compliance is declared, not answered per upload.** Both
+  `ios/Runner/Info.plist` and `macos/Runner/Info.plist` set
+  `ITSAppUsesNonExemptEncryption` to `false`, so App Store Connect skips the
+  encryption question. That holds while the only encryption is Firebase's TLS
+  and auth (exempt). If the app ever encrypts user data itself (for example
+  end-to-end encrypted sync), revisit the answer before shipping.
 - **Web never downloads fonts or the renderer.** Flutter's web engine
   fetches Roboto from fonts.gstatic.com as its default font unless the app
   bundles a family named `Roboto`, so `pubspec.yaml` declares `Roboto` as a
