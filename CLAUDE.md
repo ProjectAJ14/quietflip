@@ -40,7 +40,9 @@ Firebase (project `quietflip`) is configured: `apps/quietflip/lib/firebase_optio
 `google-services.json` and both `GoogleService-Info.plist` files hold public
 client config only. `apps/quietflip/firebase.json` (with `.firebaserc`) holds
 the Firestore rules path and the emulator ports (auth 9099, firestore 8080,
-functions 5001, UI on); they must match `packages/core/lib/developer/emulators.dart`.
+UI on); they must match `packages/core/lib/developer/emulators.dart`. There is
+no Cloud Functions code, so no functions emulator runs (the CLI refuses one
+without a `functions` source; `core` still points Functions at 5001).
 The Firebase emulators need Java 21 or newer.
 
 ```sh

@@ -21,7 +21,7 @@ Nothing depends on the app. These are its seams, used by its own tests:
 | Symbol | File | Used for |
 |---|---|---|
 | `startApp({initialize, mount})` | `lib/main.dart` | Entrypoint with injectable bootstrap and `runApp` |
-| `init({onOpenRoute, firebaseOptions, useEmulators})` | `lib/bootstrap.dart` | Module bring-up; `firebaseOptions` overrides `DefaultFirebaseOptions` in tests |
+| `init({onOpenRoute, firebaseOptions, useEmulators, isWeb})` | `lib/bootstrap.dart` | Module bring-up; `firebaseOptions` overrides `DefaultFirebaseOptions` in tests; `isWeb` (default `kIsWeb`) skips Crashlytics, which has no web SDK |
 | `defaultFirebaseOptions` | `lib/bootstrap.dart` | `@visibleForTesting`; where `init` reads options when none are passed; tests swap in a throwing `UnsupportedError` to boot with Firebase off |
 | `App({required router, required appearance})` | `lib/app.dart` | `MaterialApp.router` inside `GlobalEventChannelProvider` + `DesignSystemWrapper(mode:)`; `appearance` is `flip_clock.appearance()` (Black by default, regardless of OS brightness) |
 | `AppRouter.createRouter({initialLocation})` | `lib/router/router.dart` | Builds the router; defaults to `core.CoreRoutes.root` |
@@ -67,6 +67,7 @@ lib/
 
 - `auth.init()` must run **before** `network.init()`: `network.init()` looks up
   `AuthTokenProvider` in `di` once to decide whether to attach bearer tokens.
+- Crashlytics is skipped on web (`isWeb`): its platform interface asserts there, which stopped the web app from booting once Firebase was configured.
 - Every Firebase-backed step is behind `if (firebaseReady)`. `firebaseReady` is
   only set after `Firebase.initializeApp` succeeds; only `UnsupportedError`
   (the placeholder options) is caught. Emulator failures propagate.
@@ -112,7 +113,7 @@ lib/
 | `app_test.dart` | `App` with an injected router follows `appearance` (Black -> Light); real routes boot without Firebase on the clock, `/home` redirects to it, dashboard still reachable by URL, tab switch, `/error`; `AppRouter.signOut` unregisters the device (success and failure) before signing out; Settings > Account sign-out (stays, failure kept signed in) and delete (deleted, recent login -> signed out + `needsSignIn`, other failures -> `failed`) |
 | `firebase_options_test.dart` | every configured platform resolves project `quietflip`; Linux and others throw `UnsupportedError` |
 | `entrypoint_test.dart` | real `main()` with Firebase off (`defaultFirebaseOptions` throws like the placeholder): `NetworkClient`, device services and `GoRouter` registered, launches on the clock in Black with the OS light, no `CloudSync` and no Account card in Settings, `/home` redirect, unknown route, error route |
-| `firebase_bootstrap_test.dart` | configured bootstrap with mocktail FlutterFire platform doubles: every module registered (incl. `KeyValueStore`, `SettingsController`, `CloudSync`, `SettingsSync`), `app_open` logged, emulator failure throws, sign-in lands on the Account page and Sign in to sync opens `SignInScreen`, foreground toast, signed-out user opening the dashboard sent to `SignInScreen` |
+| `firebase_bootstrap_test.dart` | configured bootstrap with mocktail FlutterFire platform doubles, run as native and as web (no `CrashlyticsClient` on web; one shared set of doubles, because FlutterFire caches delegates per app): every module registered (incl. `KeyValueStore`, `SettingsController`, `CloudSync`, `SettingsSync`), `app_open` logged, emulator failure throws, sign-in lands on the Account page and Sign in to sync opens `SignInScreen`, foreground toast, signed-out user opening the dashboard sent to `SignInScreen` |
 | `notification_lifecycle_test.dart` | init after first frame, badge on resume, no badge after dispose, errors logged, null client |
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
 | `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |

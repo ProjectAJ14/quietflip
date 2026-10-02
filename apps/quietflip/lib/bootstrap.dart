@@ -19,6 +19,7 @@ import 'package:feature_flags/feature_flags.dart' as feature_flags;
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' as network;
@@ -43,6 +44,7 @@ Future<void> init({
   void Function(String route)? onOpenRoute,
   FirebaseOptions? firebaseOptions,
   bool useEmulators = core.Environment.useEmulators,
+  bool isWeb = kIsWeb,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
   final stopwatch = Stopwatch()..start();
@@ -71,7 +73,8 @@ Future<void> init({
         : 'Firebase not configured yet; skipping Firebase modules',
   );
 
-  if (firebaseReady) await crashlytics.init();
+  // Crashlytics has no web SDK; on web its init asserts.
+  if (firebaseReady && !isWeb) await crashlytics.init();
 
   if (firebaseReady) await analytics.init();
 
