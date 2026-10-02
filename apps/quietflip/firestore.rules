@@ -1,0 +1,13 @@
+rules_version = '2';
+// Owner-only settings sync: users/{uid}/sync/{doc} = {data: map, updatedAt: int}.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/sync/{doc} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt'])
+        && request.resource.data.data is map
+        && request.resource.data.updatedAt is int;
+    }
+  }
+}

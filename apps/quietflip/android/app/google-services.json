@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894286222021",
+    "project_id": "quietflip",
+    "storage_bucket": "quietflip.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894286222021:android:fae08cb893f269f6f816ac",
+        "android_client_info": {
+          "package_name": "live.iajaykumar.quietflip"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNjOEOAEGs195BzdNkd_dDFbJJA49y4A4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

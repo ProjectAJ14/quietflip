@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:network/network.dart';
 
+import 'package:quietflip/bootstrap.dart' as bootstrap;
 import 'package:quietflip/main.dart' as entrypoint;
 
 import 'clock_support.dart';
@@ -16,6 +17,11 @@ void main() {
     tester,
   ) async {
     useInMemoryStorage();
+    // The unconfigured placeholder throws; the app boots without Firebase.
+    final options = bootstrap.defaultFirebaseOptions;
+    bootstrap.defaultFirebaseOptions = () =>
+        throw UnsupportedError('Firebase has not been configured');
+    addTearDown(() => bootstrap.defaultFirebaseOptions = options);
     // Real async: cubits created in fake time never finish closing in
     // tearDown (see features/flip_clock/CLAUDE.md).
     await tester.runAsync(entrypoint.main);

@@ -26,6 +26,12 @@ import 'package:notifications/notifications.dart' as notifications;
 
 import 'package:quietflip/firebase_options.dart';
 
+/// Where [init] reads the Firebase options when none are passed. Tests swap
+/// in the placeholder's `UnsupportedError` to boot with Firebase off.
+@visibleForTesting
+FirebaseOptions Function() defaultFirebaseOptions = () =>
+    DefaultFirebaseOptions.currentPlatform;
+
 /// Brings every module up, in dependency order, before the first frame.
 ///
 /// Order matters: the logger is registered first so everything after it can
@@ -49,7 +55,7 @@ Future<void> init({
   var firebaseReady = false;
   FirebaseOptions? resolvedOptions;
   try {
-    resolvedOptions = firebaseOptions ?? DefaultFirebaseOptions.currentPlatform;
+    resolvedOptions = firebaseOptions ?? defaultFirebaseOptions();
     await Firebase.initializeApp(options: resolvedOptions);
     firebaseReady = true;
     if (useEmulators) {
