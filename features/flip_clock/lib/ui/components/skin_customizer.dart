@@ -274,12 +274,6 @@ class _Controls extends StatelessWidget {
           value: draft.groundColor,
           onChanged: (v) => onChanged((d) => d.copyWith(groundColor: v)),
         ),
-        SectionHeader(c.customize_shape),
-        _SwitchRow(
-          label: c.customize_seam,
-          value: draft.seam,
-          onChanged: (v) => onChanged((d) => d.copyWith(seam: v)),
-        ),
         SectionHeader(c.customize_details),
         Text(c.customize_seconds),
         const SizedBox(height: DesignSpace.s2),

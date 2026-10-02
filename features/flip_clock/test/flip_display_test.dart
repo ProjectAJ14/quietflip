@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
@@ -45,6 +47,20 @@ Finder cardFill(Color color) => find.byWidgetPredicate(
       (w.decoration! as BoxDecoration).color == color,
 );
 
+/// Plain split-line strips painted [color].
+Finder lineOf(Color color) =>
+    find.byWidgetPredicate((w) => w is ColoredBox && w.color == color);
+
+/// The card halves that carry a shade or a cast shadow right now.
+List<BoxDecoration> shaded(WidgetTester tester) => tester
+    .widgetList<Container>(find.byType(Container))
+    .map((c) => c.foregroundDecoration)
+    .whereType<BoxDecoration>()
+    .toList();
+
+/// The fold's angle at [t] of a flip: 0 upright, pi landed.
+double turnAt(double t) => FlipDisplay.flipCurve.transform(t) * math.pi;
+
 void main() {
   testWidgets('one card per entry, a single semantics label', (tester) async {
     await tester.pumpWidget(
@@ -57,7 +73,9 @@ void main() {
     expect(find.byKey(FlipDisplay.flapKey), findsNothing);
   });
 
-  testWidgets('the skin paints the cards, digits and seam', (tester) async {
+  testWidgets('the skin paints the cards, digits and split line', (
+    tester,
+  ) async {
     const skin = Skin(
       id: 'x',
       name: 'x',
@@ -73,25 +91,83 @@ void main() {
     expect(digit.style!.color, DesignSkinColors.cyan);
     expect(digit.style!.fontFamily, startsWith('Orbitron'));
     expect(digit.textScaler, TextScaler.noScaling);
-    // The seam shows the ground, 2px, one per card.
-    final seams = tester.widgetList<Container>(
-      find.byWidgetPredicate(
-        (w) => w is Container && w.color == DesignSkinColors.bgPaper,
-      ),
+    // The split line: 1px of ground over 1px of light, one per card.
+    expect(lineOf(DesignSkinColors.bgPaper), findsNWidgets(2));
+    final light = lineOf(
+      Color.lerp(DesignSkinColors.bgPaper, DesignSkinColors.cyan, 0.12)!,
     );
-    expect(seams, hasLength(2));
+    expect(light, findsNWidgets(2));
+    expect(tester.getSize(light.first).height, FlipDisplay.seamHeight / 2);
+    // No shade on a card at rest.
+    expect(shaded(tester), isEmpty);
   });
 
-  testWidgets('no seam when the skin turns it off', (tester) async {
-    await tester.pumpWidget(
-      host(display(['12'], skin: mono.copyWith(seam: false))),
-    );
-    final seam = tester.getSize(
-      find.byWidgetPredicate(
-        (w) => w is Container && w.color == DesignSkinColors.bgInk,
-      ),
-    );
-    expect(seam.height, 0);
+  testWidgets('every card has two hinge pins on the split line, half outside', (
+    tester,
+  ) async {
+    for (final skin in [mono, mono.copyWith(themed: true)]) {
+      await tester.pumpWidget(
+        host(
+          SizedBox(
+            width: 400,
+            height: 200,
+            child: display(['12', '34'], skin: skin),
+          ),
+        ),
+      );
+      final pins = find.byKey(FlipDisplay.hingeKey);
+      expect(pins, findsNWidgets(4));
+      final top = tester.getRect(cardFill(DesignSkinColors.cardInk).at(0));
+      final bottom = tester.getRect(cardFill(DesignSkinColors.cardInk).at(1));
+      final height = bottom.bottom - top.top;
+      final left = tester.getRect(pins.at(0));
+      final right = tester.getRect(pins.at(1));
+      expect(left.height, closeTo(height * FlipDisplay.hingeHeightScale, 0.01));
+      expect(left.width, closeTo(FlipDisplay.hingeWidth(height), 0.01));
+      // Centred on the split line and on the card's side edges.
+      expect(left.center.dy, closeTo((top.bottom + bottom.top) / 2, 0.01));
+      expect(left.center.dx, closeTo(top.left, 0.01));
+      expect(right.center.dx, closeTo(top.right, 0.01));
+      // Inside the display, clear of the next card's pins.
+      final box = tester.getRect(find.byType(FlipDisplay));
+      for (var i = 0; i < 4; i++) {
+        final pin = tester.getRect(pins.at(i));
+        expect(pin.left, greaterThanOrEqualTo(box.left - 0.01));
+        expect(pin.right, lessThanOrEqualTo(box.right + 0.01));
+      }
+      expect(
+        tester.getRect(pins.at(2)).left,
+        greaterThan(tester.getRect(pins.at(1)).right),
+      );
+    }
+  });
+
+  testWidgets('pins stay in the gap and the window at the largest size', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(2000, 1200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final stackable in [false, true]) {
+      await tester.pumpWidget(
+        host(display(['12', '34', '56'], stackable: stackable)),
+      );
+      final pins = find.byKey(FlipDisplay.hingeKey);
+      expect(pins, findsNWidgets(6));
+      for (var i = 0; i < 6; i++) {
+        final pin = tester.getRect(pins.at(i));
+        expect(pin.left, greaterThanOrEqualTo(0));
+        expect(pin.right, lessThanOrEqualTo(2000));
+        expect(pin.width, lessThanOrEqualTo(FlipDisplay.hingeMaxWidth));
+      }
+      for (var i = 1; i < 5; i += 2) {
+        final a = tester.getRect(pins.at(i));
+        final b = tester.getRect(pins.at(i + 1));
+        expect(a.overlaps(b), isFalse);
+      }
+    }
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('cards fill a large space; digits are 0.78 x card height', (
@@ -102,10 +178,11 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(host(display(['22', '42'])));
     final card = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
-    // Two cards and one 24px gap across 1280px: 628px cards (under 760).
-    expect(card.height, closeTo((628 - 2) / 2, 0.01));
+    // Two cards, one 24px gap and two outer half pins (20px wide at this
+    // size) across 1280px: 618px cards (under 760).
+    expect(card.height, closeTo((618 - 2) / 2, 0.01));
     final digit = tester.widget<Text>(find.text('22').first);
-    expect(digit.style!.fontSize, closeTo(628 * 0.78, 0.01));
+    expect(digit.style!.fontSize, closeTo(618 * 0.78, 0.01));
   });
 
   testWidgets('md cards become lg at digit-l sizes, from the app corner', (
@@ -205,6 +282,111 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byKey(FlipDisplay.flapKey), findsNothing);
     expect(find.text('01'), findsNothing);
+    expect(shaded(tester), isEmpty);
+    // The pins and split line do not move, so they stay.
+    expect(find.byKey(FlipDisplay.hingeKey), findsNWidgets(2));
+    expect(lineOf(DesignSkinColors.bgInk), findsOneWidget);
+  });
+
+  testWidgets('the flap turns once about the pins, shaded as it tips', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(SizedBox(width: 200, height: 160, child: display(['01']))),
+    );
+    await tester.pumpWidget(
+      host(SizedBox(width: 200, height: 160, child: display(['02']))),
+    );
+    final half = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
+    final height = half.height * 2 + FlipDisplay.seamHeight;
+    debugPrint('H $height ${tester.getSize(find.byType(FlipDisplay))}');
+    final ms = FlipDisplay.flipDuration.inMilliseconds;
+    var elapsed = 0;
+    for (final t in const [0.25, 0.75]) {
+      final at = (ms * t).round();
+      await tester.pump(Duration(milliseconds: at - elapsed));
+      elapsed = at;
+      final turn = turnAt(at / ms);
+      final shade = FlipDisplay.maxShade * math.sin(turn);
+      final fold = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
+      final falling = t < 0.5;
+      // The top half falls about its bottom edge; the bottom lands about
+      // its top edge.
+      expect(
+        fold.alignment,
+        falling ? Alignment.bottomCenter : Alignment.topCenter,
+      );
+      // Perspective follows the card height (the rotation scales it by cos).
+      final angle = falling ? turn : math.pi - turn;
+      expect(
+        fold.transform.entry(3, 2),
+        closeTo(FlipDisplay.perspective / height * math.cos(angle), 1e-9),
+      );
+      // The flap shows the old value while falling and the new one landing.
+      expect(
+        find.descendant(
+          of: find.byKey(FlipDisplay.flapKey),
+          matching: find.text(falling ? '01' : '02'),
+        ),
+        findsOneWidget,
+      );
+      // The flap darkens edge-on and casts a fading shadow on the bottom half.
+      final decorations = shaded(tester);
+      expect(decorations, hasLength(2));
+      final flat = decorations.firstWhere((d) => d.color != null);
+      expect(flat.color!.a, closeTo(shade, 0.01));
+      final cast = decorations.firstWhere((d) => d.gradient != null);
+      final colors = (cast.gradient! as LinearGradient).colors;
+      expect(colors.first.a, closeTo(shade, 0.01));
+      expect(colors.last.a, 0);
+    }
+    await tester.pumpAndSettle();
+    expect(find.byKey(FlipDisplay.flapKey), findsNothing);
+    expect(shaded(tester), isEmpty);
+    expect(find.text('01'), findsNothing);
+  });
+
+  testWidgets('a change mid-fall keeps falling; mid-landing falls again', (
+    tester,
+  ) async {
+    Widget show(String v) => host(display([v]));
+    await tester.pumpWidget(show('01'));
+    await tester.pumpWidget(show('02'));
+    await tester.pump(const Duration(milliseconds: 60));
+    final before = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
+    // Still falling: the same flap carries on from where it was.
+    await tester.pumpWidget(show('03'));
+    final after = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
+    expect(after.transform, before.transform);
+    expect(
+      find.descendant(
+        of: find.byKey(FlipDisplay.flapKey),
+        matching: find.text('01'),
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('03'), findsWidgets);
+    expect(find.text('01'), findsNothing);
+    expect(find.text('02'), findsNothing);
+
+    // Landing: the top half starts falling again from what it showed.
+    await tester.pumpWidget(show('04'));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpWidget(show('05'));
+    await tester.pump(const Duration(milliseconds: 10));
+    final fold = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
+    expect(fold.alignment, Alignment.bottomCenter);
+    expect(
+      find.descendant(
+        of: find.byKey(FlipDisplay.flapKey),
+        matching: find.text('04'),
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('05'), findsWidgets);
+    expect(find.text('04'), findsNothing);
   });
 
   testWidgets('iOS Reduce Motion also changes instantly', (tester) async {
@@ -398,10 +580,10 @@ void main() {
     }
 
     for (final (size, expected) in const [
-      (1.0, 628.0),
-      (0.6, 628 * 0.6),
-      (2.0, 628.0),
-      (0.0, 62.8),
+      (1.0, 618.0),
+      (0.6, 618 * 0.6),
+      (2.0, 618.0),
+      (0.0, 61.8),
     ]) {
       await tester.pumpWidget(host(display(['22', '42'], size: size)));
       expect(cardHeight(size), closeTo(expected, 0.01), reason: '$size');
@@ -557,6 +739,8 @@ void main() {
     );
     await tester.pumpWidget(themed(DesignColors.light));
     expect(cardFill(DesignColors.light.card), findsNWidgets(2));
+    expect(lineOf(DesignColors.light.bg), findsOneWidget);
+    expect(find.byKey(FlipDisplay.hingeKey), findsNWidgets(2));
     expect(
       tester.widget<Text>(find.text('12').first).style!.color,
       DesignColors.light.ink,

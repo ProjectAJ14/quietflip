@@ -159,9 +159,11 @@ the Classic colour skins keep Geist for everything but the digits.
 Customize on the In use tile (in the sheet) or the selected tile in the
 Appearance strip, or
 New skin, opens the customizer on that skin: face, digit / card /
-background colour (token swatches or a hex colour), split line (corners
-follow Settings > Appearance > Corners for the whole app), seconds style (off, small, cards), AM/PM (hidden, inside
-the first card, beside the last) and the date line. Saving a built-in skin
+background colour (token swatches or a hex colour), seconds style (off,
+small, cards), AM/PM (hidden, inside the first card, beside the last) and
+the date line. Corners follow Settings > Appearance > Corners for the whole
+app. Every card has the split line with a hinge pin at each end, as on the
+app icon; it is not a skin option. Saving a built-in skin
 creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.
 

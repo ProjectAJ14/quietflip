@@ -25,9 +25,11 @@ enum SkinMeridiem {
   right,
 }
 
-/// The look of the flip display: digit face and colours, the seam and the
-/// details it shows (card corners follow the app's one corner setting). Built-in skins come from `skins.dart`; custom skins are
-/// user data saved in `ClockSettings.customSkins`.
+/// The look of the flip display: digit face and colours and the details it
+/// shows. Every card has the split line and hinge pins; card corners follow
+/// the app's one corner setting. Built-in skins come from `skins.dart`;
+/// custom skins are user data saved in `ClockSettings.customSkins` (a
+/// `seam` key saved by older versions is ignored).
 class Skin {
   const Skin({
     required this.id,
@@ -36,7 +38,6 @@ class Skin {
     this.digitColor = DesignSkinColors.mono,
     this.cardColor = DesignSkinColors.cardInk,
     this.groundColor = DesignSkinColors.bgInk,
-    this.seam = true,
     this.seconds = SkinSeconds.off,
     this.meridiem = SkinMeridiem.left,
     this.showDate = false,
@@ -49,11 +50,8 @@ class Skin {
   final Color digitColor;
   final Color cardColor;
 
-  /// The screen behind the cards; also the colour of the seam.
+  /// The screen behind the cards; also the colour of the split line.
   final Color groundColor;
-
-  /// The 2px split line at half height.
-  final bool seam;
 
   final SkinSeconds seconds;
   final SkinMeridiem meridiem;
@@ -99,7 +97,6 @@ class Skin {
       digitColor: color('digitColor', d.digitColor),
       cardColor: color('cardColor', d.cardColor),
       groundColor: color('groundColor', d.groundColor),
-      seam: json['seam'] is bool ? json['seam']! as bool : d.seam,
       seconds: pick(SkinSeconds.values, 'seconds', d.seconds),
       meridiem: pick(SkinMeridiem.values, 'meridiem', d.meridiem),
       showDate: json['showDate'] is bool
@@ -117,7 +114,6 @@ class Skin {
     'digitColor': digitColor.toARGB32(),
     'cardColor': cardColor.toARGB32(),
     'groundColor': groundColor.toARGB32(),
-    'seam': seam,
     'seconds': seconds.name,
     'meridiem': meridiem.name,
     'showDate': showDate,
@@ -131,7 +127,6 @@ class Skin {
     Color? digitColor,
     Color? cardColor,
     Color? groundColor,
-    bool? seam,
     SkinSeconds? seconds,
     SkinMeridiem? meridiem,
     bool? showDate,
@@ -143,7 +138,6 @@ class Skin {
     digitColor: digitColor ?? this.digitColor,
     cardColor: cardColor ?? this.cardColor,
     groundColor: groundColor ?? this.groundColor,
-    seam: seam ?? this.seam,
     seconds: seconds ?? this.seconds,
     meridiem: meridiem ?? this.meridiem,
     showDate: showDate ?? this.showDate,
@@ -166,7 +160,6 @@ class Skin {
       other.digitColor == digitColor &&
       other.cardColor == cardColor &&
       other.groundColor == groundColor &&
-      other.seam == seam &&
       other.seconds == seconds &&
       other.meridiem == meridiem &&
       other.showDate == showDate &&
@@ -180,7 +173,6 @@ class Skin {
     digitColor,
     cardColor,
     groundColor,
-    seam,
     seconds,
     meridiem,
     showDate,

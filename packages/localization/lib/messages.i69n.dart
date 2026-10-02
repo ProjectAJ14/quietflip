@@ -706,8 +706,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
   String get customize_apply => "Apply";
   String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_shape => "Shape";
-  String get customize_seam => "Split line";
   String get customize_details => "Details";
   String get customize_seconds => "Seconds";
   String get customize_seconds_off => "Off";
@@ -1039,10 +1037,6 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return customize_apply;
       case 'customize_low_contrast':
         return customize_low_contrast;
-      case 'customize_shape':
-        return customize_shape;
-      case 'customize_seam':
-        return customize_seam;
       case 'customize_details':
         return customize_details;
       case 'customize_seconds':

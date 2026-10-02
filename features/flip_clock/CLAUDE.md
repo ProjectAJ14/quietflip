@@ -32,8 +32,9 @@ lib/
   router/flip_clock_router.dart            paths + routes; resolves controllers from di
   data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, TimerPreset,
                                            ClockOrientation, CardSize
-  data/models/skin.dart                    Skin (face, digit/card/ground colour, seam (no radius:
-                                           corners are global; an old `cardRadius` key is ignored),
+  data/models/skin.dart                    Skin (face, digit/card/ground colour (no radius or seam:
+                                           corners are global, every card has the split line;
+                                           old `cardRadius` and `seam` keys are ignored),
                                            seconds off (default)/badge/cards, AM/PM
                                            hidden/left/right, date, `themed`); JSON with ARGB
                                            ints, per-field fallback, no id -> dropped; WCAG
@@ -141,7 +142,7 @@ lib/
   `GestureDetector(onTap:)` in `lib/`; `test/press_rule_test.dart` scans
   this feature, `design_system` and `auth` and fails with `file:line`.
   `gesture_layer.dart` is exempt (drags and swipes on the clock face). The
-  customizer's Seam and Show date switches are a local `_SwitchRow` (a
+  customizer's Show date switch is a local `_SwitchRow` (a
   `Pressable` row, flush with the sheet's other controls;
   `SettingsSwitchRow`'s `space-4` cell padding would indent it). The
   Rotation corner button sits in a `MergeSemantics` so its live-region
@@ -183,12 +184,27 @@ lib/
   built-ins use `DesignSkinColors` only. A skin never colours controls.
 - `FlipDisplay` is one card per entry (a pair of digits): card height fills
   the box, digits are 0.78 x height and not text-scaled, width 1.0 x height
-  (1.3 x for a monospaced face), `space-6` between cards, the 2px seam at
-  half height in the ground colour, the app's corner (`DesignShape` `md`,
+  (1.3 x for a monospaced face), `space-6` between cards, the 2px split
+  line at half height on every card (1px ground over 1px ground lerped
+  12% to the digit colour), the app's corner (`DesignShape` `md`,
   capped at half the card) becoming `lg` once
-  digits reach 160px. A flip is `DesignMotion.flip` (360 ms): top half
-  ease-in, then bottom half ease-out. It honours
-  `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`) and
+  digits reach 160px. Each card has two hinge pins as on the app icon:
+  `hingeHeightScale` 0.11 x `hingeWidth` (0.05 x card height, at most
+  `hingeMaxWidth` 20px so two half pins fit the `space-6` gap), centred on
+  the split line and on the side edges, half outside, painted from the
+  skin (card lerped to ground, lit by the digit colour) over the flaps.
+  The width maths leaves room for the two outer half pins (a padding of
+  half a pin around the cards), so pins never leave the display. A flip
+  is `DesignMotion.flip` (360 ms): one `flipCurve` (`easeInOut`) turn of
+  0..pi about the pins, the top half falling until pi/2, then the bottom
+  half landing; each flap and the shadow cast on the bottom half are
+  shaded with the ground colour at `maxShade` (0.35) x sin(turn), and the
+  perspective is `perspective` (0.4) / card height. A new value while the
+  top half falls keeps it falling and lands on the newest value; while
+  landing (or still) the card falls again from the value it showed. Each
+  card is a `RepaintBoundary`. It honours
+  `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`:
+  instant swap, no shade; pins and line stay) and
   never clip; AM/PM and small seconds are plain text in the skin's face at
   70% of the digit colour, never cards, sized 0.12 x card height (AM/PM)
   and 0.1 x (badge) with 0.05 x corner padding, so they stay in the card's

@@ -31,7 +31,7 @@ Ship as ONE pull request, built in five stages, one commit (or more) per stage, 
 
 - `ClockMode` gains `pomodoro` (first). Pomodoro moves out of the Timer panel into its own panel; the countdown engine stays shared.
 - `ClockTheme` is replaced by the theme choice Dark / Light / Match system. Migrate: `black` -> Dark, `light` -> Light.
-- `Skin` fields: `id`, `name`, `face` (enum of bundled faces), `digitColor`, `cardColor`, `groundColor` (ARGB ints in JSON), `seam` bool, `cardRadius` (0..32), `seconds` (off, badge, cards), `meridiem` (hidden, left, right), `showDate` bool. A missing or unknown `skinId` falls back to Mono.
+- `Skin` fields: `id`, `name`, `face` (enum of bundled faces), `digitColor`, `cardColor`, `groundColor` (ARGB ints in JSON), `seam` bool (since removed: every card has the split line and hinge pins), `cardRadius` (0..32), `seconds` (off, badge, cards), `meridiem` (hidden, left, right), `showDate` bool. A missing or unknown `skinId` falls back to Mono.
 - Skin colours are user data, so they are the one place a `Color(int)` is built from a value; the built-in catalogue reads the `skin-*` values listed in this system.
 
 ## Brightness contract
@@ -157,7 +157,7 @@ The chrome has three states, shared by the island and both corner buttons:
 
 ## Skins
 
-- A skin is: name, digit face, digit colour, card colour, ground colour, seam on/off, card radius, seconds style (off, small badge, own cards), AM/PM position (hidden, left, right), date line on/off.
+- A skin is: name, digit face, digit colour, card colour, ground colour, seam on/off (since removed: always on, with hinge pins), card radius, seconds style (off, small badge, own cards), AM/PM position (hidden, left, right), date line on/off.
 - Built-in skins: **Mono** (default: `skin-mono` on `skin-card-ink`, ground `bg`), Paper, Rose, Violet, Amber, Signal, Field, Mint, Cyan, Taxi, plus one per face (Bebas, Anton, Terminal, Serif, Orbit...).
 - Every built-in skin is free. No VIP ribbons, no locks, no "Unlock all" bar.
 - A custom skin starts as a copy of the current one and is edited in Customize. Custom skins appear first in the picker under "Your skins".

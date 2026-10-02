@@ -1840,7 +1840,8 @@ void main() {
         true,
         221.0,
       ),
-      // The two-card stack: (711 - 24) / 2, under the 345 width / 1.0.
+      // The two-card stack is width-bound: 345 less the two outer half
+      // pins (0.05 x 345), under (711 - 24) / 2.
       (
         'portrait H:M',
         const Size(393, 852),
@@ -1848,7 +1849,7 @@ void main() {
         false,
         2,
         true,
-        343.5,
+        327.75,
       ),
       // Height-bound row: 393 - 21 - 2 x 16 - 16 (width allows 331).
       (
