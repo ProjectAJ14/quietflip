@@ -22,6 +22,10 @@ Then from this folder:
 | macOS | `flutter run -d macos` | `flutter build macos` |
 | Windows | `flutter run -d windows` | `flutter build windows` (only on a Windows machine) |
 
+App Store uploads (iOS and macOS) skip the encryption-documentation question:
+both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
+because the only encryption is Firebase's TLS and sign-in, which is exempt.
+
 ## Keyboard shortcuts
 
 | Key | Action |
