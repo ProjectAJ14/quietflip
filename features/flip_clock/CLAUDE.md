@@ -14,7 +14,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 
 | Symbol | Kind | Notes |
 |---|---|---|
-| `init()` | function | Registers `SettingsRepository` and the controllers with `di`. After `core.init()` and `device_services.init()` |
+| `init({sync})` | function | Registers `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()` and `device_services.init()` |
 | `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `routes` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
@@ -48,6 +48,8 @@ lib/
                                            preset), saveSkin (built-in -> new copy first;
                                            never themed; sets showSeconds), deleteSkin
                                            (selected -> Mono)
+  state/settings_sync.dart                 SettingsSync: mirrors the synced part of ClockSettings to
+                                           `CloudSync` document `clock_settings` (see Settings sync)
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
@@ -320,16 +322,46 @@ lib/
   that ended while the app was closed loads finished with Start break /
   Start focus beside Done; Space starts it.
 
+## Settings sync
+
+- The device copy is always saved first (`SettingsController.update` emits,
+  then saves) and never waits for the network. `shared_preferences` stays
+  the store: one small JSON value read once at launch; Hive would add a
+  dependency and a migration for no visible gain.
+- `SettingsSync` (only when `init` gets a `CloudSync`) pushes
+  `ClockSettings.toJson()` minus `SettingsSync.deviceOnly` (`systemAlerts`,
+  `lastMode`, `orientation`, `digitBrightness`) as document `clock_settings`,
+  1 s after the last change (trailing debounce). The countdown snapshot has
+  its own key and never syncs. A change that touches only device-only keys
+  pushes nothing.
+- Each synced change is stamped at once (`flip_clock.settings_updated_at`,
+  ms; absent = 0). Cloud copy newer than the stamp: its synced fields are
+  applied over the current settings (device-only kept, maps normalised by a
+  JSON round trip), saved locally with the cloud's stamp, and not pushed
+  back. Older, or no cloud copy: the local copy is pushed (a never-stamped
+  device stamps now first). Equal: nothing (pushing would echo forever). So
+  a fresh install adopts an existing cloud copy, and the first device
+  uploads.
+- `close()` (via `di.reset`) cancels the pending push and both
+  subscriptions at once (a Cubit stream's cancel never completes in fake
+  time, so they are not awaited one after the other).
+- Last write wins per whole document: two devices changing different
+  settings offline within the same second can lose one change.
+
 ## Common changes
 
 - **Add a setting:** field + default + JSON key in `ClockSettings` (and its
   test), a `Settings*Row` in the right category of `SettingsScreen` (and
-  `test/settings_screen_test.dart`), the key in `strings.clock`.
+  `test/settings_screen_test.dart`), the key in `strings.clock`. It syncs
+  unless its key goes in `SettingsSync.deviceOnly` (then also name it in
+  `strings.sync.stays_body`).
 - **Add a keyboard shortcut:** the handler in `FlipClockScreen`, a
   `key_*` label and `keycap_*` row in Settings > Shortcuts, a widget test
   sending the key.
 
 ## Tests
+
+`settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit
