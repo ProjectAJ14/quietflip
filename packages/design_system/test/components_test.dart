@@ -315,16 +315,35 @@ void main() {
       expect(c.islandActive, const Color(0xffffffff));
       expect(c.islandOnActive, const Color(0xff000000));
     }
-    // Both themes lift the island with a drop and a contact shadow and a
-    // top highlight; dark adds the hairline ring, because black eats shadows.
+    // Both themes lift the island on three layered shadows (ambient, key,
+    // contact) with a lit top and shaded bottom rim and a top sheen; dark
+    // adds the hairline ring, because black eats shadows.
+    expect(dark.islandElevation.shadows, hasLength(4));
     expect(dark.islandElevation.shadows.last.spreadRadius, 1);
-    expect(light.islandElevation.shadows, hasLength(2));
+    expect(light.islandElevation.shadows, hasLength(3));
     for (final c in [dark, light]) {
-      expect(c.islandElevation.shadows.first.offset, const Offset(0, 12));
-      expect(c.islandElevation.shadows.first.blurRadius, 32);
-      expect(c.islandElevation.shadows[1].offset, const Offset(0, 2));
-      expect(c.islandElevation.highlight, const Color(0x24ffffff));
+      final e = c.islandElevation;
+      expect(e.shadows.first.offset, const Offset(0, 18));
+      expect(e.shadows.first.blurRadius, 44);
+      expect(e.shadows[1].offset, const Offset(0, 6));
+      expect(e.shadows[1].blurRadius, 14);
+      expect(e.shadows[2].offset, const Offset(0, 1));
+      expect(e.shadows[2].blurRadius, 2);
+      expect(e.highlight, const Color(0x38ffffff));
+      expect(e.lowlight, const Color(0x8c000000));
+      expect(e.sheen, const Color(0x0fffffff));
+      // Lifted fully it is the token itself; lower, the blurred shadows
+      // tighten and the ring stays an outline.
+      expect(e.shadowsAt(1), e.shadows);
+      final low = e.shadowsAt(ds.DesignElevation.dotLift);
+      expect(low.first.offset, const Offset(0, 18) * 0.4);
+      expect(low.first.blurRadius, closeTo(44 * 0.4, 1e-9));
+      expect(low.first.color, e.shadows.first.color);
     }
+    expect(
+      dark.islandElevation.shadowsAt(ds.DesignElevation.dotLift).last,
+      dark.islandElevation.shadows.last,
+    );
     expect(dark.island, dark.surfaceRaised);
     expect(light.sheetShadow.single.blurRadius, 48);
   });

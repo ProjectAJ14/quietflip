@@ -235,6 +235,8 @@ class Island extends StatefulWidget {
             curve: fadeAfter ? DesignMotion.collapseFade : Curves.linear,
             child: _Surface(
               radius: radius,
+              // Open (or showing a HUD) it floats high; a dot sits close.
+              lift: expanded || hud != null ? 1 : DesignElevation.dotLift,
               reduceMotion: reduceMotion,
               child: pill,
             ),
@@ -688,6 +690,7 @@ class _CornerButtonState extends State<CornerButton> {
       // Only the size rides the spring; the surface is drawn un-animated.
       child: _Surface(
         radius: shape.forHeight(size),
+        lift: expanded ? 1 : DesignElevation.dotLift,
         reduceMotion: reduceMotion,
         // The symbol scales down and fades with the shrink.
         child: AnimatedOpacity(
@@ -744,57 +747,101 @@ class _CornerButtonState extends State<CornerButton> {
   }
 }
 
-/// The island's raised dark surface (fill, [DesignColors.islandElevation]
-/// and the top highlight), clipped to [radius]. The corner is tweened on a
-/// curve that never overshoots, so it cannot snap ahead of a shrinking
+/// The island's raised dark surface (fill, [DesignColors.islandElevation]:
+/// shadows at [lift], the top sheen and the lit top and shaded bottom
+/// edges), clipped to [radius]. The corner and the lift are tweened on a
+/// curve that never overshoots, so neither can snap ahead of a shrinking
 /// shape (and a decoration never lerps past 1).
 class _Surface extends StatelessWidget {
   const _Surface({
     required this.radius,
+    required this.lift,
     required this.reduceMotion,
     required this.child,
   });
 
   final double radius;
+
+  /// How high it floats: 1 open, [DesignElevation.dotLift] as a dot.
+  final double lift;
   final bool reduceMotion;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
+    final elevation = colors.islandElevation;
+    final duration = reduceMotion ? Duration.zero : DesignMotion.islandCollapse;
     return TweenAnimationBuilder<double>(
-      tween: Tween(end: radius),
-      duration: reduceMotion ? Duration.zero : DesignMotion.islandCollapse,
+      tween: Tween(end: lift),
+      duration: duration,
       curve: DesignMotion.collapseCurve,
-      builder: (context, radius, child) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.island,
-          borderRadius: DesignShape.circular(radius),
-          boxShadow: colors.islandElevation.shadows,
-        ),
-        child: CustomPaint(
-          foregroundPainter: _EdgeHighlight(
-            radius,
-            colors.islandElevation.highlight,
-          ),
-          child: ClipRRect(
+      builder: (context, lift, child) => TweenAnimationBuilder<double>(
+        tween: Tween(end: radius),
+        duration: duration,
+        curve: DesignMotion.collapseCurve,
+        builder: (context, radius, child) => DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.island,
             borderRadius: DesignShape.circular(radius),
-            child: child,
+            boxShadow: elevation.shadowsAt(lift),
+          ),
+          child: CustomPaint(
+            painter: _Sheen(radius, elevation.sheen),
+            foregroundPainter: _EdgeHighlight(
+              radius,
+              elevation.highlight,
+              elevation.lowlight,
+            ),
+            child: ClipRRect(
+              borderRadius: DesignShape.circular(radius),
+              child: child,
+            ),
           ),
         ),
+        child: child,
       ),
       child: child,
     );
   }
 }
 
-/// The island's 1px top-edge highlight: [color] at the top, clear by
-/// mid-height. Gives depth where shadows vanish (pure black).
-class _EdgeHighlight extends CustomPainter {
-  const _EdgeHighlight(this.radius, this.color);
+/// A soft wash of [color] over the top of the fill, clear by mid-height:
+/// light falling on a curved top, under the content.
+class _Sheen extends CustomPainter {
+  const _Sheen(this.radius, this.color);
 
   final double radius;
   final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, DesignShape.radius(radius)),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0, 0.5],
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_Sheen old) => old.radius != radius || old.color != color;
+}
+
+/// The island's 1px rim: [top] at the top edge and [bottom] at the bottom,
+/// both clear at mid-height, so it reads lit from above and shaded below.
+/// Gives depth where shadows vanish (pure black).
+class _EdgeHighlight extends CustomPainter {
+  const _EdgeHighlight(this.radius, this.top, this.bottom);
+
+  final double radius;
+  final Color top;
+  final Color bottom;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -807,13 +854,18 @@ class _EdgeHighlight extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color, color.withValues(alpha: 0)],
-          stops: const [0, 0.5],
+          colors: [
+            top,
+            top.withValues(alpha: 0),
+            bottom.withValues(alpha: 0),
+            bottom,
+          ],
+          stops: const [0, 0.5, 0.5, 1],
         ).createShader(rect),
     );
   }
 
   @override
   bool shouldRepaint(_EdgeHighlight old) =>
-      old.radius != radius || old.color != color;
+      old.radius != radius || old.top != top || old.bottom != bottom;
 }

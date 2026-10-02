@@ -48,7 +48,7 @@ Buttons are `AppButton.text`, `.filled`, `.outlined` (each with an optional lead
 | `DesignSize.islandExpandedHeight` | 60 | Tabs only; `Island.trayHeight` (112) adds the gap and the tray row |
 | `DesignMotion.islandCollapse` / `collapseCurve` / `collapseFade` | 380 ms / ease-in-out cubic / `Interval(0.6, 1)` | Every shrink; the fade when hiding from a bigger shape |
 | `DesignColors.island` | `#1c1c1e` dark (`surfaceRaised`), `#0a0a0a` light | The island fill |
-| `DesignColors.islandElevation` | drop `0,12,32` at 45% + contact `0,2,6` at 35% black; 1px top highlight 14% white fading out by mid-height; dark adds the 1px hairline ring | Lifts the island over the clock on every ground, black included |
+| `DesignColors.islandElevation` | ambient `0,18,44` at 40% + key `0,6,14` at 30% + contact `0,1,2` at 50% black; 1px rim, 22% white on top and 55% black below, each fading out by mid-height; 6% white sheen over the top half; dark adds the 1px hairline ring. A dot's shadows are 0.4 of these (`DesignElevation.dotLift`) and grow as it opens | Lifts the island over the clock on every ground, black included |
 
 ## Settings shell
 

@@ -562,23 +562,117 @@ void main() {
             .first,
       );
       expect(paint.foregroundPainter, isNotNull);
-      expect(
-        paint.foregroundPainter!.shouldRepaint(paint.foregroundPainter!),
-        isFalse,
-      );
-      // The highlight is painted: a stroke on the island's outline.
+      expect(paint.painter, isNotNull);
+      for (final p in [paint.painter!, paint.foregroundPainter!]) {
+        expect(p.shouldRepaint(p), isFalse);
+      }
+      // The rim is painted: a stroke on the island's outline, lit on top
+      // and shaded below. The sheen fills the outline under the content.
       expect(
         find.byType(ds.Island),
-        paints..something((method, args) {
-          if (method != #drawRRect) return false;
-          final paint = args[1] as Paint;
-          return paint.style == PaintingStyle.stroke &&
-              paint.strokeWidth == 1 &&
-              paint.shader != null;
-        }),
+        paints
+          ..rrect(style: PaintingStyle.fill)
+          ..something((method, args) {
+            if (method != #drawRRect) return false;
+            final paint = args[1] as Paint;
+            return paint.style == PaintingStyle.stroke &&
+                paint.strokeWidth == 1 &&
+                paint.shader != null;
+          }),
       );
     });
   }
+
+  group('depth follows the morph', () {
+    List<BoxShadow> shadowsOf(WidgetTester tester, Type of) =>
+        (tester
+                    .widget<DecoratedBox>(
+                      find
+                          .descendant(
+                            of: find.byType(of),
+                            matching: find.byType(DecoratedBox),
+                          )
+                          .first,
+                    )
+                    .decoration
+                as BoxDecoration)
+            .boxShadow!;
+    final e = ds.DesignColors.light.islandElevation;
+    final dot = e.shadowsAt(ds.DesignElevation.dotLift);
+
+    testWidgets('the dot sits low; opening raises it, collapsing lowers it', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        _island(state: ds.ChromeState.dot),
+      );
+      expect(shadowsOf(tester, ds.Island), dot);
+      await _pump(tester, ds.AppearanceMode.light, _island(), settle: false);
+      // Mid-way the shadow is between the two, never past either.
+      await tester.pump(ds.DesignMotion.islandCollapse ~/ 2);
+      final blur = shadowsOf(tester, ds.Island).first.blurRadius;
+      expect(blur, greaterThan(dot.first.blurRadius));
+      expect(blur, lessThan(e.shadows.first.blurRadius));
+      await tester.pumpAndSettle();
+      expect(shadowsOf(tester, ds.Island), e.shadows);
+      // A HUD over a hidden island floats high too.
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        _island(
+          state: ds.ChromeState.hidden,
+          hud: const ds.IslandBrightnessHud(0.5, '50%'),
+        ),
+      );
+      expect(shadowsOf(tester, ds.Island), e.shadows);
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        _island(state: ds.ChromeState.dot),
+      );
+      expect(shadowsOf(tester, ds.Island), dot);
+    });
+
+    testWidgets('reduced motion jumps straight to the new depth', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        _island(state: ds.ChromeState.dot),
+        disableAnimations: true,
+      );
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        _island(),
+        disableAnimations: true,
+        settle: false,
+      );
+      await tester.pump();
+      expect(shadowsOf(tester, ds.Island), e.shadows);
+    });
+
+    testWidgets('a corner button lifts with the island', (tester) async {
+      Widget corner(ds.ChromeState state) => ds.CornerButton(
+        state: state,
+        icon: Icons.settings_outlined,
+        tooltip: 'Settings',
+        onPressed: () {},
+        corner: Alignment.topRight,
+      );
+      await _pump(tester, ds.AppearanceMode.light, corner(ds.ChromeState.dot));
+      expect(shadowsOf(tester, ds.CornerButton), dot);
+      await _pump(
+        tester,
+        ds.AppearanceMode.light,
+        corner(ds.ChromeState.expanded),
+      );
+      expect(shadowsOf(tester, ds.CornerButton), e.shadows);
+    });
+  });
 
   group('corners follow the one app corner', () {
     double islandRadius(WidgetTester tester) =>
