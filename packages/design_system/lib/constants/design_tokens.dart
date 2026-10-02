@@ -246,7 +246,7 @@ abstract final class DesignSize {
   /// Island collapsed to a single dot.
   static const double islandDot = 10;
 
-  /// Island HUD height (brightness, mode name).
+  /// Island HUD height (brightness).
   static const double islandPillHeight = 36;
 
   /// Island expanded with the tabs only: `islandInset`, a [cornerButton]

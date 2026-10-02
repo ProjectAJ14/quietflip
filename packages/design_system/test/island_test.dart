@@ -4,6 +4,7 @@ import 'package:design_system/design_system.dart' as ds;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 const _tabs = ['Clock', 'Timer', 'Stopwatch'];
 
@@ -46,6 +47,7 @@ ds.Island _island({
   ds.ChromeState state = ds.ChromeState.expanded,
   ds.IslandHud? hud,
   List<String> tabs = _tabs,
+  int selected = 1,
   ValueChanged<int>? onSelect,
   List<ds.IslandAction> actions = const [],
   String? status,
@@ -53,7 +55,7 @@ ds.Island _island({
   state: state,
   hud: hud,
   tabs: tabs,
-  selected: 1,
+  selected: selected,
   onSelect: onSelect ?? (_) {},
   tabsLabel: 'Modes',
   actions: actions,
@@ -115,6 +117,25 @@ double _opacity(WidgetTester tester, Type type) => tester
     )
     .opacity;
 
+/// The selected-tab pill behind the tab row.
+Finder get _pill => find.descendant(
+  of: find.byType(AnimatedPositionedDirectional),
+  matching: find.byType(DecoratedBox),
+);
+
+Rect _pillRect(WidgetTester tester) => tester.getRect(_pill);
+
+Color? _pillColor(WidgetTester tester) =>
+    (tester.widget<DecoratedBox>(_pill).decoration as BoxDecoration).color;
+
+/// The tappable box of the tab labelled [tab].
+Rect _tabRect(WidgetTester tester, String tab) => tester.getRect(
+  find.ancestor(of: find.text(tab), matching: find.byType(InkWell)),
+);
+
+Color? _labelColor(WidgetTester tester, String tab) =>
+    tester.widget<Text>(find.text(tab)).style!.color;
+
 void main() {
   test('the island spring starts at 0, overshoots and ends at exactly 1', () {
     const curve = ds.DesignMotion.islandCurve;
@@ -125,13 +146,11 @@ void main() {
     expect(curve.transform(0.999), closeTo(1, 0.01));
   });
 
-  test('HUDs keep their values and reject out-of-range input', () {
+  test('the HUD keeps its value and rejects out-of-range input', () {
     var level = 0.5;
     expect(ds.IslandBrightnessHud(level, '50%').value, 0.5);
-    expect(ds.IslandTitleHud('Timer', level.toInt(), 2).count, 2);
     level = 1.5;
     expect(() => ds.IslandBrightnessHud(level, '150%'), throwsAssertionError);
-    expect(() => ds.IslandTitleHud('Timer', 2, 2), throwsAssertionError);
   });
 
   for (final mode in [ds.AppearanceMode.black, ds.AppearanceMode.light]) {
@@ -182,30 +201,6 @@ void main() {
           colors.islandInkMuted,
         );
 
-        await _pump(
-          tester,
-          mode,
-          _island(hud: const ds.IslandTitleHud('Timer', 1, 3)),
-        );
-        expect(tester.getSize(find.byType(ds.Island)).height, 36);
-        expect(find.bySemanticsLabel('Timer'), findsOneWidget);
-        final dots = tester
-            .widgetList<DecoratedBox>(
-              find.ancestor(
-                of: find.byWidgetPredicate(
-                  (w) => w is SizedBox && w.width == ds.Island.hudDot,
-                ),
-                matching: find.byType(DecoratedBox),
-              ),
-            )
-            .map((d) => (d.decoration as BoxDecoration).color)
-            .where((c) => c == colors.islandInk || c == colors.islandInkMuted)
-            .toList();
-        expect(dots, [
-          colors.islandInkMuted,
-          colors.islandInk,
-          colors.islandInkMuted,
-        ]);
         semantics.dispose();
       });
 
@@ -227,20 +222,9 @@ void main() {
           tester.widget<Text>(find.text('Clock')).style!.color,
           colors.islandInkMuted,
         );
-        BoxDecoration pill(String tab) =>
-            tester
-                    .widget<DecoratedBox>(
-                      find
-                          .ancestor(
-                            of: find.text(tab),
-                            matching: find.byType(DecoratedBox),
-                          )
-                          .first,
-                    )
-                    .decoration
-                as BoxDecoration;
-        expect(pill('Timer').color, colors.islandActive);
-        expect(pill('Clock').color, Colors.transparent);
+        // One selected pill, behind the selected tab only.
+        expect(_pillColor(tester), colors.islandActive);
+        expect(_pillRect(tester), _tabRect(tester, 'Timer'));
 
         final bar = tester.getSemantics(find.bySemanticsLabel('Modes'));
         expect(bar.getSemanticsData().role, SemanticsRole.tabBar);
@@ -917,5 +901,130 @@ void main() {
       ds.DesignMotion.fade,
     );
     expect(tester.getSize(find.byType(ds.Island)).height, ds.Island.trayHeight);
+  });
+
+  group('sliding tab pill', () {
+    const frame = Duration(milliseconds: 16);
+
+    for (final scale in [1.0, 2.0]) {
+      testWidgets('tabs share the widest label width at text scale $scale', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          ds.AppearanceMode.black,
+          _island(),
+          width: 800,
+          textScale: scale,
+        );
+        final widths = {for (final t in _tabs) _tabRect(tester, t).width};
+        expect(widths, hasLength(1));
+        // The widest label (Stopwatch) plus the item padding both sides.
+        expect(
+          widths.single,
+          closeTo(
+            tester.getSize(find.text('Stopwatch')).width +
+                2 * ds.DesignSpace.islandItemPadding,
+            1,
+          ),
+        );
+        expect(
+          _tabRect(tester, 'Timer').left - _tabRect(tester, 'Clock').right,
+          ds.DesignSpace.islandItemGap,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('tabs are measured again once the fonts load', (tester) async {
+      await _pump(tester, ds.AppearanceMode.black, _island(), width: 800);
+      await tester.runAsync(GoogleFonts.pendingFonts);
+      await tester.pump();
+      expect(
+        _tabRect(tester, 'Clock').width,
+        closeTo(
+          tester.getSize(find.text('Stopwatch')).width +
+              2 * ds.DesignSpace.islandItemPadding,
+          1,
+        ),
+      );
+      // Gone without a leaked font listener.
+      await tester.pumpWidget(const SizedBox());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the pill slides on the spring while the tray swaps', (
+      tester,
+    ) async {
+      final colors = ds.DesignColors.dark;
+      await _pump(tester, ds.AppearanceMode.black, _island(), width: 800);
+      final first = _pillRect(tester);
+      final row = _tabRect(tester, 'Clock').left;
+      final step =
+          _tabRect(tester, 'Clock').width + ds.DesignSpace.islandItemGap;
+      expect(first.left, closeTo(row + step, 0.01));
+      final height = tester.getSize(find.byType(ds.Island)).height;
+
+      // Stopwatch, with a tray: the slide, the colour fade and the height
+      // morph all start in the same frame.
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        _island(selected: 2, actions: _actions()),
+        width: 800,
+        settle: false,
+      );
+      await tester.pump(frame);
+      await tester.pump(frame);
+      expect(_pillRect(tester).left, greaterThan(first.left));
+      expect(_pillRect(tester).left, lessThan(row + 2 * step));
+      expect(_pillRect(tester).width, first.width);
+      expect(
+        tester.getSize(find.byType(ds.Island)).height,
+        greaterThan(height),
+      );
+      final mid = _labelColor(tester, 'Stopwatch');
+      expect(mid, isNot(colors.islandInkMuted));
+      expect(mid, isNot(colors.islandOnActive));
+
+      await tester.pump(ds.DesignMotion.fade);
+      expect(_labelColor(tester, 'Stopwatch'), colors.islandOnActive);
+      expect(_labelColor(tester, 'Timer'), colors.islandInkMuted);
+
+      await tester.pump(ds.DesignMotion.islandMorph);
+      expect(_pillRect(tester).left, closeTo(row + 2 * step, 0.01));
+      expect(
+        tester.getSize(find.byType(ds.Island)).height,
+        ds.Island.trayHeight,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion the pill jumps and colours swap', (
+      tester,
+    ) async {
+      final colors = ds.DesignColors.dark;
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        _island(),
+        width: 800,
+        disableAnimations: true,
+      );
+      final row = _tabRect(tester, 'Clock').left;
+      await _pump(
+        tester,
+        ds.AppearanceMode.black,
+        _island(selected: 0),
+        width: 800,
+        disableAnimations: true,
+        settle: false,
+      );
+      await tester.pump();
+      expect(_pillRect(tester).left, closeTo(row, 0.01));
+      expect(_labelColor(tester, 'Clock'), colors.islandOnActive);
+      expect(_labelColor(tester, 'Timer'), colors.islandInkMuted);
+      expect(find.byType(AnimatedSize), findsNothing);
+    });
   });
 }

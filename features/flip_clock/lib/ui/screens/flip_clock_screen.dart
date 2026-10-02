@@ -208,25 +208,12 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     return [c.mode_pomodoro, c.mode_clock, c.mode_stopwatch];
   }
 
-  /// Shows [mode]'s name and page dots in the island for a moment.
-  void _modeHud(ClockMode mode) {
-    _chrome
-      ..showHud(
-        IslandTitleHud(
-          _modeNames[mode.index],
-          mode.index,
-          ClockMode.values.length,
-        ),
-      )
-      ..releaseHud();
-  }
-
-  /// The mode [step] panels away, if there is one (no wrap-around).
+  /// The mode [step] panels away, if there is one (no wrap-around). Only
+  /// the mode changes: an open island morphs in place, no HUD.
   void _stepMode(int step) {
     final i = widget.settings.state.lastMode.index + step;
     if (i < 0 || i >= ClockMode.values.length) return;
     _setMode(ClockMode.values[i]);
-    _modeHud(ClockMode.values[i]);
   }
 
   /// Follows mode changes from tabs, keys and a finishing timer.
@@ -258,8 +245,9 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     if (release) _chrome.releaseHud();
   }
 
-  /// Rotation cycles follow the device -> portrait -> landscape and says
-  /// which in the island. `init()` applies it through `OrientationLock`.
+  /// Rotation cycles follow the device -> portrait -> landscape; the corner
+  /// button's icon and spoken value say which (no HUD). `init()` applies it
+  /// through `OrientationLock`.
   static const List<ClockOrientation> _rotations = [
     ClockOrientation.auto,
     ClockOrientation.portrait,
@@ -275,11 +263,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   void _cycleRotation() {
     final s = widget.settings.state;
     final i = (_rotations.indexOf(s.orientation) + 1) % _rotations.length;
-    final next = _rotations[i];
-    unawaited(widget.settings.update(s.copyWith(orientation: next)));
-    _chrome
-      ..showHud(IslandTitleHud(_rotationName(next), i, _rotations.length))
-      ..releaseHud();
+    unawaited(widget.settings.update(s.copyWith(orientation: _rotations[i])));
   }
 
   void _toggleSeconds() {
@@ -598,10 +582,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       onGestureStart: _chrome.activity,
       onBrightness: (delta) => unawaited(_brighten(delta)),
       onBrightnessEnd: _chrome.releaseHud,
-      onPage: (i) {
-        _setMode(ClockMode.values[i]);
-        _modeHud(ClockMode.values[i]);
-      },
+      onPage: (i) => _setMode(ClockMode.values[i]),
       child: content,
     );
     // Screen readers cannot tap "anywhere", so a hidden chrome makes the
@@ -666,19 +647,29 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                     Positioned(
                       right: inset,
                       bottom: inset,
-                      child: CornerButton(
-                        state: chrome,
-                        icon: switch (settings.orientation) {
-                          ClockOrientation.auto =>
-                            Icons.screen_rotation_outlined,
-                          ClockOrientation.portrait =>
-                            Icons.stay_current_portrait_outlined,
-                          ClockOrientation.landscape =>
-                            Icons.stay_current_landscape_outlined,
-                        },
-                        tooltip: c.action_rotation,
-                        onPressed: _cycleRotation,
-                        corner: Alignment.bottomRight,
+                      // The new rotation is announced; nothing is spoken
+                      // while the button is not there.
+                      child: ExcludeSemantics(
+                        excluding: chrome != ChromeState.expanded,
+                        child: Semantics(
+                          container: true,
+                          liveRegion: true,
+                          value: _rotationName(settings.orientation),
+                          child: CornerButton(
+                            state: chrome,
+                            icon: switch (settings.orientation) {
+                              ClockOrientation.auto =>
+                                Icons.screen_rotation_outlined,
+                              ClockOrientation.portrait =>
+                                Icons.stay_current_portrait_outlined,
+                              ClockOrientation.landscape =>
+                                Icons.stay_current_landscape_outlined,
+                            },
+                            tooltip: c.action_rotation,
+                            onPressed: _cycleRotation,
+                            corner: Alignment.bottomRight,
+                          ),
+                        ),
                       ),
                     ),
                   // Under the island.

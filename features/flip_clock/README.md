@@ -99,8 +99,11 @@ over the actions of the current mode, centred), Skins in the top-left
 corner, Settings in the top-right and, on phones and tablets, Rotation in
 the bottom-right. They appear, shrink and disappear together. Rotation
 picks the screen rotation whatever way the device is held: follow the
-device, portrait, landscape, round again (the island says which; the R key
-does the same). Pomodoro offers Start (your default timer), a Pomodoro chip,
+device, portrait, landscape, round again (the button's icon shows which,
+and screen readers hear the new one; the R key does the same). Changing
+mode by tab, swipe or Left / Right keeps the island as it is: open, it
+changes straight into the next mode's tabs and actions, the selected tab
+sliding across; a swipe that springs back changes nothing. Pomodoro offers Start (your default timer), a Pomodoro chip,
 one chip per preset (one tap on `10m` starts ten minutes) and a shortcut to
 the timer settings; running it offers Pause/Resume and Reset; finished,
 Restart (or the next Pomodoro phase) and Done. The stopwatch offers Start,

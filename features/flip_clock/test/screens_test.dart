@@ -314,8 +314,7 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
-    // Once any mode name has gone, the finished tray shows.
-    await tester.pump(DesignMotion.hudHold);
+    // No mode HUD in the way: the finished tray shows at once.
     expect(find.text(strings.clock.times_up), findsOne);
     await h.countdown.reset();
     await tester.pumpAndSettle();
@@ -394,8 +393,7 @@ void main() {
     await tester.pump();
     await tester.pump(DesignMotion.islandMorph);
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
-    // Once any mode name has gone, the finished tray shows.
-    await tester.pump(DesignMotion.hudHold);
+    // No mode HUD in the way: the finished tray shows at once.
     expect(find.text(strings.clock.times_up), findsOne);
     expect(find.text(strings.clock.pomodoro_break(2)), findsOne);
     await tester.tap(action(strings.clock.start_focus));
@@ -513,8 +511,6 @@ void main() {
     expect(find.bySemanticsLabel(strings.clock.elapsed('0:00:02.0')), findsOne);
     await key(tester, LogicalKeyboardKey.space);
     expect(h.stopwatch.state.running, isFalse);
-    // The mode name from the key gives way to the tray.
-    await tester.pump(DesignMotion.hudHold);
     await tester.pumpAndSettle();
     expect(action(strings.clock.action_resume), findsOne);
     await tester.tap(action(strings.clock.action_reset));
@@ -1144,20 +1140,70 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('a sideways swipe changes mode and names it in the island', (
+    /// Pumps 16 ms frames across the island morph: in every frame the
+    /// island stays open, shows no HUD and is never shorter than its
+    /// tabs-only height (the smaller of Clock's and Stopwatch's).
+    Future<void> expectMorphInPlace(WidgetTester tester) async {
+      const frame = Duration(milliseconds: 16);
+      final island = find.byType(Island);
+      for (var t = Duration.zero; t <= DesignMotion.islandMorph; t += frame) {
+        await tester.pump(frame);
+        expect(hudOf(tester), isNull, reason: '$t');
+        expect(chromeOf(tester), ChromeState.expanded, reason: '$t');
+        expect(
+          tester.getSize(island).height,
+          greaterThanOrEqualTo(DesignSize.islandExpandedHeight),
+          reason: '$t',
+        );
+      }
+    }
+
+    testWidgets('a swipe changes mode in the open island, no HUD', (
+      tester,
+    ) async {
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(lastMode: ClockMode.stopwatch),
+      );
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      await tester.dragFrom(const Offset(200, 300), const Offset(400, 0));
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.clock);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Island)).height,
+        DesignSize.islandExpandedHeight,
+      );
+      expect(tester.widget<Island>(find.byType(Island)).selected, 1);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a swipe that springs back changes nothing', (tester) async {
+      final h = Harness();
+      await tester.pumpWidget(h.screen());
+      await tester.pumpAndSettle();
+      final before = h.settings.state;
+      await tester.dragFrom(const Offset(600, 300), const Offset(-100, 0));
+      await tester.pump();
+      expect(hudOf(tester), isNull);
+      await tester.pumpAndSettle();
+      expect(h.settings.state, same(before));
+      await h.dispose(tester);
+    });
+
+    testWidgets('Left/Right change mode in the open island, no HUD', (
       tester,
     ) async {
       final h = Harness();
       await tester.pumpWidget(h.screen());
-      await tester.dragFrom(const Offset(600, 300), const Offset(-400, 0));
-      await tester.pump();
-      expect(h.settings.state.lastMode, ClockMode.stopwatch);
-      final hud = hudOf(tester)! as IslandTitleHud;
-      expect(hud.title, strings.clock.mode_stopwatch);
-      expect(hud.index, ClockMode.stopwatch.index);
-      expect(hud.count, 3);
       await tester.pumpAndSettle();
-      expect(find.bySemanticsLabel(stopwatchZero), findsOne);
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.stopwatch);
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      await expectMorphInPlace(tester);
+      expect(h.settings.state.lastMode, ClockMode.clock);
       await h.dispose(tester);
     });
 
@@ -1779,6 +1825,21 @@ void main() {
         await tester.pumpWidget(h.screen(appTheme: t));
         void check(String state) {
           final island = find.byType(Island);
+          // The selected tab's pill is drawn behind the label, not around it.
+          final pill = find.descendant(
+            of: find.byType(AnimatedPositionedDirectional),
+            matching: find.byType(DecoratedBox),
+          );
+          final pillRect = tester.getRect(pill);
+          final pillColor =
+              (tester.widget<DecoratedBox>(pill).decoration as BoxDecoration)
+                  .color!;
+          Color backdrop(Element e) =>
+              pillRect.contains(
+                tester.getRect(find.byElementPredicate((x) => x == e)).center,
+              )
+              ? pillColor
+              : backdropOfElement(e);
           for (final e in [
             ...find
                 .descendant(of: island, matching: find.byType(Icon))
@@ -1789,7 +1850,7 @@ void main() {
           ]) {
             final w = e.widget;
             final ink = w is Icon ? w.color! : (w as Text).style!.color!;
-            final ratio = contrastOf(ink, backdropOfElement(e));
+            final ratio = contrastOf(ink, backdrop(e));
             if (ratio < 4.5) failures.add('$name/${skin.id}/$state $w $ratio');
           }
         }
@@ -1928,43 +1989,56 @@ void main() {
       expect(box.right, greaterThan(screen.width * 3 / 4));
       expect(box.bottom, greaterThan(screen.height * 3 / 4));
       expect(find.byIcon(Icons.screen_rotation_outlined), findsOne);
-      for (final (orientation, name, icon, dot) in [
+      final semantics = tester.ensureSemantics();
+      // The button speaks its current rotation, and says the new one.
+      final button = find.ancestor(
+        of: rotation,
+        matching: find.byType(CornerButton),
+      );
+      expect(
+        tester.getSemantics(button),
+        isSemantics(
+          label: c.action_rotation,
+          value: c.orientation_auto,
+          isButton: true,
+          isLiveRegion: true,
+        ),
+      );
+      for (final (orientation, name, icon) in [
         (
           ClockOrientation.portrait,
           c.orientation_portrait,
           Icons.stay_current_portrait_outlined,
-          1,
         ),
         (
           ClockOrientation.landscape,
           c.orientation_landscape,
           Icons.stay_current_landscape_outlined,
-          2,
         ),
         (
           ClockOrientation.auto,
           c.orientation_auto,
           Icons.screen_rotation_outlined,
-          0,
         ),
       ]) {
         await tester.tap(rotation);
         await tester.pump();
         expect(h.settings.state.orientation, orientation);
         expect(find.byIcon(icon), findsOne);
-        final hud =
-            tester.widget<Island>(find.byType(Island)).hud! as IslandTitleHud;
-        expect(hud.title, name);
-        expect(hud.index, dot);
-        expect(hud.count, 3);
-        // The tap was the button's: the chrome stays.
-        expect(chromeOf(tester), ChromeState.expanded);
-        await tester.pump(DesignMotion.hudHold);
+        expect(
+          tester.getSemantics(button),
+          isSemantics(value: name, isLiveRegion: true),
+        );
+        // No HUD; the tap was the button's: the open island stays.
+        final island = tester.widget<Island>(find.byType(Island));
+        expect(island.hud, isNull);
+        expect(island.state, ChromeState.expanded);
       }
-      // R cycles too.
+      // R cycles too, also without a HUD.
       await key(tester, LogicalKeyboardKey.keyR);
       expect(h.settings.state.orientation, ClockOrientation.portrait);
-      await tester.pump(DesignMotion.hudHold);
+      expect(tester.widget<Island>(find.byType(Island)).hud, isNull);
+      semantics.dispose();
       await h.dispose(tester);
     });
 

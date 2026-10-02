@@ -144,9 +144,11 @@ lib/
   `OrientationLock.supported` (Android/iOS), passed in by the router (the
   widgets never `di.get`). Rotation and R cycle `orientation` auto ->
   portrait -> landscape -> auto (the button's icon shows the current one:
-  `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`) and
-  show the mode name in an `IslandTitleHud` with three dots; nothing new in
-  the model, and the Settings row stays in sync.
+  `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`);
+  the button carries a live-region `Semantics` value naming the current one
+  (`orientation_*`), so screen readers hear the change. No HUD (it would
+  collapse an open island); nothing new in the model, and the Settings row
+  stays in sync.
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
 - Every string from `strings.clock.*`; chrome colours from
@@ -328,8 +330,12 @@ lib/
   horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
   12 px. Off while the clock route is not current (sheets, Settings). `gestureBrightness` / `gestureModes` switch each
   axis off. Double tap toggles full screen on desktop/web only (it delays
-  taps). Island HUD: brightness while dragging / Up / Down, the mode name
-  after a swipe or Left / Right; both release after `hudHold`. The device
+  taps). Island HUD: brightness while dragging / Up / Down only, released
+  after `hudHold`. A mode change from any source (tab, swipe, Left / Right)
+  only sets `lastMode`: an expanded island stays expanded and morphs in
+  place (the tab pill slides, the tray swaps, the height follows); a dot or
+  hidden chrome stays so, and the panel slide is the feedback. A swipe that
+  springs back to its start page calls no `onPage`. The device
   brightness is reset on pause, detach and dispose. A mode change from tabs
   or keys slides the panel (jumps with reduced motion).
 - Mode switching is `SettingsController.update(lastMode:)`, so the last mode
