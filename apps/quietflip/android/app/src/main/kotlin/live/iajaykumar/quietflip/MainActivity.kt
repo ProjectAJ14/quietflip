@@ -1,4 +1,4 @@
-package io.nonstop.quietflip
+package live.iajaykumar.quietflip
 
 import io.flutter.embedding.android.FlutterActivity
 
