@@ -31,6 +31,7 @@ packages, packages depend on nothing above them.
 | `packages/utils` | dependency-light helpers |
 | `packages/timekeeping` | pure-Dart countdown state machine and clock/timer/stopwatch formatting |
 | `packages/device_services` | full screen, screen wake, local notifications, sounds, key-value storage |
+| `packages/cloud_sync` | offline-first sync of the signed-in user's documents (Firestore), sync status |
 | `packages/network` | Dio client, auth + logging interceptors, typed errors |
 | `packages/analytics` | event tracking behind a swappable client |
 | `packages/crashlytics` | crash and non-fatal reporting |

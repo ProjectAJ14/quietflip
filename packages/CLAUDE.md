@@ -19,6 +19,7 @@ same-row dependency needs a reason stated in the change.
 | 3 | `notifications` | `core`, `di`, `network` |
 | 3 | `design_system` | `core`, `di`, `localization`, `network` |
 | 3 | `developer` | `core`, `di`, `localization`, `feature_flags` |
+| 3 | `cloud_sync` | `core`, `di`, `device_services` |
 
 `developer` does not depend on `design_system`; keep it that way.
 

@@ -1,0 +1,31 @@
+name: cloud_sync
+description: "Offline-first sync of named JSON documents for the signed-in user, behind a small contract for Quietflip."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.47.5"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore: ^6.10.0
+  firebase_auth: ^6.7.0
+  core:
+    path: ../core
+  device_services:
+    path: ../device_services
+  di:
+    path: ../di
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  mocktail: ^1.0.4
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+
+resolution: workspace
