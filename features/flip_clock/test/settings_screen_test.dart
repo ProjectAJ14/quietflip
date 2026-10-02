@@ -537,6 +537,69 @@ void main() {
     }
   }
 
+  group('two changes in one frame both land', () {
+    final c = strings.clock;
+    const m = Duration(minutes: 1);
+    // Per row kind: the category, the two controls, and whether each change
+    // landed. The second tap runs on the frame the first saw.
+    for (final (kind, category, first, second, firstLanded, secondLanded) in [
+      (
+        'switch',
+        c.settings_clock,
+        find.text(c.use_24h),
+        find.text(c.show_date),
+        () => !settings.state.use24h,
+        () => settings.state.showDate,
+      ),
+      (
+        'segmented',
+        c.settings_appearance,
+        find.text(c.theme_light),
+        find.text(c.card_size_small),
+        () => settings.state.theme == ClockTheme.light,
+        () => settings.state.cardSize == CardSize.small,
+      ),
+      (
+        'slider',
+        c.settings_appearance,
+        find.byType(Slider).first,
+        find.byType(Slider).last,
+        () => settings.state.digitBrightness != ClockSettings.maxBrightness,
+        () => settings.state.corner != DesignShape.defaultCorner,
+      ),
+      (
+        'value',
+        c.settings_timers,
+        find.byTooltip(c.timers_delete(presetSpoken(m * 5))),
+        find.byTooltip(c.timers_delete(presetSpoken(m * 15))),
+        () => !settings.state.timerPresets.contains(m * 5),
+        () => !settings.state.timerPresets.contains(m * 15),
+      ),
+    ]) {
+      testWidgets('$kind rows keep each other and a change made between', (
+        tester,
+      ) async {
+        await open(tester);
+        await tap(tester, category);
+        await tester.ensureVisible(second);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(first);
+        await tester.pumpAndSettle();
+        final showSeconds = settings.state.showSeconds;
+        await tester.tap(first);
+        unawaited(
+          settings.update(settings.state.copyWith(showSeconds: !showSeconds)),
+        );
+        await tester.tap(second);
+        await tester.pumpAndSettle();
+        expect(firstLanded(), isTrue, reason: 'the first change stays');
+        expect(secondLanded(), isTrue, reason: 'the second change lands');
+        expect(settings.state.showSeconds, !showSeconds, reason: 'kept');
+        await close(tester);
+      });
+    }
+  });
+
   group('Timers', () {
     final c = strings.clock;
     const m = Duration(minutes: 1);

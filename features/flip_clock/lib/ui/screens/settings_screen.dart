@@ -144,11 +144,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [tick] (turning Tick sound on) and plays it three times, a
-  /// second apart, the way the clock ticks. Builds from the current state,
-  /// not the one this frame drew, so two taps in one frame never revert a
-  /// change made between them.
+  /// second apart, the way the clock ticks.
   void _pickTick(TickSound tick) {
-    _update(widget.settings.state.copyWith(tickSound: tick, flipSound: true));
+    _update((now) => now.copyWith(tickSound: tick, flipSound: true));
     _stopPreview();
     unawaited(widget.sound.playTick(tick));
     for (final second in [1, 2]) {
@@ -163,11 +161,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [alarm] (turning Alarm sound on) and plays two loops of it.
-  /// Builds from the current state, as [_pickTick] does.
   void _pickAlarm(AlarmSound alarm) {
-    _update(
-      widget.settings.state.copyWith(alarmSound: alarm, alertSound: true),
-    );
+    _update((now) => now.copyWith(alarmSound: alarm, alertSound: true));
     _stopPreview();
     unawaited(widget.sound.playAlarm(alarm));
     _previewAlarm = true;
@@ -183,7 +178,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   DateTime? _since(Enum sound) => _previewing == sound ? _previewSince : null;
 
-  void _update(ClockSettings next) => unawaited(widget.settings.update(next));
+  /// Saves [edit] applied to the settings as they are now, not as this frame
+  /// drew them: two changes inside one frame (two quick taps, or a tap and a
+  /// sync) each build on the other instead of the second reverting the first.
+  void _update(ClockSettings Function(ClockSettings now) edit) =>
+      unawaited(widget.settings.update(edit(widget.settings.state)));
 
   static String _percent(double v) => (v * 100).round().toString();
 
@@ -286,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (ClockTheme.system, c.theme_system),
               ],
               selected: s.theme,
-              onChanged: (v) => _update(s.copyWith(theme: v)),
+              onChanged: (v) => _update((now) => now.copyWith(theme: v)),
             ),
             if (widget.orientationSupported)
               SettingsSegmentedRow<ClockOrientation>(
@@ -297,7 +296,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   (ClockOrientation.portrait, c.orientation_portrait),
                 ],
                 selected: s.orientation,
-                onChanged: (v) => _update(s.copyWith(orientation: v)),
+                onChanged: (v) =>
+                    _update((now) => now.copyWith(orientation: v)),
               ),
           ],
         ),
@@ -326,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (CardSize.large, c.card_size_large),
               ],
               selected: s.cardSize,
-              onChanged: (v) => _update(s.copyWith(cardSize: v)),
+              onChanged: (v) => _update((now) => now.copyWith(cardSize: v)),
             ),
             SettingsSliderRow(
               label: c.digit_brightness,
@@ -335,7 +335,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               max: ClockSettings.maxBrightness,
               divisions: 8,
               valueLabel: c.percent(_percent(s.digitBrightness)),
-              onChanged: (v) => _update(s.copyWith(digitBrightness: v)),
+              onChanged: (v) =>
+                  _update((now) => now.copyWith(digitBrightness: v)),
             ),
           ],
         ),
@@ -354,7 +355,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               valueLabel: c.corners_value('${s.corner.round()}'),
               minLabel: c.corners_square,
               maxLabel: c.corners_round,
-              onChanged: (v) => _update(s.copyWith(corner: v)),
+              onChanged: (v) => _update((now) => now.copyWith(corner: v)),
             ),
           ],
         ),
@@ -373,17 +374,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SettingsSwitchRow(
               label: c.use_24h,
               value: s.use24h,
-              onChanged: (v) => _update(s.copyWith(use24h: v)),
+              onChanged: (v) => _update((now) => now.copyWith(use24h: v)),
             ),
             SettingsSwitchRow(
               label: c.show_seconds,
               value: s.showSeconds,
-              onChanged: (v) => _update(s.copyWith(showSeconds: v)),
+              onChanged: (v) => _update((now) => now.copyWith(showSeconds: v)),
             ),
             SettingsSwitchRow(
               label: c.show_date,
               value: s.showDate,
-              onChanged: (v) => _update(s.copyWith(showDate: v)),
+              onChanged: (v) => _update((now) => now.copyWith(showDate: v)),
             ),
           ],
         ),
@@ -403,12 +404,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SettingsSwitchRow(
               label: c.gesture_brightness,
               value: s.gestureBrightness,
-              onChanged: (v) => _update(s.copyWith(gestureBrightness: v)),
+              onChanged: (v) =>
+                  _update((now) => now.copyWith(gestureBrightness: v)),
             ),
             SettingsSwitchRow(
               label: c.gesture_modes,
               value: s.gestureModes,
-              onChanged: (v) => _update(s.copyWith(gestureModes: v)),
+              onChanged: (v) => _update((now) => now.copyWith(gestureModes: v)),
             ),
           ],
           footer: c.gesture_footer,
@@ -419,7 +421,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SettingsSwitchRow(
               label: c.gesture_tap,
               value: s.tapToggleControls,
-              onChanged: (v) => _update(s.copyWith(tapToggleControls: v)),
+              onChanged: (v) =>
+                  _update((now) => now.copyWith(tapToggleControls: v)),
             ),
             SettingsSegmentedRow<Duration>(
               label: c.gesture_idle,
@@ -433,7 +436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
               ],
               selected: s.controlsIdle,
-              onChanged: (v) => _update(s.copyWith(controlsIdle: v)),
+              onChanged: (v) => _update((now) => now.copyWith(controlsIdle: v)),
             ),
           ],
           footer: c.gesture_controls_footer,
@@ -461,9 +464,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       existing: widget.settings.state.timerPresets,
     );
     if (picked == null || !mounted) return;
-    // Settings may have changed while the dialog was open.
-    final now = widget.settings.state;
-    _update(now.copyWith(timerPresets: [...now.timerPresets, picked]));
+    // Settings may have changed while the dialog was open; _update builds
+    // from the state at the moment the pick lands.
+    _update((now) => now.copyWith(timerPresets: [...now.timerPresets, picked]));
   }
 
   SettingsCategory _timers(ClockSettings s) {
@@ -483,7 +486,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 for (final p in s.timerPresets) (Minutes(p), presetLabel(p)),
               ],
               selected: s.defaultTimer,
-              onChanged: (v) => _update(s.copyWith(defaultTimer: v)),
+              onChanged: (v) => _update((now) => now.copyWith(defaultTimer: v)),
             ),
           ],
         ),
@@ -499,9 +502,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   tooltip: c.timers_delete(presetSpoken(p)),
                   icon: Icons.delete_outline_rounded,
                   onPressed: () => _update(
-                    s.copyWith(
+                    (now) => now.copyWith(
                       timerPresets: [
-                        for (final q in s.timerPresets)
+                        for (final q in now.timerPresets)
                           if (q != p) q,
                       ],
                     ),
@@ -546,7 +549,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: c.tick_sound,
               subtitle: c.tick_sound_description,
               value: s.flipSound,
-              onChanged: (v) => _update(s.copyWith(flipSound: v)),
+              onChanged: (v) => _update((now) => now.copyWith(flipSound: v)),
             ),
             _SoundTiles(
               enabled: s.flipSound,
@@ -575,7 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: c.alarm_sound,
               subtitle: c.alarm_sound_description,
               value: s.alertSound,
-              onChanged: (v) => _update(s.copyWith(alertSound: v)),
+              onChanged: (v) => _update((now) => now.copyWith(alertSound: v)),
             ),
             _SoundTiles(
               enabled: s.alertSound,
@@ -645,13 +648,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: c.keep_screen_awake,
               subtitle: c.keep_screen_awake_description,
               value: s.keepAwake,
-              onChanged: (v) => _update(s.copyWith(keepAwake: v)),
+              onChanged: (v) => _update((now) => now.copyWith(keepAwake: v)),
             ),
             SettingsSwitchRow(
               label: c.subtle_movement,
               subtitle: c.subtle_movement_description,
               value: s.subtleMovement,
-              onChanged: (v) => _update(s.copyWith(subtleMovement: v)),
+              onChanged: (v) =>
+                  _update((now) => now.copyWith(subtleMovement: v)),
             ),
           ],
           footer: c.full_screen_note,
