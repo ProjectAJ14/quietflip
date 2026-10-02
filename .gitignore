@@ -19,3 +19,6 @@ mason-lock.json
 
 # Per-machine Claude Code settings
 .claude/settings.local.json
+
+# Playwright MCP screenshots and logs from browser checks
+.playwright-mcp/
