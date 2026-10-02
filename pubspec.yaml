@@ -69,11 +69,11 @@ melos:
         dependsOn: build_runner
 
     generate:i69n:
-      description: "Regenerate localization strings from messages.i69n.yaml"
+      description: "Regenerate localization strings from messages*.i69n.yaml"
       exec:
         command: |
           dart run build_runner build --delete-conflicting-outputs &&
-          dart format lib/messages.i69n.dart
+          dart format lib/messages*.i69n.dart
         concurrency: 1
       packageFilters:
         scope: "localization"

@@ -227,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context,
                 sync: sync,
                 now: widget.now,
-                use24h: s.use24h,
+                use24h: uses24h(context, s),
                 onSignIn: () => widget.onSignIn?.call(),
                 onSignOut: () async => widget.onSignOut?.call(),
                 onDeleteAccount: () async =>
@@ -238,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() {});
                 },
               ),
-              SyncCard(sync: sync, now: widget.now, use24h: s.use24h),
+              SyncCard(sync: sync, now: widget.now, use24h: uses24h(context, s)),
             )),
           );
         },
@@ -308,7 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               skins: _strip(s),
               selectedId: widget.settings.skin.id,
               now: widget.now(),
-              use24h: s.use24h,
+              use24h: uses24h(context, s),
               onSelect: (skin) =>
                   unawaited(widget.settings.selectSkin(skin.id)),
               onCustomize: widget.onCustomize,
@@ -373,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           rows: [
             SettingsSwitchRow(
               label: c.use_24h,
-              value: s.use24h,
+              value: uses24h(context, s),
               onChanged: (v) => _update((now) => now.copyWith(use24h: v)),
             ),
             SettingsSwitchRow(

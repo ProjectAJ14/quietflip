@@ -118,8 +118,10 @@ stop and say so instead of working around it.
    `*.freezed.dart`, `*.i69n.dart` or `packages/design_system/lib/generated/`.
    Edit the source and regenerate. A hook enforces this.
 5. **User-facing text goes through localization.** Add keys to
-   `packages/localization/lib/messages.i69n.yaml`, regenerate, use `strings.*`.
-   No string literals in widgets.
+   `packages/localization/lib/messages.i69n.yaml` and translate them in every
+   `messages_<code>.i69n.yaml`, regenerate, use `strings.*`. No string
+   literals in widgets (`packages/localization/test/no_literals_test.dart`
+   enforces it). The app follows the device language, English as fallback.
 6. **Colors, typography and spacing come from the design system.**
    `Theme.of(context)` roles and `design_system` components; no raw
    `Color(0x...)` or font sizes. Load the `design-system` skill before any UI

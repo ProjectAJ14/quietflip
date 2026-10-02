@@ -281,6 +281,7 @@ class SkinTile extends StatelessWidget {
       // Selecting a skin applies its seconds preset, so the tile shows it.
       showSeconds: skin.seconds != SkinSeconds.off,
       skin: skin,
+      meridiem: meridiemOf(context),
     );
     final customize = selected ? onCustomize : null;
     final date = skin.showDate

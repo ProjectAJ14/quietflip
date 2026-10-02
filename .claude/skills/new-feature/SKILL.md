@@ -65,7 +65,8 @@ Widgets switch exhaustively on it. No service calls from widgets.
 - One screen per file in `lib/ui/screens/`, exported from `index.dart`.
 - Build with `design_system` components and `Theme.of(context)`.
 - Every string from `strings.<group>.<key>`: add keys to
-  `packages/localization/lib/messages.i69n.yaml`, then
+  `packages/localization/lib/messages.i69n.yaml` and every
+  `messages_<code>.i69n.yaml` beside it, then
   `dart run melos run generate:i69n`.
 - Handle loading, empty, error and data states explicitly.
 - Load the `flutter-best-practices` and `design-system` skills for widget and

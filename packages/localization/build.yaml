@@ -6,5 +6,18 @@ targets:
           default_locale: en
           locales:
             - en
+            - es
+            - pt
+            - fr
+            - de
+            - it
+            - ja
+            - ko
+            - zh
+            - hi
+            - id
+            - tr
+            - ru
         generate_for:
           - lib/messages.i69n.yaml
+          - lib/messages_*.i69n.yaml

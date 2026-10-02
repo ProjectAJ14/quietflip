@@ -5,10 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timekeeping/timekeeping.dart';
 
 void main() {
-  test('defaults: black, 24h, no seconds, alert sound on', () {
+  test('defaults: black, device clock style, no seconds, alert sound on', () {
     const s = ClockSettings();
     expect(s.theme, ClockTheme.dark);
-    expect(s.use24h, isTrue);
+    // Unpicked: the device's 24-hour switch or language decides.
+    expect(s.use24h, isNull);
     expect(s.showSeconds, isFalse);
     expect(s.flipSound, isFalse);
     expect(s.alertSound, isTrue);

@@ -110,6 +110,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the language follows the device, English as the fallback', (
+    tester,
+  ) async {
+    addTearDown(() => LocalizationProvider.select(const []));
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    final router = GoRouter(
+      routes: [GoRoute(path: '/', builder: (_, _) => const _Copy())],
+    );
+    addTearDown(router.dispose);
+    final appearance = ValueNotifier(AppearanceMode.black);
+    addTearDown(appearance.dispose);
+    await tester.pumpWidget(App(router: router, appearance: appearance));
+    await tester.pumpAndSettle();
+    MaterialLocalizations material() =>
+        MaterialLocalizations.of(tester.element(find.byType(_Copy)));
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(material().cancelButtonLabel, 'Cancel');
+
+    // A const widget rebuilds too: strings are read without a context.
+    tester.platformDispatcher.localesTestValue = const [
+      Locale('de', 'AT'),
+      Locale('en'),
+    ];
+    await tester.pumpAndSettle();
+    expect(LocalizationProvider.currentLocale, 'de');
+    expect(find.text(strings.generic.cancel), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+    expect(material().cancelButtonLabel, 'Abbrechen');
+
+    // The same language in another region changes nothing.
+    tester.platformDispatcher.localesTestValue = const [Locale('de', 'CH')];
+    await tester.pumpAndSettle();
+    expect(LocalizationProvider.currentLocale, 'de');
+
+    tester.platformDispatcher.localesTestValue = const [Locale('ar')];
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(material().cancelButtonLabel, 'Cancel');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the whole app follows the skin face', (tester) async {
     final router = GoRouter(
       routes: [
@@ -297,4 +338,13 @@ void main() {
       );
     },
   );
+}
+
+/// Shows localized copy from a const widget, which only a full rebuild
+/// refreshes.
+class _Copy extends StatelessWidget {
+  const _Copy();
+
+  @override
+  Widget build(BuildContext context) => Text(strings.generic.cancel);
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:design_system/design_system.dart';
+import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -19,7 +20,14 @@ String syncedWhen(
   if (ago < const Duration(minutes: 1)) return s.just_now;
   if (ago < const Duration(hours: 1)) return s.minutes_ago(ago.inMinutes);
   if (DateUtils.isSameDay(at, now)) {
-    return s.today_at(formatClock(at, use24h: use24h, showSeconds: false));
+    return s.today_at(
+      formatClock(
+        at,
+        use24h: use24h,
+        showSeconds: false,
+        meridiem: meridiemOf(context),
+      ),
+    );
   }
   return MaterialLocalizations.of(context).formatMediumDate(at);
 }

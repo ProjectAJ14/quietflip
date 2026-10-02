@@ -5,6 +5,7 @@ import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ Future<void> showSkins(
       custom: s.customSkins,
       selectedId: settings.skin.id,
       now: now,
-      use24h: s.use24h,
+      use24h: uses24h(context, s),
       onSelect: (skin) => unawaited(settings.selectSkin(skin.id)),
       onDone: () => Navigator.of(context).pop(),
       onCustomize: () =>
@@ -73,7 +74,7 @@ Future<void> _customize(
       return SkinCustomizer(
         start: start,
         now: now,
-        use24h: settings.state.use24h,
+        use24h: uses24h(context, settings.state),
         onCancel: close,
         onSave: (skin) {
           unawaited(settings.saveSkin(skin));

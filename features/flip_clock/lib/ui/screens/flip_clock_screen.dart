@@ -848,16 +848,19 @@ class _ModeView extends StatelessWidget {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,
           builder: (context, now) {
+            final meridiem = meridiemOf(context);
             final text = formatClock(
               now,
-              use24h: settings.use24h,
+              use24h: uses24h(context, settings),
               showSeconds: settings.showSeconds,
+              meridiem: meridiem,
             );
             final value = clockValue(
               now,
-              use24h: settings.use24h,
+              use24h: uses24h(context, settings),
               showSeconds: settings.showSeconds,
               skin: skin,
+              meridiem: meridiem,
             );
             FlipDisplay display(String label) => FlipDisplay(
               cards: value.cards,

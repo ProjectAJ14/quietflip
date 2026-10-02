@@ -61,7 +61,7 @@ enum CardSize {
 class ClockSettings {
   const ClockSettings({
     this.theme = ClockTheme.dark,
-    this.use24h = true,
+    this.use24h,
     this.showSeconds = false,
     this.flipSound = false,
     this.alertSound = true,
@@ -165,7 +165,7 @@ class ClockSettings {
       theme: json['theme'] == 'black'
           ? ClockTheme.dark
           : pick(ClockTheme.values, 'theme', d.theme),
-      use24h: flag('use24h', d.use24h),
+      use24h: json['use24h'] is bool ? json['use24h']! as bool : null,
       showSeconds: flag('showSeconds', d.showSeconds),
       flipSound: flag('flipSound', d.flipSound),
       alertSound: flag('alertSound', d.alertSound),
@@ -220,7 +220,10 @@ class ClockSettings {
   }
 
   final ClockTheme theme;
-  final bool use24h;
+
+  /// 24-hour (true) or 12-hour (false) time; null until the user picks,
+  /// meaning the device's own habit (`uses24h`).
+  final bool? use24h;
   final bool showSeconds;
   final bool flipSound;
   final bool alertSound;

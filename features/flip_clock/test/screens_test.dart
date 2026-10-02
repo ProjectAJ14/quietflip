@@ -945,7 +945,7 @@ void main() {
     }
 
     await change((s) => s.copyWith(tickSound: TickSound.digital));
-    await change((s) => s.copyWith(use24h: !s.use24h));
+    await change((s) => s.copyWith(use24h: !(s.use24h ?? false)));
     await change((s) => s.copyWith(flipSound: false));
     await change((s) => s.copyWith(tickSound: TickSound.woodblock));
     expect(sound.warmed, [

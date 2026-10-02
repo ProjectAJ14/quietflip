@@ -1,5 +1,8 @@
+import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
+import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
+import 'package:timekeeping/timekeeping.dart';
 
 /// What a `FlipDisplay` shows: its cards, the small corner text and AM/PM.
 typedef DisplayValue = ({List<String> cards, String? badge, String? meridiem});
@@ -25,15 +28,33 @@ String presetLabel(Duration preset) {
       : strings.clock.preset_minutes_seconds(preset.inMinutes, _two(seconds));
 }
 
+/// The app language's AM / PM markers, from Flutter's own translations.
+Meridiem meridiemOf(BuildContext context) {
+  final l = MaterialLocalizations.of(context);
+  return (am: l.anteMeridiemAbbreviation, pm: l.postMeridiemAbbreviation);
+}
+
+/// Whether the clock reads in 24-hour time: [settings]' choice, else the
+/// device's: its 24-hour switch where the platform reports one, else its
+/// language's habit (12-hour in English, 24-hour in German).
+bool uses24h(BuildContext context, ClockSettings settings) {
+  if (settings.use24h case final choice?) return choice;
+  final format = MaterialLocalizations.of(context).timeOfDayFormat(
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return hourFormat(of: format) != HourFormat.h;
+}
+
 /// The clock at [t]: hour and minute cards, seconds in [skin]'s style when
 /// [showSeconds] (their own cards when the skin has none, so Show seconds
-/// always shows them), AM/PM in 12-hour time. The hour is two digits in
+/// always shows them), [meridiem]'s marker in 12-hour time. The hour is two digits in
 /// both (`09`), so its card is never half empty.
 DisplayValue clockValue(
   DateTime t, {
   required bool use24h,
   required bool showSeconds,
   required Skin skin,
+  required Meridiem meridiem,
 }) {
   final hour12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
   final seconds = _two(t.second);
@@ -49,7 +70,7 @@ DisplayValue clockValue(
       if (style == SkinSeconds.cards) seconds,
     ],
     badge: style == SkinSeconds.badge ? seconds : null,
-    meridiem: use24h ? null : (t.hour < 12 ? 'AM' : 'PM'),
+    meridiem: use24h ? null : meridiemFor(t, meridiem),
   );
 }
 

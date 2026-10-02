@@ -5,6 +5,7 @@ import 'package:di/di.dart';
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:localization/localization.dart';
 import 'package:notifications/notifications.dart';
 
 import 'package:quietflip/app.dart';
@@ -30,6 +31,10 @@ Future<void> startApp({
     }
   }
 
+  // The device language, before bootstrap names the notification channel.
+  LocalizationProvider.select(
+    WidgetsFlutterBinding.ensureInitialized().platformDispatcher.locales,
+  );
   // Fonts are bundled in design_system; never download them at launch.
   GoogleFonts.config.allowRuntimeFetching = false;
   if (initialize == null) {

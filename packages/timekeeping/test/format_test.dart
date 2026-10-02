@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timekeeping/timekeeping.dart';
 
+/// English markers, as `MaterialLocalizations` gives them in English.
+const en = (am: 'AM', pm: 'PM');
+
 void main() {
   group('formatClock', () {
     final cases = <(DateTime, bool, bool, String)>[
@@ -19,11 +22,41 @@ void main() {
     for (final (t, use24h, showSeconds, expected) in cases) {
       test('$t 24h=$use24h seconds=$showSeconds -> $expected', () {
         expect(
-          formatClock(t, use24h: use24h, showSeconds: showSeconds),
+          formatClock(
+            t,
+            use24h: use24h,
+            showSeconds: showSeconds,
+            meridiem: en,
+          ),
           expected,
         );
       });
     }
+  });
+
+  test('12-hour time takes the language\'s markers', () {
+    const ja = (am: '午前', pm: '午後');
+    expect(
+      formatClock(
+        DateTime(2026, 1, 1, 9, 41),
+        use24h: false,
+        showSeconds: false,
+        meridiem: ja,
+      ),
+      '9:41 午前',
+    );
+    expect(meridiemFor(DateTime(2026, 1, 1, 11, 59), ja), '午前');
+    expect(meridiemFor(DateTime(2026, 1, 1, 12), ja), '午後');
+    // 24-hour time never shows one.
+    expect(
+      formatClock(
+        DateTime(2026, 1, 1, 21, 5),
+        use24h: true,
+        showSeconds: false,
+        meridiem: ja,
+      ),
+      '21:05',
+    );
   });
 
   test('formatHms pads every field and clamps negatives', () {

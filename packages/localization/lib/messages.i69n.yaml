@@ -142,6 +142,19 @@ validation:
   passwords_dont_match: "Passwords do not match"
   invalid_key_config(String of, String key): "Invalid configuration for $key in $of. Please check your settings."
 
+# File details dialog (design_system FileInfoDialog)
+files:
+  info_title: "File Information"
+  name: "File Name"
+  type: "File Type"
+  extension: "File Extension"
+  size: "File Size"
+  path: "File Path"
+  copy_hint: "Tap any field to copy to clipboard"
+  copied(String field): "$field copied to clipboard"
+  image_type(String format): "$format image"
+  image_file: "Image file"
+
 # Developer tools
 developer:
   no_viewer: "This logger has no interactive viewer."
