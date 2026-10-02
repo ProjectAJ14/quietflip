@@ -133,6 +133,10 @@ lib/
   dismiss; `init()` also calls `syncAlert()` whenever System notifications is
   switched, so a running countdown gains or loses its alert; permission is
   requested only when the user turns on system notifications. Denied -> explain that the in-app alert still works.
+- Tick warm-up: while the tick sound (`flipSound`) is on, `init()` calls
+  `SoundPlayer.warmTick` for the selected `tickSound` at start and on every
+  distinct change of the pair (sound changed or switch turned on;
+  unawaited), so the first tick plays without a load delay.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
   distinct change. Settings > Clock shows the Orientation control, the
@@ -445,7 +449,9 @@ widget tester's clock):
   "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
   saves the pick, turns its kind's switch on and previews it: ticks at 0,
   1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
-  `stopAlarm`. One preview at a time: a new tap cancels its timers and
+  `stopAlarm`. A pick builds from `settings.state`, not the state the
+  frame drew, so two taps in one frame never revert a change made between
+  them. One preview at a time: a new tap cancels its timers and
   stops its alarm; leaving Settings does the same, and calls `stopAlarm`
   only for an alarm the preview started and that is still looping. A
   switch off dims its tiles to 45%; they stay tappable.

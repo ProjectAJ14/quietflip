@@ -37,10 +37,11 @@ Future<void> init({CloudSync? sync}) async {
   );
   final settings = SettingsController(repository: repository, alerts: alerts);
   await settings.load();
+  final sound = di.get<SoundPlayer>();
   final countdown = CountdownController(
     repository: repository,
     alerts: alerts,
-    sound: di.get<SoundPlayer>(),
+    sound: sound,
     settings: () => settings.state,
     logger: logger,
   );
@@ -65,6 +66,17 @@ Future<void> init({CloudSync? sync}) async {
       .map((s) => s.orientation)
       .distinct()
       .listen((o) => unawaited(orient(o)));
+  // Load the selected tick ahead while the tick sound is on, so its first
+  // tick has no load delay: now, and when the sound changes or turns on.
+  void warm((bool, TickSound) tick) {
+    if (tick.$1) unawaited(sound.warmTick(tick.$2));
+  }
+
+  warm((settings.state.flipSound, settings.state.tickSound));
+  settings.stream
+      .map((s) => (s.flipSound, s.tickSound))
+      .distinct()
+      .listen(warm);
 
   if (sync != null) {
     final settingsSync = SettingsSync(

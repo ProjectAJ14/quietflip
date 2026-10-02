@@ -630,6 +630,37 @@ void main() {
       await close(tester);
     });
 
+    for (final (kind, first, second, picked) in [
+      (
+        'tick',
+        c.tick_woodblock,
+        c.tick_digital,
+        () => settings.state.tickSound == TickSound.digital,
+      ),
+      (
+        'alarm',
+        c.alarm_bell,
+        c.alarm_beeps,
+        () => settings.state.alarmSound == AlarmSound.beeps,
+      ),
+    ]) {
+      testWidgets('two $kind taps in one frame both land, keeping a change '
+          'made between them', (tester) async {
+        await openSound(tester);
+        await tester.ensureVisible(find.text(first));
+        await tester.pump();
+        final use24h = settings.state.use24h;
+        // No pump between: the second tap runs on the frame the first saw.
+        await tester.tap(find.text(first));
+        unawaited(settings.update(settings.state.copyWith(use24h: !use24h)));
+        await tester.tap(find.text(second));
+        await tester.pump();
+        expect(picked(), isTrue, reason: 'the second tap wins');
+        expect(settings.state.use24h, !use24h, reason: 'nothing reverted');
+        await close(tester);
+      });
+    }
+
     testWidgets('leaving cancels the preview, stopping only its own alarm', (
       tester,
     ) async {

@@ -136,9 +136,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [tick] (turning Tick sound on) and plays it three times, a
-  /// second apart, the way the clock ticks.
-  void _pickTick(ClockSettings s, TickSound tick) {
-    _update(s.copyWith(tickSound: tick, flipSound: true));
+  /// second apart, the way the clock ticks. Builds from the current state,
+  /// not the one this frame drew, so two taps in one frame never revert a
+  /// change made between them.
+  void _pickTick(TickSound tick) {
+    _update(widget.settings.state.copyWith(tickSound: tick, flipSound: true));
     _stopPreview();
     unawaited(widget.sound.playTick(tick));
     for (final second in [1, 2]) {
@@ -153,8 +155,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [alarm] (turning Alarm sound on) and plays two loops of it.
-  void _pickAlarm(ClockSettings s, AlarmSound alarm) {
-    _update(s.copyWith(alarmSound: alarm, alertSound: true));
+  /// Builds from the current state, as [_pickTick] does.
+  void _pickAlarm(AlarmSound alarm) {
+    _update(
+      widget.settings.state.copyWith(alarmSound: alarm, alertSound: true),
+    );
     _stopPreview();
     unawaited(widget.sound.playAlarm(alarm));
     _previewAlarm = true;
@@ -533,7 +538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     text: _tickText(tick),
                     selected: tick == s.tickSound,
                     playing: _previewing == tick,
-                    onTap: () => _pickTick(s, tick),
+                    onTap: () => _pickTick(tick),
                     wave: SoundWave.tick(
                       tick,
                       playing: _since(tick),
@@ -562,7 +567,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     text: _alarmText(alarm),
                     selected: alarm == s.alarmSound,
                     playing: _previewing == alarm,
-                    onTap: () => _pickAlarm(s, alarm),
+                    onTap: () => _pickAlarm(alarm),
                     wave: SoundWave.alarm(
                       alarm,
                       playing: _since(alarm),

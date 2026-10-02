@@ -857,6 +857,40 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('init loads the selected tick ahead while the tick is on', (
+    tester,
+  ) async {
+    final sound = FakeSound();
+    di
+      ..register<KeyValueStore>(
+        FakeStore()
+          ..data[SettingsRepositoryImp.settingsKey] =
+              '{"flipSound":true,"tickSound":"clockwork"}',
+      )
+      ..register<LocalAlerts>(FakeAlerts())
+      ..register<SoundPlayer>(sound)
+      ..register<OrientationLock>(FakeOrientation());
+    await flip_clock.init();
+    expect(sound.warmed, [TickSound.clockwork], reason: 'warmed at start');
+    final settings = di.get<SettingsController>();
+    Future<void> change(ClockSettings Function(ClockSettings) edit) async {
+      await settings.update(edit(settings.state));
+      await tester.pump();
+    }
+
+    await change((s) => s.copyWith(tickSound: TickSound.digital));
+    await change((s) => s.copyWith(use24h: !s.use24h));
+    await change((s) => s.copyWith(flipSound: false));
+    await change((s) => s.copyWith(tickSound: TickSound.woodblock));
+    expect(sound.warmed, [
+      TickSound.clockwork,
+      TickSound.digital,
+    ], reason: 'a new sound warms; other fields and a silent tick do not');
+    await change((s) => s.copyWith(flipSound: true));
+    expect(sound.warmed.last, TickSound.woodblock, reason: 'turning it on');
+    expect(sound.ticks, isEmpty, reason: 'warming plays nothing');
+  });
+
   testWidgets('init registers everything; routes open settings and back', (
     tester,
   ) async {
