@@ -59,6 +59,12 @@ class SettingsGroup {
 /// An optional [pinned] category is drawn as its own card ([pinnedCard]):
 /// after the list on the phone, at the bottom of the sidebar (outside its
 /// scroll) in the split layouts. It opens like any other category.
+///
+/// The shell owns the horizontal safe insets (`MediaQuery.paddingOf`), so
+/// callers wrap it in `SafeArea(left: false, right: false)`. In the split
+/// layouts the sidebar fill runs to the left edge (widened by the inset,
+/// its content padded by it) and the detail runs to the right edge, its
+/// padding `max(s8, inset)`. On the phone every page pads `max(s4, inset)`.
 class SettingsShell extends StatefulWidget {
   const SettingsShell({
     super.key,
@@ -198,6 +204,9 @@ class _SettingsShellState extends State<SettingsShell> {
   Widget _phone(BuildContext context, DesignColors colors) {
     final text = Theme.of(context).textTheme;
     final open = _open;
+    final inset = MediaQuery.paddingOf(context);
+    final left = math.max(DesignSpace.s4, inset.left);
+    final right = math.max(DesignSpace.s4, inset.right);
     return PopScope(
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
@@ -205,7 +214,12 @@ class _SettingsShellState extends State<SettingsShell> {
       },
       child: open == null
           ? ListView(
-              padding: const EdgeInsets.all(DesignSpace.s4),
+              padding: EdgeInsets.fromLTRB(
+                left,
+                DesignSpace.s4,
+                right,
+                DesignSpace.s4,
+              ),
               children: [
                 ?_done(),
                 Padding(
@@ -250,39 +264,53 @@ class _SettingsShellState extends State<SettingsShell> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: TextButton.icon(
-                          onPressed: _root,
-                          icon: const Icon(Icons.chevron_left_rounded),
-                          label: Text(widget.title),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: inset.left,
+                    right: inset.right,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            onPressed: _root,
+                            icon: const Icon(Icons.chevron_left_rounded),
+                            label: Text(widget.title),
+                          ),
                         ),
                       ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        _category(open).label,
-                        textAlign: TextAlign.center,
-                        style: text.titleMedium?.copyWith(color: colors.ink),
+                      Flexible(
+                        child: Text(
+                          _category(open).label,
+                          textAlign: TextAlign.center,
+                          style: text.titleMedium?.copyWith(color: colors.ink),
+                        ),
                       ),
-                    ),
-                    // Balances the back button so the title stays centred;
-                    // holds Done on a page opened directly.
-                    Expanded(
-                      child: _direct
-                          ? Align(
-                              alignment: AlignmentDirectional.centerEnd,
-                              child: _done(),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
+                      // Balances the back button so the title stays centred;
+                      // holds Done on a page opened directly.
+                      Expanded(
+                        child: _direct
+                            ? Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: _done(),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
                 Expanded(
-                  child: _Detail(_category(open), padding: DesignSpace.s4),
+                  child: _Detail(
+                    _category(open),
+                    padding: EdgeInsets.fromLTRB(
+                      left,
+                      DesignSpace.s4,
+                      right,
+                      DesignSpace.s4,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -296,6 +324,7 @@ class _SettingsShellState extends State<SettingsShell> {
 
   Widget _split(BuildContext context, DesignColors colors, bool desktop) {
     final text = Theme.of(context).textTheme;
+    final inset = MediaQuery.paddingOf(context);
     // The list may have shrunk since the selection was made.
     final selected = math.min(
       _selected,
@@ -309,9 +338,11 @@ class _SettingsShellState extends State<SettingsShell> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          width: desktop
-              ? SettingsShell.desktopSidebarWidth
-              : DesignSize.sidebarWidth,
+          width:
+              inset.left +
+              (desktop
+                  ? SettingsShell.desktopSidebarWidth
+                  : DesignSize.sidebarWidth),
           child: ColoredBox(
             color: colors.surfaceSidebar,
             child: Column(
@@ -319,7 +350,12 @@ class _SettingsShellState extends State<SettingsShell> {
               children: [
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.all(DesignSpace.s3),
+                    padding: EdgeInsets.fromLTRB(
+                      inset.left + DesignSpace.s3,
+                      DesignSpace.s3,
+                      DesignSpace.s3,
+                      DesignSpace.s3,
+                    ),
                     children: [
                       ?_done(),
                       Padding(
@@ -343,7 +379,12 @@ class _SettingsShellState extends State<SettingsShell> {
                 ),
                 if (pinned != null)
                   Padding(
-                    padding: const EdgeInsets.all(DesignSpace.s4),
+                    padding: EdgeInsets.fromLTRB(
+                      inset.left + DesignSpace.s4,
+                      DesignSpace.s4,
+                      DesignSpace.s4,
+                      DesignSpace.s4,
+                    ),
                     child: pinned,
                   ),
               ],
@@ -354,7 +395,12 @@ class _SettingsShellState extends State<SettingsShell> {
         Expanded(
           child: _Detail(
             _category(selected),
-            padding: DesignSpace.s8,
+            padding: EdgeInsets.fromLTRB(
+              DesignSpace.s8,
+              DesignSpace.s8,
+              math.max(DesignSpace.s8, inset.right),
+              DesignSpace.s8,
+            ),
             title: true,
           ),
         ),
@@ -383,12 +429,12 @@ class _Detail extends StatelessWidget {
   const _Detail(this.category, {required this.padding, this.title = false});
 
   final SettingsCategory category;
-  final double padding;
+  final EdgeInsets padding;
   final bool title;
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: EdgeInsets.all(padding),
+    padding: padding,
     children: [
       if (title)
         Text(

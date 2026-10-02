@@ -12,10 +12,13 @@ Future<void> _pump(
   Widget child, {
   ds.AppearanceMode mode = ds.AppearanceMode.black,
   double width = 375,
+  double height = 900,
+  double sideInset = 0,
   double textScale = 1,
 }) async {
-  tester.view.physicalSize = Size(width, 900);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
+  tester.view.padding = FakeViewPadding(left: sideInset, right: sideInset);
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ds.DesignSystemWrapper(
@@ -577,6 +580,77 @@ void main() {
     expect(style.foregroundColor!.resolve({}), theme.colorScheme.onSurface);
   });
 
+  group('side insets (iPhone landscape, 59 each side)', () {
+    testWidgets('split: the sidebar fills to the left edge, the detail to the '
+        'right; the inset replaces the detail padding', (tester) async {
+      await _pump(
+        tester,
+        _pinnedShell(),
+        width: 852,
+        height: 393,
+        sideInset: 59,
+      );
+      final fill = tester.getRect(
+        find.ancestor(of: _sidebar, matching: find.byType(ColoredBox)).first,
+      );
+      expect(fill.left, 0);
+      expect(fill.width, ds.DesignSize.sidebarWidth + 59);
+      expect(
+        tester.getRect(_inSidebar('Settings')).left,
+        59 + ds.DesignSpace.s3 + ds.DesignSpace.s2,
+      );
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      expect(card.left, 59 + ds.DesignSpace.s4);
+      expect(card.right, fill.right - ds.DesignSpace.s4);
+      final cell = _cell(tester, 'Version');
+      expect(cell.right, 852 - 59);
+      expect(cell.left, fill.right + 1 + ds.DesignSpace.s8);
+    });
+
+    testWidgets('phone: lists take the larger of s4 and the inset', (
+      tester,
+    ) async {
+      await _pump(tester, _pinnedShell(), width: 500, sideInset: 59);
+      final root = _cell(tester, 'General');
+      expect(root.left, 59);
+      expect(root.right, 500 - 59);
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      expect(card.left, 59);
+      expect(card.right, 500 - 59);
+      expect(tester.getRect(find.text('Done')).left, greaterThan(59));
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      final detail = _cell(tester, 'Version');
+      expect(detail.left, 59);
+      expect(detail.right, 500 - 59);
+      expect(
+        tester.getRect(find.byIcon(Icons.chevron_left_rounded)).left,
+        greaterThan(59),
+      );
+    });
+
+    testWidgets('phone: an inset under s4 keeps s4', (tester) async {
+      await _pump(tester, _pinnedShell(), width: 500, sideInset: 10);
+      final root = _cell(tester, 'General');
+      expect(root.left, ds.DesignSpace.s4);
+      expect(root.right, 500 - ds.DesignSpace.s4);
+    });
+  });
+
   group('pinned category', () {
     testWidgets('phone: its own card after the list, opening its page', (
       tester,
@@ -718,3 +792,8 @@ BorderSide _cardSide(WidgetTester tester) =>
                 .shape!
             as RoundedRectangleBorder)
         .side;
+
+/// The grouped cell around [text] (the raised `Material`).
+Rect _cell(WidgetTester tester, String text) => tester.getRect(
+  find.ancestor(of: find.text(text), matching: find.byType(Material)).first,
+);

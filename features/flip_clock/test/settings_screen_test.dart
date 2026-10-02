@@ -295,6 +295,29 @@ void main() {
     await close(tester);
   });
 
+  testWidgets('iPhone landscape: the shell reaches both side edges', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+    await open(
+      tester,
+      size: const Size(852, 393),
+      desktop: false,
+      isWeb: false,
+    );
+    expect(tester.getRect(find.byType(SettingsShell)).width, 852);
+    final sidebar = tester.getRect(
+      find
+          .byWidgetPredicate(
+            (w) =>
+                w is ColoredBox && w.color == DesignColors.dark.surfaceSidebar,
+          )
+          .first,
+    );
+    expect(sidebar.left, 0);
+    await close(tester);
+  });
+
   testWidgets('orientation is hidden where the lock is unsupported', (
     tester,
   ) async {

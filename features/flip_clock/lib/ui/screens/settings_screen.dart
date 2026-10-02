@@ -193,7 +193,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    // The shell pads the sides itself, so its fills reach the screen edges.
     body: SafeArea(
+      left: false,
+      right: false,
       child: BlocBuilder<SettingsController, ClockSettings>(
         bloc: widget.settings,
         builder: (context, s) {
