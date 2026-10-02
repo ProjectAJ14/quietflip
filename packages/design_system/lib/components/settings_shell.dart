@@ -51,8 +51,9 @@ class SettingsGroup {
 /// A settings screen laid out three ways from one [categories] model:
 ///
 /// - **Phone** (narrower than 600): a root list with a large title; a
-///   category opens its detail with a back button. A system back while a
-///   category is open returns to the root instead of leaving the screen.
+///   category opens its detail as a page with a back button. The back
+///   button, the iOS edge swipe and a system back (Android, predictive
+///   back) all return from it to the root; from the root they leave.
 /// - **Split** (600 to 1100): a [DesignSize.sidebarWidth] sidebar beside the
 ///   selected category's detail.
 /// - **Desktop density** (1100 or wider, or [desktop]): the split layout
@@ -203,119 +204,164 @@ class _SettingsShellState extends State<SettingsShell> {
           ),
         );
 
+  /// The phone layout's own navigator: the root list, and the open
+  /// category's page on top of it.
+  final _phoneNavigator = GlobalKey<NavigatorState>();
+
+  /// The phone stack is a real [Navigator], so a category page is a route:
+  /// the iOS edge swipe and Android (predictive) back pop it to the root,
+  /// and [NavigatorPopHandler] sends a system back to it before it leaves
+  /// the screen. The pages follow [_open], which stays the one source of
+  /// truth (a resize into the split layout and back keeps the page).
   Widget _phone(BuildContext context, DesignColors colors) {
-    final text = Theme.of(context).textTheme;
     final open = _open;
-    final inset = MediaQuery.paddingOf(context);
-    final left = math.max(DesignSpace.s4, inset.left);
-    final right = math.max(DesignSpace.s4, inset.right);
-    return PopScope(
-      canPop: open == null,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _root();
-      },
-      child: open == null
-          ? ListView(
-              padding: EdgeInsets.fromLTRB(
-                left,
-                DesignSpace.s4,
-                right,
-                DesignSpace.s4,
-              ),
-              children: [
-                ?_done(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignSpace.s4,
-                    vertical: DesignSpace.s2,
-                  ),
-                  child: Text(
-                    widget.title,
-                    style: text.displaySmall?.copyWith(color: colors.ink),
-                  ),
-                ),
-                _Group(
-                  SettingsGroup(
-                    rows: [
-                      for (var i = 0; i < widget.categories.length; i++)
-                        _Cell(
-                          onTap: () => setState(() => _open = i),
-                          leading: _IconTile(
-                            widget.categories[i].icon,
-                            size: SettingsShell.iconTileSize,
-                          ),
-                          trailing: Icon(
-                            Icons.chevron_right_rounded,
-                            color: colors.inkSubtle,
-                          ),
-                          child: _Label(widget.categories[i].label),
-                        ),
-                    ],
-                  ),
-                ),
-                if (_pinnedCard(
-                      selected: false,
-                      onTap: () => setState(() => _open = _pinnedIndex),
-                    )
-                    case final card?) ...[
-                  const SizedBox(height: DesignSpace.s6),
-                  card,
-                ],
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: inset.left,
-                    right: inset.right,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: AppButton.text(
-                            onPressed: _root,
-                            icon: Icons.chevron_left_rounded,
-                            label: widget.title,
-                          ),
-                        ),
-                      ),
-                      Flexible(
-                        child: Text(
-                          _category(open).label,
-                          textAlign: TextAlign.center,
-                          style: text.titleMedium?.copyWith(color: colors.ink),
-                        ),
-                      ),
-                      // Balances the back button so the title stays centred;
-                      // holds Done on a page opened directly.
-                      Expanded(
-                        child: _direct
-                            ? Align(
-                                alignment: AlignmentDirectional.centerEnd,
-                                child: _done(),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _Detail(
-                    _category(open),
-                    padding: EdgeInsets.fromLTRB(
-                      left,
-                      DesignSpace.s4,
-                      right,
-                      DesignSpace.s4,
-                    ),
-                  ),
-                ),
-              ],
+    return NavigatorPopHandler<Object?>(
+      onPopWithResult: (_) => _phoneNavigator.currentState?.maybePop(),
+      child: Navigator(
+        key: _phoneNavigator,
+        pages: [
+          MaterialPage<void>(
+            key: const ValueKey<String>('root'),
+            child: ColoredBox(
+              color: colors.bg,
+              child: _phoneRoot(context, colors),
             ),
+          ),
+          if (open != null)
+            MaterialPage<void>(
+              key: ValueKey<int>(open),
+              child: ColoredBox(
+                color: colors.bg,
+                child: _phoneCategory(context, colors, open),
+              ),
+            ),
+        ],
+        // Pops (the back button, a swipe, a system back) land here; a page
+        // dropped by a rebuild finds the state already cleared.
+        onDidRemovePage: (page) {
+          if (page.key is ValueKey<int> && _open != null) _root();
+        },
+      ),
+    );
+  }
+
+  ({double left, double right}) _phoneSides(BuildContext context) {
+    final inset = MediaQuery.paddingOf(context);
+    return (
+      left: math.max(DesignSpace.s4, inset.left),
+      right: math.max(DesignSpace.s4, inset.right),
+    );
+  }
+
+  Widget _phoneRoot(BuildContext context, DesignColors colors) {
+    final sides = _phoneSides(context);
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        sides.left,
+        DesignSpace.s4,
+        sides.right,
+        DesignSpace.s4,
+      ),
+      children: [
+        ?_done(),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignSpace.s4,
+            vertical: DesignSpace.s2,
+          ),
+          child: Text(
+            widget.title,
+            style: Theme.of(
+              context,
+            ).textTheme.displaySmall?.copyWith(color: colors.ink),
+          ),
+        ),
+        _Group(
+          SettingsGroup(
+            rows: [
+              for (var i = 0; i < widget.categories.length; i++)
+                _Cell(
+                  onTap: () => setState(() => _open = i),
+                  leading: _IconTile(
+                    widget.categories[i].icon,
+                    size: SettingsShell.iconTileSize,
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.inkSubtle,
+                  ),
+                  child: _Label(widget.categories[i].label),
+                ),
+            ],
+          ),
+        ),
+        if (_pinnedCard(
+              selected: false,
+              onTap: () => setState(() => _open = _pinnedIndex),
+            )
+            case final card?) ...[
+          const SizedBox(height: DesignSpace.s6),
+          card,
+        ],
+      ],
+    );
+  }
+
+  Widget _phoneCategory(BuildContext context, DesignColors colors, int open) {
+    final inset = MediaQuery.paddingOf(context);
+    final sides = _phoneSides(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: inset.left, right: inset.right),
+          child: Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: AppButton.text(
+                    // The same pop as a swipe or a system back.
+                    onPressed: () => _phoneNavigator.currentState?.maybePop(),
+                    icon: Icons.chevron_left_rounded,
+                    label: widget.title,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  _category(open).label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: colors.ink),
+                ),
+              ),
+              // Balances the back button so the title stays centred;
+              // holds Done on a page opened directly.
+              Expanded(
+                child: _direct
+                    ? Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: _done(),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _Detail(
+            _category(open),
+            padding: EdgeInsets.fromLTRB(
+              sides.left,
+              DesignSpace.s4,
+              sides.right,
+              DesignSpace.s4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

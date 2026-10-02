@@ -333,6 +333,113 @@ void main() {
     expect(find.text('General'), findsOneWidget);
   });
 
+  group('phone back gestures', () {
+    // The shell pushed over a 'Home' page, the way the app opens Settings.
+    Future<void> pushShell(WidgetTester tester, ds.SettingsShell shell) async {
+      await _pump(
+        tester,
+        Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ds.AppButton.text(
+                label: 'Home',
+                onPressed: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute<void>(builder: (_) => shell)),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> edgeSwipe(WidgetTester tester) async {
+      await tester.dragFrom(const Offset(4, 450), const Offset(300, 0));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('iOS: an edge swipe pops the category, then the screen', (
+      tester,
+    ) async {
+      await pushShell(tester, _shell());
+      await tester.tap(find.text('Looks'));
+      await tester.pumpAndSettle();
+      expect(find.text('Theme'), findsOneWidget);
+
+      await edgeSwipe(tester);
+      expect(find.text('Theme'), findsNothing);
+      expect(find.text('General'), findsOneWidget);
+
+      await edgeSwipe(tester);
+      expect(find.byType(ds.SettingsShell), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+    testWidgets(
+      'iOS: a page opened directly swipes back to the root without Done',
+      (tester) async {
+        await pushShell(
+          tester,
+          ds.SettingsShell(
+            title: 'Settings',
+            doneLabel: 'Done',
+            initialCategory: 1,
+            openInitialCategory: true,
+            categories: _shell().categories,
+          ),
+        );
+        expect(find.text('Theme'), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
+
+        await edgeSwipe(tester);
+        expect(find.text('General'), findsOneWidget);
+        await tester.tap(find.text('Looks'));
+        await tester.pumpAndSettle();
+        expect(find.text('Theme'), findsOneWidget);
+        expect(find.text('Done'), findsNothing);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    testWidgets('Android: system back pops the category, then the screen', (
+      tester,
+    ) async {
+      await pushShell(tester, _shell());
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      expect(find.text('Version'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Version'), findsNothing);
+      expect(find.text('Looks'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(ds.SettingsShell), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    testWidgets('a resize to split and back keeps the open page', (
+      tester,
+    ) async {
+      await _pump(tester, _shell());
+      await tester.tap(find.text('Looks'));
+      await tester.pumpAndSettle();
+      tester.view.physicalSize = const Size(820, 900);
+      await tester.pumpAndSettle();
+      expect(find.byType(Navigator), findsOneWidget);
+      tester.view.physicalSize = const Size(375, 900);
+      await tester.pumpAndSettle();
+      expect(find.text('Theme'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('General'), findsOneWidget);
+    });
+  });
+
   testWidgets('split: a sidebar row switches the detail', (tester) async {
     await _pump(tester, _shell(), width: 820);
     await tester.tap(_inSidebar('Looks'));
