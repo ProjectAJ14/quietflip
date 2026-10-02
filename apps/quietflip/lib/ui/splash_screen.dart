@@ -6,10 +6,18 @@ import 'package:localization/localization.dart';
 
 /// First frame the user sees.
 ///
-/// Shown only while the first frame settles, then goes straight to the
-/// clock: QuietFlip has no sign-in and no dashboard in its UI.
+/// Continues the native launch screen (`flutter_native_splash.yaml`): the
+/// same logo, at the same size and centred, on the same black, so the
+/// hand-off does not jump. Then goes straight to the clock: QuietFlip has no
+/// sign-in and no dashboard in its UI.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  /// The logo every launch screen draws: 608px wide at 4x.
+  static const logoAsset = 'assets/splash/quietflip-logo.png';
+
+  /// Logical width of [logoAsset], matching the native launch screens.
+  static const logoWidth = 152.0;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -29,21 +37,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Always the Black ground, whatever the chosen appearance: the native
+    // screen cannot read that setting, so it is black too.
     return Scaffold(
+      backgroundColor: DesignColors.dark.bg,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              strings.app.name,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        child: Semantics(
+          label: strings.app.name,
+          image: true,
+          child: const ExcludeSemantics(
+            child: AppAssetImage(
+              assetPath: SplashScreen.logoAsset,
+              width: SplashScreen.logoWidth,
+              boxFit: BoxFit.contain,
             ),
-            const SizedBox(height: 32),
-            const DefaultLoader(),
-          ],
+          ),
         ),
       ),
     );

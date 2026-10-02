@@ -26,6 +26,15 @@ App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
 because the only encryption is Firebase's TLS and sign-in, which is exempt.
 
+## Launch screen
+
+The logo shows on black from the moment the app opens (iOS, Android,
+including the Android 12+ splash, and web), and the first Flutter frame
+draws the same logo in the same place. Config is in
+`flutter_native_splash.yaml`; after changing it or the logo in
+`assets/splash/`, run `dart run flutter_native_splash:create` here, then
+`git checkout ios/Runner/Info.plist` (see `CLAUDE.md` for what to keep).
+
 ## Keyboard shortcuts
 
 | Key | Action |
