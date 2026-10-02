@@ -440,7 +440,7 @@ lib/
 
 ## Tests
 
-`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. Every row saves through `_update`, an edit applied to `settings.state` at the moment of the change (not the copy the frame drew), so two changes in one frame never revert each other; `settings_screen_test.dart` taps two rows of each kind (switch, segmented, slider, value) in one frame with an outside change between, and the tick and alarm tiles the same way. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
@@ -499,9 +499,7 @@ widget tester's clock):
   "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
   saves the pick, turns its kind's switch on and previews it: ticks at 0,
   1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
-  `stopAlarm`. A pick builds from `settings.state`, not the state the
-  frame drew, so two taps in one frame never revert a change made between
-  them. One preview at a time: a new tap cancels its timers and
+  `stopAlarm`. One preview at a time: a new tap cancels its timers and
   stops its alarm; leaving Settings does the same, and calls `stopAlarm`
   only for an alarm the preview started and that is still looping. A
   switch off dims its tiles to 45%; they stay tappable.
