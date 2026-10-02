@@ -47,13 +47,13 @@ into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
 
-- **Appearance:** Skins (the first five as live thumbnails, tap to apply;
-  View all opens the Skins sheet), Theme (Dark, the default
-  even when the OS is light; Light; Match system), Digit brightness (20% to
-  100%; dims only the digits and the date line, never the controls; the D
-  key cycles 100%, 50%, 20%).
-- **Clock:** 24-hour time, Show seconds (also the S key), Show date,
-  Orientation (Auto / Landscape / Portrait; phones and tablets only).
+- **Appearance:** Theme (Dark, the default even when the OS is light;
+  Light; Match system) and Orientation (Auto / Landscape / Portrait; phones
+  and tablets only), then Skins (five live thumbnails, the selected one
+  first; tap to apply; View all opens the Skins sheet), then Card size and
+  Digit brightness (20% to 100%; dims only the digits and the date line,
+  never the controls; the D key cycles 100%, 50%, 20%), then Corners.
+- **Clock:** 24-hour time, Show seconds (also the S key), Show date.
 - **Gestures:** swipe up or down for brightness, swipe sideways to change
   mode, tap to show controls, hide controls after 2 s / 4 s / 8 s / Never.
 - **Timers:** the default timer Start runs (Pomodoro or a preset), your

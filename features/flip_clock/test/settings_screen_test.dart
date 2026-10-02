@@ -129,6 +129,9 @@ void main() {
     expect(settings.appearance.value, AppearanceMode.system);
     await tap(tester, c.theme_light);
     expect(settings.appearance.value, AppearanceMode.light);
+    // Orientation sits under Theme.
+    await tap(tester, c.orientation_landscape);
+    expect(settings.state.orientation, ClockOrientation.landscape);
     // Card size, after Theme; starts Large, so each tap is a change.
     expect(find.text(c.settings_card_size), findsOne);
     for (final (size, label) in [
@@ -172,11 +175,11 @@ void main() {
     await tap(tester, c.use_24h);
     await tap(tester, c.show_seconds);
     await tap(tester, c.show_date);
-    await tap(tester, c.orientation_landscape);
     expect(settings.state.use24h, isFalse);
     expect(settings.state.showSeconds, isTrue);
     expect(settings.state.showDate, isTrue);
-    expect(settings.state.orientation, ClockOrientation.landscape);
+    // Orientation moved to Appearance.
+    expect(find.text(c.orientation), findsNothing);
 
     // Gestures.
     await tap(tester, c.settings_gestures);
@@ -333,6 +336,8 @@ void main() {
     tester,
   ) async {
     await open(tester, orientation: false, isWeb: false);
+    expect(find.text(strings.clock.orientation), findsNothing);
+    expect(find.text(strings.clock.orientation_auto), findsNothing);
     await tap(tester, strings.clock.settings_clock);
     expect(find.text(strings.clock.orientation), findsNothing);
     await tap(tester, strings.clock.settings_sound);
@@ -507,8 +512,60 @@ void main() {
     });
   });
 
+  testWidgets('Appearance: Theme, Orientation, Skins, sizes, Corners', (
+    tester,
+  ) async {
+    await open(tester, size: const Size(1280, 2000));
+    final c = strings.clock;
+    double top(Finder f) => tester.getTopLeft(f.first).dy;
+    final order = [
+      top(find.text(c.theme)),
+      top(find.text(c.orientation)),
+      top(find.text(c.skins_title.toUpperCase())),
+      top(find.byType(SkinTile)),
+      top(find.text(c.skins_view_all)),
+      top(find.text(c.settings_card_size)),
+      top(find.text(c.digit_brightness)),
+      top(find.text(c.settings_corners.toUpperCase())),
+      top(find.widgetWithText(AppButton, c.action_start)),
+      top(find.byType(Slider).last),
+    ];
+    expect(order, [...order]..sort());
+    expect(order.toSet(), hasLength(order.length));
+    // Theme and Orientation have no header above them.
+    expect(find.text(c.theme.toUpperCase()), findsNothing);
+    await close(tester);
+  });
+
   group('Appearance skins strip', () {
     final c = strings.clock;
+
+    List<String> strip(WidgetTester tester) => [
+      for (final t in tester.widgetList<SkinTile>(find.byType(SkinTile)))
+        t.skin.id,
+    ];
+
+    testWidgets('starts with a selected skin from the first five', (
+      tester,
+    ) async {
+      await settings.selectSkin('violet');
+      await open(tester);
+      expect(strip(tester), ['violet', 'mono', 'paper', 'rose', 'amber']);
+      expect(
+        tester.widget<SkinTile>(find.byType(SkinTile).first).selected,
+        isTrue,
+      );
+      await close(tester);
+    });
+
+    testWidgets('starts with a selected skin outside the first five', (
+      tester,
+    ) async {
+      await settings.selectSkin('orbit');
+      await open(tester);
+      expect(strip(tester), ['orbit', 'mono', 'paper', 'rose', 'violet']);
+      await close(tester);
+    });
     for (final width in [375.0, 820.0, 1280.0]) {
       testWidgets('shows five skins, applies one, View all ($width)', (
         tester,

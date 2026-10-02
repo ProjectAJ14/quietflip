@@ -269,6 +269,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       label: c.settings_appearance,
       groups: [
         SettingsGroup(
+          rows: [
+            SettingsSegmentedRow<ClockTheme>(
+              label: c.theme,
+              options: [
+                (ClockTheme.dark, c.theme_dark),
+                (ClockTheme.light, c.theme_light),
+                (ClockTheme.system, c.theme_system),
+              ],
+              selected: s.theme,
+              onChanged: (v) => _update(s.copyWith(theme: v)),
+            ),
+            if (widget.orientationSupported)
+              SettingsSegmentedRow<ClockOrientation>(
+                label: c.orientation,
+                options: [
+                  (ClockOrientation.auto, c.orientation_auto),
+                  (ClockOrientation.landscape, c.orientation_landscape),
+                  (ClockOrientation.portrait, c.orientation_portrait),
+                ],
+                selected: s.orientation,
+                onChanged: (v) => _update(s.copyWith(orientation: v)),
+              ),
+          ],
+        ),
+        SettingsGroup(
           header: c.skins_title,
           rows: [
             _SkinStrip(
@@ -285,16 +310,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         SettingsGroup(
           rows: [
-            SettingsSegmentedRow<ClockTheme>(
-              label: c.theme,
-              options: [
-                (ClockTheme.dark, c.theme_dark),
-                (ClockTheme.light, c.theme_light),
-                (ClockTheme.system, c.theme_system),
-              ],
-              selected: s.theme,
-              onChanged: (v) => _update(s.copyWith(theme: v)),
-            ),
             SettingsSegmentedRow<CardSize>(
               label: c.settings_card_size,
               options: [
@@ -362,17 +377,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: s.showDate,
               onChanged: (v) => _update(s.copyWith(showDate: v)),
             ),
-            if (widget.orientationSupported)
-              SettingsSegmentedRow<ClockOrientation>(
-                label: c.orientation,
-                options: [
-                  (ClockOrientation.auto, c.orientation_auto),
-                  (ClockOrientation.landscape, c.orientation_landscape),
-                  (ClockOrientation.portrait, c.orientation_portrait),
-                ],
-                selected: s.orientation,
-                onChanged: (v) => _update(s.copyWith(orientation: v)),
-              ),
           ],
         ),
       ],
@@ -430,14 +434,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// The first [SettingsScreen.skinStrip] skins (yours first, as in the
-  /// picker), always including the selected one.
+  /// [SettingsScreen.skinStrip] skins: the selected one first, then the
+  /// others in the picker's order (yours first).
   List<Skin> _strip(ClockSettings s) {
-    final all = [...s.customSkins, ...Skins.builtIn()];
-    final first = all.take(SettingsScreen.skinStrip).toList();
     final selected = widget.settings.skin;
-    if (first.any((skin) => skin.id == selected.id)) return first;
-    return [selected, ...first.take(SettingsScreen.skinStrip - 1)];
+    return [
+      selected,
+      ...[
+        ...s.customSkins,
+        ...Skins.builtIn(),
+      ].where((skin) => skin.id != selected.id),
+    ].take(SettingsScreen.skinStrip).toList();
   }
 
   Future<void> _addPreset() async {

@@ -87,15 +87,17 @@ lib/
   ui/components/account_page.dart          accountCategory (the pinned Account page), LastSyncedRow,
                                            AccountDeletion
   ui/components/sync_card.dart             SyncCard (the pinned card), syncedWhen, failureText
-  ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skins strip: the
-                                           first 5 SkinTiles, yours first, the selected one
-                                           always in it, tap applies, the selected tile's
-                                           Customize -> `onCustomize`; View all -> Skins sheet;
-                                           theme Dark/Light/Match system, card size, digit
+  ui/screens/settings_screen.dart          SettingsShell content: Appearance, top to bottom
+                                           (no header: theme Dark/Light/Match system,
+                                           Orientation where supported; Skins: a strip of 5
+                                           SkinTiles, the selected one first, then the others
+                                           in picker order (yours first), tap applies, the
+                                           selected tile's Customize -> `onCustomize`, View
+                                           all -> Skins sheet; no header: card size, digit
                                            brightness; Corners: a live sample of a button,
                                            a chip and a mini flip card over a 0..24 slider,
                                            Square .. Round) /
-                                           Clock (24h, seconds, date, orientation) / Gestures
+                                           Clock (24h, seconds, date) / Gestures
                                            (swipes, tap, hide-after) / Timers (Default timer: segmented
                                            Pomodoro + presets; Presets: a row each with delete,
                                            Add timer -> TimerPicker, off at 6 with a footer;
@@ -152,7 +154,8 @@ lib/
   unawaited), so the first tick plays without a load delay.
 - Orientation: `init()` applies the saved `orientation` through
   `OrientationLock` at start (unawaited, so launch never waits) and on every
-  distinct change. Settings > Clock shows the Orientation control, the
+  distinct change. Settings > Appearance shows the Orientation control
+  (under Theme), the
   clock screen its Rotation corner button and the R key, only when
   `OrientationLock.supported` (Android/iOS), passed in by the router (the
   widgets never `di.get`). Rotation and R cycle `orientation` auto ->
