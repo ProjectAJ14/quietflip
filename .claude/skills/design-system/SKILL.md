@@ -15,7 +15,8 @@ compose it; they do not restyle it. Package details and gotchas are in
 |---|---|---|
 | Color | `DesignColors.of(context).<token>` or `Theme.of(context).colorScheme.<role>` (`primary`, `onPrimary`, `surface`, `onSurfaceVariant`, `error`, `outlineVariant`, ...) | `Color(0x...)`, `Colors.*`, opacity hacks for meaning |
 | Text | `Theme.of(context).textTheme.<style>` (`titleLarge`, `bodyMedium`, `labelSmall`, ...), `copyWith` only for `color` / `fontWeight` | Raw `TextStyle(fontSize: ...)`, new font families |
-| Buttons, app bar, nav bar, inputs | Plain Material widgets; styling comes from `DesignSystem._baseTheme` | Per-widget `style:` that restyles shape or typography |
+| Buttons and taps | `AppButton.text` / `.filled` / `.outlined` / `.icon`; anything else tappable is a `Pressable` (press-down, no ink) | Material buttons, `InkWell`, `InkResponse`, `ListTile(onTap:)`, `SwitchListTile`, `GestureDetector(onTap:)` |
+| App bar, nav bar, inputs | Plain Material widgets; styling comes from `DesignSystem._baseTheme` | Per-widget `style:` that restyles shape or typography |
 | Icons | `NavigationIcons` for navigation; Material `Icons` otherwise | A second icon set in a feature |
 | Feedback | `Toast.success/error/warning/notification`; `Loader.show/hide` for blocking work; `DefaultLoader` inline | `ScaffoldMessenger` snack bars, ad-hoc overlays |
 | Errors | `DefaultErrorView` (inline, with retry), `ErrorScreen` (full screen) | Custom error widgets per feature |
@@ -78,8 +79,9 @@ Otherwise keep it in the feature's `lib/ui/components/`.
   ink-subtle). `lib/generated/theme.dart` (Material Theme Builder) only
   supplies the roles the tokens do not name; never edit it.
 - Fonts: Geist for the interface (`DesignSystem(context, bodyFont: ..., displayFont: ...)`), `DisplayFace` for digits. Every face is bundled; never add one without its `.ttf` and OFL licence.
-- Component-wide changes (all buttons squarer, all app bars left-aligned) go in
-  `DesignSystem._baseTheme`, one place.
+- Component-wide changes go in one place: all buttons in `AppButton`, the
+  press feel in `Pressable` and the `DesignMotion.press*` tokens, everything
+  else (all app bars left-aligned) in `DesignSystem._baseTheme`.
 
 ## UI review checklist
 

@@ -22,6 +22,10 @@ Everything, including `Toast`, is exported from
 | `DesignElevation` | value | `shadows` plus a 1px top `highlight` that fades out by mid-height; `DesignColors.islandElevation` |
 | `DesignShape` | `ThemeExtension` | Every corner from one `corner` (default 14, `minCorner` 0 .. `maxCorner` 24): `xs` / `sm` / `md` / `lg` = corner x 6/14, 10/14, 1, 22/14; `forHeight(h, {role})` caps a role (default `md`) at h/2; `DesignShape.of(context)` (default corner when absent); static `circular` / `radius` / `rounded`, the only place a radius becomes a shape |
 | `DesignSkinColors`, `DesignSpace`, `DesignSize`, `DesignMotion` | constants | `skin-*`, `space-*`, `size-*`, `dur-*` and the island spring, exactly as in `tokens.json` |
+| `DesignMotion.pressScale` / `pressScaleSmall` / `pressOpacity` / `pressIn` (+ `pressInCurve`) / `pressOut` (+ `pressOutCurve`) | constants | The press: 0.96 (0.92 for children 48px or smaller), 0.7 opacity under reduced motion, 90 ms `easeOut` in, 180 ms `easeOutCubic` out (no overshoot) |
+| `reducedMotion(context)` | function | True for `disableAnimations` (Android "Remove animations", web `prefers-reduced-motion`) or iOS Reduce Motion; every motion in the package and in features asks it |
+| `Pressable({child, onTap, onLongPress, semanticsLabel, selected, role, focusRadius})` | widget | The one tap: shrinks on pointer down (no tap delay), fires on release inside the tap slop, moving past the slop (drag off, a scroll) releases without firing; long press; focusable, Enter/Space fire with a `pressIn` press-and-release; keyboard focus draws a 2px `accent` ring outside the child at `focusRadius` (default `sm`); click cursor on hover, no wash; null `onTap` = disabled (no press, not focusable, `enabled: false`); semantics `button` (or `role`, which also speaks `selected: false`), label, tap/long-press actions, `selected`; reduced motion dips opacity, no scale |
+| `AppButton.text` / `.filled` / `.outlined({label, onPressed, icon, semanticsLabel})`, `AppButton.text(danger:)`, `AppButton.icon({icon, tooltip, onPressed})` | widget | Every button: a `Pressable` around a `ShapeDecoration` box with the Material 3 values the old button themes gave (filled: `primary` fill, `onPrimary` text; text and outlined: `primary` text, outlined adds a 1.5px `primary` side in every state; icon: `onSurfaceVariant`, 24px glyph, 8 padding, 44 square, `forHeight(44, role: sm)`; disabled `onSurface` at 38% text and 12% fill), `labelLarge` w600, Material's text-scaled padding and icon gap (18px icon), `sm` corner, min 64 x 44 (`DesignSize.cornerButton`). `danger` colours a text button `DesignColors.danger`; `semanticsLabel` replaces the spoken label; the icon variant's `tooltip` is its tooltip and spoken name |
 | `SpringCurve`, `DesignMotion.islandCurve` | curve | A `SpringDescription` played over a `Duration` as a `Curve` (overshoots, ends at exactly 1); `islandCurve` is the island spring over `islandMorph` |
 | `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; the ten bundled digit faces (family, weight, `style()`, `assetName`) |
 | `MaterialTheme` | generated | Color schemes (light, dark, contrast variants) |
@@ -54,8 +58,19 @@ Everything, including `Toast`, is exported from
 
 ## Rules
 
-- Component styling (buttons, app bar, navigation bar, inputs) is set once in
-  `DesignSystem._baseTheme`. Change it there, not with per-widget `style:`.
+- **Every tappable thing is a `Pressable`**, or a component built on it;
+  **buttons are `AppButton`**. No `InkWell`, `InkResponse`, Material buttons,
+  `ListTile(onTap:)`, `SwitchListTile` or `GestureDetector(onTap:)` in new
+  code: they ripple or skip the press-down. `_baseTheme` sets `NoSplash` and
+  transparent highlight, splash, hover and overlay colours (switch,
+  checkbox, radio, slider, segmented button, navigation bar, the old button
+  themes) so stock and third-party screens (FirebaseUI, `showLicensePage`)
+  draw no ink either. The Material button themes stay only until the last
+  caller moves to `AppButton`; then delete them. A source-scan gate for
+  this rule lives in `features/flip_clock/test/press_rule_test.dart`.
+- Other component styling (app bar, navigation bar, inputs, segmented
+  buttons) is set once in `DesignSystem._baseTheme`. Change it there, not
+  with per-widget `style:`.
 - **One corner for the whole app.** Every rounded shape comes from
   `DesignShape.of(context)`: buttons, segmented buttons, chips, list tiles,
   snack bars, inputs `sm`; cards, skin tiles, flip cards `md`; sheets,
@@ -110,6 +125,8 @@ Everything, including `Toast`, is exported from
 | `fonts_test.dart` | Every Geist weight and `DisplayFace` has its `.ttf` and OFL licence in `assets/google_fonts/`, declared in `pubspec.yaml` |
 | `shape_test.dart` | `DesignShape` ratios at 0/14/24, `forHeight` cap, value semantics/lerp, `of` fallback, every Material component shape at corner 0/14/24 |
 | `components_test.dart` | Mono themes and tokens, Geist text styles, loaders, error view/screen, asset fallbacks, network image, wrapper brightness + loader, string helpers |
+| `pressable_test.dart` | Scale 0.96 held / 1.0 released, 0.92 for a 44px child, press shows inside the tap delay, fires on up not down, drag-off and scroll release without firing, long press, a second finger, Enter and Space, dispose mid keyboard press, focus ring (2px accent at `focusRadius`, `sm` default), click cursor with no wash, disabled ignores press/keys/focus, disabling mid-press, reduced-motion opacity dip, semantics (button, label, actions, selected; a `role` replaces the button flag) |
+| `app_button_test.dart` | Each variant (with and without icon, enabled and disabled) matches the old theme's resolved `ButtonStyle` (fill, foreground, shape and side, text style, padding, icon size) in both Mono themes at corner 0 and 24; the old `IconButton` defaults the icon variant copies; one tap fires once and no ink paints; min 64 x 44; danger colour; semantics and tooltip; text scale 2; the theme's no-ink settings and a stock `InkWell` / `TextButton` painting no ripple in both themes |
 | `island_test.dart` | CornerButton (taps only expanded, dot in its corner, hidden, shrink-then-fade, spring back, corner 0/24, reduced motion, theme switch mid-morph), island fits its box, island and tray-action corners at 0/14/24 (dot stays a dot), collapse timeline (opacity holds until the shape is under half height, no overshoot, ends hidden), expand springs, dot stays opaque, dot -> hidden plain fade, reduced-motion cross-fade, spacing tokens and centred tray, depth decoration in both themes, spring overshoot, HUD model, island sizes per state in both Mono themes, HUD over hidden, tab taps/colours/semantics, 320px at text scale 2, tray layout/taps/disabled/status, status-only tray, tray contrast >= 4.5:1, tray scrolls at 320px and text scale 2, reduced motion; sliding tab pill: equal tab widths at text scale 1 and 2, re-measured after fonts load, pill at index x (tab width + gap) after the slide with the colour fade and height morph in the same frames, reduced-motion jump |
 | `settings_shell_test.dart` | Phone/split/desktop layouts at 375/820/1280 and `desktop: true` in both Mono themes, sidebar widths and row heights, phone navigation and system back, sidebar selection and accent pill, shell colours from the theme in both brightnesses, `s2` gap under segmented/slider controls in both densities, slider stop labels, Done, `openInitialCategory` on the phone (Done, back to the root) and split, a value row's trailing control, every row's callback, group header/hint/footer, standalone rows, text scale 2 at 375 and 1280; pinned category: phone card after the list opens its page, split card at the sidebar bottom with the accent ring, Enter/Space, `initialCategory` past the list, text scale 2 in Mono Light |
 | `integration_test.dart` | Image adapters, `AuthHeadersBuilder` (missing provider, failures, rebuilds), dialogs, toast variants |

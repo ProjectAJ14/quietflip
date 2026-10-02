@@ -307,7 +307,35 @@ abstract final class DesignMotion {
   /// [islandSpring] over [islandMorph] as a [Curve], for implicit animations
   /// (`AnimatedSize`, `AnimatedContainer`). Overshoots slightly.
   static const Curve islandCurve = SpringCurve(islandSpring, islandMorph);
+
+  /// A `Pressable` scales its child to this while pressed.
+  static const double pressScale = 0.96;
+
+  /// [pressScale] for children 48 px or smaller, so the press still shows.
+  static const double pressScaleSmall = 0.92;
+
+  /// Under reduced motion a press dips the child to this opacity instead.
+  static const double pressOpacity = 0.7;
+
+  /// Press in: starts on pointer down, eases out over [pressIn].
+  static const Duration pressIn = Duration(milliseconds: 90);
+
+  /// The curve of [pressIn].
+  static const Curve pressInCurve = Curves.easeOut;
+
+  /// Release: springs back over [pressOut], no overshoot.
+  static const Duration pressOut = Duration(milliseconds: 180);
+
+  /// The curve of [pressOut].
+  static const Curve pressOutCurve = Curves.easeOutCubic;
 }
+
+/// True when the user asked for less motion: Android "Remove animations" and
+/// web `prefers-reduced-motion` (`disableAnimations`), or iOS Reduce Motion
+/// (`reduceMotion`, which does not set `disableAnimations`).
+bool reducedMotion(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context) ||
+    View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
 
 /// A [Curve] that plays [spring] from 0 to 1 at rest over [duration]:
 /// `transform(t)` is the spring's position `t * duration` after release. It

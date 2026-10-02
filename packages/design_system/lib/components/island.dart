@@ -67,11 +67,6 @@ final class IslandBrightnessHud extends IslandHud {
 /// Icon size in the island (brand book: 22px symbols).
 const double _chromeIconSize = 22;
 
-/// Whether chrome should skip its spring and only cross-fade.
-bool _reduceMotion(BuildContext context) =>
-    MediaQuery.disableAnimationsOf(context) ||
-    View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
-
 /// The top-centre pill: a dot, the tab bar over an action tray, or a HUD.
 /// One dark shape that morphs between them: it grows on the island spring
 /// and shrinks on [DesignMotion.collapseCurve] (no bounce on the way out);
@@ -156,7 +151,7 @@ class Island extends StatefulWidget {
     final hud = this.hud;
     final expanded = _expanded;
     final visible = _visible;
-    final reduceMotion = _reduceMotion(context);
+    final reduceMotion = reducedMotion(context);
     final shape = DesignShape.of(context);
     // Two rows take the large role; anything shorter is capped at half its
     // height, so the dot stays a dot.
@@ -457,7 +452,7 @@ class Island extends StatefulWidget {
   Widget _tabBar(BuildContext context, DesignColors colors, TextTheme text) {
     final shape = DesignShape.of(context);
     final item = shape.forHeight(DesignSize.cornerButton);
-    final reduceMotion = _reduceMotion(context);
+    final reduceMotion = reducedMotion(context);
     // Measured as the labels draw (the ambient style under labelLarge, at
     // the current text scale), so no tab is wider than another.
     final style = DefaultTextStyle.of(context).style.merge(text.labelLarge);
@@ -675,7 +670,7 @@ class _CornerButtonState extends State<CornerButton> {
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
     final shape = DesignShape.of(context);
-    final reduceMotion = _reduceMotion(context);
+    final reduceMotion = reducedMotion(context);
     final expanded = widget.state == ChromeState.expanded;
     final size = widget._size;
     final fadeAfter = _fadeAfterShrink && !reduceMotion;
