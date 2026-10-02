@@ -173,7 +173,10 @@ void main() {
           ds.SettingsShell.desktopSidebarWidth,
         );
         final nav = find
-            .ancestor(of: _inSidebar('Looks'), matching: find.byType(InkWell))
+            .ancestor(
+              of: _inSidebar('Looks'),
+              matching: find.byType(ds.Pressable),
+            )
             .first;
         expect(tester.getSize(nav).height, ds.SettingsShell.desktopNavHeight);
         expect(
@@ -603,7 +606,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );
@@ -625,7 +628,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );
@@ -663,7 +666,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );
@@ -688,7 +691,7 @@ void main() {
         find
             .ancestor(
               of: find.text('Card body'),
-              matching: find.byType(InkWell),
+              matching: find.byType(ds.Pressable),
             )
             .first,
       );

@@ -100,6 +100,51 @@ void main() {
     expect(_scale(tester), 1);
   });
 
+  testWidgets('a press inside another Pressable shrinks only the inner one', (
+    tester,
+  ) async {
+    var outer = 0;
+    var inner = 0;
+    await _pump(
+      tester,
+      Pressable(
+        key: const Key('outer'),
+        onTap: () => outer++,
+        child: SizedBox(
+          width: 200,
+          height: 120,
+          child: Center(
+            child: Pressable(
+              key: const Key('inner'),
+              onTap: () => inner++,
+              child: _box(80, 40),
+            ),
+          ),
+        ),
+      ),
+    );
+    double scaleOf(String key) => tester
+        .widget<Transform>(
+          find
+              .descendant(
+                of: find.byKey(Key(key)),
+                matching: find.byType(Transform),
+              )
+              .first,
+        )
+        .transform
+        .entry(0, 0);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('inner'))),
+    );
+    await tester.pumpAndSettle();
+    expect(scaleOf('inner'), lessThan(1));
+    expect(scaleOf('outer'), 1);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect((inner, outer), (1, 0));
+  });
+
   testWidgets('dragging off cancels and releases without firing', (
     tester,
   ) async {

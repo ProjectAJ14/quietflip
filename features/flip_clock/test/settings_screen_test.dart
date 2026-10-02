@@ -20,6 +20,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
 
 import 'fakes.dart';
+import 'ink.dart';
 
 void main() {
   late FakeAlerts alerts;
@@ -101,6 +102,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('a sidebar row presses down without ink', (tester) async {
+    await open(tester);
+    await tester.tap(find.text(strings.clock.settings_sound).last);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(liveInk(tester), isEmpty);
+    await tester.pumpAndSettle();
+    expect(find.text(strings.clock.sound_tick_hint), findsOne);
+    await close(tester);
+  });
+
   testWidgets('every category saves its settings', (tester) async {
     await open(tester);
     final c = strings.clock;
@@ -141,8 +152,8 @@ void main() {
     expect(find.text(c.corners_value('14')), findsOne);
     expect(find.text('12'), findsWidgets);
     // The sample is look only: its button is drawn enabled and does nothing.
-    final sample = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, c.action_start),
+    final sample = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, c.action_start),
     );
     final before = settings.state;
     sample.onPressed!();
@@ -410,9 +421,8 @@ void main() {
             await tester.pump();
           }
 
-          Finder ok() => find.widgetWithText(TextButton, strings.generic.ok);
-          bool canConfirm() =>
-              tester.widget<TextButton>(ok()).onPressed != null;
+          Finder ok() => find.widgetWithText(AppButton, strings.generic.ok);
+          bool canConfirm() => tester.widget<AppButton>(ok()).onPressed != null;
 
           await tap(tester, c.timers_add);
           await tap(tester, strings.generic.cancel);
@@ -563,6 +573,15 @@ void main() {
 
     Future<void> wait(WidgetTester tester, int ms) =>
         tester.pump(Duration(milliseconds: ms));
+
+    testWidgets('a sound tile presses down without ink', (tester) async {
+      await openSound(tester);
+      await pick(tester, c.tick_digital);
+      await wait(tester, 50);
+      expect(settings.state.tickSound, TickSound.digital);
+      expect(liveInk(tester), isEmpty);
+      await close(tester);
+    });
 
     testWidgets('two rows of five tiles, Classic and Chime selected', (
       tester,
@@ -717,7 +736,10 @@ void main() {
       await openSound(tester);
       double opacityOver(String name) => tester
           .widget<Opacity>(
-            find.ancestor(of: find.text(name), matching: find.byType(Opacity)),
+            find
+                .ancestor(of: find.text(name), matching: find.byType(Opacity))
+                // The dim, outside the tile's own press opacity.
+                .last,
           )
           .opacity;
       expect(opacityOver(c.tick_classic), 0.45, reason: 'tick is off');

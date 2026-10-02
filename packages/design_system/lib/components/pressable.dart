@@ -65,6 +65,11 @@ class _PressableState extends State<Pressable>
     reverseCurve: DesignMotion.pressOutCurve.flipped,
   );
 
+  /// The pointer down the innermost Pressable under the finger took. A down
+  /// reaches the deepest hit first, so an outer Pressable (a tile around a
+  /// Customize button) sees it is taken and stays still.
+  static (int, Duration)? _claimed;
+
   int? _pointer;
   Offset _downAt = Offset.zero;
   double _slop = kTouchSlop;
@@ -102,7 +107,9 @@ class _PressableState extends State<Pressable>
   }
 
   void _down(PointerDownEvent event) {
-    if (!_enabled || _pointer != null) return;
+    final down = (event.pointer, event.timeStamp);
+    if (!_enabled || _pointer != null || _claimed == down) return;
+    _claimed = down;
     _pointer = event.pointer;
     _downAt = event.position;
     _slop = computeHitSlop(event.kind, MediaQuery.gestureSettingsOf(context));

@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
 import 'fakes.dart';
+import 'ink.dart';
 
 final now = DateTime(2026, 9, 30, 17, 14);
 
@@ -119,6 +120,36 @@ void main() {
       isTrue,
     );
     await tester.tap(find.text(strings.clock.skins_done));
+    await tester.pumpAndSettle();
+    expect(find.byType(SkinPicker), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('the probe sees a stock ripple', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: InkWell(onTap: () {}, child: const Text('x')),
+        ),
+      ),
+    );
+    await tester.tap(find.text('x'));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(liveInk(tester), isNotEmpty);
+  });
+
+  testWidgets('a skin tile and a sheet button press down without ink', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(tile(strings.clock.skin_paper));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(settings.state.skinId, 'paper');
+    expect(liveInk(tester), isEmpty);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.clock.skins_done));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(liveInk(tester), isEmpty);
     await tester.pumpAndSettle();
     expect(find.byType(SkinPicker), findsNothing);
     await close(tester);
@@ -574,12 +605,12 @@ void main() {
       tester,
     ) async {
       await open(tester, size: const Size(1200, 900));
-      // Focus Rose's tile (its InkWell) and press Enter.
+      // Focus Rose's tile (its Pressable) and press Enter.
       final rose = find.descendant(
         of: tile(c.skin_rose),
-        matching: find.byType(InkWell),
+        matching: find.byType(Pressable),
       );
-      // Its focus node, found from inside the InkWell.
+      // Its focus node, found from inside the Pressable.
       Focus.of(
         tester.element(
           find.descendant(of: rose.first, matching: find.byType(Column)).first,
@@ -594,7 +625,7 @@ void main() {
       await tester.pump();
       final customize = find.descendant(
         of: tile(c.skin_rose),
-        matching: find.byType(TextButton),
+        matching: find.byType(AppButton),
       );
       expect(
         Focus.of(

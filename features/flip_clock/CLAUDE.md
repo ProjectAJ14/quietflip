@@ -122,6 +122,19 @@ lib/
 
 ## Rules
 
+- Every tap presses down: buttons are `AppButton` (the sheet headers' Done
+  and Cancel, dialog actions, the customizer footer, Sign in to sync, the
+  preset delete icon), every other tappable is a `Pressable` (skin, New,
+  face, swatch and sound tiles, account rows). No Material button,
+  `InkWell`, `ListTile(onTap:)`, `SwitchListTile` or
+  `GestureDetector(onTap:)` in `lib/`; `test/press_rule_test.dart` scans
+  this feature, `design_system` and `auth` and fails with `file:line`.
+  `gesture_layer.dart` is exempt (drags and swipes on the clock face). The
+  customizer's Seam and Show date switches are a local `_SwitchRow` (a
+  `Pressable` row, flush with the sheet's other controls;
+  `SettingsSwitchRow`'s `space-4` cell padding would indent it). The
+  Rotation corner button sits in a `MergeSemantics` so its live-region
+  value and the button are one node.
 - State management is `Cubit` (`flutter_bloc`), one per concern, collaborators
   (repository, `Countdown`, `Stopwatch`, `now`, device_services contracts,
   `Logger`) injected through the constructor.
@@ -298,14 +311,14 @@ lib/
   pending/waiting, `cloud_off_outlined`, `error_outline` in `danger`) and
   the status or "Last synced …" (title `bodyLarge` 600 `ink`, subtitle
   `bodyMedium` `inkSubtle`, `danger` when failed); one merged semantics node.
-  The page signed out: headline, body, Sign in to sync (`FilledButton`, full
+  The page signed out: headline, body, Sign in to sync (`AppButton.filled`, full
   width up to 320), What syncs / Stays on this device. Signed in: email and
   provider, Sync settings switch, `LastSyncedRow` ("Just now" < 60 s, "N min
   ago" < 60 min, "Today at 14:05" by `use24h`, else the medium date; one
   `Timer.periodic` of 30 s, cancelled on dispose), a status line (live
   region; pending, waiting, failed offline / denied (taps to sign in) /
   unknown (Try again -> `CloudSync.retry`), switch off), Sign out and
-  Delete account (each behind an `AlertDialog`), "Signing out keeps your
+  Delete account (each behind an `AlertDialog` with `AppButton.text` actions; Delete in `danger`), "Signing out keeps your
   settings on this device". `needsSignIn` shows "Sign in again to delete
   your account", then `onSignIn`; `failed` says so. **No toast, snackbar or
   system notification for any sync outcome.**
@@ -401,6 +414,8 @@ lib/
 ## Tests
 
 `account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+
+`press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit

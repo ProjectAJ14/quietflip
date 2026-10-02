@@ -283,6 +283,9 @@ class DesignSystem {
           overlayColor: Colors.transparent,
         ),
       ),
+      // Our own buttons are `AppButton`. These style the Material buttons
+      // third-party screens still draw (FirebaseUI sign-in, the licence
+      // page, stock dialogs), with no ink.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           shape: control,

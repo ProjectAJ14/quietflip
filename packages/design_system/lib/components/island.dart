@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
@@ -420,9 +421,9 @@ class Island extends StatefulWidget {
         label: a.semanticsLabel ?? a.label,
         excludeSemantics: true,
         onTap: a.onPressed,
-        child: InkWell(
+        child: Pressable(
           onTap: a.onPressed,
-          customBorder: DesignShape.rounded(item),
+          focusRadius: DesignShape.circular(item),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: a.primary
@@ -535,9 +536,10 @@ class Island extends StatefulWidget {
       label: tabs[i],
       excludeSemantics: true,
       onTap: () => onSelect(i),
-      child: InkWell(
+      child: Pressable(
         onTap: () => onSelect(i),
-        customBorder: DesignShape.rounded(item),
+        selected: isSelected,
+        focusRadius: DesignShape.circular(item),
         child: SizedBox(
           width: width,
           height: DesignSize.cornerButton,
@@ -687,28 +689,17 @@ class _CornerButtonState extends State<CornerButton> {
       child: _Surface(
         radius: shape.forHeight(size),
         reduceMotion: reduceMotion,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: widget.onPressed,
-            customBorder: DesignShape.rounded(
-              shape.forHeight(DesignSize.cornerButton),
-            ),
-            // The symbol scales down and fades with the shrink.
-            child: AnimatedOpacity(
-              opacity: expanded ? 1 : 0,
-              duration: expanded
-                  ? DesignMotion.fade
-                  : DesignMotion.islandCollapse,
-              child: FittedBox(
-                child: SizedBox.square(
-                  dimension: DesignSize.cornerButton,
-                  child: Icon(
-                    widget.icon,
-                    size: _chromeIconSize,
-                    color: colors.islandInk,
-                  ),
-                ),
+        // The symbol scales down and fades with the shrink.
+        child: AnimatedOpacity(
+          opacity: expanded ? 1 : 0,
+          duration: expanded ? DesignMotion.fade : DesignMotion.islandCollapse,
+          child: FittedBox(
+            child: SizedBox.square(
+              dimension: DesignSize.cornerButton,
+              child: Icon(
+                widget.icon,
+                size: _chromeIconSize,
+                color: colors.islandInk,
               ),
             ),
           ),
@@ -735,9 +726,12 @@ class _CornerButtonState extends State<CornerButton> {
                 child: Tooltip(
                   message: widget.tooltip,
                   excludeFromSemantics: true,
-                  child: Semantics(
-                    button: true,
-                    label: widget.tooltip,
+                  child: Pressable(
+                    onTap: widget.onPressed,
+                    semanticsLabel: widget.tooltip,
+                    focusRadius: DesignShape.circular(
+                      shape.forHeight(DesignSize.cornerButton),
+                    ),
                     child: box,
                   ),
                 ),

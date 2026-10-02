@@ -122,9 +122,9 @@ class _SkinCustomizerState extends State<SkinCustomizer> {
       children: [
         SheetHeader(
           title: c.customize_title,
-          leading: TextButton(
+          leading: AppButton.text(
             onPressed: widget.onCancel,
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
           ),
         ),
         Expanded(
@@ -275,9 +275,8 @@ class _Controls extends StatelessWidget {
           onChanged: (v) => onChanged((d) => d.copyWith(groundColor: v)),
         ),
         SectionHeader(c.customize_shape),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(c.customize_seam),
+        _SwitchRow(
+          label: c.customize_seam,
           value: draft.seam,
           onChanged: (v) => onChanged((d) => d.copyWith(seam: v)),
         ),
@@ -327,15 +326,53 @@ class _Controls extends StatelessWidget {
           onSelectionChanged: (v) =>
               onChanged((d) => d.copyWith(meridiem: v.single)),
         ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(c.show_date),
+        _SwitchRow(
+          label: c.show_date,
           value: draft.showDate,
           onChanged: (v) => onChanged((d) => d.copyWith(showDate: v)),
         ),
       ],
     );
   }
+}
+
+/// A label and a switch, flush with the sheet's other controls; tapping
+/// anywhere on the row toggles it. (`SettingsSwitchRow` pads its cell by
+/// `space-4`, which would indent it past the headers here.)
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => MergeSemantics(
+    child: Pressable(
+      onTap: () => onChanged(!value),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: DesignSize.cornerButton),
+        child: Row(
+          spacing: DesignSpace.s3,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: DesignColors.of(context).ink,
+                ),
+              ),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// A face choice: "17" set in that face.
@@ -353,28 +390,25 @@ class _FaceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
-    return Semantics(
-      button: true,
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      label: face.family,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: DesignShape.circular(DesignShape.of(context).xs),
-        child: ExcludeSemantics(
-          child: Container(
-            width: 56,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: _ring(
-              colors,
-              selected: selected,
-              radius: DesignShape.of(context).xs,
-            ),
-            child: Text(
-              '17',
-              textScaler: TextScaler.noScaling,
-              style: face.style(color: colors.ink, fontSize: 24),
-            ),
+      semanticsLabel: face.family,
+      focusRadius: DesignShape.circular(DesignShape.of(context).xs),
+      child: ExcludeSemantics(
+        child: Container(
+          width: 56,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: _ring(
+            colors,
+            selected: selected,
+            radius: DesignShape.of(context).xs,
+          ),
+          child: Text(
+            '17',
+            textScaler: TextScaler.noScaling,
+            style: face.style(color: colors.ink, fontSize: 24),
           ),
         ),
       ),
@@ -428,30 +462,27 @@ class _Swatches extends StatelessWidget {
       required VoidCallback onTap,
       Color? fill,
       Widget? child,
-    }) => Semantics(
-      button: true,
+    }) => Pressable(
+      onTap: onTap,
       selected: selected,
-      label: label,
+      semanticsLabel: label,
+      focusRadius: DesignShape.circular(
+        DesignShape.of(context).forHeight(DesignSize.cornerButton),
+      ),
       // 28px visible, 44px to hit.
-      child: InkWell(
-        onTap: onTap,
-        customBorder: DesignShape.rounded(
-          DesignShape.of(context).forHeight(DesignSize.cornerButton),
-        ),
-        child: SizedBox.square(
-          dimension: DesignSize.cornerButton,
-          child: Center(
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: _ring(
-                tokens,
-                selected: selected,
-                radius: DesignShape.of(context).forHeight(28),
-                fill: fill,
-              ),
-              child: child,
+      child: SizedBox.square(
+        dimension: DesignSize.cornerButton,
+        child: Center(
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: _ring(
+              tokens,
+              selected: selected,
+              radius: DesignShape.of(context).forHeight(28),
+              fill: fill,
             ),
+            child: child,
           ),
         ),
       ),
@@ -526,11 +557,11 @@ class _HexDialogState extends State<_HexDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AppButton.text(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
         ),
-        TextButton(onPressed: _apply, child: Text(c.customize_apply)),
+        AppButton.text(onPressed: _apply, label: c.customize_apply),
       ],
     );
   }
@@ -547,7 +578,6 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = strings.clock;
     final colors = DesignColors.of(context);
-    final danger = TextButton.styleFrom(foregroundColor: colors.danger);
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: colors.hairline)),
@@ -563,18 +593,18 @@ class _Footer extends StatelessWidget {
           spacing: DesignSpace.s2,
           runSpacing: DesignSpace.s2,
           children: [
-            TextButton(
-              style: danger,
+            AppButton.text(
+              danger: true,
               onPressed: onReset,
-              child: Text(c.customize_reset),
+              label: c.customize_reset,
             ),
             if (onDelete != null)
-              TextButton(
-                style: danger,
+              AppButton.text(
+                danger: true,
                 onPressed: onDelete,
-                child: Text(c.customize_delete),
+                label: c.customize_delete,
               ),
-            FilledButton(onPressed: onSave, child: Text(c.customize_save)),
+            AppButton.filled(onPressed: onSave, label: c.customize_save),
           ],
         ),
       ),

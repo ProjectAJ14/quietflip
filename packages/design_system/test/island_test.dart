@@ -130,7 +130,7 @@ Color? _pillColor(WidgetTester tester) =>
 
 /// The tappable box of the tab labelled [tab].
 Rect _tabRect(WidgetTester tester, String tab) => tester.getRect(
-  find.ancestor(of: find.text(tab), matching: find.byType(InkWell)),
+  find.ancestor(of: find.text(tab), matching: find.byType(ds.Pressable)),
 );
 
 Color? _labelColor(WidgetTester tester, String tab) =>
@@ -504,12 +504,15 @@ void main() {
     );
     final island = tester.getRect(find.byType(ds.Island));
     final clock = tester.getRect(
-      find.ancestor(of: find.text('Clock'), matching: find.byType(InkWell)),
+      find.ancestor(
+        of: find.text('Clock'),
+        matching: find.byType(ds.Pressable),
+      ),
     );
     final start = tester.getRect(find.byTooltip('Start'));
     final reset = tester.getRect(find.byTooltip('Reset'));
     final chip = tester.getRect(
-      find.ancestor(of: find.text('5m'), matching: find.byType(InkWell)),
+      find.ancestor(of: find.text('5m'), matching: find.byType(ds.Pressable)),
     );
     final tray = tester.getRect(find.byType(SingleChildScrollView));
     expect(clock.top - island.top, ds.DesignSpace.islandInset);

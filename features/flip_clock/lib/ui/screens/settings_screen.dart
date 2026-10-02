@@ -480,9 +480,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsValueRow(
                 label: presetLabel(p),
                 semanticsLabel: presetSpoken(p),
-                trailing: IconButton(
+                trailing: AppButton.icon(
                   tooltip: c.timers_delete(presetSpoken(p)),
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: Icons.delete_outline_rounded,
                   onPressed: () => _update(
                     s.copyWith(
                       timerPresets: [
@@ -715,9 +715,9 @@ class _CornerSample extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: DesignSpace.s4,
           children: [
-            FilledButton(
+            AppButton.filled(
               onPressed: () {},
-              child: Text(strings.clock.action_start),
+              label: strings.clock.action_start,
             ),
             Chip(label: Text(presetLabel(const Duration(minutes: 5)))),
             SizedBox.square(
@@ -840,14 +840,13 @@ class _SoundTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final corner = DesignShape.circular(DesignShape.of(context).sm);
     final (name, mood) = text;
-    return Semantics(
-      container: true,
-      inMutuallyExclusiveGroup: true,
-      checked: selected,
-      label: '$name, $mood',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: corner,
+    return Pressable(
+      onTap: onTap,
+      semanticsLabel: '$name, $mood',
+      focusRadius: corner,
+      child: Semantics(
+        inMutuallyExclusiveGroup: true,
+        checked: selected,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

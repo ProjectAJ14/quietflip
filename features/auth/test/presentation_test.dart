@@ -247,7 +247,13 @@ void main() {
       );
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(GestureDetector).last);
+      await tester.tap(
+        find.text(
+          type == FooterType.signIn
+              ? strings.auth.register
+              : strings.auth.sign_in,
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
         find.text(

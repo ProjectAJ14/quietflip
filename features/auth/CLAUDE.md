@@ -59,6 +59,12 @@ lib/
   `strings.sync.sign_in_reason` (an account is only for syncing settings).
 - `allowUnconfigured` exists only for the demo dashboard before Firebase is set up.
 - Screens and `footerBuilder` take `Logger` as a parameter; only `AuthRouter` and `init()` use `di`.
+- The footer's Register / Sign in link is an `AppButton.text` (press-down,
+  no ink, 44 high). This feature's own `lib/` has no Material button,
+  `InkWell` or `GestureDetector(onTap:)`;
+  `features/flip_clock/test/press_rule_test.dart` scans it. FirebaseUI's
+  screens still draw their own Material buttons, styled (with no ink) by
+  the button themes in `design_system`.
 
 ## Common changes
 

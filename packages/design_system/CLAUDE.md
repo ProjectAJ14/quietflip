@@ -24,7 +24,7 @@ Everything, including `Toast`, is exported from
 | `DesignSkinColors`, `DesignSpace`, `DesignSize`, `DesignMotion` | constants | `skin-*`, `space-*`, `size-*`, `dur-*` and the island spring, exactly as in `tokens.json` |
 | `DesignMotion.pressScale` / `pressScaleSmall` / `pressOpacity` / `pressIn` (+ `pressInCurve`) / `pressOut` (+ `pressOutCurve`) | constants | The press: 0.96 (0.92 for children 48px or smaller), 0.7 opacity under reduced motion, 90 ms `easeOut` in, 180 ms `easeOutCubic` out (no overshoot) |
 | `reducedMotion(context)` | function | True for `disableAnimations` (Android "Remove animations", web `prefers-reduced-motion`) or iOS Reduce Motion; every motion in the package and in features asks it |
-| `Pressable({child, onTap, onLongPress, semanticsLabel, selected, role, focusRadius})` | widget | The one tap: shrinks on pointer down (no tap delay), fires on release inside the tap slop, moving past the slop (drag off, a scroll) releases without firing; long press; focusable, Enter/Space fire with a `pressIn` press-and-release; keyboard focus draws a 2px `accent` ring outside the child at `focusRadius` (default `sm`); click cursor on hover, no wash; null `onTap` = disabled (no press, not focusable, `enabled: false`); semantics `button` (or `role`, which also speaks `selected: false`), label, tap/long-press actions, `selected`; reduced motion dips opacity, no scale |
+| `Pressable({child, onTap, onLongPress, semanticsLabel, selected, role, focusRadius})` | widget | The one tap: shrinks on pointer down (no tap delay), fires on release inside the tap slop, moving past the slop (drag off, a scroll) releases without firing; long press; focusable, Enter/Space fire with a `pressIn` press-and-release; keyboard focus draws a 2px `accent` ring outside the child at `focusRadius` (default `sm`); click cursor on hover, no wash; null `onTap` = disabled (no press, not focusable, `enabled: false`); semantics `button` (or `role`, which also speaks `selected: false`), label, tap/long-press actions, `selected`; reduced motion dips opacity, no scale; nested, only the innermost enabled one under the finger presses (a tile around its Customize button stays still) |
 | `AppButton.text` / `.filled` / `.outlined({label, onPressed, icon, semanticsLabel})`, `AppButton.text(danger:)`, `AppButton.icon({icon, tooltip, onPressed})` | widget | Every button: a `Pressable` around a `ShapeDecoration` box with the Material 3 values the old button themes gave (filled: `primary` fill, `onPrimary` text; text and outlined: `primary` text, outlined adds a 1.5px `primary` side in every state; icon: `onSurfaceVariant`, 24px glyph, 8 padding, 44 square, `forHeight(44, role: sm)`; disabled `onSurface` at 38% text and 12% fill), `labelLarge` w600, Material's text-scaled padding and icon gap (18px icon), `sm` corner, min 64 x 44 (`DesignSize.cornerButton`). `danger` colours a text button `DesignColors.danger`; `semanticsLabel` replaces the spoken label; the icon variant's `tooltip` is its tooltip and spoken name |
 | `SpringCurve`, `DesignMotion.islandCurve` | curve | A `SpringDescription` played over a `Duration` as a `Curve` (overshoots, ends at exactly 1); `islandCurve` is the island spring over `islandMorph` |
 | `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; the ten bundled digit faces (family, weight, `style()`, `assetName`) |
@@ -59,15 +59,29 @@ Everything, including `Toast`, is exported from
 ## Rules
 
 - **Every tappable thing is a `Pressable`**, or a component built on it;
-  **buttons are `AppButton`**. No `InkWell`, `InkResponse`, Material buttons,
-  `ListTile(onTap:)`, `SwitchListTile` or `GestureDetector(onTap:)` in new
-  code: they ripple or skip the press-down. `_baseTheme` sets `NoSplash` and
-  transparent highlight, splash, hover and overlay colours (switch,
-  checkbox, radio, slider, segmented button, navigation bar, the old button
-  themes) so stock and third-party screens (FirebaseUI, `showLicensePage`)
-  draw no ink either. The Material button themes stay only until the last
-  caller moves to `AppButton`; then delete them. A source-scan gate for
-  this rule lives in `features/flip_clock/test/press_rule_test.dart`.
+  **buttons are `AppButton`**. No `InkWell`, `InkResponse`, Material buttons
+  (`TextButton`, `FilledButton`, `OutlinedButton`, `ElevatedButton`,
+  `IconButton`), `ListTile(onTap:)`, `SwitchListTile` or
+  `GestureDetector(onTap:)`: they ripple or skip the press-down. Island
+  tabs, tray actions, corner buttons, settings rows and cards, file-info
+  rows are all `Pressable`s; a row that is not tappable (`_Cell` without
+  `onTap`) is not wrapped, so it gains no button semantics. `_baseTheme`
+  sets `NoSplash` and transparent highlight, splash, hover and overlay
+  colours (switch, checkbox, radio, slider, segmented button, navigation
+  bar, the button themes) so stock and third-party screens draw no ink
+  either. The Material button themes stay on purpose: FirebaseUI's sign-in
+  screens (`features/auth`), `showLicensePage` and stock dialogs still
+  render Material buttons, and the themes keep them in the app's shape and
+  type.
+- **The press gate** is `features/flip_clock/test/press_rule_test.dart`. It
+  scans the `lib/` of `design_system`, `flip_clock` and `auth` (comments
+  blanked, whitespace-tolerant, `file:line` in the failure) for the widgets
+  above. `*ThemeData` and `.styleFrom` are theme config, not taps, and do
+  not match. Exceptions, with the reason: `pressable.dart` and
+  `app_button.dart` (they own the tap), `features/flip_clock`'s
+  `gesture_layer.dart` (drags and swipes on the clock face, not taps).
+  `features/dashboard` (generator demo, not shipped UI) and
+  `packages/developer` (debug tools) are not scanned.
 - Other component styling (app bar, navigation bar, inputs, segmented
   buttons) is set once in `DesignSystem._baseTheme`. Change it there, not
   with per-widget `style:`.

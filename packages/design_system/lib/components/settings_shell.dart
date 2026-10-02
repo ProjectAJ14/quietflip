@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:design_system/components/app_button.dart';
+import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
 import 'package:flutter/material.dart';
@@ -195,9 +197,9 @@ class _SettingsShellState extends State<SettingsShell> {
       ? null
       : Align(
           alignment: AlignmentDirectional.centerStart,
-          child: TextButton(
+          child: AppButton.text(
+            label: widget.doneLabel!,
             onPressed: widget.onDone,
-            child: Text(widget.doneLabel!),
           ),
         );
 
@@ -274,10 +276,10 @@ class _SettingsShellState extends State<SettingsShell> {
                       Expanded(
                         child: Align(
                           alignment: AlignmentDirectional.centerStart,
-                          child: TextButton.icon(
+                          child: AppButton.text(
                             onPressed: _root,
-                            icon: const Icon(Icons.chevron_left_rounded),
-                            label: Text(widget.title),
+                            icon: Icons.chevron_left_rounded,
+                            label: widget.title,
                           ),
                         ),
                       ),
@@ -546,31 +548,30 @@ class _PinnedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
-    return Semantics(
+    final radius = DesignShape.of(context).md;
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      button: true,
+      focusRadius: DesignShape.circular(radius),
       child: Material(
         color: colors.surfaceRaised,
         clipBehavior: Clip.antiAlias,
         shape: DesignShape.rounded(
-          DesignShape.of(context).md,
+          radius,
           side: BorderSide(
             color: selected ? colors.accent : colors.hairline,
             width: selected ? 2 : 1,
           ),
         ),
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: SettingsShell.pinnedCardHeight,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(DesignSpace.s4),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: child,
-              ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: SettingsShell.pinnedCardHeight,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(DesignSpace.s4),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: child,
             ),
           ),
         ),
@@ -597,43 +598,41 @@ class _NavRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = DesignColors.of(context);
     final text = Theme.of(context).textTheme;
-    return Semantics(
+    final radius = DesignShape.circular(DesignShape.of(context).sm);
+    return Pressable(
+      onTap: onTap,
       selected: selected,
-      button: true,
+      focusRadius: radius,
       child: Material(
         color: selected ? colors.accent : Colors.transparent,
-        borderRadius: DesignShape.circular(DesignShape.of(context).sm),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: DesignShape.circular(DesignShape.of(context).sm),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: desktop
-                  ? SettingsShell.desktopNavHeight
-                  : DesignSize.cornerButton,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s2),
-              child: Row(
-                spacing: DesignSpace.s3,
-                children: [
-                  _IconTile(
-                    category.icon,
-                    size: desktop ? 20 : SettingsShell.iconTileSize,
-                    iconSize: desktop ? 14 : 20,
-                    inverted: selected,
+        borderRadius: radius,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: desktop
+                ? SettingsShell.desktopNavHeight
+                : DesignSize.cornerButton,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignSpace.s2),
+            child: Row(
+              spacing: DesignSpace.s3,
+              children: [
+                _IconTile(
+                  category.icon,
+                  size: desktop ? 20 : SettingsShell.iconTileSize,
+                  iconSize: desktop ? 14 : 20,
+                  inverted: selected,
+                ),
+                Expanded(
+                  child: Text(
+                    category.label,
+                    style: (desktop ? text.bodyMedium : text.bodyLarge)
+                        ?.copyWith(
+                          color: selected ? colors.onAccent : colors.ink,
+                        ),
                   ),
-                  Expanded(
-                    child: Text(
-                      category.label,
-                      style: (desktop ? text.bodyMedium : text.bodyLarge)
-                          ?.copyWith(
-                            color: selected ? colors.onAccent : colors.ink,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -718,37 +717,36 @@ class _Cell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final desktop = _SettingsDensity.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: desktop
-              ? SettingsShell.desktopRowHeight
-              : DesignSize.cornerButton,
+    final cell = ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: desktop
+            ? SettingsShell.desktopRowHeight
+            : DesignSize.cornerButton,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: desktop ? DesignSpace.s3 : DesignSpace.s4,
+          vertical: desktop ? DesignSpace.s1 : DesignSpace.s2,
         ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: desktop ? DesignSpace.s3 : DesignSpace.s4,
-            vertical: desktop ? DesignSpace.s1 : DesignSpace.s2,
-          ),
-          child: Row(
-            spacing: DesignSpace.s3,
-            children: [
-              ?leading,
-              Expanded(child: child),
-              // Values and switches sit at the row's end.
-              if (trailing != null)
-                Flexible(
-                  child: Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: trailing,
-                  ),
+        child: Row(
+          spacing: DesignSpace.s3,
+          children: [
+            ?leading,
+            Expanded(child: child),
+            // Values and switches sit at the row's end.
+            if (trailing != null)
+              Flexible(
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: trailing,
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
+    final onTap = this.onTap;
+    return onTap == null ? cell : Pressable(onTap: onTap, child: cell);
   }
 }
 

@@ -55,14 +55,14 @@ void main() {
 
     router.go('/unknown');
     await tester.pumpAndSettle();
-    expect(find.byType(OutlinedButton), findsOneWidget);
-    await tester.tap(find.byType(OutlinedButton));
+    expect(find.text(strings.generic.retry), findsOneWidget);
+    await tester.tap(find.text(strings.generic.retry));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOneWidget);
     router.go('/error?title=Test&message=Try%20later&error=Details');
     await tester.pumpAndSettle();
     expect(find.text('Try later'), findsOneWidget);
-    await tester.tap(find.byType(OutlinedButton));
+    await tester.tap(find.text(strings.generic.retry));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());

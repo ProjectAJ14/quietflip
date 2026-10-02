@@ -35,6 +35,7 @@ import 'package:timekeeping/timekeeping.dart';
 
 import 'contrast.dart';
 import 'fakes.dart';
+import 'ink.dart';
 
 final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
 
@@ -1512,6 +1513,18 @@ void main() {
     });
   });
 
+  testWidgets('a tray action presses down without ink', (tester) async {
+    final h = Harness();
+    await h.settings.update(const ClockSettings(lastMode: ClockMode.stopwatch));
+    await tester.pumpWidget(h.screen());
+    await tester.pumpAndSettle();
+    await tester.tap(action(strings.clock.action_start));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(h.stopwatch.state.running, isTrue);
+    expect(liveInk(tester), isEmpty);
+    await h.dispose(tester);
+  });
+
   for (final width in [375.0, 1280.0]) {
     testWidgets('the island is the only control, top centre ($width)', (
       tester,
@@ -1530,7 +1543,7 @@ void main() {
       expect(island.center.dy, lessThan(844 / 4));
       expect(island.center.dx, closeTo(width / 2, 0.5));
       // Every button on the screen is the island's or a corner button's.
-      for (final type in [InkWell, ButtonStyleButton, IconButton]) {
+      for (final type in [Pressable]) {
         final all = find.byType(type);
         int inside(Type owner) => find
             .descendant(of: find.byType(owner), matching: find.byType(type))
@@ -1935,7 +1948,7 @@ void main() {
         final tab = find
             .ancestor(
               of: find.text(c.mode_clock),
-              matching: find.byType(InkWell),
+              matching: find.byType(Pressable),
             )
             .first;
         expect(

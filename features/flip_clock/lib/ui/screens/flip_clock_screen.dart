@@ -651,23 +651,25 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                       // while the button is not there.
                       child: ExcludeSemantics(
                         excluding: chrome != ChromeState.expanded,
-                        child: Semantics(
-                          container: true,
-                          liveRegion: true,
-                          value: _rotationName(settings.orientation),
-                          child: CornerButton(
-                            state: chrome,
-                            icon: switch (settings.orientation) {
-                              ClockOrientation.auto =>
-                                Icons.screen_rotation_outlined,
-                              ClockOrientation.portrait =>
-                                Icons.stay_current_portrait_outlined,
-                              ClockOrientation.landscape =>
-                                Icons.stay_current_landscape_outlined,
-                            },
-                            tooltip: c.action_rotation,
-                            onPressed: _cycleRotation,
-                            corner: Alignment.bottomRight,
+                        // One node: the button, its name and the rotation.
+                        child: MergeSemantics(
+                          child: Semantics(
+                            liveRegion: true,
+                            value: _rotationName(settings.orientation),
+                            child: CornerButton(
+                              state: chrome,
+                              icon: switch (settings.orientation) {
+                                ClockOrientation.auto =>
+                                  Icons.screen_rotation_outlined,
+                                ClockOrientation.portrait =>
+                                  Icons.stay_current_portrait_outlined,
+                                ClockOrientation.landscape =>
+                                  Icons.stay_current_landscape_outlined,
+                              },
+                              tooltip: c.action_rotation,
+                              onPressed: _cycleRotation,
+                              corner: Alignment.bottomRight,
+                            ),
                           ),
                         ),
                       ),
