@@ -557,7 +557,6 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
             screen: widget,
             settings: settings,
             skin: skin,
-            inset: inset,
             onFlip: flip,
           ),
       ],
@@ -816,15 +815,16 @@ class _FullScreenNote extends StatelessWidget {
   }
 }
 
-/// The active mode, clear of the chrome, with padding that shrinks on tiny
-/// windows.
+/// The active mode, filling the safe area with the same padding on every
+/// side (less on tiny windows). The chrome floats over it: nothing here
+/// makes room for the island, the corner buttons or the Rotation button,
+/// so the clock never moves when they expand, collapse or hide.
 class _ModeView extends StatelessWidget {
   const _ModeView({
     required this.mode,
     required this.screen,
     required this.settings,
     required this.skin,
-    required this.inset,
     required this.onFlip,
   });
 
@@ -833,34 +833,17 @@ class _ModeView extends StatelessWidget {
   final ClockSettings settings;
   final Skin skin;
 
-  /// The island's distance from the safe area.
-  final double inset;
-
   /// The flip sound, or null while it must not play.
   final VoidCallback? onFlip;
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final side = size.shortestSide < 400 ? DesignSpace.s2 : DesignSpace.s8;
-    // Room for the expanded island above, so it never covers the digits; a
-    // tiny window gives up at most a quarter of its height.
-    // A narrow window's island sits a row lower, so it may take a third.
-    final top = math.min(
-      _islandPlace(size, inset).top + Island.trayHeight + inset,
-      size.height / (size.width < _besideCornersWidth ? 3 : 4),
-    );
-    // Room for the Rotation button below too, where it shows, so a tall
-    // stack never runs under it (same quarter-height cap).
-    final bottom = screen.orientationSupported
-        ? math.max(
-            side,
-            math.min(inset + DesignSize.cornerButton + inset, size.height / 4),
-          )
-        : side;
+    final pad = MediaQuery.sizeOf(context).shortestSide < 400
+        ? DesignSpace.s4
+        : DesignSpace.s8;
     final flip = onFlip;
     return Padding(
-      padding: EdgeInsets.fromLTRB(side, top, side, bottom),
+      padding: EdgeInsets.all(pad),
       child: switch (mode) {
         ClockMode.clock => BlocBuilder<ClockController, DateTime>(
           bloc: screen.clock,

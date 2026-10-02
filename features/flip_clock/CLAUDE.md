@@ -269,11 +269,15 @@ lib/
   The island rebuilds on countdown/stopwatch state changes, not on ticks.
   A countdown that finishes while the chrome is hidden wakes it on the
   finished tray; the idle collapse still applies. The full-screen note
-  sits under the island. The mode view reserves the island's top,
-  `Island.trayHeight` and an inset above (at most a quarter of the height,
-  a third below 600px wide where the island sits a row lower) and, below, side
-  padding or, where the Rotation button shows, its inset + 44 + inset (same
-  quarter cap), so the chrome never covers the digits, date or laps. A hidden chrome makes
+  sits under the island. The chrome is an overlay: the mode view pads the
+  safe area by the same `space-4` on every side below 400px shortest side
+  (`space-8` from 400px), plus `SubtleMovement`'s constant 16px, with no
+  term for the island, the corner buttons or the Rotation button, and the
+  display (with its date or laps) centres in that box both ways. The
+  expanded island and the corner buttons draw over the top and bottom
+  cards (the island's surface keeps it legible) and nothing reflows when
+  the chrome expands, collapses or hides (iPhone 15 Pro, Large: 221px
+  stacked H:M:S, 343.5px stacked H:M, 324px landscape row). A hidden chrome makes
   the whole clock one "show controls" button for screen readers.
 - Rotation: the R key (phones only) and the Rotation corner button cycle
   the screen rotation (see Orientation).
@@ -448,10 +452,12 @@ widget tester's clock):
 - **Window size:** every mode and Settings lay out without overflow at
   320x1024, 320x568, 507x1024, 1024x320, 200x100, 1366x1024 and 390x844,
   text scale 1 and 2, and while resized mid-run (timer, full screen,
-  stopwatch). On very short windows the island's reserve is at most a
-  quarter of the height. With seconds, the date, laps and every corner
-  button on, no chrome overlaps the digits, date or laps wherever that
-  reserve is not capped.
+  stopwatch). The chrome floats over the clock: with seconds, the date,
+  laps and every corner button on, the digits and laps stay inside the
+  window and do not move when the chrome hides. At 393x852 with phone
+  insets the display's centre is the safe area's centre in every mode,
+  chrome open or hidden; 320x568 at text scale 1 and 2 fits the date and
+  digits inside the `space-4` box.
 - **Hours on a charger:** 24 h of clock ticks keep exactly one timer, one
   emission per second, all aligned; a 12 h countdown keeps exactly two
   timers (ticker + end) and none after finishing; 3 h of the screen ticking

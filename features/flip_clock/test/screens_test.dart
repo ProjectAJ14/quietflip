@@ -1573,10 +1573,11 @@ void main() {
         tester.getSize(find.text(strings.clock.mode_stopwatch)).height,
         closeTo(20, 0.5),
       );
-      // The digits start below the chrome.
+      // The chrome floats over the clock: the digits centre in the panel,
+      // nothing is reserved for the island.
       expect(
-        tester.getRect(find.byType(FlipDisplay)).top,
-        greaterThanOrEqualTo(island.bottom),
+        tester.getCenter(find.byType(FlipDisplay)).dy,
+        closeTo(tester.getCenter(find.byType(PageView)).dy, 1),
       );
       await h.dispose(tester);
     });
@@ -1654,12 +1655,12 @@ void main() {
       await h.settings.update(const ClockSettings(showDate: true));
       await tester.pumpWidget(h.screen());
       await tester.pumpAndSettle();
-      // Height-limited cards fill down to the side padding (space-2 on a
+      // Height-limited cards fill down to the padding (space-4 on a
       // phone): the date takes its line, not half the panel.
       final panel = tester.getRect(find.byType(PageView));
       expect(
         tester.getRect(find.byType(FlipDisplay)).bottom,
-        closeTo(panel.bottom - DesignSpace.s2, 1),
+        closeTo(panel.bottom - DesignSpace.s4, 1),
       );
       await h.dispose(tester);
     });
@@ -1686,15 +1687,202 @@ void main() {
       expect(display.top - date.bottom, closeTo(DesignSpace.s6, 0.5));
       // Centred as one block in the free space: nothing parked below.
       final panel = tester.getRect(find.byType(PageView));
-      // Width-limited cards leave room: the island's reserve (inset,
-      // trayHeight, inset) on top, side padding (space-8) below.
-      final above =
-          date.top - (panel.top + DesignSpace.s6 * 2 + Island.trayHeight);
+      // Width-limited cards leave room: the same padding (space-8) on
+      // every side; the island floats over it, nothing is reserved for it.
+      final above = date.top - (panel.top + DesignSpace.s8);
       final below = panel.bottom - DesignSpace.s8 - display.bottom;
       expect(below, greaterThan(0));
       expect(above, closeTo(below, 1));
       await h.dispose(tester);
     });
+  });
+
+  group('the clock fills the screen; the chrome floats over it', () {
+    /// A phone window: [size] with its notch / home-bar [insets].
+    void phone(
+      WidgetTester tester,
+      Size size, {
+      double top = 0,
+      double bottom = 0,
+      double side = 0,
+    }) {
+      final insets = FakeViewPadding(
+        left: side,
+        top: top,
+        right: side,
+        bottom: bottom,
+      );
+      tester.view
+        ..physicalSize = size
+        ..devicePixelRatio = 1
+        ..padding = insets
+        ..viewPadding = insets;
+      addTearDown(tester.view.reset);
+    }
+
+    /// One card's height: a stack is [n] cards with space-6 between them.
+    double cardHeight(WidgetTester tester, int n, {required bool stacked}) {
+      final display = tester.getSize(find.byType(FlipDisplay));
+      return stacked
+          ? (display.height - DesignSpace.s6 * (n - 1)) / n
+          : display.height;
+    }
+
+    testWidgets('the display sits in the safe area centre in every mode', (
+      tester,
+    ) async {
+      phone(tester, const Size(393, 852), top: 59, bottom: 34);
+      // The safe area: 393 x 759 from y 59.
+      const centre = Offset(393 / 2, 59 + 759 / 2);
+      final h = Harness();
+      await h.settings.update(const ClockSettings(showSeconds: true));
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      for (final mode in ClockMode.values) {
+        await h.settings.update(h.settings.state.copyWith(lastMode: mode));
+        await tester.pump();
+        await tester.pump(DesignMotion.islandMorph);
+        expect(chromeOf(tester), ChromeState.expanded);
+        final open = tester.getCenter(find.byType(FlipDisplay));
+        expect(open.dx, closeTo(centre.dx, 1), reason: '$mode expanded');
+        expect(open.dy, closeTo(centre.dy, 1), reason: '$mode expanded');
+        await tester.pump(const Duration(seconds: 8));
+        await tester.pumpAndSettle();
+        expect(chromeOf(tester), ChromeState.hidden);
+        final hidden = tester.getCenter(find.byType(FlipDisplay));
+        expect(hidden.dx, closeTo(centre.dx, 1), reason: '$mode hidden');
+        expect(hidden.dy, closeTo(centre.dy, 1), reason: '$mode hidden');
+        await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pumpAndSettle();
+      }
+      await h.dispose(tester);
+    });
+
+    for (final (name, size, insets, seconds, n, stacks, want) in [
+      // The brief's table (226 / 351 / 339) leaves out SubtleMovement's
+      // constant 16 px (8 a side, on or off), so each box is 16 px smaller.
+      // Height-bound: 759 safe - 2 x 16 - 16, less two 24 gaps, over three.
+      (
+        'portrait H:M:S',
+        const Size(393, 852),
+        (top: 59.0, bottom: 34.0, side: 0.0),
+        true,
+        3,
+        true,
+        221.0,
+      ),
+      // The two-card stack: (711 - 24) / 2, under the 345 width / 1.0.
+      (
+        'portrait H:M',
+        const Size(393, 852),
+        (top: 59.0, bottom: 34.0, side: 0.0),
+        false,
+        2,
+        true,
+        343.5,
+      ),
+      // Height-bound row: 393 - 21 - 2 x 16 - 16 (width allows 331).
+      (
+        'landscape H:M',
+        const Size(852, 393),
+        (top: 0.0, bottom: 21.0, side: 59.0),
+        false,
+        2,
+        false,
+        324.0,
+      ),
+    ]) {
+      testWidgets('iPhone 15 Pro $name cards are about $want px', (
+        tester,
+      ) async {
+        phone(
+          tester,
+          size,
+          top: insets.top,
+          bottom: insets.bottom,
+          side: insets.side,
+        );
+        final h = Harness();
+        await h.settings.update(ClockSettings(showSeconds: seconds));
+        await tester.pumpWidget(h.screen(orientationSupported: true));
+        await tester.pumpAndSettle();
+        expect(cardHeight(tester, n, stacked: stacks), closeTo(want, 2));
+        await h.dispose(tester);
+      });
+    }
+
+    testWidgets('nothing moves as the chrome expands, collapses or hides', (
+      tester,
+    ) async {
+      phone(tester, const Size(393, 852), top: 59, bottom: 34);
+      final h = Harness();
+      await h.settings.update(
+        const ClockSettings(showSeconds: true, showDate: true),
+      );
+      await tester.pumpWidget(h.screen(orientationSupported: true));
+      await tester.pumpAndSettle();
+      final date = find.text(
+        MaterialLocalizations.of(
+          tester.element(find.byType(FlipClockScreen)),
+        ).formatFullDate(h.wall.now),
+      );
+      List<Rect> layout() => [
+        tester.getRect(find.byType(FlipDisplay)),
+        tester.getRect(date),
+      ];
+      final expanded = layout();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.dot);
+      expect(layout(), expanded);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.hidden);
+      expect(layout(), expanded);
+      await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(chromeOf(tester), ChromeState.expanded);
+      expect(layout(), expanded);
+      await h.dispose(tester);
+    });
+
+    for (final scale in const [1.0, 2.0]) {
+      testWidgets('320 x 568 at text scale $scale fits, date included', (
+        tester,
+      ) async {
+        phone(tester, const Size(320, 568), top: 20);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final h = Harness();
+        await h.settings.update(
+          const ClockSettings(showSeconds: true, showDate: true),
+        );
+        await tester.pumpWidget(h.screen(orientationSupported: true));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        // Inside the space-4 box in the safe area, the date above.
+        final box = const Rect.fromLTRB(
+          0,
+          20,
+          320,
+          568,
+        ).deflate(DesignSpace.s4);
+        final display = tester.getRect(find.byType(FlipDisplay));
+        final date = tester.getRect(
+          find.text(
+            MaterialLocalizations.of(
+              tester.element(find.byType(FlipClockScreen)),
+            ).formatFullDate(h.wall.now),
+          ),
+        );
+        for (final r in [display, date]) {
+          expect(box.inflate(0.5).contains(r.topLeft), isTrue, reason: '$r');
+          expect(box.inflate(0.5).contains(r.bottomRight), isTrue);
+        }
+        expect(date.bottom, lessThanOrEqualTo(display.top));
+        await h.dispose(tester);
+      });
+    }
   });
 
   testWidgets('the date and round label use the skin face', (tester) async {
@@ -1964,10 +2152,10 @@ void main() {
           expect(skins.right, lessThanOrEqualTo(island.left));
           expect(settings.left, greaterThanOrEqualTo(island.right));
         }
-        // The digits still start below the chrome.
+        // The island floats over the clock, which stays centred.
         expect(
-          tester.getRect(find.byType(FlipDisplay)).top,
-          greaterThanOrEqualTo(island.bottom),
+          tester.getCenter(find.byType(FlipDisplay)).dy,
+          closeTo(tester.getCenter(find.byType(PageView)).dy, 1),
         );
         await h.dispose(tester);
       });

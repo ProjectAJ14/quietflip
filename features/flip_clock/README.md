@@ -92,8 +92,9 @@ has never synced takes the cloud copy when it first signs in.
 
 ## Controls
 
-Only the digits show when nobody touches the screen. A tap or click shows,
-floating above the clock, the island at the top centre (on a phone, just
+The clock fills the screen and sits in its centre; the controls float over
+it and never push it around. Only the digits show when nobody touches the
+screen. A tap or click shows, drawn over the clock, the island at the top centre (on a phone, just
 below the corner buttons, so it is never squeezed) (the mode tabs, Pomodoro, Clock, Stopwatch,
 over the actions of the current mode, centred), Skins in the top-left
 corner, Settings in the top-right and, on phones and tablets, Rotation in
@@ -176,7 +177,7 @@ change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mod
 Daylight-saving jumps, time-zone changes while open, the wall clock jumping
 forward or back during a countdown (the end, saved snapshot and system alert
 move together), iPad split view / resized windows down to 200x100 at text
-scale 2, and hours of ticking on a charger (one aligned timer, wake lock
+scale 2 (the clock stays put as the controls come and go), and hours of ticking on a charger (one aligned timer, wake lock
 held). Details in `CLAUDE.md`; tests in `test/edge_cases_test.dart`.
 
 See `CLAUDE.md` for rules and tests.

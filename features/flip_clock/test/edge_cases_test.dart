@@ -16,6 +16,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
@@ -521,7 +522,7 @@ void main() {
       });
     });
 
-    testWidgets('chrome never covers the digits, the date or the laps', (
+    testWidgets('chrome floats over the clock: nothing moves when it hides', (
       tester,
     ) async {
       await atEachSize(tester, (size, scale) async {
@@ -542,33 +543,29 @@ void main() {
             }
             rig.stopwatch.pause();
           }
+          await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
           await tester.pumpAndSettle();
           final screen = Offset.zero & size;
-          final content = [
+          List<Rect> content() => [
             for (final f in [find.byType(FlipDisplay), find.byType(GridView)])
               for (final e in f.evaluate())
                 tester.getRect(find.byWidget(e.widget)),
           ].where(screen.overlaps).toList();
-          expect(content, isNotEmpty, reason: '$mode $size');
-          final chrome = [
-            tester.getRect(find.byType(Island)),
-            for (final e in find.byType(CornerButton).evaluate())
-              tester.getRect(find.byWidget(e.widget)),
-          ];
-          for (final c in chrome) {
-            for (final d in content) {
-              // Short windows cap the island's reserve at a quarter of the
-              // height (documented); only check where it is not capped.
-              if (size.height / 4 < DesignSpace.s4 + Island.trayHeight) {
-                continue;
-              }
-              expect(
-                c.overlaps(d.deflate(0.5)),
-                isFalse,
-                reason: '$mode $size x$scale: chrome $c over $d',
-              );
-            }
+          final expanded = content();
+          expect(expanded, isNotEmpty, reason: '$mode $size');
+          for (final d in expanded) {
+            // Inside the window: the chrome may draw over it, never the edge.
+            expect(
+              screen.inflate(0.5).contains(d.topLeft) &&
+                  screen.inflate(0.5).contains(d.bottomRight),
+              isTrue,
+              reason: '$mode $size x$scale: $d',
+            );
           }
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+          expect(content(), expanded, reason: '$mode $size x$scale hidden');
+          expect(tester.takeException(), isNull, reason: '$mode $size');
         }
         rig.stopwatch.reset();
         await rig.dispose(tester);
