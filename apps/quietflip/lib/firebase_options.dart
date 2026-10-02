@@ -64,6 +64,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '894286222021',
     projectId: 'quietflip',
     storageBucket: 'quietflip.firebasestorage.app',
+    androidClientId:
+        '894286222021-4am9io06fj8rm14fi97etclpusihu0vt.apps.googleusercontent.com',
+    iosClientId:
+        '894286222021-jus4ntkh2i8fkpo4js2rusfusm1mi7n4.apps.googleusercontent.com',
     iosBundleId: 'live.iajaykumar.quietflip',
   );
 
@@ -73,6 +77,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '894286222021',
     projectId: 'quietflip',
     storageBucket: 'quietflip.firebasestorage.app',
+    androidClientId:
+        '894286222021-4am9io06fj8rm14fi97etclpusihu0vt.apps.googleusercontent.com',
+    iosClientId:
+        '894286222021-jus4ntkh2i8fkpo4js2rusfusm1mi7n4.apps.googleusercontent.com',
     iosBundleId: 'live.iajaykumar.quietflip',
   );
 

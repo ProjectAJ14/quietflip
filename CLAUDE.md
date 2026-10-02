@@ -59,9 +59,9 @@ done once by hand in the Firebase console:
 |---|---|
 | Authentication > Get started; enable **Email/Password** and **Google** | Authentication > Sign-in method |
 | Android Google sign-in: add debug and release SHA-1 (`cd apps/quietflip/android && ./gradlew signingReport`) | Project settings > Your apps > Android |
-| iOS/macOS Google sign-in: after enabling Google, re-run `flutterfire configure` and add the plist's `REVERSED_CLIENT_ID` as a URL scheme in both `Runner/Info.plist` files | Xcode / `Info.plist` |
-| macOS sign-in: set your Apple development team on the macOS Runner target, then add `keychain-access-groups` (`$(AppIdentifierPrefix)live.iajaykumar.quietflip`) to both `macos/Runner/*.entitlements`. Without it Firebase Auth fails with `keychain-error`; with it, ad-hoc signing refuses to build | Xcode > Runner (macOS) > Signing & Capabilities |
-| Apple sign-in (iOS): enable the provider, create a Services ID and key, add the Sign in with Apple capability | Firebase console + developer.apple.com |
+| iOS/macOS Google sign-in: after enabling Google, re-run `flutterfire configure` and keep the plist's `REVERSED_CLIENT_ID` as the URL scheme in both `Runner/Info.plist` files (committed; update it if the iOS client changes) | Xcode / `Info.plist` |
+| macOS sign-in: the macOS Runner target is signed by team `QAL4T5U87S` and both `macos/Runner/*.entitlements` carry `keychain-access-groups` (`$(AppIdentifierPrefix)live.iajaykumar.quietflip`). Without it Firebase Auth fails with `keychain-error`; it only builds with a development team, so another team must change the team in Xcode | Xcode > Runner (macOS) > Signing & Capabilities |
+| Apple sign-in (iOS): App ID `live.iajaykumar.quietflip` (explicit) with Sign In with Apple (primary) and Push Notifications; a Services ID (`live.iajaykumar.quietflip.signin`, return URL `https://quietflip.firebaseapp.com/__/auth/handler`) and a Sign in with Apple key, both pasted into the Apple provider. The iOS target's `Runner.entitlements` (Sign in with Apple, push) and `remote-notification` background mode are committed. Never commit the `.p8` key | developer.apple.com + Firebase console |
 | Web: add the production domain to Authorized domains (localhost is there by default) | Authentication > Settings |
 
 The app still boots when Firebase is unavailable: bootstrap catches the

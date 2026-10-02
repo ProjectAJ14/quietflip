@@ -12,7 +12,20 @@
           "package_name": "live.iajaykumar.quietflip"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "894286222021-4am9io06fj8rm14fi97etclpusihu0vt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "live.iajaykumar.quietflip",
+            "certificate_hash": "658e8e4b7b8a165c14a7e6a238906d040443638e"
+          }
+        },
+        {
+          "client_id": "894286222021-7kus9o1j71v9fopqhbparq98ka9flfis.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBNjOEOAEGs195BzdNkd_dDFbJJA49y4A4"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "894286222021-7kus9o1j71v9fopqhbparq98ka9flfis.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "894286222021-jus4ntkh2i8fkpo4js2rusfusm1mi7n4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "live.iajaykumar.quietflip"
+              }
+            }
+          ]
         }
       }
     }

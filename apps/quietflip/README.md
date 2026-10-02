@@ -45,7 +45,7 @@ Then from this folder:
   app the user force-stopped (and some Android vendors kill background alarms).
   The timer itself is based on wall-clock time, so reopening the app shows the
   correct remaining time or "Time's up".
-- **macOS sign-in** needs an Apple development team on the macOS target and the keychain-sharing entitlement (see the root `CLAUDE.md` setup table); until then signing in on macOS fails with a keychain error. The clock and local settings work.
+- **macOS sign-in** relies on the keychain-sharing entitlement, which only builds when the macOS target is signed by a development team (`QAL4T5U87S` today; see the root `CLAUDE.md` setup table). A contributor outside that team must pick their own team in Xcode, or the Mac build fails to sign.
 - **Windows** builds need a Windows machine; they cannot be cross-compiled.
 - **Launcher icon** (from `assets/icon/quietflip-master.png`): Android 13 themed
   (monochrome) icons and iOS 18 dark/tinted icons are not generated, so those
