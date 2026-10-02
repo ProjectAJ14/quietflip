@@ -22,9 +22,13 @@ await notifications.init(
 `init` registers `NotificationClient`, `NotificationTokenManager`,
 `NotificationPermissionManager`, `DeviceInfo` and `NotificationConfig`. Nothing
 talks to the device until `NotificationClient.init()` runs (the app's
-`NotificationLifecycle` widget calls it after the first frame). It:
+`NotificationLifecycle` widget calls it after the first frame and on every
+resume). It:
 
-1. requests permission (stops quietly if denied; call `init()` again to retry),
+1. reads the permission status without prompting (stops quietly unless
+   already granted; call `init()` again after the user grants it). The prompt
+   comes only from an explicit `requestPermissions()` or the app's own
+   notifications switch,
 2. listens for foreground, opened and token-refresh events,
 3. handles the message that launched the app, if any,
 4. fetches the FCM token and registers it with the backend,
@@ -54,7 +58,7 @@ it does not unregister the device.
 
 - Startup failures in `NotificationClient.init()` cancel subscriptions and are
   rethrown; the call can be retried.
-- Permission errors surface as `NotificationException`.
+- Permission request and status-read errors surface as `NotificationException`.
 - Token, presentation, navigation and badge failures after startup are logged
   and contained.
 - `unregisterDevice()` propagates backend failures so the caller can decide

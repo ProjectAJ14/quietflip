@@ -40,30 +40,32 @@ class _Client implements NotificationClient {
 }
 
 void main() {
-  testWidgets('initializes after the first frame and clears badge on resume', (
-    tester,
-  ) async {
-    final client = _Client();
-    final logger = _Logger();
-    await tester.pumpWidget(
-      NotificationLifecycle(
-        logger: logger,
-        client: client,
-        child: const SizedBox(),
-      ),
-    );
-    expect(client.starts, 1);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    expect(client.clears, 1);
-    expect(logger.errors, isEmpty);
-    await tester.pumpWidget(const SizedBox());
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    expect(client.clears, 1);
-  });
+  testWidgets(
+    'initializes after the first frame, re-checks and clears badge on resume',
+    (tester) async {
+      final client = _Client();
+      final logger = _Logger();
+      await tester.pumpWidget(
+        NotificationLifecycle(
+          logger: logger,
+          client: client,
+          child: const SizedBox(),
+        ),
+      );
+      expect(client.starts, 1);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(client.starts, 2);
+      expect(client.clears, 1);
+      expect(logger.errors, isEmpty);
+      await tester.pumpWidget(const SizedBox());
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(client.clears, 1);
+    },
+  );
 
   testWidgets('catches asynchronous initialization and badge failures', (
     tester,
@@ -81,7 +83,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(logger.errors, hasLength(2));
+    expect(logger.errors, hasLength(3));
     expect(tester.takeException(), isNull);
   });
 

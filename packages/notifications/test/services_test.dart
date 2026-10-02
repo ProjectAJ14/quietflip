@@ -69,6 +69,42 @@ void main() {
     );
   }
 
+  for (final status in AuthorizationStatus.values) {
+    test('reading permission status $status never prompts', () async {
+      final settings = _Settings();
+      when(() => settings.authorizationStatus).thenReturn(status);
+      when(messaging.getNotificationSettings).thenAnswer((_) async => settings);
+      final manager = FirebasePermissionManager(
+        logger: logger,
+        firebaseMessaging: messaging,
+      );
+      expect(
+        await manager.hasPermission(),
+        status == AuthorizationStatus.authorized ||
+            status == AuthorizationStatus.provisional,
+      );
+      verifyNever(
+        () =>
+            messaging.requestPermission(provisional: any(named: 'provisional')),
+      );
+    });
+  }
+
+  test('permission status read errors are reported through the notification '
+      'contract', () async {
+    when(
+      messaging.getNotificationSettings,
+    ).thenThrow(StateError('unavailable'));
+    final manager = FirebasePermissionManager(
+      logger: logger,
+      firebaseMessaging: messaging,
+    );
+    await expectLater(
+      manager.hasPermission(),
+      throwsA(isA<NotificationException>()),
+    );
+  });
+
   test(
     'permission errors are reported through the notification contract',
     () async {

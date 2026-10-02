@@ -63,7 +63,9 @@ class FirebaseNotificationClient implements NotificationClient {
 
   Future<void> _initialize() async {
     try {
-      _isGranted = await requestPermissions();
+      // Never prompt here: the app asks only when the user turns on
+      // notifications, and a later init() picks up the granted status.
+      _isGranted = await _permissionManager.hasPermission();
       if (_disposed || !_isGranted) return;
       _registerBackground(handleBackgroundNotification);
       _foregroundSubscription = _foregroundMessages.listen(
