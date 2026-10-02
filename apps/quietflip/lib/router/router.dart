@@ -1,10 +1,12 @@
 import 'package:analytics/analytics.dart';
 import 'package:auth/auth.dart' as auth;
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart' as core;
 import 'package:dashboard/dashboard.dart';
 import 'package:design_system/design_system.dart';
 import 'package:developer/developer.dart' as developer;
 import 'package:di/di.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flutter/foundation.dart';
@@ -46,9 +48,15 @@ abstract final class AppRouter {
           path: core.CoreRoutes.home,
           redirect: (context, state) => FlipClockRouter.home,
         ),
-        ...const FlipClockRouter().routes,
-        // Dashboard, auth and developer stay registered for future scope but
-        // nothing in the UI links to them: the product launches on the clock.
+        ...FlipClockRouter(
+          sync: di.has<CloudSync>() ? di.get<CloudSync>() : null,
+          onSignIn: (context) => context.go(auth.AuthRoutes.signIn),
+          onSignOut: (_) => _signOutHere(),
+          onDeleteAccount: (_) => _deleteAccount(),
+        ).routes,
+        // Sign-in is reached only from Settings > Account (and only when
+        // Firebase is configured). Dashboard and developer stay registered
+        // for future scope but nothing in the UI links to them.
         DashboardRouter.createShellRoute(
           // Demo tabs open before Firebase is configured; configured apps
           // require sign-in. Never allow unconfigured access to real data.
@@ -84,27 +92,58 @@ abstract final class AppRouter {
   /// failure is logged and never blocks sign-out.
   @visibleForTesting
   static Future<void> signOut(BuildContext context) async {
-    if (di.has<NotificationClient>()) {
-      try {
-        await di.get<NotificationClient>().unregisterDevice();
-      } catch (error, stackTrace) {
-        di.get<core.Logger>().e(
-          'Could not unregister the device token',
-          error,
-          stackTrace,
-        );
-      }
-    }
+    await _unregisterDevice();
     if (context.mounted) await auth.signOut(context);
   }
 
-  /// Where a user lands once sign-in or sign-up succeeds.
-  ///
-  /// Load the profile / entitlements you need here before routing on.
+  static Future<void> _unregisterDevice() async {
+    if (!di.has<NotificationClient>()) return;
+    try {
+      await di.get<NotificationClient>().unregisterDevice();
+    } catch (error, stackTrace) {
+      di.get<core.Logger>().e(
+        'Could not unregister the device token',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  /// Settings > Account > Sign out: like [signOut], but stays on the page,
+  /// which turns to its signed-out look. A failure is already logged by
+  /// `AuthService` and leaves the user signed in.
+  static Future<void> _signOutHere() async {
+    await _unregisterDevice();
+    try {
+      await di.get<auth.AuthService>().signOut();
+    } on FirebaseException {
+      return;
+    }
+  }
+
+  /// Settings > Account > Delete account: the synced documents first (the
+  /// rules need the account), then the account. Firebase may want a recent
+  /// sign-in: signing out makes the next sign-in fresh, so sync resumes.
+  /// Failures are logged by `CloudSync` / `AuthService`.
+  static Future<AccountDeletion> _deleteAccount() async {
+    try {
+      await di.get<CloudSync>().deleteAll();
+      await _unregisterDevice();
+      await di.get<auth.AuthService>().deleteAccount();
+      return AccountDeletion.deleted;
+    } on FirebaseException catch (error) {
+      if (error.code != 'requires-recent-login') return AccountDeletion.failed;
+      await _signOutHere();
+      return AccountDeletion.needsSignIn;
+    }
+  }
+
+  /// Where a user lands once sign-in or sign-up succeeds: back on the
+  /// Account page, which shows "Syncing…" then the last sync.
   static Future<void> _onAuthenticated(BuildContext context) async {
     await AnalyticsHelper.logEvent(AnalyticsEvents.user.authenticatedRedirect);
     if (context.mounted) {
-      context.go(DashboardRouter.home);
+      context.go(FlipClockRouter.accountSettings);
     }
   }
 }

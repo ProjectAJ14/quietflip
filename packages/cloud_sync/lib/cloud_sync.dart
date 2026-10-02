@@ -15,16 +15,15 @@ export 'src/firestore_cloud_sync.dart';
 /// Turns on Firestore's offline cache and registers [CloudSync].
 ///
 /// Needs Firebase initialised and `Logger` and `KeyValueStore` in `di`
-/// (after `core.init()` and `device_services.init()`).
-Future<void> init({
-  required FirebaseAuth auth,
-  required FirebaseFirestore firestore,
-}) async {
+/// (after `core.init()` and `device_services.init()`). [auth] and
+/// [firestore] default to the SDK instances; tests pass fakes.
+Future<void> init({FirebaseAuth? auth, FirebaseFirestore? firestore}) async {
+  final store = firestore ?? FirebaseFirestore.instance;
   // Web needs it set explicitly; native platforms default to on.
-  firestore.settings = const Settings(persistenceEnabled: true);
+  store.settings = const Settings(persistenceEnabled: true);
   final sync = FirestoreCloudSync(
-    auth: auth,
-    firestore: firestore,
+    auth: auth ?? FirebaseAuth.instance,
+    firestore: store,
     store: di.get<KeyValueStore>(),
     logger: di.get<Logger>(),
   );

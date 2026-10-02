@@ -958,13 +958,43 @@ void main() {
       FlipClockRouter.timerSettings,
     );
     expect(
-      tester.widget<SettingsScreen>(find.byType(SettingsScreen)).openTimers,
-      isTrue,
+      tester.widget<SettingsScreen>(find.byType(SettingsScreen)).category,
+      'timers',
     );
     expect(find.text(strings.clock.timers_presets.toUpperCase()), findsOne);
     await tester.tap(find.text(strings.generic.done));
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOne);
+
+    // With a sync, ?category=account opens the Account page and the app's
+    // callbacks get the route's context.
+    final cloud = FakeCloudSync();
+    final calls = <String>[];
+    final accountRouter = GoRouter(
+      initialLocation: FlipClockRouter.accountSettings,
+      routes: FlipClockRouter(
+        sync: cloud,
+        onSignIn: (context) => calls.add('in ${context.mounted}'),
+        onSignOut: (context) async => calls.add('out'),
+        onDeleteAccount: (context) async {
+          calls.add('delete');
+          return AccountDeletion.needsSignIn;
+        },
+      ).routes,
+    );
+    addTearDown(accountRouter.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(theme: theme, routerConfig: accountRouter),
+    );
+    await tester.pumpAndSettle();
+    final screen = tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+    expect(screen.category, 'account');
+    expect(screen.sync, same(cloud));
+    expect(find.text(strings.sync.sign_in), findsOne);
+    screen.onSignIn!();
+    await screen.onSignOut!();
+    expect(await screen.onDeleteAccount!(), AccountDeletion.needsSignIn);
+    expect(calls, ['in true', 'out', 'delete']);
     await tester.pumpWidget(const SizedBox());
     unawaited(di.reset());
     await tester.pump();

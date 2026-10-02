@@ -13,10 +13,7 @@ Firebase must be initialised, and `Logger` and `KeyValueStore` registered
 ```dart
 import 'package:cloud_sync/cloud_sync.dart' as cloud_sync;
 
-await cloud_sync.init(
-  auth: FirebaseAuth.instance,
-  firestore: FirebaseFirestore.instance,
-);
+await cloud_sync.init(); // FirebaseAuth / FirebaseFirestore instances
 final sync = di.get<cloud_sync.CloudSync>();
 ```
 

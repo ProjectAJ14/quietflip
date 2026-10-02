@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
@@ -7,13 +8,34 @@ import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
+import 'package:flip_clock/ui/components/account_page.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 /// Routes of the clock feature. The app spreads [routes] into its router.
+///
+/// Sign-in lives in another feature, so the app passes [sync] and the
+/// account callbacks in; without [sync] Settings shows no Account card.
 class FlipClockRouter implements CoreRouter {
-  const FlipClockRouter();
+  const FlipClockRouter({
+    this.sync,
+    this.onSignIn,
+    this.onSignOut,
+    this.onDeleteAccount,
+  });
+
+  final CloudSync? sync;
+
+  /// Opens sign-in.
+  final void Function(BuildContext context)? onSignIn;
+
+  /// Signs out (confirmed by the user), staying on Settings.
+  final Future<void> Function(BuildContext context)? onSignOut;
+
+  /// Deletes the synced documents and the account (confirmed by the user).
+  final Future<AccountDeletion> Function(BuildContext context)? onDeleteAccount;
 
   /// Pomodoro / Clock / Stopwatch screen. The app launches here.
   static const String home = '/clock';
@@ -23,6 +45,9 @@ class FlipClockRouter implements CoreRouter {
 
   /// Settings opened on the Timers category.
   static const String timerSettings = '$settings?category=timers';
+
+  /// Settings opened on the Account page (where sign-in returns).
+  static const String accountSettings = '$settings?category=account';
 
   @override
   List<RouteBase> get routes => [
@@ -48,7 +73,20 @@ class FlipClockRouter implements CoreRouter {
           builder: (context, state) => SettingsScreen(
             settings: di.get<SettingsController>(),
             sound: di.get<SoundPlayer>(),
-            openTimers: state.uri.queryParameters['category'] == 'timers',
+            category: state.uri.queryParameters['category'],
+            sync: sync,
+            onSignIn: switch (onSignIn) {
+              final open? => () => open(context),
+              null => null,
+            },
+            onSignOut: switch (onSignOut) {
+              final signOut? => () => signOut(context),
+              null => null,
+            },
+            onDeleteAccount: switch (onDeleteAccount) {
+              final delete? => () => delete(context),
+              null => null,
+            },
             now: () => di.get<ClockController>().state,
             orientationSupported: di.get<OrientationLock>().supported,
             onDone: () => context.go(home),

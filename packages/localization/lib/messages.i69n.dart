@@ -47,6 +47,7 @@ class Messages implements i69n.I69nMessageBundle {
   ValidationMessages get validation => ValidationMessages(this);
   DeveloperMessages get developer => DeveloperMessages(this);
   ClockMessages get clock => ClockMessages(this);
+  SyncMessages get sync => SyncMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -76,6 +77,8 @@ class Messages implements i69n.I69nMessageBundle {
         return developer;
       case 'clock':
         return clock;
+      case 'sync':
+        return sync;
       default:
         return key;
     }
@@ -825,7 +828,8 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_r => "R";
   String get about_licenses => "Licenses";
   String get about_privacy => "Privacy";
-  String get about_privacy_value => "No ads. No tracking.";
+  String get about_privacy_value =>
+      "No ads. No tracking. An account is optional.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1265,6 +1269,141 @@ class ClockMessages implements i69n.I69nMessageBundle {
         return about_privacy;
       case 'about_privacy_value':
         return about_privacy_value;
+      default:
+        return key;
+    }
+  }
+}
+
+class SyncMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const SyncMessages(this._parent);
+  String get account => "Account";
+  String get card_title_signed_out => "Your settings stay on this device";
+  String get card_body_signed_out =>
+      "Sign in only if you want them on your other devices.";
+  String get card_title_on => "Sync is on";
+  String get card_title_off => "Sync is off";
+  String card_last_synced(String when) => "Last synced $when";
+  String get headline => "Your settings stay on this device";
+  String get body =>
+      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
+  String get sign_in => "Sign in to sync";
+  String get sign_in_reason =>
+      "Only needed to sync your settings across devices.";
+  String get what_syncs => "What syncs";
+  String get what_syncs_body =>
+      "Theme, skins, sounds, clock and timer settings.";
+  String get stays_body =>
+      "Stays on this device: brightness, rotation, notifications and a running timer.";
+  String get sync_header => "Sync";
+  String get sync_settings => "Sync settings";
+  String get sync_settings_note =>
+      "Your settings follow you to every device you sign in on.";
+  String get last_synced => "Last synced";
+  String get just_now => "Just now";
+  String minutes_ago(int n) => "$n min ago";
+  String today_at(String time) => "Today at $time";
+  String get never => "Not yet";
+  String get syncing => "Syncing…";
+  String get waiting => "Waiting for a connection";
+  String get off_note => "Sync is off. Changes stay on this device.";
+  String get failed_offline =>
+      "Couldn't sync: no connection. It will try again when you're back online.";
+  String get failed_denied => "Couldn't sync: sign in again.";
+  String get failed_unknown => "Couldn't sync. Try again.";
+  String get try_again => "Try again";
+  String get sign_out_note => "Signing out keeps your settings on this device.";
+  String get delete_account => "Delete account";
+  String get delete_title => "Delete your account?";
+  String get delete_body =>
+      "Your synced settings are removed from the cloud. Settings on this device stay.";
+  String get delete_recent_login => "Sign in again to delete your account";
+  String get delete_failed => "Couldn't delete your account. Try again.";
+  String get provider_email => "Email";
+  String get provider_google => "Google";
+  String get provider_apple => "Apple";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'account':
+        return account;
+      case 'card_title_signed_out':
+        return card_title_signed_out;
+      case 'card_body_signed_out':
+        return card_body_signed_out;
+      case 'card_title_on':
+        return card_title_on;
+      case 'card_title_off':
+        return card_title_off;
+      case 'card_last_synced':
+        return card_last_synced;
+      case 'headline':
+        return headline;
+      case 'body':
+        return body;
+      case 'sign_in':
+        return sign_in;
+      case 'sign_in_reason':
+        return sign_in_reason;
+      case 'what_syncs':
+        return what_syncs;
+      case 'what_syncs_body':
+        return what_syncs_body;
+      case 'stays_body':
+        return stays_body;
+      case 'sync_header':
+        return sync_header;
+      case 'sync_settings':
+        return sync_settings;
+      case 'sync_settings_note':
+        return sync_settings_note;
+      case 'last_synced':
+        return last_synced;
+      case 'just_now':
+        return just_now;
+      case 'minutes_ago':
+        return minutes_ago;
+      case 'today_at':
+        return today_at;
+      case 'never':
+        return never;
+      case 'syncing':
+        return syncing;
+      case 'waiting':
+        return waiting;
+      case 'off_note':
+        return off_note;
+      case 'failed_offline':
+        return failed_offline;
+      case 'failed_denied':
+        return failed_denied;
+      case 'failed_unknown':
+        return failed_unknown;
+      case 'try_again':
+        return try_again;
+      case 'sign_out_note':
+        return sign_out_note;
+      case 'delete_account':
+        return delete_account;
+      case 'delete_title':
+        return delete_title;
+      case 'delete_body':
+        return delete_body;
+      case 'delete_recent_login':
+        return delete_recent_login;
+      case 'delete_failed':
+        return delete_failed;
+      case 'provider_email':
+        return provider_email;
+      case 'provider_google':
+        return provider_google;
+      case 'provider_apple':
+        return provider_apple;
       default:
         return key;
     }

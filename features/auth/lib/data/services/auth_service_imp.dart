@@ -35,4 +35,14 @@ class AuthServiceImp implements AuthService {
       rethrow;
     }
   }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _firebaseAuth.currentUser?.delete();
+    } on FirebaseAuthException catch (e, s) {
+      _logger.e('Could not delete the account (${e.code})', e, s);
+      rethrow;
+    }
+  }
 }

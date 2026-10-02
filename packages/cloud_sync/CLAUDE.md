@@ -16,7 +16,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 
 | Symbol | Kind | Notes |
 |---|---|---|
-| `init({auth, firestore})` | function | Sets `Settings(persistenceEnabled: true)` (web needs it explicitly), builds `FirestoreCloudSync` from `di`'s `KeyValueStore` and `Logger`, `start()`s it, registers `CloudSync` with `dispose:`. After `device_services.init()`, behind `firebaseReady` |
+| `init({auth, firestore})` | function | Defaults to `FirebaseAuth.instance` / `FirebaseFirestore.instance`; sets `Settings(persistenceEnabled: true)` (web needs it explicitly), builds `FirestoreCloudSync` from `di`'s `KeyValueStore` and `Logger`, `start()`s it, registers `CloudSync` with `dispose:`. After `device_services.init()`, behind `firebaseReady` |
 | `CloudSync` | contract | `account` (`ValueListenable<SyncAccount?>`), `status` (`ValueListenable<SyncStatus>`), `lastSynced`, `enabled` / `setEnabled`, `push(name, data, updatedAt:)` (never throws), `watch(name)` (`Stream<SyncedDocument?>`, null = no cloud copy yet), `retry()`, `deleteAll()` |
 | `FirestoreCloudSync({auth, firestore, store, logger, now})` | implementation | `start()`, `dispose()`; `enabledKey`, `lastSyncedKey`, `waitAfter` (5 s) |
 | `SyncAccount(uid, email, provider)`, `SyncProvider` (`email`, `google`, `apple`) | models | Provider from `providerData` (`google.com`, `apple.com`, else email); no product copy, the UI labels it |

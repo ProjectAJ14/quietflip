@@ -15,7 +15,7 @@ Load the `design-system` skill before changing UI.
 |---|---|---|
 | `init(AuthConfig, {firebaseAuth, configureProviders})` | function | Configures FirebaseUI providers, registers `AuthService` and `AuthTokenProvider` |
 | `AuthConfig` / `DefaultAuthConfig` | interface / impl | `clientId` for `GoogleProvider` |
-| `AuthService` / `AuthServiceImp` | interface / impl | `uid`, `isSignedIn`, `signOut()` |
+| `AuthService` / `AuthServiceImp` | interface / impl | `uid`, `isSignedIn`, `signOut()`, `deleteAccount()` (`currentUser.delete()`; no-op signed out) |
 | `FirebaseAuthTokenProvider` | impl of `network`'s `AuthTokenProvider` | owns the `idTokenChanges` subscription |
 | `AuthRouter({onSignedIn, onSignedUp})` | implements `core.CoreRouter` | `routes`: sign-in, sign-up, forgot-password; callbacks are `FutureOr<void> Function(BuildContext)`; resolves `Logger` once and passes it to the screens |
 | `authRedirectLocation({allowUnconfigured})` | function | null when signed in, else `AuthRoutes.signIn`; used by the app's `SplashScreen` |
@@ -38,7 +38,7 @@ lib/
   data/token/firebase_auth_token_provider.dart  token cache, expiry, refresh, stale-response guard
   router/router.dart                AuthRouter, authRedirectLocation, authRedirect, signOut, GoAuthRoute
   ui/screens/                       SignIn / Register / ForgotPassword adapters (index.dart barrel)
-  ui/components/                    headerBuilder (theme-drawn), footerBuilder(context, action, type, logger) + FooterType (not exported)
+  ui/components/                    headerBuilder (theme-drawn, with the sign-in reason line), footerBuilder(context, action, type, logger) + FooterType (not exported)
 ```
 
 ## Rules
@@ -53,6 +53,10 @@ lib/
 - A token counts as expired 5 minutes before `expirationTime`; the clock is
   injectable (`now:`).
 - `AuthServiceImp.signOut` logs and reports failures, then **rethrows**.
+  `deleteAccount` logs and rethrows `FirebaseAuthException` (the app maps
+  `requires-recent-login` to "sign in again").
+- The header under the logo says why anyone would sign in:
+  `strings.sync.sign_in_reason` (an account is only for syncing settings).
 - `allowUnconfigured` exists only for the demo dashboard before Firebase is set up.
 - Screens and `footerBuilder` take `Logger` as a parameter; only `AuthRouter` and `init()` use `di`.
 
@@ -72,7 +76,7 @@ lib/
 
 | File | Covers |
 |---|---|
-| `auth_service_test.dart` | `AuthServiceImp` identity + sign-out, sign-out error rethrown, `init()` registers types and `di.reset` disposes the token provider |
+| `auth_service_test.dart` | `AuthServiceImp` identity + sign-out, sign-out error rethrown, `deleteAccount` success / signed out / failure logged and rethrown, `init()` registers types and `di.reset` disposes the token provider |
 | `token_provider_test.dart` | expiry-driven reuse vs refresh, signed-out null, stream publish/clear, read and stream errors, late refresh after sign-out or account change, idempotent dispose, null token |
 | `presentation_test.dart` | `getAuthMethod`, every analytics call, route builders, SDK state actions invoke callbacks, forgot-password push with email, header/footer builders, `GoAuthRoute` for no service / signed out / signed in, `signOut` with and without service, footer navigation |
 

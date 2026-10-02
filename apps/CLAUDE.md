@@ -19,7 +19,8 @@ owns nothing else. Read the root `CLAUDE.md` first.
 - **Bootstrap order is a contract.** `core.init()` (logger) first, then
   Firebase, then crashlytics, analytics, feature flags and auth, then network,
   then notifications, then non-Firebase platform packages (`device_services`),
-  then your features (`flip_clock`). `auth.init()` must run before
+  then packages that need both Firebase and those (`cloud_sync`, behind
+  `firebaseReady`), then your features (`flip_clock`). `auth.init()` must run before
   `network.init()`: network looks up `AuthTokenProvider` in `di` once, at init.
   A module that needs another must be initialised after it. Firebase-backed modules are
   skipped when `firebaseReady` is false; keep that guard for new ones.

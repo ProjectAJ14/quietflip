@@ -27,7 +27,11 @@ import 'package:firebase_remote_config_platform_interface/firebase_remote_config
 import 'package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart';
 
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
+import 'package:flip_clock/flip_clock.dart' show FlipClockRouter;
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/state/settings_sync.dart';
+import 'package:flip_clock/ui/screens/index.dart';
+import 'package:cloud_sync/cloud_sync.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -208,6 +212,10 @@ void main() {
 
       expect(di.has<SettingsController>(), isTrue);
 
+      // Settings sync is on: the cloud sync and the clock's coordinator.
+      expect(di.get<CloudSync>(), isA<FirestoreCloudSync>());
+      expect(di.has<SettingsSync>(), isTrue);
+
       expect(di.get<NotificationTokenManager>(), isA<FirebaseTokenManager>());
 
       expect(
@@ -247,7 +255,19 @@ void main() {
       when(() => identity.currentUser).thenReturn(_User());
       await screen.onSignedIn(context);
       await tester.pumpAndSettle();
-      expect(find.text(strings.nav.explore), findsWidgets);
+      // Signing in lands back on Settings > Account, not the dashboard.
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        FlipClockRouter.accountSettings,
+      );
+      expect(
+        tester.widget<SettingsScreen>(find.byType(SettingsScreen)).category,
+        'account',
+      );
+      // Sign in to sync opens sign-in.
+      await tester.tap(find.text(strings.sync.sign_in));
+      await tester.pumpAndSettle();
+      expect(find.byType(auth.SignInScreen), findsOneWidget);
 
       await di.get<NotificationConfig>().onForeground!('Notice', 'Details');
       await tester.pump();

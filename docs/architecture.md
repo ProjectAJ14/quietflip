@@ -52,6 +52,7 @@ with an injected transport rather than making live requests in unit tests.
 - Analytics failures do not interrupt UI behavior. SDK state is not cached across DI resets.
 - Network logs omit headers, query values and bodies. Auth success logs omit email addresses; add your own redaction rules for domain errors.
 - Platform crash handlers are restored when their owning client is disposed.
+- Settings sync stores only the clock settings, at `users/{uid}/sync/clock_settings` (`{data, updatedAt}`), behind owner-only Firestore rules; Firebase Auth holds the email and nothing else about the user is stored. The device copy is always written first; sync failures are logged and shown only in Settings.
 
 ## What the tests do not replace
 

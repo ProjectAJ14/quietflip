@@ -5,6 +5,7 @@ import 'package:di/di.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart' as ui;
 import 'package:flutter/material.dart';
+import 'package:localization/localization.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -146,6 +147,11 @@ void main() {
       for (final widget in widgets) {
         await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
         expect(tester.takeException(), isNull);
+      }
+      // Headers say why anyone would sign in at all.
+      for (final header in widgets.take(3)) {
+        await tester.pumpWidget(MaterialApp(home: Scaffold(body: header)));
+        expect(find.text(strings.sync.sign_in_reason), findsOneWidget);
       }
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 5));

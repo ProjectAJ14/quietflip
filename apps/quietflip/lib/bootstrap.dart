@@ -3,6 +3,7 @@ import 'package:analytics/analytics.dart' as analytics;
 import 'package:auth/auth.dart' as auth;
 
 import 'package:bloc/bloc.dart';
+import 'package:cloud_sync/cloud_sync.dart' as cloud_sync;
 import 'package:core/core.dart' as core;
 import 'package:core/developer/emulators.dart' as emulators;
 
@@ -106,7 +107,14 @@ Future<void> init({
       windowsGuid: '8ddafda9-e2f2-475f-a8d7-68b19e8223da',
     ),
   );
-  await flip_clock.init();
+  // Settings sync needs Firebase and the device store; without it Settings
+  // shows no Account card.
+  if (firebaseReady) await cloud_sync.init();
+  await flip_clock.init(
+    sync: di.has<cloud_sync.CloudSync>()
+        ? di.get<cloud_sync.CloudSync>()
+        : null,
+  );
 
   stopwatch.stop();
   logger.i('Bootstrap completed in ${stopwatch.elapsedMilliseconds} ms');

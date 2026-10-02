@@ -21,6 +21,7 @@ import 'package:flutter/foundation.dart';
 
 export 'data/models/clock_settings.dart';
 export 'router/flip_clock_router.dart';
+export 'ui/components/account_page.dart' show AccountDeletion;
 
 /// Registers the settings repository and controllers with `di`, restoring
 /// saved settings and any saved countdown. With [sync] (null when Firebase

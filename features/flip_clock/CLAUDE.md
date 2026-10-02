@@ -4,8 +4,10 @@ The whole first-release product: the flip clock, countdown timer, stopwatch
 and their Settings screen. The app launches straight into
 `FlipClockRouter.home`. It owns screens, state and local settings. Time maths
 comes from `timekeeping`; platform work (full screen, wake lock, local
-notifications, sounds, storage) comes from `device_services` contracts. No
-sign-in, analytics, network or FCM.
+notifications, sounds, storage) comes from `device_services` contracts;
+optional settings sync and the signed-in account from `cloud_sync`'s
+`CloudSync`. It never imports `auth`: the app passes sign-in, sign-out and
+delete-account callbacks in. No analytics, network or FCM.
 
 Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 `design-system` and `flutter-best-practices` skills before UI work.
@@ -15,7 +17,8 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | Symbol | Kind | Notes |
 |---|---|---|
 | `init({sync})` | function | Registers `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()` and `device_services.init()` |
-| `FlipClockRouter` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `routes` |
+| `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`. Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
+| `AccountDeletion` | enum | `deleted`, `needsSignIn` (Firebase wants a recent sign-in; the app has signed out), `failed` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
@@ -81,6 +84,9 @@ lib/
   ui/screens/skins_sheet.dart              showSkins: picker sheet over the clock, customizer on
                                            top; customizeSkin: the customizer on the selected
                                            skin (Settings' strip, via the router)
+  ui/components/account_page.dart          accountCategory (the pinned Account page), LastSyncedRow,
+                                           AccountDeletion
+  ui/components/sync_card.dart             SyncCard (the pinned card), syncedWhen, failureText
   ui/screens/settings_screen.dart          SettingsShell content: Appearance (Skins strip: the
                                            first 5 SkinTiles, yours first, the selected one
                                            always in it, tap applies, the selected tile's
@@ -93,8 +99,8 @@ lib/
                                            (swipes, tap, hide-after) / Timers (Default timer: segmented
                                            Pomodoro + presets; Presets: a row each with delete,
                                            Add timer -> TimerPicker, off at 6 with a footer;
-                                           Pomodoro lengths read-only; `openTimers` starts
-                                           here) /
+                                           Pomodoro lengths read-only; `category: 'timers'`
+                                           starts here) /
                                            Sound & alerts (Tick and Alarm groups:
                                            switch, then five sound tiles with a live
                                            SoundWave each; see Sound picker) /
@@ -273,7 +279,30 @@ lib/
   screen readers hear it); leaving clears it. Settings shows the same note
   under Keep screen awake. Full screen is not a lock screen or screensaver:
   never word it as one.
-- No dependency on another feature; no account section in Settings.
+- No dependency on another feature. The Account page is the only place
+  sign-in is offered, and only when the router has a `sync` (Firebase
+  configured), so the button is never dead.
+- Account (`ui/components/account_page.dart`, `sync_card.dart`): the pinned
+  category of `SettingsShell` (`pinned` / `pinnedCard`), so it sits at the
+  bottom, always: after the list on phones, at the bottom of the sidebar
+  from 600px. `SettingsScreen` rebuilds the shell on `sync.account` /
+  `sync.status` changes. The card: signed out `cloud_outlined`, "Your
+  settings stay on this device" + why; signed in "Sync is on" / "Sync is
+  off" with an icon per status (`cloud_done_outlined`, `cloud_sync_outlined`
+  pending/waiting, `cloud_off_outlined`, `error_outline` in `danger`) and
+  the status or "Last synced …" (title `bodyLarge` 600 `ink`, subtitle
+  `bodyMedium` `inkSubtle`, `danger` when failed); one merged semantics node.
+  The page signed out: headline, body, Sign in to sync (`FilledButton`, full
+  width up to 320), What syncs / Stays on this device. Signed in: email and
+  provider, Sync settings switch, `LastSyncedRow` ("Just now" < 60 s, "N min
+  ago" < 60 min, "Today at 14:05" by `use24h`, else the medium date; one
+  `Timer.periodic` of 30 s, cancelled on dispose), a status line (live
+  region; pending, waiting, failed offline / denied (taps to sign in) /
+  unknown (Try again -> `CloudSync.retry`), switch off), Sign out and
+  Delete account (each behind an `AlertDialog`), "Signing out keeps your
+  settings on this device". `needsSignIn` shows "Sign in again to delete
+  your account", then `onSignIn`; `failed` says so. **No toast, snackbar or
+  system notification for any sync outcome.**
 - Show date puts `MaterialLocalizations.formatFullDate` above the Clock
   digits, `space-6` apart (at most an eighth of the height, and the date
   at most a quarter of it, scaled down, so a cramped window never
@@ -361,7 +390,7 @@ lib/
 
 ## Tests
 
-`settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit
