@@ -47,6 +47,7 @@ void main() {
       () =>
           permission.requestPermissions(provisional: any(named: 'provisional')),
     ).thenAnswer((_) async => true);
+    when(permission.hasPermission).thenAnswer((_) async => true);
     when(() => messaging.onTokenRefresh).thenAnswer((_) => refreshed.stream);
     when(messaging.getInitialMessage).thenAnswer((_) async => null);
     when(tokens.getFCMToken).thenAnswer((_) async => 'token');
@@ -91,7 +92,12 @@ void main() {
     () async {
       await Future.wait([client.init(), client.init()]);
       await client.init();
-      verify(() => permission.requestPermissions(provisional: false)).called(1);
+      verify(permission.hasPermission).called(1);
+      verifyNever(
+        () => permission.requestPermissions(
+          provisional: any(named: 'provisional'),
+        ),
+      );
       expect(client.fcmToken, 'token');
       expect(client.deviceId, 'device');
       expect(badges, [0]);
@@ -101,25 +107,19 @@ void main() {
     },
   );
 
-  test(
-    'permission denial can be retried and unsupported badges are skipped',
-    () async {
-      when(
-        () => permission.requestPermissions(provisional: false),
-      ).thenAnswer((_) async => false);
-      await client.init();
-      await client.clearBadge();
-      expect(foreground.hasListener, isFalse);
-      expect(badges, isEmpty);
-      when(
-        () => permission.requestPermissions(provisional: false),
-      ).thenAnswer((_) async => true);
-      supported = false;
-      await client.init();
-      expect(foreground.hasListener, isTrue);
-      expect(badges, isEmpty);
-    },
-  );
+  test('init never prompts; a denied status is re-read on the next init and '
+      'unsupported badges are skipped', () async {
+    when(permission.hasPermission).thenAnswer((_) async => false);
+    await client.init();
+    await client.clearBadge();
+    expect(foreground.hasListener, isFalse);
+    expect(badges, isEmpty);
+    when(permission.hasPermission).thenAnswer((_) async => true);
+    supported = false;
+    await client.init();
+    expect(foreground.hasListener, isTrue);
+    expect(badges, isEmpty);
+  });
 
   test(
     'foreground, opened, initial and token-refresh events reach their owners',
@@ -226,9 +226,7 @@ void main() {
     expect(foreground.hasListener, isFalse);
     // Retry before subscribing again is supported by real broadcast FCM streams;
     // a denied permission also demonstrates that the failed future was cleared.
-    when(
-      () => permission.requestPermissions(provisional: false),
-    ).thenAnswer((_) async => false);
+    when(permission.hasPermission).thenAnswer((_) async => false);
     await client.init();
   });
 

@@ -25,22 +25,25 @@ class _NotificationLifecycleState extends State<NotificationLifecycle> {
   @override
   void initState() {
     super.initState();
-    _listener = AppLifecycleListener(onResume: _clearBadge);
+    _listener = AppLifecycleListener(onResume: _resume);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      try {
-        await widget.client?.init();
-      } catch (error, stackTrace) {
-        widget.logger.e(
-          'Notification initialization failed',
-          error,
-          stackTrace,
-        );
-      }
+      await _init();
     });
   }
 
-  Future<void> _clearBadge() async {
+  Future<void> _init() async {
+    try {
+      await widget.client?.init();
+    } catch (error, stackTrace) {
+      widget.logger.e('Notification initialization failed', error, stackTrace);
+    }
+  }
+
+  // init() never prompts, so resuming (for example after the permission
+  // dialog or the OS settings) is when a newly granted permission is seen.
+  Future<void> _resume() async {
+    await _init();
     try {
       await widget.client?.clearBadge();
     } catch (error, stackTrace) {

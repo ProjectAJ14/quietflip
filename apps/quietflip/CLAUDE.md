@@ -26,7 +26,7 @@ Nothing depends on the app. These are its seams, used by its own tests:
 | `App({required router, required appearance})` | `lib/app.dart` | `MaterialApp.router` inside `GlobalEventChannelProvider` + `DesignSystemWrapper(mode:)`; `appearance` is `flip_clock.appearance()` (Black by default, regardless of OS brightness) |
 | `AppRouter.createRouter({initialLocation})` | `lib/router/router.dart` | Builds the router; defaults to `core.CoreRoutes.root` |
 | `AppRouter.signOut(context)` | `lib/router/router.dart` | `@visibleForTesting`; unregisters the device push token, then `auth.signOut` |
-| `NotificationLifecycle({child, logger, client})` | `lib/notification_lifecycle.dart` | Post-frame `client.init()`, `clearBadge()` on resume |
+| `NotificationLifecycle({child, logger, client})` | `lib/notification_lifecycle.dart` | Post-frame `client.init()`; on resume `init()` again (picks up a permission granted since; never prompts) then `clearBadge()` |
 | `SplashScreen` | `lib/ui/splash_screen.dart` | Root route; goes to `FlipClockRouter.home` after the first frame |
 
 ## Layout
@@ -114,7 +114,7 @@ lib/
 | `firebase_options_test.dart` | every configured platform resolves project `quietflip`; Linux and others throw `UnsupportedError` |
 | `entrypoint_test.dart` | real `main()` with Firebase off (`defaultFirebaseOptions` throws like the placeholder): `NetworkClient`, device services and `GoRouter` registered, launches on the clock in Black with the OS light, no `CloudSync` and no Account card in Settings, `/home` redirect, unknown route, error route |
 | `firebase_bootstrap_test.dart` | configured bootstrap with mocktail FlutterFire platform doubles, run as native and as web (no `CrashlyticsClient` on web; one shared set of doubles, because FlutterFire caches delegates per app): every module registered (incl. `KeyValueStore`, `SettingsController`, `CloudSync`, `SettingsSync`), `app_open` logged, emulator failure throws, sign-in lands on the Account page and Sign in to sync opens `SignInScreen`, foreground toast, signed-out user opening the dashboard sent to `SignInScreen` |
-| `notification_lifecycle_test.dart` | init after first frame, badge on resume, no badge after dispose, errors logged, null client |
+| `notification_lifecycle_test.dart` | init after first frame, init again and badge on resume, no badge after dispose, errors logged, null client |
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
 | `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |
 

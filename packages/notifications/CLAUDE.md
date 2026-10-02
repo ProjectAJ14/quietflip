@@ -16,7 +16,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | `init({config, messaging})`, `registerNotificationWithDI` | Registers config, `DeviceInfo`, managers and `NotificationClient` (with `dispose`) |
 | `NotificationConfig` / `DefaultNotificationConfig` | `onForeground(title, body)`, `onOpenRoute(route)` |
 | `NotificationTokenManager` / `FirebaseTokenManager(logger:, networkClient:, deviceInfo:, firebaseMessaging:)` | `getFCMToken`, `registerToken` (returns device ID), `unRegisterToken(deviceId)`, `handleTokenRefresh` |
-| `NotificationPermissionManager` / `FirebasePermissionManager(logger:, firebaseMessaging:)` | `requestPermissions({provisional})` |
+| `NotificationPermissionManager` / `FirebasePermissionManager(logger:, firebaseMessaging:)` | `requestPermissions({provisional})` (prompts), `hasPermission()` (status only, never prompts) |
 | `DeviceInfo` / `DeviceInfoImpl`, `InstallationIdStore` / `SharedPreferencesInstallationIdStore` | Installation ID + device label |
 | `DeviceTokenRequest` | Backend registration DTO (`json_serializable`) |
 | `NotificationException` | Extends `CoreException`; thrown by `FirebasePermissionManager` |
@@ -37,7 +37,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 ## Rules
 
 - **Subscription ownership.** Only `FirebaseNotificationClient` listens to `onMessage`, `onMessageOpenedApp` and `onTokenRefresh`. `init()` is idempotent and concurrent calls share one future; a startup failure cancels all subscriptions and rethrows so `init()` can be retried. `dispose()` cancels them and blocks late startup work; `init()` after dispose throws `StateError`.
-- **Permission denied** means no subscriptions and no token; a later `init()` asks again.
+- **`init()` never prompts.** It reads the status with `hasPermission()` (`getNotificationSettings`). Not granted means no subscriptions and no token; a later `init()` reads the status again. Only `requestPermissions()` shows the OS prompt, and the app asks only from the System notifications switch (`features/flip_clock`).
 - **Route safety.** `handleNotificationOpened(message)` (initial message and `onMessageOpenedApp` alike) forwards `data['route']` only if it is a `String` starting with `/` and not `//`. Anything else is ignored.
 - **Contained failures.** Callback, stream, badge and token-registration errors are logged, never thrown. A failed registration clears `fcmToken`/`deviceId` and returns null.
 - **Backend rejection is a failure.** `FirebaseTokenManager` passes responses through `handleSuccessResponse`, so an `ErrorResponse` throws.
@@ -56,8 +56,8 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 
 | File | Covers |
 |---|---|
-| `test/client_test.dart` | Single init, denial/retry, event routing, route filtering, contained failures, `unregisterDevice`, failed-startup cleanup, dispose |
-| `test/services_test.dart` | `init` composition and failure, permission status mapping, token manager calls and backend rejection, DTO JSON |
+| `test/client_test.dart` | Single init without a prompt, denial/retry, event routing, route filtering, contained failures, `unregisterDevice`, failed-startup cleanup, dispose |
+| `test/services_test.dart` | `init` composition and failure, permission status mapping for request and no-prompt read, token manager calls and backend rejection, DTO JSON |
 | `test/device_info_test.dart` | ID persistence and concurrency, storage failure/retry, device name fallback |
 
 Doubles: mocktail `FirebaseMessaging`, `NotificationTokenManager`, `NotificationPermissionManager`, `NetworkClient`, `DeviceInfo`; broadcast `StreamController`s for FCM streams; `_Store` for `InstallationIdStore`; `SharedPreferences.setMockInitialValues`.
@@ -69,4 +69,4 @@ Doubles: mocktail `FirebaseMessaging`, `NotificationTokenManager`, `Notification
 - `init` needs `Logger` and `NetworkClient` in `di` first (`registerNotificationWithDI` resolves them); call `network.init` before it, as bootstrap does.
 - Backend endpoints required: `POST /device-tokens/me` and `DELETE /device-tokens/me/{deviceId}` on the configured `baseUrl`.
 - `device_token_models.g.dart` is generated: `dart run melos run generate`.
-- The client's `init()` is run by `NotificationLifecycle` in the app after the first frame, not by the package `init`.
+- The client's `init()` is run by `NotificationLifecycle` in the app after the first frame and on every resume, not by the package `init`.
