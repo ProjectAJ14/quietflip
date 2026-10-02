@@ -247,8 +247,6 @@ clock:
   customize_hex_invalid: "Enter six hex digits, like #FF7A00."
   customize_apply: "Apply"
   customize_low_contrast: "Digits may be hard to read."
-  customize_shape: "Shape"
-  customize_seam: "Split line"
   customize_details: "Details"
   customize_seconds: "Seconds"
   customize_seconds_off: "Off"

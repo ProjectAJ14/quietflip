@@ -208,7 +208,6 @@ void main() {
     await tester.tap(find.text(c.customize_meridiem_right));
     await tester.pump();
     await reveal(tester, find.text(c.show_date));
-    await tester.tap(find.text(c.customize_seam));
     await tester.tap(find.text(c.show_date));
     await tester.pump();
     await tester.tap(find.text(c.customize_save));
@@ -223,10 +222,11 @@ void main() {
     expect(saved.groundColor, DesignSkinColors.bgPaper);
     expect(saved.seconds, SkinSeconds.cards);
     expect(saved.meridiem, SkinMeridiem.right);
-    expect(saved.seam, isFalse);
     expect(saved.showDate, isTrue);
     // It is in use, and first under Your skins.
     expect(tile('Night shift'), findsNWidgets(2));
+    // Every card has the split line: there is no switch for it.
+    expect(find.text('Split line'), findsNothing);
     await close(tester);
   });
 

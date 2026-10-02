@@ -23,7 +23,6 @@ void main() {
       digitColor: DesignSkinColors.amber,
       cardColor: DesignSkinColors.cardInk,
       groundColor: DesignSkinColors.bgInk,
-      seam: false,
       seconds: SkinSeconds.cards,
       meridiem: SkinMeridiem.right,
       showDate: true,
@@ -82,10 +81,12 @@ void main() {
       expect(paper.forTheme(DesignColors.dark), same(paper));
     });
 
-    test('an old saved cardRadius is ignored: corners are global', () {
+    test('an old saved cardRadius or seam is ignored: corners are global, '
+        'every card has the split line', () {
       final skin = Skin.fromJson({'id': 'a', 'cardRadius': 20, 'seam': false});
-      expect(skin, const Skin(id: 'a', name: '', seam: false));
+      expect(skin, const Skin(id: 'a', name: ''));
       expect(skin!.toJson().containsKey('cardRadius'), isFalse);
+      expect(skin.toJson().containsKey('seam'), isFalse);
     });
 
     test('a skin without an id, or not a map, cannot be read', () {
@@ -152,13 +153,12 @@ void main() {
       expect(bold.length, greaterThanOrEqualTo(6));
       expect(Skins.builtIn(), containsAll(bold));
       String mix(Skin s) =>
-          '${s.face}|${s.seconds}|${s.meridiem}|${s.seam}|'
+          '${s.face}|${s.seconds}|${s.meridiem}|'
           '${s.showDate}|${s.digitColor}|${s.cardColor}';
       expect(bold.map(mix).toSet(), hasLength(bold.length));
       // Between them they show off every seconds style and the date.
       expect(bold.map((s) => s.seconds).toSet(), SkinSeconds.values.toSet());
       expect(bold.where((s) => s.showDate), isNotEmpty);
-      expect(bold.where((s) => !s.seam), isNotEmpty);
       expect(bold.every((s) => s.name.isNotEmpty), isTrue);
       final minimal = bold.firstWhere((s) => s.id == 'minimal');
       expect(minimal.seconds, SkinSeconds.off);

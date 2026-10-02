@@ -74,7 +74,6 @@ abstract final class Skins {
         name: c.skin_railway,
         face: DisplayFace.bebasNeue,
         digitColor: DesignSkinColors.yellow,
-        seam: false,
         seconds: SkinSeconds.cards,
       ),
       Skin(
@@ -90,7 +89,7 @@ abstract final class Skins {
         digitColor: DesignSkinColors.rose,
         seconds: SkinSeconds.cards,
       ),
-      Skin(id: 'minimal', name: c.skin_minimal, seam: false),
+      Skin(id: 'minimal', name: c.skin_minimal),
     ];
   }
 
@@ -124,7 +123,6 @@ abstract final class Skins {
         name: c.skin_terminal,
         face: DisplayFace.jetBrainsMono,
         digitColor: DesignSkinColors.mint,
-        seam: false,
       ),
       Skin(
         id: 'grotesk',
@@ -132,12 +130,7 @@ abstract final class Skins {
         face: DisplayFace.spaceGrotesk,
         digitColor: DesignSkinColors.violet,
       ),
-      Skin(
-        id: 'serif',
-        name: c.skin_serif,
-        face: DisplayFace.dmSerifDisplay,
-        seam: false,
-      ),
+      Skin(id: 'serif', name: c.skin_serif, face: DisplayFace.dmSerifDisplay),
       Skin(
         id: 'orbit',
         name: c.skin_orbit,
