@@ -1,15 +1,18 @@
 import 'dart:async';
 
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/ui/components/account_page.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/sound_wave.dart';
+import 'package:flip_clock/ui/components/sync_card.dart';
 import 'package:flip_clock/ui/components/timer_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +22,9 @@ import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
 /// The settings content in the adaptive `SettingsShell`: Appearance, Clock,
-/// Gestures, Timers, Sound & alerts, Keep awake, Shortcuts, About. Every
-/// change is saved at once. No account section until sign-in exists.
+/// Gestures, Timers, Sound & alerts, Keep awake, Shortcuts, About, and with a
+/// [sync] the Account card pinned to the bottom. Every change is saved on the
+/// device at once.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -32,8 +36,12 @@ class SettingsScreen extends StatefulWidget {
     this.onDone,
     this.onSkins,
     this.onCustomize,
-    this.openTimers = false,
+    this.category,
     this.now = DateTime.now,
+    this.sync,
+    this.onSignIn,
+    this.onSignOut,
+    this.onDeleteAccount,
   });
 
   final SettingsController settings;
@@ -59,11 +67,24 @@ class SettingsScreen extends StatefulWidget {
   /// Opens the customizer on the selected skin (its tile's Customize).
   final VoidCallback? onCustomize;
 
-  /// Opens straight on the Timers category (the island's tune icon).
-  final bool openTimers;
+  /// Opens straight on a category: `timers` (the island's tune icon) or
+  /// `account` (back from sign-in). Anything else opens normally.
+  final String? category;
 
   /// The time the skin thumbnails show.
   final DateTime Function() now;
+
+  /// Settings sync; null (Firebase off) shows no Account card.
+  final CloudSync? sync;
+
+  /// Opens sign-in (Sign in to sync, or a sync that needs it again).
+  final VoidCallback? onSignIn;
+
+  /// Signs out, after the user confirmed.
+  final Future<void> Function()? onSignOut;
+
+  /// Deletes the synced documents and the account, after the user confirmed.
+  final Future<AccountDeletion> Function()? onDeleteAccount;
 
   /// Skin thumbnails in Appearance before "View all".
   static const int skinStrip = 5;
@@ -182,19 +203,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _shortcuts(),
             _about(context),
           ];
-          return SettingsShell(
-            title: strings.clock.settings,
-            doneLabel: widget.onDone == null ? null : strings.generic.done,
-            onDone: widget.onDone,
-            desktop: _desktop,
-            initialCategory: widget.openTimers ? categories.indexOf(timers) : 0,
-            openInitialCategory: widget.openTimers,
-            categories: categories,
+          final sync = widget.sync;
+          if (sync == null) return _shell(categories, timers, null);
+          return ListenableBuilder(
+            listenable: Listenable.merge([sync.account, sync.status]),
+            builder: (context, _) => _shell(categories, timers, (
+              accountCategory(
+                context,
+                sync: sync,
+                now: widget.now,
+                use24h: s.use24h,
+                onSignIn: () => widget.onSignIn?.call(),
+                onSignOut: () async => widget.onSignOut?.call(),
+                onDeleteAccount: () async =>
+                    await widget.onDeleteAccount?.call() ??
+                    AccountDeletion.failed,
+                onSyncChanged: (on) async {
+                  await sync.setEnabled(on);
+                  if (mounted) setState(() {});
+                },
+              ),
+              SyncCard(sync: sync, now: widget.now, use24h: s.use24h),
+            )),
           );
         },
       ),
     ),
   );
+
+  Widget _shell(
+    List<SettingsCategory> categories,
+    SettingsCategory timers,
+    (SettingsCategory, Widget)? account,
+  ) {
+    final initial = switch (widget.category) {
+      'timers' => categories.indexOf(timers),
+      'account' when account != null => categories.length,
+      _ => null,
+    };
+    return SettingsShell(
+      title: strings.clock.settings,
+      doneLabel: widget.onDone == null ? null : strings.generic.done,
+      onDone: widget.onDone,
+      desktop: _desktop,
+      initialCategory: initial ?? 0,
+      openInitialCategory: initial != null,
+      categories: categories,
+      pinned: account?.$1,
+      pinnedCard: account?.$2,
+    );
+  }
 
   SettingsCategory _appearance(ClockSettings s) {
     final c = strings.clock;

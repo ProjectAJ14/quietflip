@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flutter/foundation.dart';
 
@@ -190,4 +191,63 @@ class FakeStopwatch implements Stopwatch {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A [CloudSync] whose account, status and cloud copy the test drives.
+class FakeCloudSync implements CloudSync {
+  final ValueNotifier<SyncAccount?> accountValue = ValueNotifier(null);
+  final ValueNotifier<SyncStatus> statusValue = ValueNotifier(const SyncOff());
+  final StreamController<SyncedDocument?> remote =
+      StreamController<SyncedDocument?>.broadcast();
+  final List<({String name, Map<String, Object?> data, int updatedAt})> pushes =
+      [];
+  final List<bool> switches = [];
+  bool enabledValue = true;
+  DateTime? lastSyncedValue;
+  int retries = 0;
+  int deletes = 0;
+  Exception? deleteFailure;
+
+  /// What each push leaves in [status]; done by default.
+  SyncStatus Function() onPush = () => SyncDone(DateTime(2026));
+
+  @override
+  ValueListenable<SyncAccount?> get account => accountValue;
+
+  @override
+  ValueListenable<SyncStatus> get status => statusValue;
+
+  @override
+  DateTime? get lastSynced => lastSyncedValue;
+
+  @override
+  bool get enabled => enabledValue;
+
+  @override
+  Future<void> setEnabled(bool on) async {
+    switches.add(on);
+    enabledValue = on;
+  }
+
+  @override
+  Future<void> push(
+    String name,
+    Map<String, Object?> data, {
+    required int updatedAt,
+  }) async {
+    pushes.add((name: name, data: data, updatedAt: updatedAt));
+    statusValue.value = onPush();
+  }
+
+  @override
+  Stream<SyncedDocument?> watch(String name) => remote.stream;
+
+  @override
+  Future<void> retry() async => retries++;
+
+  @override
+  Future<void> deleteAll() async {
+    deletes++;
+    if (deleteFailure case final e?) throw e;
+  }
 }

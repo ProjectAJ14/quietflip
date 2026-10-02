@@ -1,11 +1,15 @@
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:device_services/device_services.dart';
+import 'package:flip_clock/flip_clock.dart';
 import 'package:di/di.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:localization/localization.dart';
 import 'package:network/network.dart';
 
+import 'package:quietflip/bootstrap.dart' as bootstrap;
 import 'package:quietflip/main.dart' as entrypoint;
 
 import 'clock_support.dart';
@@ -16,6 +20,11 @@ void main() {
     tester,
   ) async {
     useInMemoryStorage();
+    // The unconfigured placeholder throws; the app boots without Firebase.
+    final options = bootstrap.defaultFirebaseOptions;
+    bootstrap.defaultFirebaseOptions = () =>
+        throw UnsupportedError('Firebase has not been configured');
+    addTearDown(() => bootstrap.defaultFirebaseOptions = options);
     // Real async: cubits created in fake time never finish closing in
     // tearDown (see features/flip_clock/CLAUDE.md).
     await tester.runAsync(entrypoint.main);
@@ -33,6 +42,13 @@ void main() {
     expect(theme.colorScheme.surface, Colors.black);
 
     final router = di.get<GoRouter>();
+    // Firebase off: no settings sync, so Settings has no Account card.
+    expect(di.has<CloudSync>(), isFalse);
+    router.go(FlipClockRouter.settings);
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text(strings.sync.card_title_signed_out), findsNothing);
+
     router.go('/home');
     await tester.pumpAndSettle();
     expect(find.byType(FlipClockScreen), findsOneWidget);

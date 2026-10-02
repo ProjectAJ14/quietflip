@@ -21,6 +21,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
+| `apps/quietflip/firestore.rules` | Firestore security rules: owner-only `users/{uid}/sync/{doc}` with `{data: map, updatedAt: int}` | - |
 | `.claude/skills/` | Task playbooks: `melos-workspace`, `new-feature`, `flutter-best-practices`, `design-system`, `troubleshooting` | - |
 
 Dependencies point **inward**: app -> features -> packages -> plugins. An import
@@ -35,12 +36,36 @@ dart pub get                  # resolves the whole workspace, one pubspec.lock
 dart run melos bootstrap      # links members, IDE config
 ```
 
-Optional, for Firebase-backed modules (the app boots without it):
+Firebase (project `quietflip`) is configured: `apps/quietflip/lib/firebase_options.dart`,
+`google-services.json` and both `GoogleService-Info.plist` files hold public
+client config only. `apps/quietflip/firebase.json` (with `.firebaserc`) holds
+the Firestore rules path and the emulator ports (auth 9099, firestore 8080,
+UI on); they must match `packages/core/lib/developer/emulators.dart`. There is
+no Cloud Functions code, so no functions emulator runs (the CLI refuses one
+without a `functions` source; `core` still points Functions at 5001).
+The Firebase emulators need Java 21 or newer.
 
 ```sh
-dart pub global activate flutterfire_cli
-cd apps/quietflip && flutterfire configure
+cd apps/quietflip && firebase emulators:start            # local Auth + Firestore
+firebase deploy --only firestore:rules --project quietflip # after editing firestore.rules
 ```
+
+To re-register apps: `dart pub global activate flutterfire_cli`, then in
+`apps/quietflip` run `flutterfire configure --project=quietflip` with the
+platforms and the `live.iajaykumar.quietflip` ids. These steps have no CLI and are
+done once by hand in the Firebase console:
+
+| Step | Where |
+|---|---|
+| Authentication > Get started; enable **Email/Password** and **Google** | Authentication > Sign-in method |
+| Android Google sign-in: add debug and release SHA-1 (`cd apps/quietflip/android && ./gradlew signingReport`) | Project settings > Your apps > Android |
+| iOS/macOS Google sign-in: after enabling Google, re-run `flutterfire configure` and keep the plist's `REVERSED_CLIENT_ID` as the URL scheme in both `Runner/Info.plist` files (committed; update it if the iOS client changes) | Xcode / `Info.plist` |
+| macOS sign-in: the macOS Runner target is signed by team `QAL4T5U87S` and both `macos/Runner/*.entitlements` carry `keychain-access-groups` (`$(AppIdentifierPrefix)live.iajaykumar.quietflip`). Without it Firebase Auth fails with `keychain-error`; it only builds with a development team, so another team must change the team in Xcode | Xcode > Runner (macOS) > Signing & Capabilities |
+| Apple sign-in (iOS): App ID `live.iajaykumar.quietflip` (explicit) with Sign In with Apple (primary) and Push Notifications; a Services ID (`live.iajaykumar.quietflip.signin`, return URL `https://quietflip.firebaseapp.com/__/auth/handler`) and a Sign in with Apple key, both pasted into the Apple provider. The iOS target's `Runner.entitlements` (Sign in with Apple, push) and `remote-notification` background mode are committed. Never commit the `.p8` key | developer.apple.com + Firebase console |
+| Web: add the production domain to Authorized domains (localhost is there by default) | Authentication > Settings |
+
+The app still boots when Firebase is unavailable: bootstrap catches the
+placeholder's `UnsupportedError` and skips every Firebase module.
 
 ## Run
 

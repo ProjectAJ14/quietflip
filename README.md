@@ -1,9 +1,10 @@
 # QuietFlip
 
 An ad-free flip clock, countdown timer, and stopwatch for Android, iOS, web,
-macOS and Windows. It launches straight onto the clock: no sign-in, no
-dashboard, no ads, no analytics. The Black theme is the default even when the
-OS is in light mode.
+macOS and Windows. It launches straight onto the clock: no account needed, no
+dashboard, no ads, no analytics. You only need to sign in (Settings > Account,
+at the bottom) if you want your settings on your other devices. The Black theme
+is the default even when the OS is in light mode.
 
 [![nonstop_cli](https://img.shields.io/badge/started%20with-nonstop_cli-166C4E.svg?style=flat-square)](https://pub.dev/packages/nonstop_cli)
 [![melos](https://img.shields.io/badge/maintained%20with-melos-f700ff.svg?style=flat-square)](https://github.com/invertase/melos)
@@ -31,6 +32,7 @@ packages, packages depend on nothing above them.
 | `packages/utils` | dependency-light helpers |
 | `packages/timekeeping` | pure-Dart countdown state machine and clock/timer/stopwatch formatting |
 | `packages/device_services` | full screen, screen wake, local notifications, sounds, key-value storage |
+| `packages/cloud_sync` | offline-first sync of the signed-in user's documents (Firestore), sync status |
 | `packages/network` | Dio client, auth + logging interceptors, typed errors |
 | `packages/analytics` | event tracking behind a swappable client |
 | `packages/crashlytics` | crash and non-fatal reporting |
@@ -52,17 +54,23 @@ dart pub get
 dart run melos bootstrap
 ```
 
-### Firebase (dormant)
+### Firebase
 
-The workspace keeps the template's Firebase-backed modules (auth, analytics,
-crashlytics, feature flags, FCM notifications, dashboard) for future scope.
-QuietFlip does not use them: they are skipped at startup until you run:
+Firebase project `quietflip` is configured. QuietFlip uses Authentication and
+Firestore only for optional settings sync; the clock never waits for them.
+Every settings change is saved on the device first, then synced when there is
+a connection. Run locally against the emulators:
 
 ```sh
-dart pub global activate flutterfire_cli
 cd apps/quietflip
-flutterfire configure
+firebase emulators:start                                   # terminal 1
+flutter run -d chrome --dart-define=USE_EMULATORS=true     # terminal 2
 ```
+
+The template's other Firebase modules (analytics, crashlytics, feature flags,
+FCM notifications, dashboard) stay in the workspace for future scope. One-time
+console steps (enabling sign-in providers and so on) are listed in
+`CLAUDE.md` under First-time setup.
 
 ### Run and build
 
@@ -90,7 +98,8 @@ screen or hide the controls.
   and fills the viewport instead.
 - A force-closed mobile app may lose its scheduled notification (OS policy);
   reopening it still shows the right remaining time or "Time's up".
-- Firebase modules stay dormant until `flutterfire configure`.
+- Settings sync is last-write-wins per device change: two devices changing
+  different settings offline within the same second can lose one change.
 
 Every environment value is a `--dart-define` read in
 `packages/core/lib/constants/environment.dart`. Add new ones there rather than

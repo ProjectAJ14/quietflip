@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:auth/auth.dart' as auth;
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart' as core;
 import 'package:design_system/design_system.dart';
 import 'package:di/di.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +35,49 @@ class _Notifications implements NotificationClient {
 
 class _Auth implements auth.AuthService {
   int signOuts = 0;
+  int deletes = 0;
+  Exception? signOutFailure;
+  Exception? deleteFailure;
 
   @override
-  Future<void> signOut() async => signOuts++;
+  Future<void> signOut() async {
+    signOuts++;
+    if (signOutFailure case final e?) throw e;
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    deletes++;
+    if (deleteFailure case final e?) throw e;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Sync implements CloudSync {
+  final List<String> calls = [];
+  Exception? deleteFailure;
+
+  @override
+  final ValueNotifier<SyncAccount?> account = ValueNotifier(
+    const SyncAccount(uid: 'u', email: 'e@x.io', provider: SyncProvider.email),
+  );
+
+  @override
+  final ValueNotifier<SyncStatus> status = ValueNotifier(const SyncOff());
+
+  @override
+  bool get enabled => true;
+
+  @override
+  DateTime? get lastSynced => null;
+
+  @override
+  Future<void> deleteAll() async {
+    calls.add('deleteAll');
+    if (deleteFailure case final e?) throw e;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -173,6 +215,74 @@ void main() {
       expect(find.text('login'), findsOneWidget);
     });
   }
+
+  group('Settings > Account', () {
+    late _Auth service;
+    late _Sync sync;
+    late _Notifications notifications;
+
+    Future<SettingsScreen> account(WidgetTester tester) async {
+      service = _Auth();
+      sync = _Sync();
+      notifications = _Notifications(fails: false);
+      di
+        ..register<auth.AuthService>(service)
+        ..register<CloudSync>(sync)
+        ..register<NotificationClient>(notifications);
+      await tester.runAsync(initClock);
+      final router = AppRouter.createRouter(
+        initialLocation: FlipClockRouter.accountSettings,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(App(router: router, appearance: appearance()));
+      await tester.pumpAndSettle();
+      return tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+    }
+
+    FirebaseException error(String code) =>
+        FirebaseException(plugin: 'auth', code: code);
+
+    testWidgets('sign out stays on Settings; a failure keeps the user in', (
+      tester,
+    ) async {
+      final screen = await account(tester);
+      expect(screen.sync, same(sync));
+      await screen.onSignOut!();
+      expect(notifications.unregistered, 1);
+      expect(service.signOuts, 1);
+      service.signOutFailure = error('network-request-failed');
+      await screen.onSignOut!();
+      expect(service.signOuts, 2);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('delete removes the synced documents, then the account', (
+      tester,
+    ) async {
+      final screen = await account(tester);
+      expect(await screen.onDeleteAccount!(), AccountDeletion.deleted);
+      expect(sync.calls, ['deleteAll']);
+      expect(notifications.unregistered, 1);
+      expect(service.deletes, 1);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('delete needing a recent sign-in signs out; other failures '
+        'fail', (tester) async {
+      final screen = await account(tester);
+      service.deleteFailure = error('requires-recent-login');
+      expect(await screen.onDeleteAccount!(), AccountDeletion.needsSignIn);
+      expect(service.signOuts, 1);
+      service.deleteFailure = error('internal-error');
+      expect(await screen.onDeleteAccount!(), AccountDeletion.failed);
+      sync.deleteFailure = error('unavailable');
+      expect(await screen.onDeleteAccount!(), AccountDeletion.failed);
+      expect(service.deletes, 2);
+      expect(service.signOuts, 1);
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
 
   test(
     'web never downloads Roboto: the name is bundled Geist with its OFL',

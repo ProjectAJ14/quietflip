@@ -51,7 +51,7 @@ void main() {
     bool? desktop = true,
     bool isWeb = true,
     bool orientation = true,
-    bool openTimers = false,
+    String? category,
   }) async {
     tester.view
       ..physicalSize = size
@@ -76,7 +76,7 @@ void main() {
             onDone: () => done++,
             onSkins: () => skins++,
             onCustomize: () => customized++,
-            openTimers: openTimers,
+            category: category,
             now: () => DateTime(2026, 9, 29, 9, 41),
           ),
         ),
@@ -465,7 +465,7 @@ void main() {
     });
 
     testWidgets('openTimers starts on Timers, and Done closes', (tester) async {
-      await open(tester, size: const Size(375, 800), openTimers: true);
+      await open(tester, size: const Size(375, 800), category: 'timers');
       expect(find.text(c.timers_presets.toUpperCase()), findsOne);
       expect(find.text(c.timers_minutes(25)), findsOne);
       await tap(tester, strings.generic.done);

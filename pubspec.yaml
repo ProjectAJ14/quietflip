@@ -25,6 +25,7 @@ workspace:
   - packages/developer
   - packages/timekeeping
   - packages/device_services
+  - packages/cloud_sync
   - features/auth
   - features/dashboard
   - features/flip_clock

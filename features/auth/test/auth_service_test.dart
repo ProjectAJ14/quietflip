@@ -42,6 +42,34 @@ void main() {
   });
 
   test(
+    'deleteAccount deletes the signed-in user; none signed in is a no-op',
+    () async {
+      final auth = _Auth();
+      final user = _User();
+      final service = AuthServiceImp(firebaseAuth: auth, logger: _Logger());
+      when(() => auth.currentUser).thenReturn(null);
+      await service.deleteAccount();
+      when(() => auth.currentUser).thenReturn(user);
+      when(user.delete).thenAnswer((_) async {});
+      await service.deleteAccount();
+      verify(user.delete).called(1);
+    },
+  );
+
+  test('deleteAccount failures (recent login required) are logged and '
+      'rethrown', () async {
+    final auth = _Auth();
+    final user = _User();
+    final logger = _Logger();
+    final error = FirebaseAuthException(code: 'requires-recent-login');
+    when(() => auth.currentUser).thenReturn(user);
+    when(user.delete).thenThrow(error);
+    final service = AuthServiceImp(firebaseAuth: auth, logger: logger);
+    await expectLater(service.deleteAccount(), throwsA(same(error)));
+    verify(() => logger.e(any(), error, any())).called(1);
+  });
+
+  test(
     'module composes injected SDK and disposes owned token provider',
     () async {
       di.register<Logger>(_Logger());

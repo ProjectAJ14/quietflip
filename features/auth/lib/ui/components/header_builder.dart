@@ -37,6 +37,15 @@ Widget headerBuilder(BuildContext context) {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 8),
+          // The product's stance: an account is only for syncing.
+          Text(
+            strings.sync.sign_in_reason,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     ),

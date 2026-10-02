@@ -3,6 +3,7 @@ import 'package:analytics/analytics.dart' as analytics;
 import 'package:auth/auth.dart' as auth;
 
 import 'package:bloc/bloc.dart';
+import 'package:cloud_sync/cloud_sync.dart' as cloud_sync;
 import 'package:core/core.dart' as core;
 import 'package:core/developer/emulators.dart' as emulators;
 
@@ -18,6 +19,7 @@ import 'package:feature_flags/feature_flags.dart' as feature_flags;
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flip_clock/flip_clock.dart' as flip_clock;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:localization/localization.dart';
 import 'package:network/network.dart' as network;
@@ -25,6 +27,12 @@ import 'package:network/network.dart' as network;
 import 'package:notifications/notifications.dart' as notifications;
 
 import 'package:quietflip/firebase_options.dart';
+
+/// Where [init] reads the Firebase options when none are passed. Tests swap
+/// in the placeholder's `UnsupportedError` to boot with Firebase off.
+@visibleForTesting
+FirebaseOptions Function() defaultFirebaseOptions = () =>
+    DefaultFirebaseOptions.currentPlatform;
 
 /// Brings every module up, in dependency order, before the first frame.
 ///
@@ -36,6 +44,7 @@ Future<void> init({
   void Function(String route)? onOpenRoute,
   FirebaseOptions? firebaseOptions,
   bool useEmulators = core.Environment.useEmulators,
+  bool isWeb = kIsWeb,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
   final stopwatch = Stopwatch()..start();
@@ -49,7 +58,7 @@ Future<void> init({
   var firebaseReady = false;
   FirebaseOptions? resolvedOptions;
   try {
-    resolvedOptions = firebaseOptions ?? DefaultFirebaseOptions.currentPlatform;
+    resolvedOptions = firebaseOptions ?? defaultFirebaseOptions();
     await Firebase.initializeApp(options: resolvedOptions);
     firebaseReady = true;
     if (useEmulators) {
@@ -64,7 +73,8 @@ Future<void> init({
         : 'Firebase not configured yet; skipping Firebase modules',
   );
 
-  if (firebaseReady) await crashlytics.init();
+  // Crashlytics has no web SDK; on web its init asserts.
+  if (firebaseReady && !isWeb) await crashlytics.init();
 
   if (firebaseReady) await analytics.init();
 
@@ -100,7 +110,14 @@ Future<void> init({
       windowsGuid: '8ddafda9-e2f2-475f-a8d7-68b19e8223da',
     ),
   );
-  await flip_clock.init();
+  // Settings sync needs Firebase and the device store; without it Settings
+  // shows no Account card.
+  if (firebaseReady) await cloud_sync.init();
+  await flip_clock.init(
+    sync: di.has<cloud_sync.CloudSync>()
+        ? di.get<cloud_sync.CloudSync>()
+        : null,
+  );
 
   stopwatch.stop();
   logger.i('Bootstrap completed in ${stopwatch.elapsedMilliseconds} ms');

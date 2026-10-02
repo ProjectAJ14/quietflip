@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
@@ -14,17 +15,20 @@ import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
 import 'package:flip_clock/state/clock_controller.dart';
 import 'package:flip_clock/state/countdown_controller.dart';
 import 'package:flip_clock/state/settings_controller.dart';
+import 'package:flip_clock/state/settings_sync.dart';
 import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flutter/foundation.dart';
 
 export 'data/models/clock_settings.dart';
 export 'router/flip_clock_router.dart';
+export 'ui/components/account_page.dart' show AccountDeletion;
 
 /// Registers the settings repository and controllers with `di`, restoring
-/// saved settings and any saved countdown.
+/// saved settings and any saved countdown. With [sync] (null when Firebase
+/// is off) the settings also follow the signed-in account.
 ///
 /// Call after `core.init()` and `device_services.init()`.
-Future<void> init() async {
+Future<void> init({CloudSync? sync}) async {
   final logger = di.get<Logger>();
   final alerts = di.get<LocalAlerts>();
   final repository = SettingsRepositoryImp(
@@ -61,6 +65,19 @@ Future<void> init() async {
       .map((s) => s.orientation)
       .distinct()
       .listen((o) => unawaited(orient(o)));
+
+  if (sync != null) {
+    final settingsSync = SettingsSync(
+      settings: settings,
+      sync: sync,
+      store: di.get<KeyValueStore>(),
+    );
+    await settingsSync.start();
+    di.register<SettingsSync>(
+      settingsSync,
+      dispose: (_) => settingsSync.close(),
+    );
+  }
 
   di.register<SettingsRepository>(repository);
   di.register<SettingsController>(settings, dispose: _close);

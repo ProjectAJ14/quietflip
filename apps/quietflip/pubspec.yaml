@@ -45,6 +45,8 @@ dependencies:
     path: ../../packages/device_services
   flip_clock:
     path: ../../features/flip_clock
+  cloud_sync:
+    path: ../../packages/cloud_sync
 
 dev_dependencies:
   mocktail: ^1.0.4

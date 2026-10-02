@@ -6,7 +6,8 @@ count) or one of your timer presets (5, 10, 15 min by default, up to six),
 and a stopwatch, plus Settings. The clock can show today's date
 above the digits (Settings > Clock > Show date). On a tall screen (a phone
 held upright) the cards stack, hours over minutes (over seconds); turned
-sideways they sit in one row. No account, network or analytics.
+sideways they sit in one row. No analytics. An account is optional: signed
+in, your settings follow you to your other devices.
 
 ## Routes
 
@@ -14,16 +15,25 @@ sideways they sit in one row. No account, network or analytics.
 |---|---|
 | `/clock` (`FlipClockRouter.home`) | Pomodoro / Clock / Stopwatch panels; the app launches here |
 | `/clock/settings` (`FlipClockRouter.settings`) | Settings, stacked on the clock |
+| `/clock/settings?category=timers` (`timerSettings`) / `?category=account` (`accountSettings`) | Settings opened on Timers / the Account page |
 
 ## Wiring
 
 ```dart
 await core.init();
 await device_services.init();
-await flip_clock.init();          // restores settings and any running timer
+await cloud_sync.init();          // optional: only when Firebase is up
+await flip_clock.init(sync: cloudSyncOrNull); // restores settings and any running timer
 
 DesignSystemWrapper(mode: ..., builder: ...)  // feed flip_clock.appearance()
-GoRouter(routes: [...const FlipClockRouter().routes])
+GoRouter(routes: [
+  ...FlipClockRouter(
+    sync: cloudSyncOrNull,                 // null: no Account card
+    onSignIn: (context) => ...,            // the app opens sign-in
+    onSignOut: (context) => ...,
+    onDeleteAccount: (context) => ...,     // returns an AccountDeletion
+  ).routes,
+])
 ```
 
 `init()` needs `Logger`, `KeyValueStore`, `LocalAlerts`, `SoundPlayer` and
@@ -62,6 +72,23 @@ Everything is saved at once and restored on launch.
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a
   jump with reduced motion; it lowers, but does not prevent, burn-in risk).
 - **Shortcuts** (R for rotation on phones) and **About** (licences, privacy).
+- **Account** (a card at the bottom of the list on phones, at the bottom of
+  the sidebar on tablets and desktop; only when Firebase is configured):
+  signed out, it explains that you only need to sign in to get your
+  settings on your other devices. Signed in: a **Sync settings** switch (on
+  by default, per device), when the last sync happened, sign out (settings
+  stay on the device) and delete account. Sync problems ("Waiting for a
+  connection", "Couldn't sync…") show here only: never a toast or a
+  notification.
+
+## Settings sync
+
+Every change is saved on the device first, then synced to Firestore one
+second after the last change, offline first (Firestore queues writes until a
+connection returns). Everything syncs, custom skins included, except what
+belongs to one device: brightness, rotation, notifications permission, the
+last screen and a running timer. The most recent change wins; a device that
+has never synced takes the cloud copy when it first signs in.
 
 ## Controls
 
