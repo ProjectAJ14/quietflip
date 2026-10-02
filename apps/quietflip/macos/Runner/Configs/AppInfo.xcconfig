@@ -8,7 +8,7 @@
 PRODUCT_NAME = quietflip
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = io.nonstop.quietflip
+PRODUCT_BUNDLE_IDENTIFIER = live.iajaykumar.quietflip
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 io.nonstop. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 iajaykumar.live. All rights reserved.

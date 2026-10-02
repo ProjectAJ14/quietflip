@@ -43,7 +43,7 @@ lib/
 ## Rules
 
 - `device_services.init(alerts: LocalAlertsConfig(appName, channelName,
-  windowsAppUserModelId: 'io.nonstop.quietflip', windowsGuid))` runs
+  windowsAppUserModelId: 'live.iajaykumar.quietflip', windowsGuid))` runs
   after `core.init()` and never depends on Firebase; `flip_clock.init()` runs
   after it (it reads `Logger`, `KeyValueStore`, `LocalAlerts`, `SoundPlayer`
   from `di`). Neither is behind `firebaseReady`.
@@ -99,6 +99,7 @@ lib/
 | `firebase_bootstrap_test.dart` | configured bootstrap with mocktail FlutterFire platform doubles: every module registered (incl. `KeyValueStore`, `SettingsController`), `app_open` logged, emulator failure throws, sign-in lands on dashboard, foreground toast, signed-out user opening the dashboard sent to `SignInScreen` |
 | `notification_lifecycle_test.dart` | init after first frame, badge on resume, no badge after dispose, errors logged, null client |
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
+| `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |
 
 Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInterfaceMixin`, `tearDown(di.reset)`.
 
@@ -106,6 +107,10 @@ Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInter
 
 ## Gotchas
 
+- **The app id is `live.iajaykumar.quietflip` on every platform.** It lives in
+  `android/app/build.gradle.kts` (plus the Kotlin package folder), both
+  Xcode projects, `macos/Runner/Configs/AppInfo.xcconfig` and
+  `bootstrap.dart`. Change all at once; stores treat a new id as a new app.
 - **Web never downloads fonts or the renderer.** Flutter's web engine
   fetches Roboto from fonts.gstatic.com as its default font unless the app
   bundles a family named `Roboto`, so `pubspec.yaml` declares `Roboto` as a

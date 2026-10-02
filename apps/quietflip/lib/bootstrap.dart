@@ -96,7 +96,7 @@ Future<void> init({
       appName: strings.app.name,
       channelName: strings.clock.alerts_channel,
       // Windows toast identity: app-specific, never change once shipped.
-      windowsAppUserModelId: 'io.nonstop.quietflip',
+      windowsAppUserModelId: 'live.iajaykumar.quietflip',
       windowsGuid: '8ddafda9-e2f2-475f-a8d7-68b19e8223da',
     ),
   );
