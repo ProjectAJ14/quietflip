@@ -728,20 +728,21 @@ class _Cell extends StatelessWidget {
           horizontal: desktop ? DesignSpace.s3 : DesignSpace.s4,
           vertical: desktop ? DesignSpace.s1 : DesignSpace.s2,
         ),
-        child: Row(
-          spacing: DesignSpace.s3,
-          children: [
-            ?leading,
-            Expanded(child: child),
-            // Values and switches sit at the row's end.
-            if (trailing != null)
-              Flexible(
-                child: Align(
-                  alignment: AlignmentDirectional.centerEnd,
+        child: LayoutBuilder(
+          builder: (context, box) => Row(
+            spacing: DesignSpace.s3,
+            children: [
+              ?leading,
+              Expanded(child: child),
+              // Values and switches sit at the row's end, as wide as they
+              // are up to half the row; the label gets the rest.
+              if (trailing != null)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
                   child: trailing,
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

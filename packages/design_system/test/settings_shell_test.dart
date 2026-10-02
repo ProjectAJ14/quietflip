@@ -433,6 +433,47 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('a short value leaves the label the rest of the row', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const Scaffold(
+        body: Column(
+          children: [
+            ds.SettingsValueRow(
+              leading: Icon(Icons.touch_app_outlined),
+              label: 'Show or hide controls',
+              value: 'Off',
+            ),
+            ds.SettingsValueRow(label: 'Change mode'),
+          ],
+        ),
+      ),
+    );
+    final line = tester.getSize(find.text('Change mode')).height;
+    expect(
+      tester.getSize(find.text('Show or hide controls')).height,
+      line,
+      reason: 'one line: "Off" takes only its own width',
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a long value still stops at half the row', (tester) async {
+    const long = 'A value long enough to need more than half the row';
+    await _pump(
+      tester,
+      const Scaffold(
+        body: ds.SettingsValueRow(label: 'Label', value: long),
+      ),
+    );
+    final row = tester.getSize(find.byType(ds.SettingsValueRow)).width;
+    expect(tester.getSize(find.text(long)).width, lessThanOrEqualTo(row / 2));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final width in [375.0, 820.0]) {
     testWidgets('Done calls onDone at $width', (tester) async {
       var done = 0;
