@@ -17,7 +17,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | Symbol | Kind | Notes |
 |---|---|---|
 | `init({sync})` | function | Registers `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()` and `device_services.init()` |
-| `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`. Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
+| `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`, `shortcutsFor(platform, shortestSide)` (Settings > Shortcuts groups: iOS/Android touch, plus keys from `tabletSide` 600; macOS/Windows/Linux keys only; the settings route passes `defaultTargetPlatform`, so a phone browser counts as touch, and `MediaQuery.sizeOf` through a `Builder`, so a resize re-picks). Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
 | `AccountDeletion` | enum | `deleted`, `needsSignIn` (Firebase wants a recent sign-in; the app has signed out), `failed` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
@@ -109,7 +109,14 @@ lib/
                                            switch, then five sound tiles with a live
                                            SoundWave each; see Sound picker) /
                                            Keep awake (+ full-screen note) /
-                                           Shortcuts (keycaps) / About (licences, privacy); Done
+                                           Shortcuts (`touchShortcuts` / `keyboardShortcuts`
+                                           from the router: Touch rows with a GestureGlyph
+                                           each (tap = Show or hide controls, swipe sideways =
+                                           Change mode, swipe up/down = Brightness; always
+                                           listed, "Off" while the setting is off; no double
+                                           tap), then keycaps; Touch / Keyboard headers only
+                                           when both show; touch_app icon when Touch leads,
+                                           else keyboard) / About (licences, privacy); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
@@ -424,12 +431,16 @@ lib/
   unless its key goes in `SettingsSync.deviceOnly` (then also name it in
   `strings.sync.stays_body`).
 - **Add a keyboard shortcut:** the handler in `FlipClockScreen`, a
-  `key_*` label and `keycap_*` row in Settings > Shortcuts, a widget test
-  sending the key.
+  `key_*` label and `keycap_*` row in the Keyboard group of Settings >
+  Shortcuts, a widget test sending the key.
+- **Add a touch gesture row:** the gesture in `GestureLayer`, a row in the
+  Touch group of Settings > Shortcuts with its `GestureGlyph` kind (a new
+  kind goes in `design_system`) and "Off" bound to its setting, a test in
+  `settings_screen_test.dart`.
 
 ## Tests
 
-`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
+`account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 

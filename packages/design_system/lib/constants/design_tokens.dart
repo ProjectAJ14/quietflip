@@ -328,6 +328,23 @@ abstract final class DesignMotion {
 
   /// The curve of [pressOut].
   static const Curve pressOutCurve = Curves.easeOutCubic;
+
+  /// One loop of a `GestureGlyph`; the rest of the loop after its motion is
+  /// a pause.
+  static const Duration gestureLoop = Duration(milliseconds: 1600);
+
+  /// A glyph's fingertip presses (tap) or fades in and out (swipes) over
+  /// this; a swipe's trail lags the fingertip by it.
+  static const Duration gestureFade = Duration(milliseconds: 150);
+
+  /// A tap glyph's ring grows and fades over this, after the press.
+  static const Duration gestureRing = Duration(milliseconds: 450);
+
+  /// A swipe glyph's fingertip travels over this, after fading in.
+  static const Duration gestureTravel = Duration(milliseconds: 600);
+
+  /// The curve of [gestureTravel].
+  static const Curve gestureTravelCurve = Curves.easeInOutCubic;
 }
 
 /// True when the user asked for less motion: Android "Remove animations" and

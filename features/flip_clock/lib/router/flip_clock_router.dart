@@ -11,6 +11,7 @@ import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flip_clock/ui/components/account_page.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flip_clock/ui/screens/skins_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,6 +50,23 @@ class FlipClockRouter implements CoreRouter {
   /// Settings opened on the Account page (where sign-in returns).
   static const String accountSettings = '$settings?category=account';
 
+  /// Which Settings > Shortcuts groups [platform] gets: touch on iOS and
+  /// Android (in a browser too: [defaultTargetPlatform] is the device's),
+  /// keys too when the shortest side is a tablet's, keys only elsewhere.
+  static ({bool touch, bool keyboard}) shortcutsFor(
+    TargetPlatform platform,
+    double shortestSide,
+  ) => switch (platform) {
+    TargetPlatform.iOS || TargetPlatform.android => (
+      touch: true,
+      keyboard: shortestSide >= tabletSide,
+    ),
+    _ => (touch: false, keyboard: true),
+  };
+
+  /// The shortest side from which a phone OS device counts as a tablet.
+  static const double tabletSide = 600;
+
   @override
   List<RouteBase> get routes => [
     GoRoute(
@@ -70,43 +88,56 @@ class FlipClockRouter implements CoreRouter {
       routes: [
         GoRoute(
           path: 'settings',
-          builder: (context, state) => SettingsScreen(
-            settings: di.get<SettingsController>(),
-            sound: di.get<SoundPlayer>(),
-            category: state.uri.queryParameters['category'],
-            sync: sync,
-            onSignIn: switch (onSignIn) {
-              final open? => () => open(context),
-              null => null,
-            },
-            onSignOut: switch (onSignOut) {
-              final signOut? => () => signOut(context),
-              null => null,
-            },
-            onDeleteAccount: switch (onDeleteAccount) {
-              final delete? => () => delete(context),
-              null => null,
-            },
-            now: () => di.get<ClockController>().state,
-            orientationSupported: di.get<OrientationLock>().supported,
-            onDone: () => context.go(home),
-            onSkins: () => unawaited(
-              showSkins(
-                context,
-                settings: di.get<SettingsController>(),
-                now: di.get<ClockController>().state,
-              ),
-            ),
-            onCustomize: () => unawaited(
-              customizeSkin(
-                context,
-                settings: di.get<SettingsController>(),
-                now: di.get<ClockController>().state,
-              ),
-            ),
-          ),
+          // A Builder so a resize (split screen, a rotated tablet) re-picks
+          // the shortcut groups.
+          builder: (context, state) =>
+              Builder(builder: (context) => _settings(context, state)),
         ),
       ],
     ),
   ];
+
+  Widget _settings(BuildContext context, GoRouterState state) {
+    final shortcuts = shortcutsFor(
+      defaultTargetPlatform,
+      MediaQuery.sizeOf(context).shortestSide,
+    );
+    return SettingsScreen(
+      settings: di.get<SettingsController>(),
+      sound: di.get<SoundPlayer>(),
+      category: state.uri.queryParameters['category'],
+      sync: sync,
+      onSignIn: switch (onSignIn) {
+        final open? => () => open(context),
+        null => null,
+      },
+      onSignOut: switch (onSignOut) {
+        final signOut? => () => signOut(context),
+        null => null,
+      },
+      onDeleteAccount: switch (onDeleteAccount) {
+        final delete? => () => delete(context),
+        null => null,
+      },
+      now: () => di.get<ClockController>().state,
+      orientationSupported: di.get<OrientationLock>().supported,
+      touchShortcuts: shortcuts.touch,
+      keyboardShortcuts: shortcuts.keyboard,
+      onDone: () => context.go(home),
+      onSkins: () => unawaited(
+        showSkins(
+          context,
+          settings: di.get<SettingsController>(),
+          now: di.get<ClockController>().state,
+        ),
+      ),
+      onCustomize: () => unawaited(
+        customizeSkin(
+          context,
+          settings: di.get<SettingsController>(),
+          now: di.get<ClockController>().state,
+        ),
+      ),
+    );
+  }
 }

@@ -52,6 +52,8 @@ void main() {
     bool? desktop = true,
     bool isWeb = true,
     bool orientation = true,
+    bool touch = false,
+    bool keyboard = true,
     String? category,
   }) async {
     tester.view
@@ -73,6 +75,8 @@ void main() {
             sound: sound,
             isWeb: isWeb,
             orientationSupported: orientation,
+            touchShortcuts: touch,
+            keyboardShortcuts: keyboard,
             desktop: desktop,
             onDone: () => done++,
             onSkins: () => skins++,
@@ -245,6 +249,159 @@ void main() {
     expect(done, 1);
     await close(tester);
   });
+
+  /// Opens Shortcuts. Its gesture glyphs loop, so this pumps a fixed time
+  /// instead of settling.
+  Future<void> shortcuts(WidgetTester tester) async {
+    await tester.tap(find.text(strings.clock.settings_shortcuts).last);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+  }
+
+  List<GestureKind> glyphs(WidgetTester tester) => [
+    for (final g in tester.widgetList<GestureGlyph>(find.byType(GestureGlyph)))
+      g.kind,
+  ];
+
+  const iPhone = Size(393, 852);
+  const iPad = Size(820, 1180);
+  final c = strings.clock;
+  final touchHeader = c.shortcuts_touch.toUpperCase();
+  final keysHeader = c.shortcuts_keyboard.toUpperCase();
+
+  testWidgets('iPhone (and web on one): touch gestures only', (tester) async {
+    await open(
+      tester,
+      size: iPhone,
+      desktop: false,
+      isWeb: false,
+      touch: true,
+      keyboard: false,
+    );
+    expect(find.byIcon(Icons.touch_app_outlined), findsOne);
+    expect(find.byIcon(Icons.keyboard_outlined), findsNothing);
+    await shortcuts(tester);
+    expect(glyphs(tester), [
+      GestureKind.tap,
+      GestureKind.swipeHorizontal,
+      GestureKind.swipeVertical,
+    ]);
+    for (final label in [
+      c.touch_controls,
+      c.key_change_mode,
+      c.key_brightness,
+    ]) {
+      expect(find.text(label), findsOne);
+    }
+    expect(find.text(c.key_start_pause), findsNothing);
+    expect(find.text(c.keycap_space), findsNothing);
+    expect(find.text(c.shortcut_off), findsNothing);
+    // One group needs no header: the page title already says Shortcuts.
+    expect(find.text(touchHeader), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('iPad: touch gestures, then keys', (tester) async {
+    await open(tester, size: iPad, desktop: false, isWeb: false, touch: true);
+    expect(find.byIcon(Icons.touch_app_outlined), findsOne);
+    await shortcuts(tester);
+    expect(glyphs(tester), hasLength(3));
+    expect(
+      tester.getTopLeft(find.text(touchHeader)).dy,
+      lessThan(tester.getTopLeft(find.text(keysHeader)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text(c.touch_controls)).dy,
+      lessThan(tester.getTopLeft(find.text(c.keycap_space)).dy),
+    );
+    expect(find.text(c.keycap_esc), findsOne);
+    await close(tester);
+  });
+
+  testWidgets('macOS: keys only, with the keyboard icon', (tester) async {
+    await open(tester, isWeb: false);
+    expect(find.byIcon(Icons.keyboard_outlined), findsOne);
+    expect(find.byIcon(Icons.touch_app_outlined), findsNothing);
+    await shortcuts(tester);
+    expect(glyphs(tester), isEmpty);
+    expect(find.text(c.keycap_space), findsOne);
+    expect(find.text(c.touch_controls), findsNothing);
+    expect(find.text(keysHeader), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('"Off" follows each gesture setting', (tester) async {
+    await open(
+      tester,
+      size: iPhone,
+      desktop: false,
+      isWeb: false,
+      touch: true,
+      keyboard: false,
+    );
+    await shortcuts(tester);
+    Finder offIn(String label) => find.descendant(
+      of: find.ancestor(
+        of: find.text(label),
+        matching: find.byType(SettingsValueRow),
+      ),
+      matching: find.text(c.shortcut_off),
+    );
+    for (final (label, off) in [
+      (c.touch_controls, settings.state.copyWith(tapToggleControls: false)),
+      (c.key_change_mode, settings.state.copyWith(gestureModes: false)),
+      (c.key_brightness, settings.state.copyWith(gestureBrightness: false)),
+    ]) {
+      final before = settings.state;
+      await settings.update(off);
+      await tester.pump();
+      expect(offIn(label), findsOne, reason: label);
+      expect(find.text(c.shortcut_off), findsOne, reason: label);
+      // Still listed while off.
+      expect(find.text(label), findsOne);
+      await settings.update(before);
+      await tester.pump();
+      expect(find.text(c.shortcut_off), findsNothing, reason: label);
+    }
+    await close(tester);
+  });
+
+  for (final mode in [AppearanceMode.black, AppearanceMode.light]) {
+    testWidgets('touch shortcuts fit at text scale 2 ($mode)', (tester) async {
+      await open(
+        tester,
+        size: iPhone,
+        mode: mode,
+        textScale: 2,
+        desktop: false,
+        isWeb: false,
+        touch: true,
+      );
+      await shortcuts(tester);
+      await settings.update(settings.state.copyWith(gestureModes: false));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(glyphs(tester), hasLength(3));
+      expect(find.text(c.shortcut_off), findsOne);
+      final colors = mode == AppearanceMode.black
+          ? DesignColors.dark
+          : DesignColors.light;
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find
+                        .descendant(
+                          of: find.byType(GestureGlyph),
+                          matching: find.byType(CustomPaint),
+                        )
+                        .first,
+                  )
+                  .painter!
+              as GestureGlyphPainter;
+      expect(painter.color, colors.ink);
+      await close(tester);
+    });
+  }
 
   testWidgets('Theme Light repaints the settings page on the light bg', (
     tester,

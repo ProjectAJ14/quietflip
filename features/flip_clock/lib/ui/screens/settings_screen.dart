@@ -32,6 +32,8 @@ class SettingsScreen extends StatefulWidget {
     required this.sound,
     this.isWeb = kIsWeb,
     this.orientationSupported = false,
+    this.touchShortcuts = false,
+    this.keyboardShortcuts = true,
     this.desktop,
     this.onDone,
     this.onSkins,
@@ -54,6 +56,12 @@ class SettingsScreen extends StatefulWidget {
 
   /// Shows the Orientation control (phones and tablets only).
   final bool orientationSupported;
+
+  /// Lists the touch gestures in Shortcuts, first (phones and tablets).
+  final bool touchShortcuts;
+
+  /// Lists the keyboard shortcuts in Shortcuts (tablets and desktops).
+  final bool keyboardShortcuts;
 
   /// Pointer density. Null: on desktop and web.
   final bool? desktop;
@@ -208,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             timers,
             _sound(s),
             _awake(s),
-            _shortcuts(),
+            _shortcuts(s),
             _about(context),
           ];
           final sync = widget.sync;
@@ -652,28 +660,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  SettingsCategory _shortcuts() {
+  /// Touch gestures (each always listed, "Off" while its setting is off)
+  /// and keys, as the platform has them. Headers only when both show.
+  SettingsCategory _shortcuts(ClockSettings s) {
     final c = strings.clock;
+    final touch = widget.touchShortcuts;
+    final keyboard = widget.keyboardShortcuts;
+    final both = touch && keyboard;
     return SettingsCategory(
-      icon: Icons.keyboard_outlined,
+      icon: touch ? Icons.touch_app_outlined : Icons.keyboard_outlined,
       label: c.settings_shortcuts,
       groups: [
-        SettingsGroup(
-          rows: [
-            for (final (label, key) in [
-              (c.key_start_pause, c.keycap_space),
-              (c.key_change_mode, c.keycap_left_right),
-              (c.key_brightness, c.keycap_up_down),
-              (c.key_show_seconds, c.keycap_s),
-              (c.key_dim, c.keycap_d),
-              (c.key_lap, c.keycap_l),
-              if (widget.orientationSupported) (c.key_rotation, c.keycap_r),
-              (c.key_full_screen, c.keycap_f),
-              (c.key_hide_controls, c.keycap_esc),
-            ])
-              SettingsKeyRow(label: label, keycap: key),
-          ],
-        ),
+        if (touch)
+          SettingsGroup(
+            header: both ? c.shortcuts_touch : null,
+            rows: [
+              for (final (kind, label, on) in [
+                (GestureKind.tap, c.touch_controls, s.tapToggleControls),
+                (
+                  GestureKind.swipeHorizontal,
+                  c.key_change_mode,
+                  s.gestureModes,
+                ),
+                (
+                  GestureKind.swipeVertical,
+                  c.key_brightness,
+                  s.gestureBrightness,
+                ),
+              ])
+                SettingsValueRow(
+                  leading: GestureGlyph(kind),
+                  label: label,
+                  value: on ? null : c.shortcut_off,
+                ),
+            ],
+          ),
+        if (keyboard)
+          SettingsGroup(
+            header: both ? c.shortcuts_keyboard : null,
+            rows: [
+              for (final (label, key) in [
+                (c.key_start_pause, c.keycap_space),
+                (c.key_change_mode, c.keycap_left_right),
+                (c.key_brightness, c.keycap_up_down),
+                (c.key_show_seconds, c.keycap_s),
+                (c.key_dim, c.keycap_d),
+                (c.key_lap, c.keycap_l),
+                if (widget.orientationSupported) (c.key_rotation, c.keycap_r),
+                (c.key_full_screen, c.keycap_f),
+                (c.key_hide_controls, c.keycap_esc),
+              ])
+                SettingsKeyRow(label: label, keycap: key),
+            ],
+          ),
       ],
     );
   }

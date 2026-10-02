@@ -71,7 +71,13 @@ Everything is saved at once and restored on launch.
 - **Keep awake:** keep the screen awake; subtle movement (full screen
   shifts the display up to 8 px per axis once a minute, easing over 1 s, a
   jump with reduced motion; it lowers, but does not prevent, burn-in risk).
-- **Shortcuts** (R for rotation on phones) and **About** (licences, privacy).
+- **Shortcuts:** what this device can do. Phones list the touch gestures,
+  each with a small animation (tap to show or hide the controls, swipe
+  sideways to change mode, swipe up or down for brightness; "Off" when that
+  gesture is turned off in Gestures). Tablets list the gestures, then the
+  keys; Mac, Windows and Linux list the keys (R for rotation only where the
+  screen can rotate). A phone's browser counts as a phone.
+- **About** (licences, privacy).
 - **Account** (a card at the bottom of the list on phones, at the bottom of
   the sidebar on tablets and desktop; only when Firebase is configured):
   signed out, it explains that you only need to sign in to get your
@@ -172,6 +178,8 @@ full screen only hides the controls while the app stays open; it is not a
 lock screen or screensaver. Settings repeats the note under Keep screen awake.
 
 ## Keyboard
+
+Listed in Settings > Shortcuts on tablets and desktops.
 
 F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
 pomodoro phase after one ended while the app was closed), Left / Right

@@ -412,6 +412,27 @@ void main() {
     );
   });
 
+  testWidgets('a value row can start with a leading widget', (tester) async {
+    await _pump(
+      tester,
+      const Scaffold(
+        body: ds.SettingsValueRow(
+          leading: Icon(Icons.touch_app_outlined),
+          label: 'Show or hide controls',
+          value: 'Off',
+        ),
+      ),
+      textScale: 2,
+    );
+    expect(
+      tester.getTopRight(find.byType(Icon)).dx,
+      lessThan(tester.getTopLeft(find.text('Show or hide controls')).dx),
+    );
+    expect(find.text('Off'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final width in [375.0, 820.0]) {
     testWidgets('Done calls onDone at $width', (tester) async {
       var done = 0;

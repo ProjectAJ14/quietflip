@@ -801,13 +801,15 @@ class SettingsSwitchRow extends StatelessWidget {
 }
 
 /// A label with a muted value; a chevron and tap target when [onTap] is
-/// set; an optional [trailing] control (such as a delete button) at the end.
+/// set; an optional [leading] picture (such as a `GestureGlyph`) before the
+/// label and [trailing] control (such as a delete button) at the end.
 class SettingsValueRow extends StatelessWidget {
   const SettingsValueRow({
     super.key,
     required this.label,
     this.value,
     this.onTap,
+    this.leading,
     this.trailing,
     this.semanticsLabel,
   });
@@ -815,6 +817,7 @@ class SettingsValueRow extends StatelessWidget {
   final String label;
   final String? value;
   final VoidCallback? onTap;
+  final Widget? leading;
   final Widget? trailing;
 
   /// Spoken instead of [label] when the label is an abbreviation.
@@ -826,6 +829,7 @@ class SettingsValueRow extends StatelessWidget {
     final value = this.value;
     return _Cell(
       onTap: onTap,
+      leading: leading,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

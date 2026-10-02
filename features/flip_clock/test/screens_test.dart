@@ -24,6 +24,7 @@ import 'package:flip_clock/ui/components/skin_customizer.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/screens/index.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -886,6 +887,71 @@ void main() {
     await change((s) => s.copyWith(flipSound: true));
     expect(sound.warmed.last, TickSound.woodblock, reason: 'turning it on');
     expect(sound.ticks, isEmpty, reason: 'warming plays nothing');
+  });
+
+  test('shortcut groups follow the platform and the shortest side', () {
+    for (final (platform, side, touch, keyboard) in [
+      (TargetPlatform.iOS, 393.0, true, false), // iPhone, and web on one
+      (TargetPlatform.android, 599.0, true, false),
+      (TargetPlatform.iOS, 600.0, true, true), // iPad mini and up
+      (TargetPlatform.android, 800.0, true, true),
+      (TargetPlatform.macOS, 393.0, false, true),
+      (TargetPlatform.windows, 1080.0, false, true),
+      (TargetPlatform.linux, 1080.0, false, true),
+    ]) {
+      expect(FlipClockRouter.shortcutsFor(platform, side), (
+        touch: touch,
+        keyboard: keyboard,
+      ), reason: '$platform at $side');
+    }
+  });
+
+  testWidgets('the settings route passes the shortcut groups, on resize too', (
+    tester,
+  ) async {
+    di
+      ..register<KeyValueStore>(FakeStore())
+      ..register<LocalAlerts>(FakeAlerts())
+      ..register<SoundPlayer>(FakeSound())
+      ..register<FullScreenController>(FakeFullScreen())
+      ..register<ScreenWake>(FakeWake())
+      ..register<OrientationLock>(FakeOrientation())
+      ..register<ScreenBrightness>(FakeScreenBrightness());
+    await flip_clock.init();
+    // defaultTargetPlatform is iOS on an iPhone, in the app or a browser.
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    tester.view
+      ..physicalSize = const Size(393, 852)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: FlipClockRouter.settings,
+      routes: const FlipClockRouter().routes,
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    SettingsScreen screen() =>
+        tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+    expect(
+      (screen().touchShortcuts, screen().keyboardShortcuts),
+      (true, false),
+    );
+    // Turned into an iPad-sized window: keys join the touch gestures.
+    tester.view.physicalSize = const Size(820, 1180);
+    await tester.pumpAndSettle();
+    expect((screen().touchShortcuts, screen().keyboardShortcuts), (true, true));
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    tester.view.physicalSize = const Size(1280, 800);
+    await tester.pumpAndSettle();
+    expect(
+      (screen().touchShortcuts, screen().keyboardShortcuts),
+      (false, true),
+    );
+    debugDefaultTargetPlatformOverride = null;
+    await tester.pumpWidget(const SizedBox());
+    unawaited(di.reset());
+    await tester.pump();
   });
 
   testWidgets('init registers everything; routes open settings and back', (
