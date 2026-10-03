@@ -169,6 +169,10 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
         state == AppLifecycleState.detached) {
       unawaited(_brightness.reset());
     }
+    // Leaving the screen: the snapshot records the time left now.
+    if (state == AppLifecycleState.hidden) {
+      unawaited(widget.countdown.saveProgress());
+    }
     _syncWake();
     if (_resumed) {
       widget.clock.refresh();

@@ -59,7 +59,8 @@ lib/
   state/countdown_controller.dart          Cubit<CountdownState>; owns Countdown, 250 ms ticker
                                            plus a one-shot timer at endsAt (hidden web tabs
                                            throttle repeating timers), persists each transition
-                                           (and each rebase after the clock is set back),
+                                           (and each rebase after the clock is set back;
+                                           saveProgress() re-saves when the app is hidden),
                                            LocalAlerts + SoundPlayer; syncAlert() on setting change;
                                            Pomodoro cycle (startPomodoro/startNextPhase),
                                            startPreset (cycle or plain start); toggle
@@ -172,8 +173,8 @@ lib/
   `intl` has no native zero digit. Play/pause icons do not mirror (Material
   draws them unflipped); the island's brightness HUD is an LTR gauge
   (`design_system`); Settings' sliders follow Flutter and mirror.
-- Countdown remaining time is recomputed from `endsAt` on every tick and on
-  app resume; never count frames. The stopwatch uses an injected monotonic
+- Countdown remaining time is recomputed from `endsAt` and the injected
+  monotonic `elapsed` on every tick and on app resume; never count frames. The stopwatch uses an injected monotonic
   `Stopwatch`; tick (~100 ms) only while running.
 - Persist every countdown transition; relaunch shows "finished while away".
 - `LocalAlerts` is scheduled on start/resume and cancelled on pause/reset/
@@ -542,10 +543,13 @@ widget tester's clock):
   next tick and on `refresh()` (resume); the countdown's end instant and alert
   are unchanged; the stopwatch reading is untouched.
 - **Wall clock jumps:** forward past the end (device slept) finishes on the
-  next check; backward rebases the end to a full duration from now and
-  re-saves the snapshot and re-schedules the system alert at the new end
-  (`check()` and `load()`), so no stale alert fires later. Relaunch after a
-  jump past the end shows finished-while-away.
+  next check; backward never adds time (the monotonic clock keeps the time
+  left), and rebases the end to now plus the time left, re-saves the
+  snapshot and re-schedules the system alert at the new end (`check()` and
+  `load()`), so no stale alert fires later. The screen calls
+  `saveProgress()` when the app is hidden, so a relaunch after the clock was
+  set back past that moment resumes with the time left then. Relaunch after
+  a jump past the end shows finished-while-away.
 - **Stacking:** 390x844 stacks, 844x390 is a row, 600x640 stays the row
   it starts as, with seconds on and off; portrait 12h with AM/PM left and
   right at text scale 2 fits every mode. The band holds either layout
@@ -616,9 +620,9 @@ widget tester's clock):
   never completes in fake time and the test hangs. Dispose the tree, call
   `close()` unawaited, then `pump()` (see `Harness.dispose` in
   `test/screens_test.dart`).
-- A clock set back by less than the time a running timer has already used
-  is not detected: the end is only rebased once it lies more than a full
-  duration away, so such a timer runs long by the set-back amount (a paused
-  timer is unaffected).
+- While the app was closed, a clock set back by less than the time since
+  the last save (start, rebase or the app being hidden) is not detected:
+  such a timer runs long by the set-back amount. Moving the clock forward
+  always shortens a running timer (it looks like device sleep).
 - Flip sound is wired for Clock and the countdown only (the stopwatch's tenths would
   click ten times a second).
