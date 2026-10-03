@@ -144,6 +144,10 @@ void main() {
         signIn.headerBuilder!(context, const BoxConstraints(), 0),
         register.headerBuilder!(context, const BoxConstraints(), 0),
         recovery.headerBuilder!(context, const BoxConstraints(), 0),
+        // Wide screens draw the side panel instead of the header.
+        signIn.sideBuilder!(context, const BoxConstraints()),
+        register.sideBuilder!(context, const BoxConstraints()),
+        recovery.sideBuilder!(context, const BoxConstraints()),
         signIn.footerBuilder!(context, ui.AuthAction.signIn),
         register.footerBuilder!(context, ui.AuthAction.signUp),
       ];
@@ -152,7 +156,7 @@ void main() {
         expect(tester.takeException(), isNull);
       }
       // Headers say why anyone would sign in at all.
-      for (final header in widgets.take(3)) {
+      for (final header in widgets.take(6)) {
         await tester.pumpWidget(MaterialApp(home: Scaffold(body: header)));
         expect(find.text(strings.sync.sign_in_reason), findsOneWidget);
         // The app's own icon, not a stock symbol.
@@ -165,7 +169,9 @@ void main() {
       final bytes = await tester.runAsync(
         () => rootBundle.load('packages/auth/$appIconAsset'),
       );
-      expect(bytes!.lengthInBytes, greaterThan(0));
+      // Sharp at 4x: a PNG stores its width and height at bytes 16 and 20.
+      expect(bytes!.getUint32(16), appIconSize * 4);
+      expect(bytes.getUint32(20), appIconSize * 4);
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 5));
     },

@@ -2,14 +2,18 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
-/// The app icon, 72 logical px at 4x, bundled with this package because a
+/// The app icon, [appIconSize] at 4x, bundled with this package because a
 /// feature cannot read the app's assets. Resized from
 /// `apps/quietflip/assets/icon/quietflip-master.png`; regenerate it when the
 /// icon changes.
 const appIconAsset = 'assets/app-icon.png';
 
-/// Banner shown above the sign-in and register forms: the app icon, the app
-/// name and why anyone would sign in.
+/// Logical size of [appIconAsset] in the header.
+const appIconSize = 72.0;
+
+/// Banner shown above the sign-in, register and forgot-password forms (or
+/// beside them on wide screens): the app icon, the app name and why anyone
+/// would sign in.
 Widget headerBuilder(BuildContext context) {
   final theme = Theme.of(context);
 
@@ -26,8 +30,8 @@ Widget headerBuilder(BuildContext context) {
             child: const AppAssetImage(
               assetPath: appIconAsset,
               package: 'auth',
-              width: 72,
-              height: 72,
+              width: appIconSize,
+              height: appIconSize,
             ),
           ),
           const SizedBox(height: 16),

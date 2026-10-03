@@ -82,6 +82,11 @@ class SignInScreen extends StatelessWidget {
       headerBuilder: (context, constraints, shrinkOffset) {
         return headerBuilder(context);
       },
+      // Wider than FirebaseUI's breakpoint (800) the header is not drawn;
+      // the side panel carries it instead.
+      sideBuilder: (context, constraints) {
+        return Center(child: headerBuilder(context));
+      },
     );
   }
 }

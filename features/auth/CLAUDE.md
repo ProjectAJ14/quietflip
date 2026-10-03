@@ -55,6 +55,9 @@ lib/
 - `AuthServiceImp.signOut` logs and reports failures, then **rethrows**.
   `deleteAccount` logs and rethrows `FirebaseAuthException` (the app maps
   `requires-recent-login` to "sign in again").
+- Every screen passes `headerBuilder` as both `headerBuilder` and
+  `sideBuilder`: above FirebaseUI's 800px breakpoint the header is not drawn
+  and only the side panel shows.
 - The header shows the real app icon, bundled in this package as
   `assets/app-icon.png` (72px at 4x, resized from
   `apps/quietflip/assets/icon/quietflip-master.png`; a feature cannot read
@@ -89,7 +92,7 @@ lib/
 |---|---|
 | `auth_service_test.dart` | `AuthServiceImp` identity + sign-out, sign-out error rethrown, `deleteAccount` success / signed out / failure logged and rethrown, `init()` registers types and `di.reset` disposes the token provider |
 | `token_provider_test.dart` | expiry-driven reuse vs refresh, signed-out null, stream publish/clear, read and stream errors, late refresh after sign-out or account change, idempotent dispose, null token |
-| `presentation_test.dart` | `getAuthMethod`, every analytics call, route builders, SDK state actions invoke callbacks, forgot-password push with email, header/footer builders (header draws the bundled app icon), `GoAuthRoute` for no service / signed out / signed in, `signOut` with and without service, footer navigation |
+| `presentation_test.dart` | `getAuthMethod`, every analytics call, route builders, SDK state actions invoke callbacks, forgot-password push with email, header, side and footer builders (header draws the bundled app icon at 4x), `GoAuthRoute` for no service / signed out / signed in, `signOut` with and without service, footer navigation |
 
 Pattern: `mocktail` mocks of `FirebaseAuth`, `User`, `IdTokenResult`, `AuthService`;
 `setUp(core.init)` / `tearDown(di.reset)` in widget tests.
