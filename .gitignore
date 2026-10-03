@@ -14,6 +14,8 @@ pubspec_overrides.yaml
 *.lock
 # Apps ship a binary; pin their resolution.
 !apps/*/pubspec.lock
+# fastlane version for the store screenshot upload (see apps/quietflip/Gemfile).
+!apps/*/Gemfile.lock
 mason-lock.json
 .mason
 

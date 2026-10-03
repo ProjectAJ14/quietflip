@@ -21,6 +21,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
 | `apps/quietflip/store_screenshots/` | Store screenshot renderer: boots the real app in `flutter test`, composes store cards, writes every store/locale PNG to `apps/quietflip/build/store_screenshots/` (see `apps/quietflip/CLAUDE.md`). Not under `test/`, so `melos run test` and coverage skip it; nothing imports it | the app |
 | `tool/fetch_store_fonts.dart` | Downloads the pinned, sha256-checked Noto Sans JP/KR/SC/Devanagari the screenshots need into `.dart_tool/store_fonts/` (never shipped in the app) | - |
+| `.github/workflows/store-screenshots.yml` | Renders the store screenshots on demand or on a `v*` tag and uploads them to each store whose GitHub secrets are all set (fastlane pinned in `apps/quietflip/Gemfile.lock`; gating table in `apps/quietflip/CLAUDE.md`) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
 | `apps/quietflip/firestore.rules` | Firestore security rules: owner-only `users/{uid}/sync/{doc}` with `{data: map, updatedAt: int}` | - |
@@ -72,6 +73,15 @@ cd apps/quietflip
 flutter build web --release --no-web-resources-cdn
 firebase deploy --only hosting --project quietflip
 ```
+
+Store screenshots have their own workflow,
+`.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run
+workflow renders every image into artifacts (tick **upload** to also send
+them), and a pushed `v*` tag renders and uploads. Each store uploads only when
+all of its secrets exist; otherwise its job is skipped with a notice naming
+the missing ones, and the run stays green. Microsoft Store is always a manual
+upload from the artifact. Secrets, variables and store-side prerequisites:
+`apps/quietflip/CLAUDE.md`, Store screenshots.
 
 To re-register apps: `dart pub global activate flutterfire_cli`, then in
 `apps/quietflip` run `flutterfire configure --project=quietflip` with the

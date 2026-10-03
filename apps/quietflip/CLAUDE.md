@@ -162,6 +162,51 @@ under `test/`, so `melos run test` and the coverage gate skip it, and
   are laid out at half the pixels).
 - Every claim on a card must be true of the shipped build.
 
+### CI and store upload (`.github/workflows/store-screenshots.yml`)
+
+A manual run (Actions > Store screenshots) renders everything and uploads
+one artifact per store folder (`store-app_store`, `store-mac_app_store`,
+`store-google_play`, `store-microsoft_store`, `store-web`,
+`store-contact-sheets`). Ticking **upload**, or pushing a `v*` tag, also
+uploads, after the render passes, to every store whose secrets are all set.
+A store missing any of them is skipped with a notice naming what is missing;
+the run stays green. fastlane is pinned by `Gemfile` / `Gemfile.lock` here;
+there is no Fastfile.
+
+| Store | Needs (repository secrets unless marked) | Tool |
+|---|---|---|
+| App Store (iPhone + iPad) | `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY` | `fastlane run upload_to_app_store` (deliver), `platform:ios` |
+| Mac App Store | the same three + variable `MAC_APP_STORE_ENABLED` = `true` | same, `platform:osx` |
+| Google Play | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; optional variable `GOOGLE_PLAY_TRACK` (default `internal`) | `fastlane supply` |
+| Microsoft Store | none: never uploaded automatically | manual, from `store-microsoft_store` |
+
+Formats: `APP_STORE_CONNECT_API_KEY` is the whole `.p8` file text,
+`-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines
+included (an App Store Connect team key with the App Manager role); the key
+ID and issuer ID are as shown in App Store Connect > Users and Access >
+Integrations. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is the whole service account
+key JSON file. CI writes both to `$RUNNER_TEMP` and deletes them after.
+
+Before each store's upload can succeed:
+
+- **App Store / Mac App Store:** the platform needs a version in an editable
+  state (Prepare for Submission, or Rejected / Developer Rejected); with none,
+  the job fails with "Could not find a version to edit". The upload replaces
+  every screenshot of each language it has images for, creates missing
+  languages on that version, touches no text or build, and never submits.
+- **Google Play:** the app exists in Play Console with at least one build
+  uploaded (the API cannot edit an app with none); the service account is
+  invited in Play Console > Users and permissions with permission to edit the
+  store listing; the track in `GOOGLE_PLAY_TRACK` has exactly one release
+  (supply looks one up even for images). Each language folder replaces that
+  language's phone, 7", 10" screenshots and feature graphic. Languages with
+  no translation added in Play Console may be rejected; add them first.
+- **Microsoft Store:** no supported route changes only the listing images:
+  the msstore CLI uploads packages and listing JSON but no image files, and
+  the Partner Center submission API takes images only inside a new
+  submission, which goes to certification when committed. Upload the
+  artifact by hand in Partner Center > the app's Store listings, per language.
+
 Gotchas:
 
 - `flutter test` has no system font fallback. google_fonts gives every

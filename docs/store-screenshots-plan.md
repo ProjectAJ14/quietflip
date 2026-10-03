@@ -1,8 +1,9 @@
 # Store screenshot pipeline: plan
 
-Status: Stages 0-3 built (`apps/quietflip/store_screenshots/`, run with
-`flutter test store_screenshots/` from `apps/quietflip`; see
-`apps/quietflip/CLAUDE.md`). Stages 4-6 (CI, upload) not started. Tailors a
+Status: Stages 0-6 built. Rendering: `apps/quietflip/store_screenshots/`, run
+with `flutter test store_screenshots/` from `apps/quietflip`. CI and upload:
+`.github/workflows/store-screenshots.yml` (see `apps/quietflip/CLAUDE.md`,
+Store screenshots). Not yet run on GitHub. Tailors a
 generic "Flutter integration tests + PixelDeck + GitHub Actions" plan to
 Quietflip.
 
@@ -41,6 +42,29 @@ Quietflip.
   capture goes straight into its card; the contact sheet is the review.
 - The Stage 0 side-by-side with a simulator screenshot is still for you to
   do.
+
+### Stages 4-6 (CI and upload), as built
+
+- **One workflow, not a separate upload workflow**: `render` builds the
+  artifacts; upload jobs run in the same run only on a `v*` tag or a manual
+  run with `upload` ticked, after `render` passes. A render failure still
+  never uploads anything, and a plain manual run only renders.
+- **Uploads gate on secrets, per store**: a `secrets` job turns "every secret
+  of this store is set" into an output; a store with any secret missing is
+  skipped with a notice. Google Play turns on by adding its secret, no code
+  change. Mac App Store also needs the variable `MAC_APP_STORE_ENABLED=true`.
+- **fastlane is pinned** in `apps/quietflip/Gemfile.lock`, no Fastfile. App
+  Store uses `fastlane run upload_to_app_store` (= `deliver`; the `deliver`
+  command asks to create a Deliverfile and fails without a terminal).
+- **Microsoft Store is not automated.** The msstore CLI uploads packages and
+  listing JSON but no image files, and the Partner Center submission API only
+  takes listing images inside a new submission, which goes to certification
+  when committed. Changing screenshots that way would resubmit the app, so
+  the job only posts a notice and the images are uploaded by hand from the
+  `store-microsoft_store` artifact.
+- No `targets.dart` change was needed: fastlane 2.240.1 accepts every slot's
+  pixel size (iPhone 1320x2868, iPad 2064x2752, Mac 2880x1800) and `supply`
+  reads exactly the `google_play/<locale>/images/...` layout it writes.
 
 ## The one big change from the generic plan
 
@@ -240,9 +264,9 @@ hand from the CI artifact.
 | 1. Captures (built) | All 6 capture scenarios, all slots, English, raw (no card) | Two runs on the same commit give identical-looking images; a broken ready-check fails the run | 1 day |
 | 2. Template (built) | `StoreCard`, frames, feature graphic, contact sheet | You approve layout, copy and order from the contact sheet | 1-2 days + your review |
 | 3. Locales (built) | 15 locales, fonts, overflow check, RTL for Arabic | Contact sheet per locale; no empty boxes in ja/ko/zh/hi; Arabic laid out right-to-left | 1 day + translations |
-| 4. CI | `store-screenshots.yml`, artifacts | Manual run on GitHub produces the full ZIP | 0.5 day |
-| 5. Upload | fastlane `deliver` lane + upload workflow (App Store + Mac App Store) | App Store Connect listing updated from a CI artifact | 1 day once the API key secret exists |
-| 6. Upload, later | `supply` (Play) and Microsoft Store submission | Same, per store | 0.5-1 day each, after each listing exists |
+| 4. CI (built) | `store-screenshots.yml`, artifacts | Manual run on GitHub produces the full ZIP | 0.5 day |
+| 5. Upload (built) | fastlane `deliver` job (App Store + Mac App Store) | App Store Connect listing updated from a CI artifact | 1 day once the API key secret exists |
+| 6. Upload, later (built: Play; Microsoft manual) | `supply` (Play), gated on its secret; Microsoft Store artifact for manual upload | Same, per store | 0.5-1 day each, after each listing exists |
 
 The first milestone matches the generic plan's: change something visible in
 `FlipClockScreen`, run one command, see it inside the approved card with no
