@@ -74,6 +74,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           mode: widget.appearance.value,
           face: widget.face?.value,
           corner: widget.corner?.value ?? DesignShape.defaultCorner,
+          arabic: LocalizationProvider.currentLocale == 'ar',
           builder: (context, theme) => MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: strings.app.name,

@@ -29,12 +29,14 @@ class DesignSystem {
     String displayFont = DesignFonts.ui,
     DisplayFace? face,
     double corner = DesignShape.defaultCorner,
+    bool arabic = false,
   }) : shape = DesignShape(corner),
        theme = buildTheme(
          context,
          bodyFont: bodyFont,
          displayFont: displayFont,
          face: face,
+         arabic: arabic,
        );
 
   static MaterialTheme buildTheme(
@@ -42,12 +44,14 @@ class DesignSystem {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
     DisplayFace? face,
+    bool arabic = false,
   }) => MaterialTheme(
     monoTextTheme(
       Theme.of(context).textTheme,
       bodyFont: bodyFont,
       displayFont: displayFont,
       face: face,
+      arabic: arabic,
     ),
   );
 
@@ -72,30 +76,34 @@ class DesignSystem {
   /// its one bundled weight instead, keeping the sizes: a skin face ships a
   /// single weight, so asking for another would find no bundled file.
   ///
-  /// Every role falls back to the bundled [DesignFonts.arabic] for the
-  /// Arabic glyphs the faces lack.
+  /// With [arabic] (the app in Arabic), every role falls back to the
+  /// bundled [DesignFonts.arabic] for the Arabic glyphs the faces lack.
+  /// Off otherwise: building the fallback loads its four files (about 1 MB,
+  /// a download on web) for a language nobody is reading.
   static TextTheme monoTextTheme(
     TextTheme base, {
     String bodyFont = DesignFonts.ui,
     String displayFont = DesignFonts.ui,
     DisplayFace? face,
+    bool arabic = false,
   }) {
     final theme = _monoTextTheme(
       base,
       bodyFont: bodyFont,
       displayFont: displayFont,
     );
-    TextStyle? inFace(TextStyle? style) => style == null
-        ? null
-        : DesignFonts.withArabic(
-            face == null
-                ? style
-                : GoogleFonts.getFont(
-                    face.family,
-                    textStyle: style,
-                    fontWeight: face.weight,
-                  ),
-          );
+    TextStyle? inFace(TextStyle? style) {
+      if (style == null) return null;
+      final styled = face == null
+          ? style
+          : GoogleFonts.getFont(
+              face.family,
+              textStyle: style,
+              fontWeight: face.weight,
+            );
+      return arabic ? DesignFonts.withArabic(styled) : styled;
+    }
+
     return TextTheme(
       displayLarge: inFace(theme.displayLarge),
       displayMedium: inFace(theme.displayMedium),
