@@ -47,6 +47,7 @@ void main() {
         settings: () => settings,
         logger: di.get<Logger>(),
         now: clock.call,
+        elapsed: clock.monotonic,
         notifyOnFinish: notify,
         tick: tick,
       );

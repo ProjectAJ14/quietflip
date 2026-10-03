@@ -201,7 +201,19 @@ class FakeClock {
 
   DateTime call() => now;
 
+  /// Moves the wall clock only: a correction (or, forward, a device that
+  /// slept); [monotonic] does not follow.
   void advance(Duration d) => now = now.add(d);
+
+  /// Monotonic reading for `CountdownController.elapsed`.
+  Duration monotonic() => _elapsed;
+  Duration _elapsed = Duration.zero;
+
+  /// Real time passing: the wall and the monotonic clock both move.
+  void pass(Duration d) {
+    advance(d);
+    _elapsed += d;
+  }
 }
 
 /// Monotonic stopwatch whose reading tests set by hand.

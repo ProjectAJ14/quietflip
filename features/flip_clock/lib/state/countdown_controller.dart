@@ -42,7 +42,8 @@ class CountdownState {
 
 /// Runs the single countdown: persists every transition, schedules the
 /// system notification, plays the completion chime and recomputes the
-/// remaining time from the wall-clock end on every tick and app resume.
+/// remaining time from the clocks (see [Countdown]) on every tick and app
+/// resume.
 ///
 /// Every transition changes the state at once and queues its side effects
 /// (save, system alert, sound) behind those of earlier transitions. A queued
@@ -62,6 +63,7 @@ class CountdownController extends Cubit<CountdownState> {
     required ClockSettings Function() settings,
     required Logger logger,
     DateTime Function()? now,
+    Duration Function()? elapsed,
     bool notifyOnFinish = kIsWeb,
     Duration tick = const Duration(milliseconds: 250),
     Duration chimeFor = const Duration(seconds: 5),
@@ -71,11 +73,12 @@ class CountdownController extends Cubit<CountdownState> {
        _settings = settings,
        _logger = logger,
        _now = now ?? DateTime.now,
+       _elapsed = elapsed,
        _notifyOnFinish = notifyOnFinish,
        _tickEvery = tick,
        _chimeFor = chimeFor,
        super(const CountdownState()) {
-    _countdown = Countdown(now: _now);
+    _countdown = Countdown(now: _now, elapsed: _elapsed);
     _publish();
   }
 
@@ -88,6 +91,9 @@ class CountdownController extends Cubit<CountdownState> {
   final ClockSettings Function() _settings;
   final Logger _logger;
   final DateTime Function() _now;
+
+  /// Monotonic reading for the [Countdown]; null uses its own stopwatch.
+  final Duration Function()? _elapsed;
 
   /// Web cannot schedule notifications, so it shows one at completion
   /// while the tab is open.
@@ -117,7 +123,7 @@ class CountdownController extends Cubit<CountdownState> {
   Future<void> load() async {
     final snapshot = await _repository.loadCountdown();
     if (snapshot != null) {
-      _countdown = Countdown.fromJson(snapshot, now: _now);
+      _countdown = Countdown.fromJson(snapshot, now: _now, elapsed: _elapsed);
       // An idle countdown has no phase to resume.
       if (_countdown.status != CountdownStatus.idle) {
         _pomodoro = Pomodoro.fromJson(snapshot['pomodoro']);
@@ -236,9 +242,9 @@ class CountdownController extends Cubit<CountdownState> {
     final finished = _countdown.checkFinished();
     _publish();
     if (!finished) {
-      // The wall clock went back: the countdown rebased its end to a full
-      // duration from now, so the end timer, snapshot and system alert
-      // (still at the old instant) follow it.
+      // The wall clock went back: the countdown rebased its end to now plus
+      // the time it really has left, so the end timer, snapshot and system
+      // alert (still at the old instant) follow it.
       if (_countdown.endsAt != endsAt) await _running();
       return;
     }
@@ -277,6 +283,18 @@ class CountdownController extends Cubit<CountdownState> {
       strings.clock.pomodoro_break_done,
     ),
   };
+
+  /// Re-saves a running countdown as the app goes into the background, so a
+  /// relaunch after the clock is set back while away resumes from the time
+  /// left now rather than from the last transition.
+  Future<void> saveProgress() async {
+    if (_countdown.status != CountdownStatus.running) return;
+    await check();
+    if (_countdown.status == CountdownStatus.running) {
+      // Behind any queued save, so an older snapshot cannot land after it.
+      await _queue(_persist);
+    }
+  }
 
   /// Brings the system alert in line with the System notifications setting
   /// after it changes: scheduled for a running countdown when on, cancelled
