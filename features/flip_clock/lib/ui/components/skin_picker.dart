@@ -80,7 +80,7 @@ class SkinPicker extends StatelessWidget {
               );
               final selected = Skins.resolve(selectedId, custom);
               return ListView(
-                padding: const EdgeInsets.fromLTRB(
+                padding: const EdgeInsetsDirectional.fromSTEB(
                   DesignSpace.s6,
                   0,
                   DesignSpace.s6,
@@ -342,7 +342,7 @@ class SkinTile extends StatelessWidget {
                 ),
                 if (selected)
                   const Align(
-                    alignment: Alignment.topRight,
+                    alignment: AlignmentDirectional.topEnd,
                     child: SelectionCheck(),
                   ),
               ],

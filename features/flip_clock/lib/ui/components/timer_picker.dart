@@ -74,12 +74,16 @@ class _TimerPickerState extends State<TimerPicker> {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: DesignSpace.s3,
         children: [
-          Row(
-            spacing: DesignSpace.s4,
-            children: [
-              field(_minutes, c.timers_picker_minutes),
-              field(_seconds, c.timers_picker_seconds),
-            ],
+          // Minutes then seconds, left to right, as the time reads.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              spacing: DesignSpace.s4,
+              children: [
+                field(_minutes, c.timers_picker_minutes),
+                field(_seconds, c.timers_picker_seconds),
+              ],
+            ),
           ),
           // Says why OK is off, and is read out when it appears.
           if (_duplicate)
