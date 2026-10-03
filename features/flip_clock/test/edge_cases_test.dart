@@ -29,6 +29,8 @@ final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
 /// widget tests), unlike the hand-moved clock of `screens_test.dart`.
 class Rig {
   Rig(DateTime Function() now) {
+    // Fake time moves both clocks together.
+    final origin = now();
     final repo = SettingsRepositoryImp(store: store, logger: di.get<Logger>());
     settings = SettingsController(repository: repo, alerts: alerts);
     countdown = CountdownController(
@@ -38,6 +40,7 @@ class Rig {
       settings: () => settings.state,
       logger: di.get<Logger>(),
       now: now,
+      elapsed: () => now().difference(origin),
     );
     clock = ClockController(now: now);
     stopwatch = StopwatchController(stopwatch: watch);
@@ -327,6 +330,7 @@ void main() {
       settings: () => const ClockSettings(systemAlerts: true),
       logger: di.get<Logger>(),
       now: wall.call,
+      elapsed: wall.monotonic,
     );
 
     int savedEnd() =>
@@ -352,13 +356,13 @@ void main() {
       () async {
         final c = make();
         await c.start(const Duration(minutes: 5));
-        wall.advance(const Duration(minutes: 1));
+        wall.pass(const Duration(minutes: 1));
         await c.check();
         final oldEnd = alerts.scheduled[CountdownController.alertId]!;
         wall.advance(const Duration(hours: -2));
         await c.check();
-        expect(c.state.remaining, const Duration(minutes: 5));
-        final newEnd = wall.now.add(const Duration(minutes: 5));
+        expect(c.state.remaining, const Duration(minutes: 4));
+        final newEnd = wall.now.add(const Duration(minutes: 4));
         expect(alerts.scheduled[CountdownController.alertId], newEnd);
         expect(newEnd, isNot(oldEnd));
         expect(savedEnd(), newEnd.millisecondsSinceEpoch);
@@ -366,12 +370,61 @@ void main() {
         final saves = store.data.length;
         await c.check();
         expect(store.data.length, saves);
-        wall.advance(const Duration(minutes: 5));
+        wall.pass(const Duration(minutes: 4));
         await c.check();
         expect(c.state.status, CountdownStatus.finished);
         await c.close();
       },
     );
+
+    test('a small set-back adds no time and moves the alert', () async {
+      final c = make();
+      await c.start(const Duration(minutes: 25));
+      wall.pass(const Duration(minutes: 10));
+      wall.advance(const Duration(minutes: -5));
+      await c.check();
+      expect(c.state.remaining, const Duration(minutes: 15));
+      final end = wall.now.add(const Duration(minutes: 15));
+      expect(alerts.scheduled[CountdownController.alertId], end);
+      expect(savedEnd(), end.millisecondsSinceEpoch);
+      await c.close();
+    });
+
+    test(
+      'saveProgress lets a relaunch after a set-back keep the progress',
+      () async {
+        final first = make();
+        await first.saveProgress(); // idle: nothing to save
+        expect(store.data, isEmpty);
+        await first.start(const Duration(minutes: 25));
+        wall.pass(const Duration(minutes: 10));
+        await first.saveProgress();
+        await first.close();
+        alerts.scheduled.clear();
+        wall.advance(const Duration(days: -1));
+        final c = make();
+        await c.load();
+        expect(c.state.remaining, const Duration(minutes: 15));
+        final end = wall.now.add(const Duration(minutes: 15));
+        expect(alerts.scheduled[CountdownController.alertId], end);
+        expect(savedEnd(), end.millisecondsSinceEpoch);
+        await c.close();
+      },
+    );
+
+    test('saveProgress past the end finishes instead', () async {
+      final c = make();
+      await c.start(const Duration(minutes: 5));
+      wall.advance(const Duration(hours: 1));
+      await c.saveProgress();
+      expect(c.state.status, CountdownStatus.finished);
+      expect(
+        (jsonDecode(store.data[SettingsRepositoryImp.countdownKey]!)
+            as Map<String, Object?>)['status'],
+        'finished',
+      );
+      await c.close();
+    });
 
     test(
       'relaunch after the clock was set back re-saves and re-alerts',

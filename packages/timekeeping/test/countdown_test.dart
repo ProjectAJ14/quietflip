@@ -3,11 +3,22 @@ import 'package:timekeeping/timekeeping.dart';
 
 void main() {
   late DateTime clock;
+  late Duration mono;
   DateTime now() => clock;
-  void advance(Duration d) => clock = clock.add(d);
-  Countdown make() => Countdown(now: now);
+  Duration elapsed() => mono;
+  // Real time passing: both clocks move. Setting `clock` alone is a wall
+  // clock correction; adding to `clock` alone is time asleep.
+  void advance(Duration d) {
+    clock = clock.add(d);
+    mono += d;
+  }
 
-  setUp(() => clock = DateTime.utc(2026, 1, 1, 12));
+  Countdown make() => Countdown(now: now, elapsed: elapsed);
+
+  setUp(() {
+    clock = DateTime.utc(2026, 1, 1, 12);
+    mono = Duration.zero;
+  });
 
   group('defaults and validation', () {
     test('starts idle with the default duration', () {
@@ -175,9 +186,80 @@ void main() {
     });
   });
 
+  group('wall clock corrections while running', () {
+    Countdown tenOfTwentyFive() {
+      final c = make()
+        ..setDuration(const Duration(minutes: 25))
+        ..start();
+      advance(const Duration(minutes: 10));
+      return c;
+    }
+
+    test('a set-back smaller than the time used adds no time', () {
+      final c = tenOfTwentyFive();
+      clock = clock.subtract(const Duration(minutes: 5));
+      expect(c.remaining(), const Duration(minutes: 15));
+      expect(c.endsAt, clock.add(const Duration(minutes: 15)));
+      advance(const Duration(minutes: 15) - const Duration(seconds: 1));
+      expect(c.checkFinished(), isFalse);
+      advance(const Duration(seconds: 1));
+      expect(c.checkFinished(), isTrue);
+    });
+
+    test('a set-back larger than the time used keeps the progress', () {
+      final c = tenOfTwentyFive();
+      clock = clock.subtract(const Duration(days: 1));
+      expect(c.remaining(), const Duration(minutes: 15));
+      expect(c.endsAt, clock.add(const Duration(minutes: 15)));
+    });
+
+    test('a set-back within the slack keeps the end', () {
+      final c = tenOfTwentyFive();
+      final end = c.endsAt;
+      clock = clock.subtract(const Duration(milliseconds: 600));
+      expect(c.remaining(), const Duration(minutes: 15));
+      expect(c.endsAt, end);
+      clock = clock.subtract(const Duration(milliseconds: 600));
+      expect(c.remaining(), const Duration(minutes: 15));
+      expect(c.endsAt, clock.add(const Duration(minutes: 15)));
+    });
+
+    test('sleep shortens it, and a later set-back counts from there', () {
+      final c = tenOfTwentyFive();
+      clock = clock.add(const Duration(minutes: 4)); // asleep: wall only
+      expect(c.remaining(), const Duration(minutes: 11));
+      clock = clock.subtract(const Duration(minutes: 30));
+      expect(c.remaining(), const Duration(minutes: 11));
+      advance(const Duration(minutes: 11));
+      expect(c.checkFinished(), isTrue);
+    });
+
+    test('a set-back before pause carries into pause and resume', () {
+      final c = tenOfTwentyFive();
+      clock = clock.subtract(const Duration(hours: 2));
+      advance(const Duration(minutes: 5));
+      c.pause();
+      expect(c.remaining(), const Duration(minutes: 10));
+      clock = clock.subtract(const Duration(hours: 2));
+      c.resume();
+      expect(c.endsAt, clock.add(const Duration(minutes: 10)));
+      clock = clock.subtract(const Duration(minutes: 3));
+      advance(const Duration(minutes: 10));
+      expect(c.checkFinished(), isTrue);
+    });
+
+    test('a set-back past the end of a finished-by-sleep timer', () {
+      final c = tenOfTwentyFive();
+      clock = clock.add(const Duration(hours: 1));
+      expect(c.remaining(), Duration.zero);
+      clock = clock.subtract(const Duration(hours: 2));
+      expect(c.checkFinished(), isTrue);
+    });
+  });
+
   group('persistence', () {
     Countdown restore(Map<String, Object?> json) =>
-        Countdown.fromJson(json, now: now);
+        Countdown.fromJson(json, now: now, elapsed: elapsed);
 
     void expectDefault(Countdown c) {
       expect(c.status, CountdownStatus.idle);
@@ -209,6 +291,62 @@ void main() {
       final f = restore(r.toJson());
       expect(f.status, CountdownStatus.finished);
       expect(f.remaining(), Duration.zero);
+    });
+
+    test('a running snapshot records when it was taken', () {
+      final c = make()
+        ..setDuration(const Duration(minutes: 5))
+        ..start();
+      advance(const Duration(minutes: 1));
+      expect(c.toJson()['savedAtMs'], clock.millisecondsSinceEpoch);
+      c.pause();
+      expect(c.toJson().containsKey('savedAtMs'), isFalse);
+    });
+
+    test('a clock set back past the save resumes from the save', () {
+      final c = make()
+        ..setDuration(const Duration(minutes: 25))
+        ..start();
+      advance(const Duration(minutes: 10));
+      final snapshot = c.toJson();
+      clock = clock.subtract(const Duration(days: 1));
+      final r = restore(snapshot);
+      expect(r.status, CountdownStatus.running);
+      expect(r.remaining(), const Duration(minutes: 15));
+      expect(r.endsAt, clock.add(const Duration(minutes: 15)));
+      // The restored timer is guarded like a live one.
+      clock = clock.subtract(const Duration(minutes: 5));
+      expect(r.remaining(), const Duration(minutes: 15));
+    });
+
+    test('a clock set back by less than the time since the save is '
+        'not detected', () {
+      final c = make()
+        ..setDuration(const Duration(minutes: 25))
+        ..start();
+      final snapshot = c.toJson();
+      advance(const Duration(minutes: 10));
+      clock = clock.subtract(const Duration(minutes: 5));
+      expect(restore(snapshot).remaining(), const Duration(minutes: 20));
+    });
+
+    test('older or corrupt savedAtMs counts from the wall clock', () {
+      final c = make()
+        ..setDuration(const Duration(minutes: 25))
+        ..start();
+      final end = c.endsAt!.millisecondsSinceEpoch;
+      advance(const Duration(minutes: 10));
+      clock = clock.subtract(const Duration(minutes: 5));
+      for (final savedAt in [null, 'x', end + 1]) {
+        final r = restore({
+          'durationMs': const Duration(minutes: 25).inMilliseconds,
+          'status': 'running',
+          'endsAtMs': end,
+          'savedAtMs': ?savedAt,
+        });
+        expect(r.remaining(), const Duration(minutes: 20), reason: '$savedAt');
+        expect(r.endsAt!.millisecondsSinceEpoch, end);
+      }
     });
 
     test('a running snapshot that ended while away reports finished once', () {
