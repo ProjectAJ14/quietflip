@@ -45,7 +45,7 @@ void main() {
         'theme': 'dark',
         'skin': 'mono',
         'clock_format': 'device',
-        'show_seconds': 'false',
+        'show_seconds': 'true',
         'show_date': 'false',
         'card_size': 'large',
         'tick_sound': 'off',
@@ -576,7 +576,8 @@ void main() {
           alerts: FakeAlerts(),
           analytics: analytics,
         );
-        unawaited(settings.selectSkin('paper'));
+        // Minimal has no seconds, so selecting it also turns them off.
+        unawaited(settings.selectSkin('minimal'));
         async.flushMicrotasks();
         async.elapse(settle);
         expect(client.names, [
