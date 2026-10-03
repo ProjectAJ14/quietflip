@@ -880,7 +880,7 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get about_licenses => "Licenses";
   String get about_privacy => "Privacy";
   String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+      "No ads. An account is optional. Anonymous usage statistics help us improve the app.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

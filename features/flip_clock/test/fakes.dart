@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flutter/foundation.dart';
@@ -311,4 +312,28 @@ void deviceOn24h(WidgetTester tester) {
     dispatcher.clearAlwaysUse24HourTestValue();
     dispatcher.onMetricsChanged?.call();
   });
+}
+
+/// An [AnalyticsClient] that records events and user properties.
+class FakeAnalyticsClient implements AnalyticsClient {
+  final List<(String, Map<String, dynamic>?)> events = [];
+  final Map<String, String?> properties = {};
+
+  /// Event names, in order.
+  List<String> get names => [for (final (name, _) in events) name];
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    Map<String, dynamic>? parameters,
+  }) async => events.add((name, parameters));
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async => properties[name] = value;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

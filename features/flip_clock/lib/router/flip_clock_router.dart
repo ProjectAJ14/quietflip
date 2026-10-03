@@ -71,6 +71,8 @@ class FlipClockRouter implements CoreRouter {
   List<RouteBase> get routes => [
     GoRoute(
       path: home,
+      // Route names are the screen names analytics reports.
+      name: 'clock',
       builder: (context, _) => FlipClockScreen(
         settings: di.get<SettingsController>(),
         clock: di.get<ClockController>(),
@@ -88,6 +90,7 @@ class FlipClockRouter implements CoreRouter {
       routes: [
         GoRoute(
           path: 'settings',
+          name: 'settings',
           // A Builder so a resize (split screen, a rotated tablet) re-picks
           // the shortcut groups.
           builder: (context, state) =>

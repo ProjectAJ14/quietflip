@@ -860,7 +860,7 @@ class ClockMessages_zh extends ClockMessages {
   String get keycap_r => "R";
   String get about_licenses => "许可";
   String get about_privacy => "隐私";
-  String get about_privacy_value => "无广告。无跟踪。账号可选。";
+  String get about_privacy_value => "无广告。账号可选。匿名使用统计帮助我们改进应用。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

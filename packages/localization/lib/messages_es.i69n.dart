@@ -887,7 +887,7 @@ class ClockMessages_es extends ClockMessages {
   String get about_licenses => "Licencias";
   String get about_privacy => "Privacidad";
   String get about_privacy_value =>
-      "Sin anuncios. Sin rastreo. La cuenta es opcional.";
+      "Sin anuncios. La cuenta es opcional. Las estadísticas de uso anónimas nos ayudan a mejorar la app.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

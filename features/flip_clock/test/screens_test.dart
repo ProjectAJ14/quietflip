@@ -948,7 +948,8 @@ void main() {
       )
       ..register<LocalAlerts>(FakeAlerts())
       ..register<SoundPlayer>(sound)
-      ..register<OrientationLock>(FakeOrientation());
+      ..register<OrientationLock>(FakeOrientation())
+      ..register<FullScreenController>(FakeFullScreen());
     await flip_clock.init();
     expect(sound.warmed, [TickSound.clockwork], reason: 'warmed at start');
     final settings = di.get<SettingsController>();

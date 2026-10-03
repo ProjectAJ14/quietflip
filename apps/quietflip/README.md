@@ -1,9 +1,10 @@
 # QuietFlip
 
 An ad-free flip clock, countdown timer and stopwatch for Android, iOS, web,
-macOS and Windows. It opens straight onto the clock: no ads, no tracking, and
-no account needed. Signing in (Settings > Account) only syncs your settings
-across devices.
+macOS and Windows. It opens straight onto the clock: no ads and no account
+needed. Signing in (Settings > Account) only syncs your settings across
+devices. Anonymous usage analytics (Firebase Analytics) report what is used:
+modes, themes, skins, sounds, timers and screens, never personal details.
 
 This folder is the composition root. The clock itself lives in
 `features/flip_clock`; platform services (full screen, wake lock, local
@@ -73,9 +74,11 @@ draws the same logo in the same place. Config is in
   modes show the full-color icon. The Windows `.ico` holds one 256px image that
   Windows scales down. The macOS icon is full-bleed square, without the rounded
   plate macOS 11+ icons usually draw.
-- **Firebase is used only for optional settings sync** (Authentication and
-  Firestore, project `quietflip`). Analytics, crashlytics, feature flags and
-  push notifications stay in the workspace for future use. Local emulators:
+- **Firebase is used for optional settings sync** (Authentication and
+  Firestore, project `quietflip`) **and usage analytics** (Firebase Analytics,
+  on Android, iOS, macOS and the web; Windows and Linux run without it).
+  Crashlytics, feature flags and push notifications stay in the workspace for
+  future use. Local emulators:
   `firebase emulators:start` here, then
   `flutter run --dart-define=USE_EMULATORS=true`. If Firebase cannot start
   (for example `firebase_options.dart` reverted to the placeholder), the app

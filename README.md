@@ -2,9 +2,12 @@
 
 An ad-free flip clock, countdown timer, and stopwatch for Android, iOS, web,
 macOS and Windows. It launches straight onto the clock: no account needed, no
-dashboard, no ads, no analytics. You only need to sign in (Settings > Account,
-at the bottom) if you want your settings on your other devices. The Black theme
-is the default even when the OS is in light mode.
+dashboard, no ads. You only need to sign in (Settings > Account, at the bottom)
+if you want your settings on your other devices. The Black theme is the default
+even when the OS is in light mode. Anonymous usage analytics (Firebase
+Analytics: which modes, themes, skins and sounds are used, timers started,
+screens viewed) tell us how many people use the app and what they use; events
+never carry an email, a user id or a custom skin's name.
 
 [![nonstop_cli](https://img.shields.io/badge/started%20with-nonstop_cli-166C4E.svg?style=flat-square)](https://pub.dev/packages/nonstop_cli)
 [![melos](https://img.shields.io/badge/maintained%20with-melos-f700ff.svg?style=flat-square)](https://github.com/invertase/melos)
@@ -67,7 +70,9 @@ firebase emulators:start                                   # terminal 1
 flutter run -d chrome --dart-define=USE_EMULATORS=true     # terminal 2
 ```
 
-The template's other Firebase modules (analytics, crashlytics, feature flags,
+Usage analytics runs on Android, iOS, macOS and the web whenever Firebase is
+configured; the event catalogue is in `features/flip_clock/CLAUDE.md`
+(Analytics). The template's other Firebase modules (crashlytics, feature flags,
 FCM notifications, dashboard) stay in the workspace for future scope. One-time
 console steps (enabling sign-in providers and so on) are listed in
 `CLAUDE.md` under First-time setup.

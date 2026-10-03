@@ -64,4 +64,5 @@ Doubles: mocktail `FirebaseAnalytics` (`_Sdk`), `AnalyticsClient` (`_Client`), `
 
 ## Gotchas
 
-- `init` needs `Logger` registered first and Firebase initialized; bootstrap calls it only when Firebase is ready, so code must tolerate `AnalyticsClient` being absent (`di.has`).
+- `init` needs `Logger` registered first and Firebase initialized; bootstrap calls it only when Firebase is ready and the platform has an SDK (Android, iOS, macOS, web: `analyticsSupported` in `apps/quietflip/lib/bootstrap.dart`), so code must tolerate `AnalyticsClient` being absent (`di.has`).
+- Callers: `auth` (`AuthAnalytics`), `flip_clock` (`ClockAnalytics`, injected `AnalyticsClient`; its event catalogue is in `features/flip_clock/CLAUDE.md`) and the app (`app_open`, screen views, account deletion).

@@ -157,6 +157,12 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
+          () => analytics.setUserProperty(
+            name: any(named: 'name'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
           () => crash.setInitialValues(
             isCrashlyticsCollectionEnabled: any(
               named: 'isCrashlyticsCollectionEnabled',
@@ -233,6 +239,10 @@ void main() {
             parameters: any(named: 'parameters'),
           ),
         ).called(1);
+        // The clock reports what the user uses, e.g. the theme.
+        verify(
+          () => analytics.setUserProperty(name: 'theme', value: 'dark'),
+        ).called(greaterThanOrEqualTo(1));
         when(
           () => identity.useAuthEmulator(any(), any()),
         ).thenThrow(StateError('offline'));
@@ -292,4 +302,21 @@ void main() {
       },
     );
   }
+
+  test('analytics runs where Firebase Analytics has an SDK', () {
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    for (final platform in TargetPlatform.values) {
+      debugDefaultTargetPlatformOverride = platform;
+      expect(
+        bootstrap.analyticsSupported(isWeb: false),
+        const {
+          TargetPlatform.android,
+          TargetPlatform.iOS,
+          TargetPlatform.macOS,
+        }.contains(platform),
+        reason: '$platform',
+      );
+      expect(bootstrap.analyticsSupported(isWeb: true), isTrue);
+    }
+  });
 }

@@ -6,8 +6,10 @@ count) or one of your timer presets (5, 10, 15 min by default, up to six),
 and a stopwatch, plus Settings. The clock can show today's date
 above the digits (Settings > Clock > Show date). On a tall screen (a phone
 held upright) the cards stack, hours over minutes (over seconds); turned
-sideways they sit in one row. No analytics. An account is optional: signed
-in, your settings follow you to your other devices.
+sideways they sit in one row. An account is optional: signed in, your
+settings follow you to your other devices. Usage analytics (when Firebase is
+on) report what is used: modes, timers, the stopwatch, themes, skins, sounds
+and settings, never personal details.
 
 ## Routes
 

@@ -888,7 +888,7 @@ class ClockMessages_ru extends ClockMessages {
   String get about_licenses => "Лицензии";
   String get about_privacy => "Конфиденциальность";
   String get about_privacy_value =>
-      "Без рекламы. Без отслеживания. Аккаунт не обязателен.";
+      "Без рекламы. Аккаунт не обязателен. Анонимная статистика использования помогает нам улучшать приложение.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

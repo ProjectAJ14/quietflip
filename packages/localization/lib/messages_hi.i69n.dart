@@ -883,7 +883,7 @@ class ClockMessages_hi extends ClockMessages {
   String get about_licenses => "लाइसेंस";
   String get about_privacy => "निजता";
   String get about_privacy_value =>
-      "कोई विज्ञापन नहीं। कोई ट्रैकिंग नहीं। खाता वैकल्पिक है।";
+      "कोई विज्ञापन नहीं। खाता वैकल्पिक है। गुमनाम उपयोग आँकड़े ऐप को बेहतर बनाने में हमारी मदद करते हैं।";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

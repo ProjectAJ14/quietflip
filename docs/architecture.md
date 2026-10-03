@@ -50,6 +50,7 @@ with an injected transport rather than making live requests in unit tests.
 - Automatic bearer headers stay on the configured API origin. One retry follows a shared token refresh; consumed streams are not replayed.
 - SDK initialization is awaited. An unavailable optional Firebase configuration permits the starter demo to boot; emulator setup failures are surfaced.
 - Analytics failures do not interrupt UI behavior. SDK state is not cached across DI resets.
+- Usage analytics is on wherever Firebase is configured (Android, iOS, macOS, web). Events and user properties carry only what the user picked (mode, theme, skin, sound, durations in seconds) and outcomes; never an email, a uid, a custom skin's name or other user content. Firebase's own automatic collection (sessions, device, country, app version) applies.
 - Network logs omit headers, query values and bodies. Auth success logs omit email addresses; add your own redaction rules for domain errors.
 - Platform crash handlers are restored when their owning client is disposed.
 - Settings sync stores only the clock settings, at `users/{uid}/sync/clock_settings` (`{data, updatedAt}`), behind owner-only Firestore rules; Firebase Auth holds the email and nothing else about the user is stored. The device copy is always written first; sync failures are logged and shown only in Settings.

@@ -889,7 +889,7 @@ class ClockMessages_tr extends ClockMessages {
   String get about_licenses => "Lisanslar";
   String get about_privacy => "Gizlilik";
   String get about_privacy_value =>
-      "Reklam yok. İzleme yok. Hesap isteğe bağlıdır.";
+      "Reklam yok. Hesap isteğe bağlıdır. Anonim kullanım istatistikleri uygulamayı geliştirmemize yardımcı olur.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

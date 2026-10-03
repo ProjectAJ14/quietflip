@@ -91,7 +91,7 @@ class SettingsSync {
       });
       _last = _encode(next);
       await _stamp(remote.updatedAt);
-      await _settings.update(next);
+      await _settings.update(next, fromCloud: true);
     } else if (remote == null || remote.updatedAt < _updatedAt) {
       if (_updatedAt == 0) await _stamp(_now().millisecondsSinceEpoch);
       _pending?.cancel();

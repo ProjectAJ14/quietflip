@@ -34,6 +34,18 @@ import 'package:quietflip/firebase_options.dart';
 FirebaseOptions Function() defaultFirebaseOptions = () =>
     DefaultFirebaseOptions.currentPlatform;
 
+/// Whether Firebase Analytics has an SDK here: Android, iOS, macOS and the
+/// web. On Windows and Linux the app runs without analytics.
+@visibleForTesting
+bool analyticsSupported({bool isWeb = kIsWeb}) =>
+    isWeb ||
+    switch (defaultTargetPlatform) {
+      TargetPlatform.android ||
+      TargetPlatform.iOS ||
+      TargetPlatform.macOS => true,
+      _ => false,
+    };
+
 /// Brings every module up, in dependency order, before the first frame.
 ///
 /// Order matters: the logger is registered first so everything after it can
@@ -76,7 +88,15 @@ Future<void> init({
   // Crashlytics has no web SDK; on web its init asserts.
   if (firebaseReady && !isWeb) await crashlytics.init();
 
-  if (firebaseReady) await analytics.init();
+  // Usage analytics: on wherever Firebase is configured and has an SDK.
+  // Debug builds log each event name, never its parameters.
+  if (firebaseReady && analyticsSupported(isWeb: isWeb)) {
+    await analytics.init(
+      config: const analytics.DefaultAnalyticsConfig(
+        enableDebugLogging: kDebugMode,
+      ),
+    );
+  }
 
   if (firebaseReady) await feature_flags.init();
 

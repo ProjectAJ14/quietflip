@@ -371,7 +371,9 @@ New group `sync` in `packages/localization/lib/messages.i69n.yaml`:
 | `signed_in_with(String provider)` | Google / Email / Apple label |
 
 Reuse `auth.sign_out`, `auth.sign_out_confirmation`, `generic.cancel` if present.
-Update `clock.about_privacy_value` to "No ads. No tracking. An account is optional."
+Update `clock.about_privacy_value` to "No ads. An account is optional." (Since
+superseded: the app now has usage analytics, and the line also says anonymous
+usage statistics help improve the app.)
 Regenerate with `dart run melos run generate:i69n`.
 
 ## Data and migrations
