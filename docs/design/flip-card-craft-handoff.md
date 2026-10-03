@@ -11,6 +11,13 @@ Design source: **the app icon**, `apps/quietflip/assets/icon/quietflip-master.pn
 400% around the hinge between the two cards (icon 440..580 x 420..570) before writing a
 line of paint code; that crop is the target.
 
+Live mockup, drawn from this brief's numbers (skins, card size, 8x slow motion, today
+beside proposed, the hinge under a loupe beside the icon, the motion curve):
+https://claude.ai/artifact/PmMkuyiXgpvSRyhbqhUFyD. The same page is in the repo at
+`docs/design/flip-card/index.html`; its `geom`, `halfPath`, `halfNew`, `furnitureNew`
+and `turnNew` functions are the **reference implementation** of every rule below. Port
+them to Dart; where the page and a table here disagree, the page wins.
+
 This is the brief for the coding agent. Follow the repository `CLAUDE.md` and the
 nested `CLAUDE.md` files on the path (`features/flip_clock`, `packages/design_system`):
 100% line coverage, colours and shapes from the design system or the skin, radii only
@@ -103,8 +110,8 @@ on top.
 | Bounce | last 60 ms: bottom flap lifts to pi - 0.06 rad (3.4 degrees) and settles, `angle = pi - 0.06 x sin(pi x u)`, u 0..1 |
 | Axle | both flaps rotate about `axisY` (a `Transform` with `origin` at the axle, not `alignment` at the half's edge) |
 | Perspective | unchanged: `0.4 / h` |
-| Falling flap shade | multiply toward `shadeOf(card, 0.5)` by `sin(turn)` (it turns its face away from the light) |
-| Landing flap light | while turn is pi/2 .. pi, lighten toward `lightOf(card, 0.12)` by `sin(turn)` (its face points up into the light), then plain on landing |
+| Falling flap shade | overlay `shadeOf(card, 0.85)` at alpha `0.5 x sin(turn)` over the whole flap, digits included (it turns its face away from the light) |
+| Landing flap light | while turn is pi/2 .. pi, `BlendMode.screen` `lightOf(card, 0.12)` at alpha `sin(turn)` over the flap (its face points up into the light), then plain on landing |
 | Cast shadow | on the bottom half while the top flap falls: gradient from the crack, `shadeOf(card, 0.5)` at alpha `0.45 x sin(turn)` -> 0 at 60% of the half, as today but with the new colour |
 | Interrupts | unchanged from today (a change while falling keeps falling; while landing or still, falls again from the shown value) |
 | Reduced motion | instant swap, no shade, no bounce; geometry and pins unchanged |
@@ -252,6 +259,7 @@ Compare each with `quietflip-master.png` open beside the running app (Mono skin,
 seam and flip sentences with the geometry, paint and motion above, and add
 `flip_card_geometry.dart` to Layout) and `features/flip_clock/README.md`;
 `packages/design_system/CLAUDE.md` (`DisplayFace.digitCentre`) and its `README.md`;
+`docs/design/flip-card/index.html` stays as the design reference;
 `docs/design/multi-skin-handoff.md` line 120 ("The seam is a 2px...") points to this brief.
 
 ## Decisions taken for the user (change here if wrong)
