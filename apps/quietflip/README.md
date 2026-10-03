@@ -22,6 +22,12 @@ Then from this folder:
 | macOS | `flutter run -d macos` | `flutter build macos` |
 | Windows | `flutter run -d windows` | `flutter build windows` (only on a Windows machine) |
 
+**Publish the web app** (Firebase Hosting, `https://quietflip.web.app`):
+`flutter build web --release --no-web-resources-cdn`, then
+`firebase deploy --only hosting --project quietflip`. Every file is served
+`no-cache` (the browser revalidates and gets a cheap 304 when nothing changed),
+so a returning visitor gets a new release on the next load.
+
 App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
 because the only encryption is Firebase's TLS and sign-in, which is exempt.
