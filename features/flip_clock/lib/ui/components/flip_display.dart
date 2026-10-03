@@ -139,110 +139,116 @@ class _FlipDisplayState extends State<FlipDisplay> {
       label: widget.semanticsLabel,
       container: true,
       child: ExcludeSemantics(
-        child: LayoutBuilder(
-          builder: (context, box) {
-            const gap = DesignSpace.s6;
-            final width = box.maxWidth.isFinite ? box.maxWidth : 1000.0;
-            final fit = (width - gap * (n - 1)) / (n * ratio);
-            final tall = box.maxHeight.isFinite;
-            // The largest card each layout fits, before the size choice.
-            final row = tall ? math.min(box.maxHeight, fit) : fit;
-            final stack = tall
-                ? math.min((box.maxHeight - gap * (n - 1)) / n, width / ratio)
-                : 0.0;
-            if (!widget.stackable || !tall || n < 2) {
-              _stacked = false;
-            } else if (_stacked
-                ? row >= stack * FlipDisplay.stackGain
-                : stack >= row * FlipDisplay.stackGain) {
-              _stacked = !_stacked;
-            }
-            final stacked = _stacked;
-            final height =
-                math.max(0.0, stacked ? stack : row) *
-                widget.size.clamp(0.1, 1);
-            final tag = skin.face.style(
-              color: soft,
-              fontSize: height * FlipDisplay.meridiemScale,
-            );
-            final badge = skin.face
-                .style(color: soft, fontSize: height * FlipDisplay.badgeScale)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
-            final pad = height * FlipDisplay.cornerScale;
-            // The app's corner: md cards become lg once digits reach digit-l.
-            final large = height * FlipDisplay.digitScale >= 160;
-            final shape = DesignShape.of(context);
-            final radius = shape.forHeight(
-              height,
-              role: large ? shape.lg : shape.md,
-            );
-            Widget card(int i) => _FlipCard(
-              // Keyed from the right, so gaining an hour card keeps the
-              // minute cards in place.
-              key: ValueKey(n - i),
-              value: widget.cards[i],
-              skin: skin,
-              height: height,
-              width: height * ratio,
-              radius: radius,
-              bottomLeft: i == 0 && skin.meridiem == SkinMeridiem.left
-                  ? _Corner(meridiem, tag, pad)
-                  : null,
-              bottomRight: i == n - 1
-                  ? _Corner(widget.badge, badge, pad)
-                  : null,
-            );
-            final right =
-                meridiem != null && skin.meridiem == SkinMeridiem.right
-                ? Padding(
-                    padding: EdgeInsets.only(left: pad),
-                    child: Text(
-                      meridiem,
-                      style: tag,
-                      textScaler: TextScaler.noScaling,
-                    ),
-                  )
-                : null;
-            final Widget cards = stacked
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    // AM/PM beside the last card keeps the cards aligned.
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: gap,
-                    children: [
-                      for (var i = 0; i < n - 1; i++) card(i),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [card(n - 1), ?right],
+        // Time reads left to right in every language (`12:45` in Arabic
+        // too), so the cards, AM/PM and badge never mirror. Start and end
+        // below are therefore left and right.
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              const gap = DesignSpace.s6;
+              final width = box.maxWidth.isFinite ? box.maxWidth : 1000.0;
+              final fit = (width - gap * (n - 1)) / (n * ratio);
+              final tall = box.maxHeight.isFinite;
+              // The largest card each layout fits, before the size choice.
+              final row = tall ? math.min(box.maxHeight, fit) : fit;
+              final stack = tall
+                  ? math.min((box.maxHeight - gap * (n - 1)) / n, width / ratio)
+                  : 0.0;
+              if (!widget.stackable || !tall || n < 2) {
+                _stacked = false;
+              } else if (_stacked
+                  ? row >= stack * FlipDisplay.stackGain
+                  : stack >= row * FlipDisplay.stackGain) {
+                _stacked = !_stacked;
+              }
+              final stacked = _stacked;
+              final height =
+                  math.max(0.0, stacked ? stack : row) *
+                  widget.size.clamp(0.1, 1);
+              final tag = skin.face.style(
+                color: soft,
+                fontSize: height * FlipDisplay.meridiemScale,
+              );
+              final badge = skin.face
+                  .style(color: soft, fontSize: height * FlipDisplay.badgeScale)
+                  .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+              final pad = height * FlipDisplay.cornerScale;
+              // The app's corner: md cards become lg once digits reach digit-l.
+              final large = height * FlipDisplay.digitScale >= 160;
+              final shape = DesignShape.of(context);
+              final radius = shape.forHeight(
+                height,
+                role: large ? shape.lg : shape.md,
+              );
+              Widget card(int i) => _FlipCard(
+                // Keyed from the right, so gaining an hour card keeps the
+                // minute cards in place.
+                key: ValueKey(n - i),
+                value: widget.cards[i],
+                skin: skin,
+                height: height,
+                width: height * ratio,
+                radius: radius,
+                bottomLeft: i == 0 && skin.meridiem == SkinMeridiem.left
+                    ? _Corner(meridiem, tag, pad)
+                    : null,
+                bottomRight: i == n - 1
+                    ? _Corner(widget.badge, badge, pad)
+                    : null,
+              );
+              final right =
+                  meridiem != null && skin.meridiem == SkinMeridiem.right
+                  ? Padding(
+                      padding: EdgeInsetsDirectional.only(start: pad),
+                      child: Text(
+                        meridiem,
+                        style: tag,
+                        textScaler: TextScaler.noScaling,
                       ),
-                    ],
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < n; i++) ...[
-                        if (i > 0) const SizedBox(width: gap),
-                        card(i),
+                    )
+                  : null;
+              final Widget cards = stacked
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      // AM/PM beside the last card keeps the cards aligned.
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: gap,
+                      children: [
+                        for (var i = 0; i < n - 1; i++) card(i),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [card(n - 1), ?right],
+                        ),
                       ],
-                      ?right,
-                    ],
-                  );
-            return Center(
-              widthFactor: 1,
-              heightFactor: 1,
-              child: AnimatedSwitcher(
-                duration: reducedMotion(context)
-                    ? Duration.zero
-                    : DesignMotion.fade,
-                // Only an AM/PM beside the cards can exceed the width.
-                child: FittedBox(
-                  key: ValueKey(stacked),
-                  fit: BoxFit.scaleDown,
-                  child: cards,
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < n; i++) ...[
+                          if (i > 0) const SizedBox(width: gap),
+                          card(i),
+                        ],
+                        ?right,
+                      ],
+                    );
+              return Center(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: AnimatedSwitcher(
+                  duration: reducedMotion(context)
+                      ? Duration.zero
+                      : DesignMotion.fade,
+                  // Only an AM/PM beside the cards can exceed the width.
+                  child: FittedBox(
+                    key: ValueKey(stacked),
+                    fit: BoxFit.scaleDown,
+                    child: cards,
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -413,9 +419,17 @@ class _FlipCardState extends State<_FlipCard>
               },
             ),
             if (widget.bottomLeft != null)
-              Positioned(left: 0, bottom: 0, child: widget.bottomLeft!),
+              PositionedDirectional(
+                start: 0,
+                bottom: 0,
+                child: widget.bottomLeft!,
+              ),
             if (widget.bottomRight != null)
-              Positioned(right: 0, bottom: 0, child: widget.bottomRight!),
+              PositionedDirectional(
+                end: 0,
+                bottom: 0,
+                child: widget.bottomRight!,
+              ),
           ],
         ),
       ),

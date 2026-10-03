@@ -106,7 +106,9 @@ class ErrorScreen extends StatelessWidget {
                           fontFamily: 'monospace',
                           fontSize: 12,
                         ),
-                        textAlign: TextAlign.left,
+                        // Technical detail (types, traces) reads left to right.
+                        textAlign: TextAlign.start,
+                        textDirection: TextDirection.ltr,
                         maxLines: 4,
                       ),
                     ),

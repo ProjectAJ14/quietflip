@@ -18,6 +18,7 @@ targets:
             - id
             - tr
             - ru
+            - ar
         generate_for:
           - lib/messages.i69n.yaml
           - lib/messages_*.i69n.yaml

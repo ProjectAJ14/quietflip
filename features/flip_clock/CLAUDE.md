@@ -155,6 +155,24 @@ lib/
 - State management is `Cubit` (`flutter_bloc`), one per concern, collaborators
   (repository, `Countdown`, `Stopwatch`, `now`, device_services contracts,
   `Logger`) injected through the constructor.
+- Right to left (Arabic): layout is direction-aware, never pinned to a
+  side. Use `EdgeInsetsDirectional`, `AlignmentDirectional`,
+  `PositionedDirectional` and `TextAlign.start` / `end`;
+  `test/rtl_rule_test.dart` scans every `lib/` in apps, features, packages
+  and plugins and fails with `file:line` on `EdgeInsets.fromLTRB`,
+  `EdgeInsets.only` / `Positioned` / `AnimatedPositioned` with `left:` or
+  `right:`, `Alignment.*Left` / `*Right` and `TextAlign.left` / `right`
+  (comments blanked; geometry such as `Rect.fromLTRB` does not match). Its
+  `_allowed` list (file, match, reason) holds the deliberate exceptions:
+  only `subtle_movement.dart`'s burn-in pixel shift. Time always reads
+  left to right: `FlipDisplay` locks its cards, AM/PM and badge to
+  `TextDirection.ltr` inside its semantics (so `start`/`end` there are
+  left/right), and `TimerPicker`'s minutes and seconds fields are an LTR
+  row. Everything else mirrors: the corner chrome, the island's tabs, the
+  mode pages, the Skins grid. Digits are Western (`0-9`): plain `ar` in
+  `intl` has no native zero digit. Play/pause icons do not mirror (Material
+  draws them unflipped); the island's brightness HUD is an LTR gauge
+  (`design_system`); Settings' sliders follow Flutter and mirror.
 - Countdown remaining time is recomputed from `endsAt` and the injected
   monotonic `elapsed` on every tick and on app resume; never count frames. The stopwatch uses an injected monotonic
   `Stopwatch`; tick (~100 ms) only while running.
@@ -316,7 +334,9 @@ lib/
 - Chrome is the island plus corner buttons, all driven by the one
   `ChromeState` in the same frame (button / dot / gone, same spring in,
   same collapse out): Skins (`palette_outlined`) top-left, Settings
-  top-right, Rotation bottom-right on phones only. Each sits `inset` from
+  top-right, Rotation bottom-right on phones only (top-start, top-end and
+  bottom-end: mirrored in right-to-left, `PositionedDirectional` with
+  `AlignmentDirectional` corners). Each sits `inset` from
   the safe area. All of it floats above the clock. From 600px wide the
   island is centred between the top two (`inset + cornerButton + space-2`
   from each side); below 600px it floats just under their row
@@ -416,7 +436,9 @@ lib/
   (device 0..1 where `ScreenBrightness.supported`, else digitBrightness
   0.2..1; a `ScreenBrightnessException` falls back to in-app for good),
   horizontal swipe pages at 25% width or 600 px/s, no wrap. Axis lock at
-  12 px. Off while the clock route is not current (sheets, Settings). `gestureBrightness` / `gestureModes` switch each
+  12 px. In right-to-left the `PageView` runs the other way, so
+  `GestureLayer` reads the swipe in reading direction (a swipe right moves
+  to the next mode) and Left is the next mode, Right the previous. Off while the clock route is not current (sheets, Settings). `gestureBrightness` / `gestureModes` switch each
   axis off. Double tap toggles full screen on desktop/web only (it delays
   taps). Island HUD: brightness while dragging / Up / Down only, released
   after `hudHold`. A mode change from any source (tab, swipe, Left / Right)
@@ -494,6 +516,8 @@ lib/
 
 `account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. Every row saves through `_update`, an edit applied to `settings.state` at the moment of the change (not the copy the frame drew), so two changes in one frame never revert each other; `settings_screen_test.dart` taps two rows of each kind (switch, segmented, slider, value) in one frame with an outside change between, and the tick and alarm tiles the same way. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
+`rtl_rule_test.dart` is the right-to-left gate (see Rules) plus checks that every allowed exception still matches and that the scan catches every pattern, formatter-split and nested calls included, and ignores directional forms, comments and geometry.
+
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
 `flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` fall and bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
@@ -505,9 +529,14 @@ navigation. `setUp(core.init)`, `tearDown(di.reset)`. Coverage stays 100%.
 
 ## Edge cases
 
-`test/language_layout_test.dart`: every Settings page, and the clock
-(12-hour, seconds, date) with its Pomodoro tray, lay out without overflow in
-German and Japanese on a phone (390x844) and a tablet (1024x1366). The
+`test/language_layout_test.dart`: every Settings page lays out without
+overflow in German, Japanese and Arabic, and the clock (12-hour, seconds,
+date) with its Pomodoro tray in German and Japanese, on a phone (390x844)
+and a tablet (1024x1366). In Arabic (right to left): the tablet's Settings
+sidebar on the right, the phone's chevrons mirrored with back on the right,
+the clock's digits still left to right (hours left of minutes) with the
+corner chrome and tabs mirrored, Left the next mode, a swipe right the next
+mode, and the Skins sheet laid out with the selection check top-left. The
 `Harness.screen(locale:)` adds Flutter's localizations; tests that need a
 24-hour device call `deviceOn24h(tester)` (`fakes.dart`).
 

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Every face ships in the app with its licence; nothing downloads.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   const dir = 'assets/google_fonts';
 
   test('the font folder is declared as an asset', () {
@@ -18,6 +19,61 @@ void main() {
       expect(File('$dir/$name').existsSync(), isTrue, reason: name);
     }
     expect(File('$dir/OFL-Geist.txt').existsSync(), isTrue);
+  });
+
+  test('every Noto Sans Arabic weight is bundled with its licence', () {
+    for (final weight in DesignFonts.arabicWeights) {
+      final name = 'NotoSansArabic-${DisplayFace.weightName(weight)}.ttf';
+      expect(File('$dir/$name').existsSync(), isTrue, reason: name);
+    }
+    expect(
+      File('$dir/OFL-NotoSansArabic.txt').readAsStringSync(),
+      contains('SIL Open Font License, Version 1.1'),
+    );
+  });
+
+  test('withArabic appends Noto Sans Arabic at a bundled weight', () {
+    String arabicOf(FontWeight? weight) => DesignFonts.withArabic(
+      TextStyle(fontWeight: weight, fontFamilyFallback: const ['Geist']),
+    ).fontFamilyFallback!.last;
+    final styled = DesignFonts.withArabic(
+      const TextStyle(fontFamily: 'Geist_700', fontFamilyFallback: ['Geist']),
+    );
+    expect(styled.fontFamily, 'Geist_700');
+    expect(styled.fontFamilyFallback, hasLength(2));
+    expect(styled.fontFamilyFallback!.first, 'Geist');
+    expect(arabicOf(null), startsWith('NotoSansArabic'));
+    // Nearest bundled weight: below 400 and above 700 clamp, 650 is 600.
+    expect(arabicOf(FontWeight.w100), arabicOf(FontWeight.w400));
+    expect(arabicOf(FontWeight.w900), arabicOf(FontWeight.w700));
+    expect(arabicOf(const FontWeight(650)), arabicOf(FontWeight.w600));
+    expect(arabicOf(FontWeight.w500), isNot(arabicOf(FontWeight.w400)));
+    expect(
+      DesignFonts.withArabic(const TextStyle()).fontFamilyFallback,
+      hasLength(1),
+    );
+  });
+
+  test('every interface role falls back to Arabic, with or without a face', () {
+    for (final face in [null, DisplayFace.bigShoulders]) {
+      final theme = DesignSystem.monoTextTheme(
+        Typography.material2021().black,
+        face: face,
+      );
+      for (final style in [
+        theme.displayLarge, theme.displayMedium, theme.displaySmall, //
+        theme.headlineLarge, theme.headlineMedium, theme.headlineSmall,
+        theme.titleLarge, theme.titleMedium, theme.titleSmall,
+        theme.bodyLarge, theme.bodyMedium, theme.bodySmall,
+        theme.labelLarge, theme.labelMedium, theme.labelSmall,
+      ]) {
+        expect(
+          style!.fontFamilyFallback!.last,
+          startsWith('NotoSansArabic'),
+          reason: '$face ${style.fontFamily}',
+        );
+      }
+    }
   });
 
   test('every display face is bundled with its OFL licence', () {

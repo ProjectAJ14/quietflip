@@ -79,6 +79,12 @@ class _GestureLayerState extends State<GestureLayer> {
 
   double get _width => widget.pages.position.viewportDimension;
 
+  /// The page view runs right to left in right-to-left text, so there a
+  /// swipe to the right moves forward: [x] in reading direction, where a
+  /// negative value moves toward the next page.
+  double _reading(double x) =>
+      Directionality.of(context) == TextDirection.rtl ? -x : x;
+
   void _start(DragStartDetails _) {
     _total = Offset.zero;
     _axis = null;
@@ -104,7 +110,7 @@ class _GestureLayerState extends State<GestureLayer> {
       widget.onBrightness?.call(-delta.dy / context.size!.height);
     } else {
       final max = (widget.pageCount - 1) * _width;
-      widget.pages.jumpTo((_startOffset - _total.dx).clamp(0, max));
+      widget.pages.jumpTo((_startOffset - _reading(_total.dx)).clamp(0, max));
     }
   }
 
@@ -114,8 +120,8 @@ class _GestureLayerState extends State<GestureLayer> {
       widget.onBrightnessEnd?.call();
       return;
     }
-    final fraction = _total.dx / _width;
-    final velocity = details.velocity.pixelsPerSecond.dx;
+    final fraction = _reading(_total.dx) / _width;
+    final velocity = _reading(details.velocity.pixelsPerSecond.dx);
     final current = (_startOffset / _width).round();
     var target = current;
     if (fraction >= GestureLayer.pageThreshold ||

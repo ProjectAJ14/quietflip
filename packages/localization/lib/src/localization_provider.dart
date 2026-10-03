@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:localization/messages.i69n.dart';
+import 'package:localization/messages_ar.i69n.dart';
 import 'package:localization/messages_de.i69n.dart';
 import 'package:localization/messages_es.i69n.dart';
 import 'package:localization/messages_fr.i69n.dart';
@@ -40,6 +41,7 @@ class LocalizationProvider {
     'id': Messages_id(),
     'tr': Messages_tr(),
     'ru': Messages_ru(),
+    'ar': Messages_ar(),
   };
 
   static const String _fallback = 'en';

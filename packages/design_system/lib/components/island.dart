@@ -259,41 +259,46 @@ class Island extends StatefulWidget {
     ),
   );
 
+  // A gauge, like the clock digits: it reads left to right (fills from the
+  // left) in every language.
   Widget _brightness(
     IslandBrightnessHud hud,
     DesignColors colors,
     DesignShape shape,
     TextTheme text,
-  ) => Row(
-    mainAxisSize: MainAxisSize.min,
-    spacing: DesignSpace.s2,
-    children: [
-      Icon(
-        Icons.light_mode_outlined,
-        size: _chromeIconSize,
-        color: colors.islandInk,
-      ),
-      ClipRRect(
-        borderRadius: DesignShape.circular(shape.forHeight(hudBarHeight)),
-        child: SizedBox(
-          width: hudBarWidth,
-          height: hudBarHeight,
-          child: ColoredBox(
-            // The island is dark in both themes, so its track is the dark one.
-            color: DesignColors.dark.controlOff,
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: hud.value,
-              child: ColoredBox(color: colors.islandInk),
+  ) => Directionality(
+    textDirection: TextDirection.ltr,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: DesignSpace.s2,
+      children: [
+        Icon(
+          Icons.light_mode_outlined,
+          size: _chromeIconSize,
+          color: colors.islandInk,
+        ),
+        ClipRRect(
+          borderRadius: DesignShape.circular(shape.forHeight(hudBarHeight)),
+          child: SizedBox(
+            width: hudBarWidth,
+            height: hudBarHeight,
+            child: ColoredBox(
+              // The island is dark in both themes, so its track is the dark one.
+              color: DesignColors.dark.controlOff,
+              child: FractionallySizedBox(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: hud.value,
+                child: ColoredBox(color: colors.islandInk),
+              ),
             ),
           ),
         ),
-      ),
-      Text(
-        hud.label,
-        style: text.labelMedium?.copyWith(color: colors.islandInkMuted),
-      ),
-    ],
+        Text(
+          hud.label,
+          style: text.labelMedium?.copyWith(color: colors.islandInkMuted),
+        ),
+      ],
+    ),
   );
 
   Widget _expandedContent(
@@ -641,8 +646,9 @@ class CornerButton extends StatefulWidget {
   /// Called when the expanded button is tapped.
   final VoidCallback onPressed;
 
-  /// Which corner the dot shrinks toward, such as [Alignment.topLeft].
-  final Alignment corner;
+  /// Which corner the dot shrinks toward, such as
+  /// [AlignmentDirectional.topStart] (mirrored in right-to-left).
+  final AlignmentGeometry corner;
 
   double get _size => state == ChromeState.expanded
       ? DesignSize.cornerButton

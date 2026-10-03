@@ -65,9 +65,11 @@ class SettingsGroup {
 ///
 /// The shell owns the horizontal safe insets (`MediaQuery.paddingOf`), so
 /// callers wrap it in `SafeArea(left: false, right: false)`. In the split
-/// layouts the sidebar fill runs to the left edge (widened by the inset,
-/// its content padded by it) and the detail runs to the right edge, its
+/// layouts the sidebar fill runs to the start edge (widened by the inset,
+/// its content padded by it) and the detail runs to the end edge, its
 /// padding `max(s8, inset)`. On the phone every page pads `max(s4, inset)`.
+/// Everything follows [Directionality]: in right-to-left the sidebar is on
+/// the right and the chevrons point the other way.
 class SettingsShell extends StatefulWidget {
   const SettingsShell({
     super.key,
@@ -245,21 +247,30 @@ class _SettingsShellState extends State<SettingsShell> {
     );
   }
 
-  ({double left, double right}) _phoneSides(BuildContext context) {
+  /// The horizontal safe insets on the reading direction's sides: in
+  /// right-to-left the start is the right edge.
+  static ({double start, double end}) _insets(BuildContext context) {
     final inset = MediaQuery.paddingOf(context);
+    return Directionality.of(context) == TextDirection.rtl
+        ? (start: inset.right, end: inset.left)
+        : (start: inset.left, end: inset.right);
+  }
+
+  ({double start, double end}) _phoneSides(BuildContext context) {
+    final inset = _insets(context);
     return (
-      left: math.max(DesignSpace.s4, inset.left),
-      right: math.max(DesignSpace.s4, inset.right),
+      start: math.max(DesignSpace.s4, inset.start),
+      end: math.max(DesignSpace.s4, inset.end),
     );
   }
 
   Widget _phoneRoot(BuildContext context, DesignColors colors) {
     final sides = _phoneSides(context);
     return ListView(
-      padding: EdgeInsets.fromLTRB(
-        sides.left,
+      padding: EdgeInsetsDirectional.fromSTEB(
+        sides.start,
         DesignSpace.s4,
-        sides.right,
+        sides.end,
         DesignSpace.s4,
       ),
       children: [
@@ -308,13 +319,16 @@ class _SettingsShellState extends State<SettingsShell> {
   }
 
   Widget _phoneCategory(BuildContext context, DesignColors colors, int open) {
-    final inset = MediaQuery.paddingOf(context);
+    final inset = _insets(context);
     final sides = _phoneSides(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: EdgeInsets.only(left: inset.left, right: inset.right),
+          padding: EdgeInsetsDirectional.only(
+            start: inset.start,
+            end: inset.end,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -353,10 +367,10 @@ class _SettingsShellState extends State<SettingsShell> {
         Expanded(
           child: _Detail(
             _category(open),
-            padding: EdgeInsets.fromLTRB(
-              sides.left,
+            padding: EdgeInsetsDirectional.fromSTEB(
+              sides.start,
               DesignSpace.s4,
-              sides.right,
+              sides.end,
               DesignSpace.s4,
             ),
           ),
@@ -372,7 +386,7 @@ class _SettingsShellState extends State<SettingsShell> {
 
   Widget _split(BuildContext context, DesignColors colors, bool desktop) {
     final text = Theme.of(context).textTheme;
-    final inset = MediaQuery.paddingOf(context);
+    final inset = _insets(context);
     // The list may have shrunk since the selection was made.
     final selected = math.min(
       _selected,
@@ -387,7 +401,7 @@ class _SettingsShellState extends State<SettingsShell> {
       children: [
         SizedBox(
           width:
-              inset.left +
+              inset.start +
               (desktop
                   ? SettingsShell.desktopSidebarWidth
                   : DesignSize.sidebarWidth),
@@ -398,8 +412,8 @@ class _SettingsShellState extends State<SettingsShell> {
               children: [
                 Expanded(
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      inset.left + DesignSpace.s3,
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      inset.start + DesignSpace.s3,
                       DesignSpace.s3,
                       DesignSpace.s3,
                       DesignSpace.s3,
@@ -427,8 +441,8 @@ class _SettingsShellState extends State<SettingsShell> {
                 ),
                 if (pinned != null)
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      inset.left + DesignSpace.s4,
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      inset.start + DesignSpace.s4,
                       DesignSpace.s4,
                       DesignSpace.s4,
                       DesignSpace.s4,
@@ -443,10 +457,10 @@ class _SettingsShellState extends State<SettingsShell> {
         Expanded(
           child: _Detail(
             _category(selected),
-            padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsetsDirectional.fromSTEB(
               DesignSpace.s8,
               DesignSpace.s8,
-              math.max(DesignSpace.s8, inset.right),
+              math.max(DesignSpace.s8, inset.end),
               DesignSpace.s8,
             ),
             title: true,
@@ -477,7 +491,7 @@ class _Detail extends StatelessWidget {
   const _Detail(this.category, {required this.padding, this.title = false});
 
   final SettingsCategory category;
-  final EdgeInsets padding;
+  final EdgeInsetsGeometry padding;
   final bool title;
 
   @override
@@ -516,7 +530,7 @@ class _Group extends StatelessWidget {
       children: [
         if (header != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: const EdgeInsetsDirectional.fromSTEB(
               DesignSpace.s4,
               DesignSpace.s6,
               DesignSpace.s4,
@@ -561,7 +575,7 @@ class _Group extends StatelessWidget {
         ),
         if (footer != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: const EdgeInsetsDirectional.fromSTEB(
               DesignSpace.s4,
               DesignSpace.s2,
               DesignSpace.s4,

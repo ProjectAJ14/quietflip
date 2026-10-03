@@ -39,11 +39,13 @@ const double _besideCornersWidth = 600;
 /// Pomodoro / Clock / Stopwatch as swipeable panels under one
 /// [GestureLayer]: tap toggles the chrome (the island at the top: mode
 /// tabs over the current mode's actions; Skins top-left, Settings
-/// top-right and, on phones, Rotation bottom-right, all in step with the
-/// island), a vertical drag changes brightness, a sideways swipe changes
-/// mode. The chrome shrinks to dots after `controlsIdle`, then disappears.
+/// top-right and, on phones, Rotation bottom-right, mirrored in
+/// right-to-left, all in step with the island), a vertical drag changes
+/// brightness, a sideways swipe changes mode. The chrome shrinks to dots
+/// after `controlsIdle`, then disappears.
 ///
-/// Keys: any key shows the chrome; Left/Right mode, Up/Down brightness,
+/// Keys: any key shows the chrome; Left/Right mode (the next mode in
+/// reading direction, so Left in right-to-left), Up/Down brightness,
 /// F full screen, Esc leave full screen or hide the chrome, Space
 /// start/pause, S seconds (Clock mode), L lap (Stopwatch), D dim the
 /// digits, R screen rotation (phones).
@@ -314,10 +316,11 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       _toggleSeconds();
     } else if (key == LogicalKeyboardKey.keyL && mode == ClockMode.stopwatch) {
       widget.stopwatch.lap();
-    } else if (key == LogicalKeyboardKey.arrowLeft) {
-      _stepMode(-1);
-    } else if (key == LogicalKeyboardKey.arrowRight) {
-      _stepMode(1);
+    } else if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.arrowRight) {
+      // The next mode lies in reading direction: left in right-to-left.
+      final rtl = Directionality.of(context) == TextDirection.rtl;
+      _stepMode((key == LogicalKeyboardKey.arrowRight) != rtl ? 1 : -1);
     } else if (key == LogicalKeyboardKey.arrowUp) {
       unawaited(_brighten(BrightnessControl.keyStep, release: true));
     } else if (key == LogicalKeyboardKey.arrowDown) {
@@ -616,39 +619,39 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                   Positioned.fill(child: content),
                   // Between the corner buttons, or below their row on a narrow
                   // window; never under them, never scaled down to fit.
-                  Positioned(
-                    left: place.side,
-                    right: place.side,
+                  PositionedDirectional(
+                    start: place.side,
+                    end: place.side,
                     top: place.top,
                     child: Center(child: _island(settings, chrome, hud)),
                   ),
                   // Corner chrome, in step with the island. A tap on one is
                   // its own (it sits above the gesture layer).
-                  Positioned(
-                    left: inset,
+                  PositionedDirectional(
+                    start: inset,
                     top: inset,
                     child: CornerButton(
                       state: chrome,
                       icon: Icons.palette_outlined,
                       tooltip: c.action_skins,
                       onPressed: _openSkins,
-                      corner: Alignment.topLeft,
+                      corner: AlignmentDirectional.topStart,
                     ),
                   ),
-                  Positioned(
-                    right: inset,
+                  PositionedDirectional(
+                    end: inset,
                     top: inset,
                     child: CornerButton(
                       state: chrome,
                       icon: Icons.settings_outlined,
                       tooltip: c.action_settings,
                       onPressed: widget.onOpenSettings,
-                      corner: Alignment.topRight,
+                      corner: AlignmentDirectional.topEnd,
                     ),
                   ),
                   if (widget.orientationSupported)
-                    Positioned(
-                      right: inset,
+                    PositionedDirectional(
+                      end: inset,
                       bottom: inset,
                       // The new rotation is announced; nothing is spoken
                       // while the button is not there.
@@ -671,7 +674,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                               },
                               tooltip: c.action_rotation,
                               onPressed: _cycleRotation,
-                              corner: Alignment.bottomRight,
+                              corner: AlignmentDirectional.bottomEnd,
                             ),
                           ),
                         ),
@@ -679,9 +682,9 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
                     ),
                   // Under the island.
                   if (_note)
-                    Positioned(
-                      left: 0,
-                      right: 0,
+                    PositionedDirectional(
+                      start: 0,
+                      end: 0,
                       top: place.top + Island.trayHeight + DesignSpace.s2,
                       child: const Center(child: _FullScreenNote()),
                     ),

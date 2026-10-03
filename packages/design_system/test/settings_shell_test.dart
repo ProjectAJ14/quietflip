@@ -14,11 +14,16 @@ Future<void> _pump(
   double width = 375,
   double height = 900,
   double sideInset = 0,
+  double? rightInset,
   double textScale = 1,
+  TextDirection direction = TextDirection.ltr,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
-  tester.view.padding = FakeViewPadding(left: sideInset, right: sideInset);
+  tester.view.padding = FakeViewPadding(
+    left: sideInset,
+    right: rightInset ?? sideInset,
+  );
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ds.DesignSystemWrapper(
@@ -29,7 +34,7 @@ Future<void> _pump(
           data: MediaQuery.of(
             context,
           ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: app!,
+          child: Directionality(textDirection: direction, child: app!),
         ),
         home: child,
       ),
@@ -78,35 +83,40 @@ ds.SettingsShell _shell({
       ],
 );
 
-/// A category with every row type and long labels.
+/// Arabic, for the right-to-left layout and the bundled Arabic fallback.
+const _arabic =
+    'تسمية طويلة عمدًا يجب أن تلتف على عدة أسطر دون أن تتجاوز حدود الصف';
+
+/// A category with every row type and long labels ([long]).
 List<ds.SettingsCategory> _everything({
   ValueChanged<bool>? onSwitch,
   VoidCallback? onValue,
   ValueChanged<int>? onSegment,
   ValueChanged<double>? onSlide,
+  String long = _long,
 }) => [
   ds.SettingsCategory(
     icon: Icons.tune,
     label: 'Everything',
     groups: [
       ds.SettingsGroup(
-        header: _long,
-        hint: _long,
-        footer: _long,
+        header: long,
+        hint: long,
+        footer: long,
         rows: [
           ds.SettingsSwitchRow(
             label: 'Chime',
-            subtitle: _long,
+            subtitle: long,
             value: false,
             onChanged: onSwitch ?? (_) {},
           ),
           ds.SettingsValueRow(
-            label: _long,
-            value: _long,
+            label: long,
+            value: long,
             onTap: onValue ?? () {},
           ),
           ds.SettingsSegmentedRow<int>(
-            label: _long,
+            label: long,
             options: const [(0, 'Twelve hour'), (1, 'Twenty-four hour')],
             selected: 0,
             onChanged: onSegment ?? (_) {},
@@ -122,8 +132,8 @@ List<ds.SettingsCategory> _everything({
             maxLabel: 'Bright',
             onChanged: onSlide ?? (_) {},
           ),
-          const ds.SettingsKeyRow(label: _long, keycap: 'Space'),
-          const ds.SettingsNoteRow(text: _long),
+          ds.SettingsKeyRow(label: long, keycap: 'Space'),
+          ds.SettingsNoteRow(text: long),
         ],
       ),
     ],
@@ -821,6 +831,128 @@ void main() {
       expect(root.left, ds.DesignSpace.s4);
       expect(root.right, 500 - ds.DesignSpace.s4);
     });
+  });
+
+  group('right to left', () {
+    /// Whether the [Icon] found by [icon] is drawn mirrored.
+    bool mirrored(WidgetTester tester, IconData icon) => tester
+        .widgetList<Transform>(
+          find.descendant(
+            of: find.byIcon(icon),
+            matching: find.byType(Transform),
+          ),
+        )
+        .any((t) => t.transform.entry(0, 0) == -1);
+
+    testWidgets('split: the sidebar is on the right, the detail on the left', (
+      tester,
+    ) async {
+      await _pump(tester, _shell(), width: 820, direction: TextDirection.rtl);
+      final sidebar = tester.getRect(_sidebar);
+      expect(sidebar.right, 820);
+      expect(sidebar.width, ds.DesignSize.sidebarWidth);
+      expect(_cell(tester, 'Version').right, lessThan(sidebar.left));
+      // Labels start at the right.
+      expect(
+        tester.getRect(_inSidebar('Settings')).right,
+        820 - ds.DesignSpace.s3 - ds.DesignSpace.s2,
+      );
+    });
+
+    testWidgets('split: the start inset is the right edge', (tester) async {
+      await _pump(
+        tester,
+        _pinnedShell(),
+        width: 852,
+        height: 393,
+        rightInset: 59,
+        direction: TextDirection.rtl,
+      );
+      final fill = tester.getRect(
+        find.ancestor(of: _sidebar, matching: find.byType(ColoredBox)).first,
+      );
+      expect(fill.right, 852);
+      expect(fill.width, ds.DesignSize.sidebarWidth + 59);
+      expect(
+        tester.getRect(_inSidebar('Settings')).right,
+        852 - 59 - ds.DesignSpace.s3 - ds.DesignSpace.s2,
+      );
+      final card = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('Card body'),
+              matching: find.byType(ds.Pressable),
+            )
+            .first,
+      );
+      expect(card.right, 852 - 59 - ds.DesignSpace.s4);
+      final cell = _cell(tester, 'Version');
+      expect(cell.left, ds.DesignSpace.s8);
+      expect(cell.right, fill.left - 1 - ds.DesignSpace.s8);
+    });
+
+    testWidgets('phone: chevrons mirror, the back button sits on the right', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _shell(),
+        sideInset: 0,
+        rightInset: 30,
+        direction: TextDirection.rtl,
+      );
+      expect(mirrored(tester, Icons.chevron_right_rounded), isTrue);
+      expect(
+        tester.getRect(find.byIcon(Icons.chevron_right_rounded).first).left,
+        lessThan(375 / 2),
+      );
+      expect(_cell(tester, 'General').right, 375 - 30);
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      final back = find.byIcon(Icons.chevron_left_rounded);
+      // Drawn mirrored, so it points right, toward where the root came from.
+      expect(mirrored(tester, Icons.chevron_left_rounded), isTrue);
+      expect(tester.getRect(back).left, greaterThan(375 / 2));
+      expect(tester.getRect(back).right, lessThanOrEqualTo(375 - 30));
+      expect(_cell(tester, 'Version').left, ds.DesignSpace.s4);
+      expect(_cell(tester, 'Version').right, 375 - 30);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Looks'), findsOneWidget);
+    });
+
+    testWidgets('left to right draws the chevrons as they are', (tester) async {
+      await _pump(tester, _shell());
+      expect(mirrored(tester, Icons.chevron_right_rounded), isFalse);
+    });
+
+    for (final (width, scale) in [(375.0, 1.0), (375.0, 2.0), (820.0, 1.0)]) {
+      testWidgets('Arabic at $width, text scale $scale does not overflow', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          ds.SettingsShell(
+            title: 'الإعدادات',
+            categories: _everything(long: _arabic),
+          ),
+          width: width,
+          textScale: scale,
+          direction: TextDirection.rtl,
+        );
+        if (width < 600) {
+          await tester.tap(find.text('Everything'));
+          await tester.pumpAndSettle();
+        }
+        await tester.scrollUntilVisible(
+          find.byType(ds.SettingsNoteRow),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        expect(find.byType(ds.SettingsSwitchRow), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   group('pinned category', () {

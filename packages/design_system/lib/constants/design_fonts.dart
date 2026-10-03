@@ -10,6 +10,27 @@ abstract final class DesignFonts {
     FontWeight.w600,
     FontWeight.w700,
   ];
+
+  /// The Arabic-script fallback behind every interface style: Geist and the
+  /// digit faces have no Arabic glyphs. Bundled in [arabicWeights].
+  static const String arabic = 'Noto Sans Arabic';
+  static const List<FontWeight> arabicWeights = uiWeights;
+
+  /// [style] with [arabic] at the nearest bundled weight appended to its
+  /// fallbacks, so Arabic text renders from the bundle in any face.
+  static TextStyle withArabic(TextStyle style) {
+    final weight = (style.fontWeight ?? FontWeight.w400).value.clamp(
+      arabicWeights.first.value,
+      arabicWeights.last.value,
+    );
+    final arabicFamily = GoogleFonts.getFont(
+      arabic,
+      fontWeight: FontWeight.values[weight ~/ 100 - 1],
+    ).fontFamily!;
+    return style.copyWith(
+      fontFamilyFallback: [...?style.fontFamilyFallback, arabicFamily],
+    );
+  }
 }
 
 /// The bundled digit faces, one weight each. Every file ships in

@@ -920,7 +920,7 @@ class _SoundTile extends StatelessWidget {
                     ),
                     if (selected)
                       const Align(
-                        alignment: Alignment.topRight,
+                        alignment: AlignmentDirectional.topEnd,
                         child: Padding(
                           padding: EdgeInsets.all(DesignSpace.s1),
                           child: SelectionCheck(),

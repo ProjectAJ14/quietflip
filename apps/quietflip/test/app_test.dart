@@ -144,9 +144,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(LocalizationProvider.currentLocale, 'de');
 
-    tester.platformDispatcher.localesTestValue = const [Locale('ar')];
+    // Arabic mirrors the whole app.
+    tester.platformDispatcher.localesTestValue = const [Locale('ar', 'EG')];
+    await tester.pumpAndSettle();
+    expect(LocalizationProvider.currentLocale, 'ar');
+    expect(find.text(strings.generic.cancel), findsOneWidget);
+    expect(material().cancelButtonLabel, isNot('Cancel'));
+    expect(
+      Directionality.of(tester.element(find.byType(_Copy))),
+      TextDirection.rtl,
+    );
+
+    tester.platformDispatcher.localesTestValue = const [Locale('sv')];
     await tester.pumpAndSettle();
     expect(find.text('Cancel'), findsOneWidget);
+    expect(
+      Directionality.of(tester.element(find.byType(_Copy))),
+      TextDirection.ltr,
+    );
     expect(material().cancelButtonLabel, 'Cancel');
     expect(tester.takeException(), isNull);
   });

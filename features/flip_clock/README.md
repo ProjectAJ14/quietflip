@@ -42,7 +42,7 @@ GoRouter(routes: [
 
 ## Settings
 
-Settings opens from the Settings button in the top-right corner. It adapts: a list you tap
+Settings opens from the Settings button in the top-right corner (top-left in Arabic, where the whole layout mirrors; the clock digits still read left to right). It adapts: a list you tap
 into on phones, a sidebar and detail pane on tablets, and a denser sidebar
 window on desktop and the web (a narrow browser window gets the phone list).
 Everything is saved at once and restored on launch.
@@ -188,7 +188,7 @@ Listed in Settings > Shortcuts on tablets and desktops.
 
 F full screen, Esc leave full screen (or hide the controls), Space start/pause (or start the next
 pomodoro phase after one ended while the app was closed), Left / Right
-change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mode), L lap (Stopwatch), D dim the digits
+change mode (in Arabic, Left is the next mode), Up / Down brightness (10% steps), S show or hide seconds (Clock mode), L lap (Stopwatch), D dim the digits
 (100%, 50%, 20%).
 
 ## Edge cases covered
