@@ -9,6 +9,9 @@ class FakeStore implements KeyValueStore {
   final Map<String, String> data = {};
   Exception? failure;
 
+  /// While set, every write waits for it before landing.
+  Completer<void>? hold;
+
   @override
   Future<String?> read(String key) async {
     if (failure case final e?) throw e;
@@ -18,6 +21,7 @@ class FakeStore implements KeyValueStore {
   @override
   Future<void> write(String key, String value) async {
     if (failure case final e?) throw e;
+    await hold?.future;
     data[key] = value;
   }
 
@@ -32,6 +36,12 @@ class FakeAlerts implements LocalAlerts {
   final List<int> cancelled = [];
   final List<String> shown = [];
 
+  /// Every instant [schedule] was called with, in order.
+  final List<DateTime> history = [];
+
+  /// Thrown by the next [schedule], then cleared.
+  Exception? failure;
+
   @override
   Future<bool> requestPermission() async {
     permissionRequests++;
@@ -44,7 +54,14 @@ class FakeAlerts implements LocalAlerts {
     required DateTime at,
     required String title,
     required String body,
-  }) async => scheduled[id] = at;
+  }) async {
+    if (failure case final e?) {
+      failure = null;
+      throw e;
+    }
+    history.add(at);
+    scheduled[id] = at;
+  }
 
   @override
   Future<void> cancel(int id) async {

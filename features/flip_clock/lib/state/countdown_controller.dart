@@ -44,6 +44,13 @@ class CountdownState {
 /// system notification, plays the completion chime and recomputes the
 /// remaining time from the wall-clock end on every tick and app resume.
 ///
+/// Every transition changes the state at once and queues its side effects
+/// (save, system alert, sound) behind those of earlier transitions. A queued
+/// save reads the countdown when it runs, not when it was queued, and leaves
+/// the system alert to a newer transition queued behind it, so the stored
+/// snapshot and the scheduled alert always end at the latest transition,
+/// however long a write takes.
+///
 /// A pomodoro cycle is the same countdown run once per phase: while the app
 /// is open, a phase that ends chimes for [chimeFor] and the next phase starts
 /// at once.
@@ -92,6 +99,12 @@ class CountdownController extends Cubit<CountdownState> {
   Timer? _end;
   Timer? _chime;
 
+  /// The side effects queued so far, run one after another.
+  Future<void> _effects = Future.value();
+
+  /// Transitions queued so far; only the newest one sets the system alert.
+  int _transitions = 0;
+
   /// The running cycle's phase; null for a plain timer.
   Pomodoro? _pomodoro;
 
@@ -117,7 +130,7 @@ class CountdownController extends Cubit<CountdownState> {
     }
     if (_countdown.checkFinished()) {
       _logger.i('Countdown finished while the app was away');
-      await _persist();
+      await _save();
     } else if (_countdown.status == CountdownStatus.running) {
       // Restoring may have rebased the end (clock set back while closed):
       // re-save it and move the system alert with it.
@@ -144,8 +157,7 @@ class CountdownController extends Cubit<CountdownState> {
     if (_countdown.status != CountdownStatus.finished || _pomodoro != null) {
       return;
     }
-    await _sound.stopAlarm();
-    await start(_countdown.duration);
+    await Future.wait([_queue(_sound.stopAlarm), start(_countdown.duration)]);
   }
 
   /// Starts [preset]: the pomodoro cycle or a plain countdown.
@@ -167,8 +179,7 @@ class CountdownController extends Cubit<CountdownState> {
   Future<void> startNextPhase() async {
     final done = _pomodoro;
     if (done == null || _countdown.status != CountdownStatus.finished) return;
-    await _sound.stopAlarm();
-    await _startPhase(done.next());
+    await Future.wait([_queue(_sound.stopAlarm), _startPhase(done.next())]);
   }
 
   Future<void> _startPhase(Pomodoro phase) async {
@@ -186,8 +197,7 @@ class CountdownController extends Cubit<CountdownState> {
     if (_countdown.status != CountdownStatus.paused) return check();
     _stopTicker();
     _publish();
-    await _persist();
-    await _alerts.cancel(alertId);
+    await _save();
   }
 
   Future<void> resume() async {
@@ -207,9 +217,7 @@ class CountdownController extends Cubit<CountdownState> {
     _chime?.cancel();
     _stopTicker();
     _publish();
-    await _persist();
-    await _alerts.cancel(alertId);
-    await _sound.stopAlarm();
+    await _save(then: _sound.stopAlarm);
   }
 
   /// Space bar: pause a running timer, resume a paused one, dismiss a
@@ -236,25 +244,22 @@ class CountdownController extends Cubit<CountdownState> {
     }
     _stopTicker();
     final done = _pomodoro;
-    // The next phase starts at once; it persists itself.
-    if (done != null) {
-      await _startPhase(done.next());
-    } else {
-      await _persist();
-    }
+    // The next phase starts at once; it saves itself.
+    final saved = done != null ? _startPhase(done.next()) : _save();
     final settings = _settings();
-    if (settings.alertSound) {
-      await _sound.playAlarm(settings.alarmSound);
-      if (done != null) {
-        // A short chime, not the 60 s alarm, while the next phase runs.
-        _chime?.cancel();
-        _chime = Timer(_chimeFor, () => unawaited(_sound.stopAlarm()));
-      }
+    final playing = settings.alertSound;
+    if (playing && done != null) {
+      // A short chime, not the 60 s alarm, while the next phase runs.
+      _chime?.cancel();
+      _chime = Timer(_chimeFor, () => unawaited(_queue(_sound.stopAlarm)));
     }
-    if (_notifyOnFinish && settings.systemAlerts) {
-      final (title, body) = _alertText(done);
-      await _alerts.showNow(title: title, body: body);
-    }
+    final notify = _notifyOnFinish && settings.systemAlerts;
+    final (title, body) = _alertText(done);
+    final alarmed = _queue(() async {
+      if (playing) await _sound.playAlarm(settings.alarmSound);
+      if (notify) await _alerts.showNow(title: title, body: body);
+    });
+    await Future.wait([saved, alarmed]);
   }
 
   /// Title and body for the alert at the end of [phase] (null: the timer).
@@ -278,25 +283,61 @@ class CountdownController extends Cubit<CountdownState> {
   /// when off.
   Future<void> syncAlert() async {
     if (_countdown.status != CountdownStatus.running) return;
-    if (_settings().systemAlerts) return _schedule();
-    await _alerts.cancel(alertId);
+    final latest = _transitions;
+    await _queue(() async {
+      // A newer transition queued meanwhile sets the alert itself.
+      if (latest != _transitions) return;
+      if (_settings().systemAlerts) return _alert();
+      await _alerts.cancel(alertId);
+    });
   }
 
   Future<void> _running() async {
     _startTicker();
     _publish();
-    await _persist();
-    if (_settings().systemAlerts) await _schedule();
+    await _save();
   }
 
-  Future<void> _schedule() {
-    final (title, body) = _alertText(_pomodoro);
-    return _alerts.schedule(
-      id: alertId,
-      at: _countdown.endsAt!,
-      title: title,
-      body: body,
-    );
+  /// Runs [effect] once every effect queued before it has finished; its
+  /// error reaches the caller and does not stop the effects after it.
+  Future<void> _queue(Future<void> Function() effect) {
+    final run = _effects.then((_) => effect());
+    _effects = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
+
+  /// Queues this transition's effects: save the countdown as it is when the
+  /// save runs, bring the system alert in line with it unless a newer
+  /// transition queued meanwhile will, then [then].
+  Future<void> _save({Future<void> Function()? then}) {
+    final transition = ++_transitions;
+    return _queue(() async {
+      await _persist();
+      if (transition == _transitions) await _alert();
+      await then?.call();
+    });
+  }
+
+  /// The system alert for the countdown as it is now: scheduled at the end
+  /// of a running one when System notifications is on ([syncAlert] cancels
+  /// it when turned off), cancelled for a paused or idle one; a finished one
+  /// keeps the alert it has just shown.
+  Future<void> _alert() async {
+    switch (_countdown.status) {
+      case CountdownStatus.running:
+        if (!_settings().systemAlerts) return;
+        final (title, body) = _alertText(_pomodoro);
+        await _alerts.schedule(
+          id: alertId,
+          at: _countdown.endsAt!,
+          title: title,
+          body: body,
+        );
+      case CountdownStatus.finished:
+        return;
+      case CountdownStatus.idle || CountdownStatus.paused:
+        await _alerts.cancel(alertId);
+    }
   }
 
   void _startTicker() {

@@ -195,7 +195,8 @@ change mode, Up / Down brightness (10% steps), S show or hide seconds (Clock mod
 
 Daylight-saving jumps, time-zone changes while open, the wall clock jumping
 forward or back during a countdown (the end, saved snapshot and system alert
-move together), iPad split view / resized windows down to 200x100 at text
+move together), quick taps while a save is still pending (the saved timer and
+system alert always match the last tap), iPad split view / resized windows down to 200x100 at text
 scale 2 (the clock stays put as the controls come and go), and hours of ticking on a charger (one aligned timer, wake lock
 held). Details in `CLAUDE.md`; tests in `test/edge_cases_test.dart`.
 
