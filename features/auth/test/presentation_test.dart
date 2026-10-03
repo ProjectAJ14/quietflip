@@ -1,10 +1,13 @@
 import 'package:auth/auth.dart';
 import 'package:auth/ui/components/footer_builder.dart';
+import 'package:auth/ui/components/header_builder.dart';
 import 'package:core/core.dart' as core;
+import 'package:design_system/design_system.dart';
 import 'package:di/di.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:localization/localization.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -141,6 +144,10 @@ void main() {
         signIn.headerBuilder!(context, const BoxConstraints(), 0),
         register.headerBuilder!(context, const BoxConstraints(), 0),
         recovery.headerBuilder!(context, const BoxConstraints(), 0),
+        // Wide screens draw the side panel instead of the header.
+        signIn.sideBuilder!(context, const BoxConstraints()),
+        register.sideBuilder!(context, const BoxConstraints()),
+        recovery.sideBuilder!(context, const BoxConstraints()),
         signIn.footerBuilder!(context, ui.AuthAction.signIn),
         register.footerBuilder!(context, ui.AuthAction.signUp),
       ];
@@ -149,10 +156,22 @@ void main() {
         expect(tester.takeException(), isNull);
       }
       // Headers say why anyone would sign in at all.
-      for (final header in widgets.take(3)) {
+      for (final header in widgets.take(6)) {
         await tester.pumpWidget(MaterialApp(home: Scaffold(body: header)));
         expect(find.text(strings.sync.sign_in_reason), findsOneWidget);
+        // The app's own icon, not a stock symbol.
+        final icon = tester.widget<AppAssetImage>(find.byType(AppAssetImage));
+        expect(icon.assetPath, appIconAsset);
+        expect(icon.package, 'auth');
+        expect(find.byType(Icon), findsNothing);
       }
+      // ...and the package really bundles it.
+      final bytes = await tester.runAsync(
+        () => rootBundle.load('packages/auth/$appIconAsset'),
+      );
+      // Sharp at 4x: a PNG stores its width and height at bytes 16 and 20.
+      expect(bytes!.getUint32(16), appIconSize * 4);
+      expect(bytes.getUint32(20), appIconSize * 4);
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 5));
     },
