@@ -50,6 +50,17 @@ cd apps/quietflip && firebase emulators:start            # local Auth + Firestor
 firebase deploy --only firestore:rules --project quietflip # after editing firestore.rules
 ```
 
+The web app is served by Firebase Hosting at `https://quietflip.web.app`
+(`hosting` in `firebase.json`: `build/web`, every path rewritten to
+`index.html` so deep links load, and `Cache-Control: no-cache` on every file
+because Flutter's output names are not content-hashed). Deploy by hand:
+
+```sh
+cd apps/quietflip
+flutter build web --release --no-web-resources-cdn
+firebase deploy --only hosting --project quietflip
+```
+
 To re-register apps: `dart pub global activate flutterfire_cli`, then in
 `apps/quietflip` run `flutterfire configure --project=quietflip` with the
 platforms and the `live.iajaykumar.quietflip` ids. These steps have no CLI and are
