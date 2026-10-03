@@ -7,7 +7,9 @@ comes from `timekeeping`; platform work (full screen, wake lock, local
 notifications, sounds, storage) comes from `device_services` contracts;
 optional settings sync and the signed-in account from `cloud_sync`'s
 `CloudSync`. It never imports `auth`: the app passes sign-in, sign-out and
-delete-account callbacks in. No analytics, network or FCM.
+delete-account callbacks in. Usage analytics go through `ClockAnalytics` over
+the `analytics` package's `AnalyticsClient` (see Analytics). No network or
+FCM.
 
 Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 `design-system` and `flutter-best-practices` skills before UI work.
@@ -16,7 +18,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 
 | Symbol | Kind | Notes |
 |---|---|---|
-| `init({sync})` | function | Registers `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()` and `device_services.init()` |
+| `init({sync})` | function | Registers `ClockAnalytics` (over the registered `AnalyticsClient`, or a no-op without one), `SettingsRepository` and the controllers with `di`; with a `CloudSync` (`cloud_sync`; null when Firebase is off) also starts and registers `SettingsSync`. After `core.init()`, `device_services.init()` and `analytics.init()` (when Firebase is on) |
 | `FlipClockRouter({sync, onSignIn, onSignOut, onDeleteAccount})` | `CoreRouter` | `home = '/clock'`, `settings = '/clock/settings'`, `timerSettings` (`?category=timers`: Settings opened on Timers; the island's tune icon), `accountSettings` (`?category=account`: the Account page; where sign-in returns), `routes`, `shortcutsFor(platform, shortestSide)` (Settings > Shortcuts groups: iOS/Android touch, plus keys from `tabletSide` 600; macOS/Windows/Linux keys only; the settings route passes `defaultTargetPlatform`, so a phone browser counts as touch, and `MediaQuery.sizeOf` through a `Builder`, so a resize re-picks). Callbacks take the route's `BuildContext`; `onDeleteAccount` returns an `AccountDeletion`. No `sync`: no Account card |
 | `AccountDeletion` | enum | `deleted`, `needsSignIn` (Firebase wants a recent sign-in; the app has signed out), `failed` |
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
@@ -29,7 +31,10 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 ```
 lib/
   flip_clock.dart                          barrel: init, appearance, exports (model + router only)
-  router/flip_clock_router.dart            paths + routes; resolves controllers from di
+  analytics/clock_analytics.dart           ClockAnalytics: every clock event and user property
+                                           (see Analytics)
+  router/flip_clock_router.dart            paths + routes (named `clock`, `settings`: the screen
+                                           names analytics reports); resolves controllers from di
   data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, TimerPreset,
                                            ClockOrientation, CardSize
   data/models/skin.dart                    Skin (face, digit/card/ground colour (no radius or seam:
@@ -471,6 +476,77 @@ lib/
   that ended while the app was closed loads finished with Start break /
   Start focus beside Done; Space starts it.
 
+## Analytics
+
+`ClockAnalytics` (`lib/analytics/clock_analytics.dart`) is the one place the
+clock's events and user properties are named. `init()` builds it over
+`di.has<AnalyticsClient>()` (null client: every call a no-op) and injects it
+into `SettingsController`, `CountdownController` and `StopwatchController`
+(optional constructor argument, so tests may leave it out). The controllers
+report their own transitions, so an event is logged once whatever started it
+(tray, key, gesture, Space). Screen views come from the app's
+`AnalyticsRouteObserver` and the route names.
+
+| Event | When | Parameters |
+|---|---|---|
+| `timer_started` | idle or finished -> running (Start, a preset chip, Restart, Space) | `kind` (`timer` / `pomodoro`), `duration_s` |
+| `timer_paused` / `timer_resumed` | running <-> paused | `kind`, `remaining_s` |
+| `timer_finished` | -> finished (also each Pomodoro phase end) | `kind`, `duration_s`, plus `phase` (`focus` / `break`), `round` |
+| `pomodoro_phase_started` | the next phase starts after a finished one | `phase`, `round` |
+| `timer_cancelled` | running or paused -> idle (Reset) | `kind`, `remaining_s` |
+| `timer_dismissed` | finished -> idle (Done) | `kind` |
+| `stopwatch_started` / `stopwatch_resumed` | idle / paused -> running | none |
+| `stopwatch_paused` | running -> paused | `elapsed_s`, `laps` |
+| `stopwatch_lap` | a lap recorded | `lap` (its number) |
+| `stopwatch_reset` | -> idle | `elapsed_s`, `laps` (before the reset) |
+| `mode_changed` | `lastMode` changed (tab, swipe, Left / Right) | `mode` |
+| `skin_selected` | `skinId` changed | `skin` (built-in id, or `custom`), `skin_type` (`built_in` / `custom`) |
+| `skin_created` / `skin_edited` / `skin_deleted` | a custom skin added, changed or removed | `custom_skins` (count after) |
+| `timer_preset_added` / `timer_preset_removed` | a preset added or removed | `duration_s` |
+| `setting_changed` | any other `ClockSettings` field | `setting` (snake case JSON key, `Ms` dropped: `tick_sound`, `controls_idle`), `setting_value` (always text, never Firebase's `value`, which it sums as the event's worth: enum name, `true`/`false`, a number; `use24h` `24h`/`12h`/`device`, `digit_brightness` percent, durations in seconds, `default_timer` `pomodoro` or `<n>s`) |
+| `settings_from_cloud` | `SettingsSync` applied a newer cloud copy (`update(source: SettingsSource.cloud)`) | none |
+| `notification_permission` | answer to the prompt when System notifications is turned on | `granted` |
+| `full_screen_changed` | `FullScreenController.active` changed, from any source | `on` |
+| `sync_failed` | `CloudSync.status` became `SyncFailed` | `reason` |
+
+User properties (`ClockAnalytics.properties`, set after `load()` and after
+every logged change or cloud copy): `theme`, `skin`, `clock_format`,
+`show_seconds`, `show_date`, `card_size`, `tick_sound` / `alarm_sound` (the
+sound, or `off`), `system_alerts`, `keep_awake`, `subtle_movement`,
+`default_timer`, `timer_presets` and `custom_skins` (counts); with a sync,
+`account` (`guest` or the provider) and `cloud_sync` (`on` / `off`).
+
+Rules:
+
+- **Settings settle first.** Changes are logged once settings have been still
+  for 1 s, as the difference between the first and the last state, so a
+  slider drag is one event and a change undone within the second is none.
+  `close()` (via `di.reset`) logs what is still settling, then ignores every
+  later call.
+- **Restored state is not a user action.** `SettingsController.load` only sets
+  properties; `CountdownController.load` is skipped (`_restoring`), so a
+  countdown resumed at launch is not a new `timer_started`. Ticks (only the
+  time changing) log nothing.
+- **Only the user's settings changes are user actions.**
+  `SettingsController.update(next, source:)` takes a `SettingsSource`: `user`
+  (default), `cloud` (`SettingsSync`; logs only `settings_from_cloud`) or
+  `app` (the clock screen switching to the Pomodoro panel when a timer
+  finishes, or at launch on a finished one; logs nothing). A `cloud` or `app`
+  change first logs the user's changes still settling, then refreshes the
+  properties, so it is never folded into the user's next change and an older
+  user state never overwrites its properties. Anything that changes settings
+  on its own must pass `app`.
+- **No personal data.** Never a uid, email, custom skin name or colour; custom
+  skin ids are reported as `custom`. Values are what the user picked.
+  Firebase limits: user property names up to 24 characters, values up to 36
+  (asserted in `clock_analytics_test.dart`).
+- **Add an event:** a constant and the call in `ClockAnalytics`, the call
+  site in the controller that owns the transition (or the diff in
+  `changes` for a setting), a row above and a case in
+  `test/clock_analytics_test.dart`. A new `ClockSettings` field is logged as
+  `setting_changed` without code; give it a `_valueOf` case when its JSON
+  value is not readable as is.
+
 ## Settings sync
 
 - The device copy is always saved first (`SettingsController.update` emits,
@@ -486,8 +562,9 @@ lib/
 - Each synced change is stamped at once (`flip_clock.settings_updated_at`,
   ms; absent = 0). Cloud copy newer than the stamp: its synced fields are
   applied over the current settings (device-only kept, maps normalised by a
-  JSON round trip), saved locally with the cloud's stamp, and not pushed
-  back. Older, or no cloud copy: the local copy is pushed (a never-stamped
+  JSON round trip), saved locally with the cloud's stamp
+  (`update(next, source: SettingsSource.cloud)`, so analytics does not count
+  it as a change by this user), and not pushed back. Older, or no cloud copy: the local copy is pushed (a never-stamped
   device stamps now first). Equal: nothing (pushing would echo forever). So
   a fresh install adopts an existing cloud copy, and the first device
   uploads.
@@ -521,6 +598,10 @@ lib/
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
 `flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` fall and bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
+
+`clock_analytics_test.dart` covers the user properties (defaults, every choice, Firebase length limits), the settle (one event per burst, nothing for a change undone, `close` flushing then ignoring), every kind of settings change, every countdown and stopwatch transition with ticks ignored, the permission answer, full screen and sync followers until `close`, no uid or email in anything logged, the no-client no-op, and the real controllers: `load` identifying, a cloud copy, a cloud or app change in the middle of a settling user change, a restored countdown not logged, and `init` wiring it all (`FakeAnalyticsClient` in `fakes.dart`).
+
+`screens_test.dart` "analytics:" checks that a finished timer's switch to the Pomodoro panel logs no `mode_changed`, while the Right key does.
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit

@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "ライセンス"
   about_privacy: "プライバシー"
-  about_privacy_value: "広告なし。トラッキングなし。アカウントは任意です。"
+  about_privacy_value: "広告なし。アカウントは任意です。匿名の利用統計をアプリの改善に役立てています。"
 
 sync:
   account: "アカウント"

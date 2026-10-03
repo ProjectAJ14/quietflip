@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "Lisanslar"
   about_privacy: "Gizlilik"
-  about_privacy_value: "Reklam yok. İzleme yok. Hesap isteğe bağlıdır."
+  about_privacy_value: "Reklam yok. Hesap isteğe bağlıdır. Anonim kullanım istatistikleri uygulamayı geliştirmemize yardımcı olur."
 
 sync:
   account: "Hesap"

@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "Licences"
   about_privacy: "Confidentialité"
-  about_privacy_value: "Pas de pub. Pas de pistage. Le compte est facultatif."
+  about_privacy_value: "Pas de pub. Le compte est facultatif. Des statistiques d’utilisation anonymes nous aident à améliorer l’app."
 
 sync:
   account: "Compte"

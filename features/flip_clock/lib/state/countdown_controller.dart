@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:core/core.dart';
 import 'package:device_services/device_services.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -67,6 +68,7 @@ class CountdownController extends Cubit<CountdownState> {
     bool notifyOnFinish = kIsWeb,
     Duration tick = const Duration(milliseconds: 250),
     Duration chimeFor = const Duration(seconds: 5),
+    ClockAnalytics? analytics,
   }) : _repository = repository,
        _alerts = alerts,
        _sound = sound,
@@ -77,6 +79,7 @@ class CountdownController extends Cubit<CountdownState> {
        _notifyOnFinish = notifyOnFinish,
        _tickEvery = tick,
        _chimeFor = chimeFor,
+       _analytics = analytics,
        super(const CountdownState()) {
     _countdown = Countdown(now: _now, elapsed: _elapsed);
     _publish();
@@ -100,6 +103,11 @@ class CountdownController extends Cubit<CountdownState> {
   final bool _notifyOnFinish;
   final Duration _tickEvery;
   final Duration _chimeFor;
+  final ClockAnalytics? _analytics;
+
+  /// True while [load] restores the saved countdown: restoring is not a
+  /// user action, so analytics does not see it.
+  bool _restoring = false;
   late Countdown _countdown;
   Timer? _ticker;
   Timer? _end;
@@ -121,6 +129,15 @@ class CountdownController extends Cubit<CountdownState> {
   /// closed shows as finished (silently: the system alert already fired);
   /// a pomodoro phase too, waiting for [startNextPhase].
   Future<void> load() async {
+    _restoring = true;
+    try {
+      await _restore();
+    } finally {
+      _restoring = false;
+    }
+  }
+
+  Future<void> _restore() async {
     final snapshot = await _repository.loadCountdown();
     if (snapshot != null) {
       _countdown = Countdown.fromJson(snapshot, now: _now, elapsed: _elapsed);
@@ -391,6 +408,13 @@ class CountdownController extends Cubit<CountdownState> {
         pomodoro: _pomodoro,
       ),
     );
+  }
+
+  @override
+  void onChange(Change<CountdownState> change) {
+    super.onChange(change);
+    if (_restoring) return;
+    _analytics?.countdownChanged(change.currentState, change.nextState);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
@@ -12,12 +13,15 @@ class SettingsController extends Cubit<ClockSettings> {
   SettingsController({
     required SettingsRepository repository,
     required LocalAlerts alerts,
+    ClockAnalytics? analytics,
   }) : _repository = repository,
        _alerts = alerts,
+       _analytics = analytics,
        super(const ClockSettings());
 
   final SettingsRepository _repository;
   final LocalAlerts _alerts;
+  final ClockAnalytics? _analytics;
   final ValueNotifier<AppearanceMode> _appearance = ValueNotifier(
     AppearanceMode.black,
   );
@@ -39,15 +43,24 @@ class SettingsController extends Cubit<ClockSettings> {
   /// The corner every shape in the app follows ([ClockSettings.corner]).
   ValueListenable<double> get corner => _corner;
 
-  /// Restores saved settings (defaults when none).
+  /// Restores saved settings (defaults when none) and reports them as the
+  /// user's properties.
   Future<void> load() async {
     final saved = await _repository.load();
-    if (!isClosed) emit(saved);
+    if (isClosed) return;
+    emit(saved);
+    _analytics?.identify(saved);
   }
 
-  /// Applies and saves [next].
-  Future<void> update(ClockSettings next) async {
+  /// Applies and saves [next]. [source] says who changed it: analytics
+  /// counts only the user's changes as user actions.
+  Future<void> update(
+    ClockSettings next, {
+    SettingsSource source = SettingsSource.user,
+  }) async {
+    final before = state;
     emit(next);
+    _analytics?.settingsChanged(before, next, source: source);
     await _repository.save(next);
   }
 
@@ -102,6 +115,7 @@ class SettingsController extends Cubit<ClockSettings> {
   /// stays off).
   Future<bool> setSystemAlerts(bool on) async {
     final granted = !on || await _alerts.requestPermission();
+    if (on) _analytics?.notificationPermissionAnswered(granted: granted);
     if (isClosed) return granted;
     await update(state.copyWith(systemAlerts: on && granted));
     return granted;

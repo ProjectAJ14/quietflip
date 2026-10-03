@@ -863,7 +863,7 @@ class ClockMessages_ja extends ClockMessages {
   String get keycap_r => "R";
   String get about_licenses => "ライセンス";
   String get about_privacy => "プライバシー";
-  String get about_privacy_value => "広告なし。トラッキングなし。アカウントは任意です。";
+  String get about_privacy_value => "広告なし。アカウントは任意です。匿名の利用統計をアプリの改善に役立てています。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

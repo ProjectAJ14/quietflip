@@ -883,7 +883,7 @@ class ClockMessages_id extends ClockMessages {
   String get about_licenses => "Lisensi";
   String get about_privacy => "Privasi";
   String get about_privacy_value =>
-      "Tanpa iklan. Tanpa pelacakan. Akun bersifat opsional.";
+      "Tanpa iklan. Akun bersifat opsional. Statistik penggunaan anonim membantu kami menyempurnakan aplikasi.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

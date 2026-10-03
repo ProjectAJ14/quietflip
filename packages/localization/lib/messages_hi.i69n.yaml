@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "लाइसेंस"
   about_privacy: "निजता"
-  about_privacy_value: "कोई विज्ञापन नहीं। कोई ट्रैकिंग नहीं। खाता वैकल्पिक है।"
+  about_privacy_value: "कोई विज्ञापन नहीं। खाता वैकल्पिक है। गुमनाम उपयोग आँकड़े ऐप को बेहतर बनाने में हमारी मदद करते हैं।"
 
 sync:
   account: "खाता"

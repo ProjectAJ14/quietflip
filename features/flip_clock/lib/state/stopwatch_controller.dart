@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flutter/foundation.dart';
 
 /// What the stopwatch shows.
@@ -38,11 +39,14 @@ class StopwatchController extends Cubit<StopwatchState> {
   StopwatchController({
     required Stopwatch stopwatch,
     Duration tick = const Duration(milliseconds: 100),
+    ClockAnalytics? analytics,
   }) : _stopwatch = stopwatch,
        _tickEvery = tick,
+       _analytics = analytics,
        super(const StopwatchState());
 
   final Stopwatch _stopwatch;
+  final ClockAnalytics? _analytics;
   final Duration _tickEvery;
   Timer? _timer;
   List<Duration> _laps = const [];
@@ -91,6 +95,12 @@ class StopwatchController extends Cubit<StopwatchState> {
       laps: _laps,
     ),
   );
+
+  @override
+  void onChange(Change<StopwatchState> change) {
+    super.onChange(change);
+    _analytics?.stopwatchChanged(change.currentState, change.nextState);
+  }
 
   void _stopTimer() {
     _timer?.cancel();

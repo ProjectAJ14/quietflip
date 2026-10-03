@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:device_services/device_services.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/state/settings_controller.dart';
 
@@ -91,7 +92,7 @@ class SettingsSync {
       });
       _last = _encode(next);
       await _stamp(remote.updatedAt);
-      await _settings.update(next);
+      await _settings.update(next, source: SettingsSource.cloud);
     } else if (remote == null || remote.updatedAt < _updatedAt) {
       if (_updatedAt == 0) await _stamp(_now().millisecondsSinceEpoch);
       _pending?.cancel();

@@ -80,7 +80,20 @@ lib/
   and `onSignOut: AppRouter.signOut`. Only the app router may connect features.
 - `AppRouter.signOut` runs `NotificationClient.unregisterDevice()` first when
   registered; a failure is logged and never blocks `auth.signOut`.
-- `AnalyticsRouteObserver` is added only when `di.has<AnalyticsClient>()`;
+- Analytics is on wherever Firebase is configured and `analyticsSupported`
+  (Android, iOS, macOS, web: the platforms with a Firebase Analytics SDK;
+  Windows and Linux skip it, so `analytics.init` never hits a missing
+  plugin). Debug builds log event names (`enableDebugLogging: kDebugMode`).
+  `flip_clock.init` runs after it, so the clock picks the client up. Bootstrap
+  logs `app_open` with the bootstrap time.
+- `AnalyticsRouteObserver` is added only when `di.has<AnalyticsClient>()`; it
+  reports each page by its route name (`clock`, `settings`) or path.
+  Firebase's automatic screen reporting is off (`FirebaseAutomaticScreenReportingEnabled`
+  in both `Info.plist`s, `google_analytics_automatic_screen_reporting_enabled`
+  in the Android manifest; `test/screen_reporting_test.dart`), so reports do
+  not mix in one native `FlutterViewController` / `MainActivity` screen.
+  `AppRouter`'s delete-account callback logs `user_account_deleted` with the
+  `AccountDeletion` result (sign-out is logged by `auth`).
   `NotificationLifecycle` gets `client: null` when notifications are not registered.
 
 ## Common changes

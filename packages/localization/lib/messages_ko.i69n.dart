@@ -864,7 +864,8 @@ class ClockMessages_ko extends ClockMessages {
   String get keycap_r => "R";
   String get about_licenses => "라이선스";
   String get about_privacy => "개인정보 보호";
-  String get about_privacy_value => "광고 없음. 추적 없음. 계정은 선택 사항입니다.";
+  String get about_privacy_value =>
+      "광고 없음. 계정은 선택 사항입니다. 익명 사용 통계는 앱 개선에 활용됩니다.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

@@ -318,7 +318,8 @@ void main() {
         ..register<KeyValueStore>(FakeStore())
         ..register<LocalAlerts>(FakeAlerts())
         ..register<SoundPlayer>(FakeSound())
-        ..register<OrientationLock>(FakeOrientation());
+        ..register<OrientationLock>(FakeOrientation())
+        ..register<FullScreenController>(FakeFullScreen());
     });
     tearDown(di.reset);
 

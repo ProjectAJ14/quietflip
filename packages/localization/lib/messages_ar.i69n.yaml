@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "التراخيص"
   about_privacy: "الخصوصية"
-  about_privacy_value: "بلا إعلانات. بلا تتبع. الحساب اختياري."
+  about_privacy_value: "بلا إعلانات. الحساب اختياري. تساعدنا إحصاءات الاستخدام المجهولة على تحسين التطبيق."
 
 sync:
   account: "الحساب"

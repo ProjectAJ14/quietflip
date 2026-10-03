@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:analytics/analytics.dart';
 import 'package:auth/auth.dart' as auth;
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart' as core;
@@ -28,6 +29,38 @@ class _Notifications implements NotificationClient {
     unregistered++;
     if (fails) throw Exception('backend down');
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Analytics implements AnalyticsClient {
+  final List<(String, Map<String, dynamic>?)> events = [];
+
+  /// Parameters of every [name] event, in order.
+  List<Map<String, dynamic>?> of(String name) => [
+    for (final (n, parameters) in events)
+      if (n == name) parameters,
+  ];
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    Map<String, dynamic>? parameters,
+  }) async => events.add((name, parameters));
+
+  @override
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {}
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, dynamic>? parameters,
+  }) async => events.add(('screen_view', {'screen_name': screenName}));
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -287,12 +320,15 @@ void main() {
     late _Auth service;
     late _Sync sync;
     late _Notifications notifications;
+    late _Analytics analytics;
 
     Future<SettingsScreen> account(WidgetTester tester) async {
       service = _Auth();
       sync = _Sync();
       notifications = _Notifications(fails: false);
+      analytics = _Analytics();
       di
+        ..register<AnalyticsClient>(analytics)
         ..register<auth.AuthService>(service)
         ..register<CloudSync>(sync)
         ..register<NotificationClient>(notifications);
@@ -332,6 +368,15 @@ void main() {
       expect(sync.calls, ['deleteAll']);
       expect(notifications.unregistered, 1);
       expect(service.deletes, 1);
+      expect(analytics.of(AnalyticsEvents.user.accountDeleted), [
+        {'result': 'deleted'},
+      ]);
+      // Screens are reported by their route names: Settings opens on top
+      // of the clock.
+      expect(analytics.of('screen_view'), [
+        {'screen_name': 'clock'},
+        {'screen_name': 'settings'},
+      ]);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -347,6 +392,11 @@ void main() {
       expect(await screen.onDeleteAccount!(), AccountDeletion.failed);
       expect(service.deletes, 2);
       expect(service.signOuts, 1);
+      expect(analytics.of(AnalyticsEvents.user.accountDeleted), [
+        {'result': 'needsSignIn'},
+        {'result': 'failed'},
+        {'result': 'failed'},
+      ]);
       await tester.pumpWidget(const SizedBox());
     });
   });

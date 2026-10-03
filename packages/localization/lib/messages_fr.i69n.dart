@@ -889,7 +889,7 @@ class ClockMessages_fr extends ClockMessages {
   String get about_licenses => "Licences";
   String get about_privacy => "Confidentialité";
   String get about_privacy_value =>
-      "Pas de pub. Pas de pistage. Le compte est facultatif.";
+      "Pas de pub. Le compte est facultatif. Des statistiques d’utilisation anonymes nous aident à améliorer l’app.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

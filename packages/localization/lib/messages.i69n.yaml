@@ -378,7 +378,7 @@ clock:
   keycap_r: "R"
   about_licenses: "Licenses"
   about_privacy: "Privacy"
-  about_privacy_value: "No ads. No tracking. An account is optional."
+  about_privacy_value: "No ads. An account is optional. Anonymous usage statistics help us improve the app."
 
 # Optional sign-in and settings sync (flip_clock account page and card, auth header)
 sync:

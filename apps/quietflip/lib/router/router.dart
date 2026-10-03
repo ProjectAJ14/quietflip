@@ -126,6 +126,15 @@ abstract final class AppRouter {
   /// sign-in: signing out makes the next sign-in fresh, so sync resumes.
   /// Failures are logged by `CloudSync` / `AuthService`.
   static Future<AccountDeletion> _deleteAccount() async {
+    final result = await _deleteAccountData();
+    await AnalyticsHelper.logEvent(
+      AnalyticsEvents.user.accountDeleted,
+      parameters: {'result': result.name},
+    );
+    return result;
+  }
+
+  static Future<AccountDeletion> _deleteAccountData() async {
     try {
       await di.get<CloudSync>().deleteAll();
       await _unregisterDevice();

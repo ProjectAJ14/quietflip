@@ -3,12 +3,14 @@ library;
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
 import 'package:flip_clock/data/repositories/settings_repository_imp.dart';
@@ -25,17 +27,27 @@ export 'ui/components/account_page.dart' show AccountDeletion;
 
 /// Registers the settings repository and controllers with `di`, restoring
 /// saved settings and any saved countdown. With [sync] (null when Firebase
-/// is off) the settings also follow the signed-in account.
+/// is off) the settings also follow the signed-in account. With an
+/// `AnalyticsClient` registered (Firebase on) the clock reports what users
+/// do and use through [ClockAnalytics].
 ///
-/// Call after `core.init()` and `device_services.init()`.
+/// Call after `core.init()`, `device_services.init()` and, when Firebase is
+/// on, `analytics.init()`.
 Future<void> init({CloudSync? sync}) async {
   final logger = di.get<Logger>();
   final alerts = di.get<LocalAlerts>();
+  final analytics = ClockAnalytics(
+    client: di.has<AnalyticsClient>() ? di.get<AnalyticsClient>() : null,
+  );
   final repository = SettingsRepositoryImp(
     store: di.get<KeyValueStore>(),
     logger: logger,
   );
-  final settings = SettingsController(repository: repository, alerts: alerts);
+  final settings = SettingsController(
+    repository: repository,
+    alerts: alerts,
+    analytics: analytics,
+  );
   await settings.load();
   final sound = di.get<SoundPlayer>();
   final countdown = CountdownController(
@@ -44,8 +56,11 @@ Future<void> init({CloudSync? sync}) async {
     sound: sound,
     settings: () => settings.state,
     logger: logger,
+    analytics: analytics,
   );
   await countdown.load();
+  analytics.followFullScreen(di.get<FullScreenController>().active);
+  if (sync != null) analytics.followSync(sync);
   // Switching System notifications mid-countdown schedules or cancels its
   // alert. Ends when the settings controller closes.
   settings.stream
@@ -91,11 +106,12 @@ Future<void> init({CloudSync? sync}) async {
     );
   }
 
+  di.register<ClockAnalytics>(analytics, dispose: (a) => a.close());
   di.register<SettingsRepository>(repository);
   di.register<SettingsController>(settings, dispose: _close);
   di.register<CountdownController>(countdown, dispose: _close);
   di.register<StopwatchController>(
-    StopwatchController(stopwatch: Stopwatch()),
+    StopwatchController(stopwatch: Stopwatch(), analytics: analytics),
     dispose: _close,
   );
   di.register<ClockController>(ClockController(), dispose: _close);

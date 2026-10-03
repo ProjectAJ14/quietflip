@@ -170,5 +170,8 @@ abstract final class Skins {
   }
 
   /// True for ids of the skins the user made.
-  static bool isCustom(Skin skin) => skin.id.startsWith('custom-');
+  static bool isCustom(Skin skin) => isCustomId(skin.id);
+
+  /// True for [id]s of the skins the user made.
+  static bool isCustomId(String id) => id.startsWith('custom-');
 }

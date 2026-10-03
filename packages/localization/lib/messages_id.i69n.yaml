@@ -357,7 +357,7 @@ clock:
   keycap_r: "R"
   about_licenses: "Lisensi"
   about_privacy: "Privasi"
-  about_privacy_value: "Tanpa iklan. Tanpa pelacakan. Akun bersifat opsional."
+  about_privacy_value: "Tanpa iklan. Akun bersifat opsional. Statistik penggunaan anonim membantu kami menyempurnakan aplikasi."
 
 sync:
   account: "Akun"

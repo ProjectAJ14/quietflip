@@ -877,7 +877,8 @@ class ClockMessages_ar extends ClockMessages {
   String get keycap_r => "R";
   String get about_licenses => "التراخيص";
   String get about_privacy => "الخصوصية";
-  String get about_privacy_value => "بلا إعلانات. بلا تتبع. الحساب اختياري.";
+  String get about_privacy_value =>
+      "بلا إعلانات. الحساب اختياري. تساعدنا إحصاءات الاستخدام المجهولة على تحسين التطبيق.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
