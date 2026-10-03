@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:core/core.dart';
 
 import 'package:di/di.dart';
@@ -31,6 +32,9 @@ Future<void> startApp({
     }
   }
 
+  // Web URLs read /clock, not /#/clock. Firebase Hosting rewrites every path
+  // to index.html, so deep links and reloads still load. No-op off the web.
+  usePathUrlStrategy();
   // The device language, before bootstrap names the notification channel.
   LocalizationProvider.select(
     WidgetsFlutterBinding.ensureInitialized().platformDispatcher.locales,
