@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
@@ -136,7 +137,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
     // A timer that finished while the app was closed shows its banner.
     final countdown = widget.countdown.state;
     if (countdown.status == CountdownStatus.finished) {
-      _setMode(ClockMode.pomodoro);
+      _setMode(ClockMode.pomodoro, source: SettingsSource.app);
     }
   }
 
@@ -205,8 +206,17 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
   /// A tap or click on the clock toggles the chrome.
   void _onTap() => _chrome.tap();
 
-  void _setMode(ClockMode mode) => unawaited(
-    widget.settings.update(widget.settings.state.copyWith(lastMode: mode)),
+  /// Shows [mode]; [source] is [SettingsSource.app] when the app switches
+  /// by itself (a finished timer), so analytics does not count it as the
+  /// user's.
+  void _setMode(
+    ClockMode mode, {
+    SettingsSource source = SettingsSource.user,
+  }) => unawaited(
+    widget.settings.update(
+      widget.settings.state.copyWith(lastMode: mode),
+      source: source,
+    ),
   );
 
   static List<String> get _modeNames {
@@ -502,7 +512,7 @@ class _FlipClockScreenState extends State<FlipClockScreen> {
       // The island opens on the finished tray, even if it was hidden; it
       // still collapses after the idle time.
       listener: (_, _) {
-        _setMode(ClockMode.pomodoro);
+        _setMode(ClockMode.pomodoro, source: SettingsSource.app);
         _chrome.wake();
       },
       child: BlocConsumer<SettingsController, ClockSettings>(

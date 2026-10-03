@@ -52,16 +52,15 @@ class SettingsController extends Cubit<ClockSettings> {
     _analytics?.identify(saved);
   }
 
-  /// Applies and saves [next]. [fromCloud] marks a copy taken from another
-  /// device, which analytics does not count as this user's change.
-  Future<void> update(ClockSettings next, {bool fromCloud = false}) async {
+  /// Applies and saves [next]. [source] says who changed it: analytics
+  /// counts only the user's changes as user actions.
+  Future<void> update(
+    ClockSettings next, {
+    SettingsSource source = SettingsSource.user,
+  }) async {
     final before = state;
     emit(next);
-    if (fromCloud) {
-      _analytics?.settingsFromCloudApplied(next);
-    } else {
-      _analytics?.settingsChanged(before, next);
-    }
+    _analytics?.settingsChanged(before, next, source: source);
     await _repository.save(next);
   }
 

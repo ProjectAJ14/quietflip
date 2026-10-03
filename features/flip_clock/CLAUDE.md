@@ -503,8 +503,8 @@ report their own transitions, so an event is logged once whatever started it
 | `skin_selected` | `skinId` changed | `skin` (built-in id, or `custom`), `skin_type` (`built_in` / `custom`) |
 | `skin_created` / `skin_edited` / `skin_deleted` | a custom skin added, changed or removed | `custom_skins` (count after) |
 | `timer_preset_added` / `timer_preset_removed` | a preset added or removed | `duration_s` |
-| `setting_changed` | any other `ClockSettings` field | `setting` (snake case JSON key, `Ms` dropped: `tick_sound`, `controls_idle`), `value` (enum name, `true`/`false`, number; `use24h` `24h`/`12h`/`device`, `digit_brightness` percent, durations in seconds, `default_timer` `pomodoro` or `<n>s`) |
-| `settings_from_cloud` | `SettingsSync` applied a newer cloud copy (`update(fromCloud: true)`) | none |
+| `setting_changed` | any other `ClockSettings` field | `setting` (snake case JSON key, `Ms` dropped: `tick_sound`, `controls_idle`), `setting_value` (always text, never Firebase's `value`, which it sums as the event's worth: enum name, `true`/`false`, a number; `use24h` `24h`/`12h`/`device`, `digit_brightness` percent, durations in seconds, `default_timer` `pomodoro` or `<n>s`) |
+| `settings_from_cloud` | `SettingsSync` applied a newer cloud copy (`update(source: SettingsSource.cloud)`) | none |
 | `notification_permission` | answer to the prompt when System notifications is turned on | `granted` |
 | `full_screen_changed` | `FullScreenController.active` changed, from any source | `on` |
 | `sync_failed` | `CloudSync.status` became `SyncFailed` | `reason` |
@@ -525,9 +525,17 @@ Rules:
   later call.
 - **Restored state is not a user action.** `SettingsController.load` only sets
   properties; `CountdownController.load` is skipped (`_restoring`), so a
-  countdown resumed at launch is not a new `timer_started`; a cloud copy
-  logs only `settings_from_cloud`. Ticks (only the time changing) log
-  nothing.
+  countdown resumed at launch is not a new `timer_started`. Ticks (only the
+  time changing) log nothing.
+- **Only the user's settings changes are user actions.**
+  `SettingsController.update(next, source:)` takes a `SettingsSource`: `user`
+  (default), `cloud` (`SettingsSync`; logs only `settings_from_cloud`) or
+  `app` (the clock screen switching to the Pomodoro panel when a timer
+  finishes, or at launch on a finished one; logs nothing). A `cloud` or `app`
+  change first logs the user's changes still settling, then refreshes the
+  properties, so it is never folded into the user's next change and an older
+  user state never overwrites its properties. Anything that changes settings
+  on its own must pass `app`.
 - **No personal data.** Never a uid, email, custom skin name or colour; custom
   skin ids are reported as `custom`. Values are what the user picked.
   Firebase limits: user property names up to 24 characters, values up to 36
@@ -555,8 +563,8 @@ Rules:
   ms; absent = 0). Cloud copy newer than the stamp: its synced fields are
   applied over the current settings (device-only kept, maps normalised by a
   JSON round trip), saved locally with the cloud's stamp
-  (`update(next, fromCloud: true)`, so analytics does not count it as a
-  change by this user), and not pushed back. Older, or no cloud copy: the local copy is pushed (a never-stamped
+  (`update(next, source: SettingsSource.cloud)`, so analytics does not count
+  it as a change by this user), and not pushed back. Older, or no cloud copy: the local copy is pushed (a never-stamped
   device stamps now first). Equal: nothing (pushing would echo forever). So
   a fresh install adopts an existing cloud copy, and the first device
   uploads.
@@ -591,7 +599,9 @@ Rules:
 
 `flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` fall and bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
 
-`clock_analytics_test.dart` covers the user properties (defaults, every choice, Firebase length limits), the settle (one event per burst, nothing for a change undone, `close` flushing then ignoring), every kind of settings change, every countdown and stopwatch transition with ticks ignored, the permission answer, full screen and sync followers until `close`, no uid or email in anything logged, the no-client no-op, and the real controllers: `load` identifying, `fromCloud`, a restored countdown not logged, and `init` wiring it all (`FakeAnalyticsClient` in `fakes.dart`).
+`clock_analytics_test.dart` covers the user properties (defaults, every choice, Firebase length limits), the settle (one event per burst, nothing for a change undone, `close` flushing then ignoring), every kind of settings change, every countdown and stopwatch transition with ticks ignored, the permission answer, full screen and sync followers until `close`, no uid or email in anything logged, the no-client no-op, and the real controllers: `load` identifying, a cloud copy, a cloud or app change in the middle of a settling user change, a restored countdown not logged, and `init` wiring it all (`FakeAnalyticsClient` in `fakes.dart`).
+
+`screens_test.dart` "analytics:" checks that a finished timer's switch to the Pomodoro panel logs no `mode_changed`, while the Right key does.
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit

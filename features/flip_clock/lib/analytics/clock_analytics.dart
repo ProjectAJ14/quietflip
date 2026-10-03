@@ -9,6 +9,19 @@ import 'package:flip_clock/state/stopwatch_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:timekeeping/timekeeping.dart';
 
+/// Who changed the settings.
+enum SettingsSource {
+  /// The user, in Settings, a sheet, the island or a key.
+  user,
+
+  /// A newer copy taken from the cloud (another device).
+  cloud,
+
+  /// The app itself, e.g. switching to the Pomodoro panel when a timer
+  /// finishes.
+  app,
+}
+
 /// Every analytics event and user property of the clock, in one place.
 ///
 /// The controllers report their own transitions here (a timer started, a
@@ -110,22 +123,30 @@ class ClockAnalytics {
     Minutes(:final duration) => '${duration.inSeconds}s',
   };
 
-  /// The user changed settings from [before] to [after]. Logged once they
-  /// have been still for the settle time, as the difference between the
-  /// first and the last, together with fresh user properties.
-  void settingsChanged(ClockSettings before, ClockSettings after) {
+  /// Settings changed from [before] to [after].
+  ///
+  /// A [SettingsSource.user] change is logged once settings have been still
+  /// for the settle time, as the difference between the first and the last
+  /// state, together with fresh user properties. Any other change is not the
+  /// user's: the user's changes still settling are logged first (so the next
+  /// user change never includes it), then only the properties follow it,
+  /// plus [settingsFromCloud] for a cloud copy.
+  void settingsChanged(
+    ClockSettings before,
+    ClockSettings after, {
+    SettingsSource source = SettingsSource.user,
+  }) {
     if (_closed || _client == null) return;
+    if (source != SettingsSource.user) {
+      _flush();
+      if (source == SettingsSource.cloud) _event(settingsFromCloud);
+      identify(after);
+      return;
+    }
     _from ??= before;
     _to = after;
     _pending?.cancel();
     _pending = Timer(_settle, _flush);
-  }
-
-  /// A newer copy of the settings came from the cloud: no user action, so
-  /// only the properties change.
-  void settingsFromCloudApplied(ClockSettings settings) {
-    _event(settingsFromCloud);
-    identify(settings);
   }
 
   void _flush() {
@@ -170,7 +191,7 @@ class ClockAnalytics {
         default:
           events.add((
             settingChanged,
-            {'setting': _snake(key), 'value': _valueOf(key, to)},
+            {'setting': _snake(key), 'setting_value': _valueOf(key, to)},
           ));
       }
     }
@@ -212,19 +233,21 @@ class ClockAnalytics {
     }
   }
 
-  /// A setting's new value as reported: enum names, booleans as text,
-  /// numbers rounded, durations in seconds.
-  static Object _valueOf(String key, ClockSettings s) => switch (key) {
+  /// A setting's new value as reported, always text so it reads as one
+  /// dimension (and never under Firebase's `value`, which it sums as the
+  /// event's worth): enum names, `true` / `false`, numbers, durations in
+  /// seconds, brightness in percent.
+  static String _valueOf(String key, ClockSettings s) => switch (key) {
     'use24h' => switch (s.use24h) {
       null => 'device',
       true => '24h',
       false => '12h',
     },
-    'controlsIdleMs' => s.controlsIdle.inSeconds,
+    'controlsIdleMs' => '${s.controlsIdle.inSeconds}',
     'defaultTimerMs' => _timerOf(s.defaultTimer),
-    'digitBrightness' => (s.digitBrightness * 100).round(),
+    'digitBrightness' => '${(s.digitBrightness * 100).round()}',
     _ => switch (s.toJson()[key]) {
-      final num n => n,
+      final double n when n == n.roundToDouble() => '${n.round()}',
       final value => '$value',
     },
   };

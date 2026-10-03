@@ -7,6 +7,7 @@ import 'package:core/core.dart' show Logger;
 import 'package:design_system/design_system.dart';
 import 'package:device_services/device_services.dart';
 import 'package:di/di.dart';
+import 'package:flip_clock/analytics/clock_analytics.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/data/repositories/settings_repository.dart';
@@ -42,10 +43,14 @@ import 'ink.dart';
 final theme = ThemeData(colorScheme: DesignSystem.blackScheme());
 
 class Harness {
-  Harness({FakeScreenBrightness? brightness})
+  Harness({FakeScreenBrightness? brightness, ClockAnalytics? analytics})
     : brightness = brightness ?? FakeScreenBrightness() {
     final repo = SettingsRepositoryImp(store: store, logger: di.get<Logger>());
-    settings = SettingsController(repository: repo, alerts: alerts);
+    settings = SettingsController(
+      repository: repo,
+      alerts: alerts,
+      analytics: analytics,
+    );
     countdown = CountdownController(
       repository: repo,
       alerts: alerts,
@@ -54,6 +59,7 @@ class Harness {
       logger: di.get<Logger>(),
       now: wall.call,
       elapsed: wall.monotonic,
+      analytics: analytics,
     );
     clock = ClockController(now: wall.call);
     stopwatch = StopwatchController(stopwatch: watch);
@@ -359,6 +365,33 @@ void main() {
     expect(h.settings.state.lastMode, ClockMode.pomodoro);
     expect(find.text(strings.clock.times_up), findsOne);
     await h.countdown.reset();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('analytics: a finished timer switching the panel is not the '
+      "user's mode change; a key is", (tester) async {
+    final client = FakeAnalyticsClient();
+    final analytics = ClockAnalytics(client: client);
+    final h = Harness(analytics: analytics);
+    await tester.pumpWidget(h.screen());
+    await tester.pump();
+    expect(h.settings.state.lastMode, ClockMode.clock);
+    await h.countdown.start(const Duration(minutes: 1));
+    h.wall.advance(const Duration(minutes: 1));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(h.settings.state.lastMode, ClockMode.pomodoro);
+    await tester.pump(const Duration(seconds: 1));
+    expect(client.names, [
+      ClockAnalytics.timerStarted,
+      ClockAnalytics.timerFinished,
+    ]);
+    await key(tester, LogicalKeyboardKey.arrowRight);
+    await tester.pump(const Duration(seconds: 1));
+    expect(client.names.last, ClockAnalytics.modeChanged);
+    await h.countdown.reset();
+    analytics.close();
     await tester.pumpAndSettle();
     await h.dispose(tester);
   });

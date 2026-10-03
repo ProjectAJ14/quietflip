@@ -109,11 +109,11 @@ void main() {
           flat([
             (
               ClockAnalytics.settingChanged,
-              {'setting': 'theme', 'value': 'light'},
+              {'setting': 'theme', 'setting_value': 'light'},
             ),
             (
               ClockAnalytics.settingChanged,
-              {'setting': 'corner', 'value': 6.0},
+              {'setting': 'corner', 'setting_value': '6'},
             ),
           ]),
         );
@@ -157,20 +157,20 @@ void main() {
         flat([
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'use24h', 'value': '24h'},
+            {'setting': 'use24h', 'setting_value': '24h'},
           ),
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'flip_sound', 'value': 'true'},
+            {'setting': 'flip_sound', 'setting_value': 'true'},
           ),
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'tick_sound', 'value': 'clockwork'},
+            {'setting': 'tick_sound', 'setting_value': 'clockwork'},
           ),
           (ClockAnalytics.modeChanged, {'mode': 'stopwatch'}),
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'digit_brightness', 'value': 50},
+            {'setting': 'digit_brightness', 'setting_value': '50'},
           ),
           (
             ClockAnalytics.skinSelected,
@@ -181,7 +181,7 @@ void main() {
           (ClockAnalytics.skinDeleted, {'custom_skins': 2}),
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'controls_idle', 'value': 0},
+            {'setting': 'controls_idle', 'setting_value': '0'},
           ),
           (ClockAnalytics.timerPresetAdded, {'duration_s': 90}),
           (ClockAnalytics.timerPresetRemoved, {'duration_s': 600}),
@@ -202,7 +202,7 @@ void main() {
         flat([
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'use24h', 'value': '12h'},
+            {'setting': 'use24h', 'setting_value': '12h'},
           ),
           (
             ClockAnalytics.skinSelected,
@@ -210,7 +210,7 @@ void main() {
           ),
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'default_timer', 'value': '90s'},
+            {'setting': 'default_timer', 'setting_value': '90s'},
           ),
         ]),
       );
@@ -224,18 +224,71 @@ void main() {
         flat([
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'use24h', 'value': 'device'},
+            {'setting': 'use24h', 'setting_value': 'device'},
           ),
         ]),
       );
     });
 
     test('from the cloud log one event and refresh the properties', () {
-      analytics.settingsFromCloudApplied(
+      analytics.settingsChanged(
+        const ClockSettings(),
         const ClockSettings(theme: ClockTheme.system),
+        source: SettingsSource.cloud,
       );
       expect(client.names, [ClockAnalytics.settingsFromCloud]);
       expect(client.properties['theme'], 'system');
+    });
+
+    test('by the app log nothing but the properties', () {
+      analytics.settingsChanged(
+        const ClockSettings(),
+        const ClockSettings(lastMode: ClockMode.pomodoro, keepAwake: true),
+        source: SettingsSource.app,
+      );
+      expect(client.events, isEmpty);
+      expect(client.properties['keep_awake'], 'true');
+    });
+
+    test('a cloud or app change first logs the user changes still '
+        'settling, and is never part of the next one', () {
+      fakeAsync((async) {
+        const a = ClockSettings();
+        final b = a.copyWith(theme: ClockTheme.light);
+        // The cloud copy is based on another device's settings.
+        final c = b.copyWith(skinId: 'paper');
+        final d = c.copyWith(lastMode: ClockMode.pomodoro);
+        final e = d.copyWith(showDate: true);
+        analytics.settingsChanged(a, b);
+        async.elapse(const Duration(milliseconds: 500));
+        analytics.settingsChanged(b, c, source: SettingsSource.cloud);
+        expect(
+          flat(client.events),
+          flat([
+            (
+              ClockAnalytics.settingChanged,
+              {'setting': 'theme', 'setting_value': 'light'},
+            ),
+            (ClockAnalytics.settingsFromCloud, null),
+          ]),
+        );
+        // The cloud's skin wins over the user's older properties.
+        expect(client.properties['skin'], 'paper');
+        analytics
+          ..settingsChanged(c, d, source: SettingsSource.app)
+          ..settingsChanged(d, e);
+        async.elapse(settle);
+        expect(
+          flat(client.events.skip(2).toList()),
+          flat([
+            (
+              ClockAnalytics.settingChanged,
+              {'setting': 'show_date', 'setting_value': 'true'},
+            ),
+          ]),
+        );
+        expect(client.properties['skin'], 'paper');
+      });
     });
   });
 
@@ -436,7 +489,7 @@ void main() {
         flat([
           (
             ClockAnalytics.settingChanged,
-            {'setting': 'keep_awake', 'value': 'true'},
+            {'setting': 'keep_awake', 'setting_value': 'true'},
           ),
         ]),
       );
@@ -503,7 +556,7 @@ void main() {
 
       await settings.update(
         settings.state.copyWith(theme: ClockTheme.dark),
-        fromCloud: true,
+        source: SettingsSource.cloud,
       );
       expect(client.names, [ClockAnalytics.settingsFromCloud]);
 
