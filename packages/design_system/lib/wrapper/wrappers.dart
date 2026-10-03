@@ -10,6 +10,7 @@ class DesignSystemWrapper extends StatefulWidget {
     this.mode = AppearanceMode.system,
     this.face,
     this.corner = DesignShape.defaultCorner,
+    this.arabic = false,
   });
 
   final Widget Function(BuildContext context, ThemeData theme) builder;
@@ -23,6 +24,10 @@ class DesignSystemWrapper extends StatefulWidget {
 
   /// The base corner radius of every shape ([DesignShape]); 0 is square.
   final double corner;
+
+  /// Falls every text style back to the bundled Arabic font; set it only
+  /// while the app is in Arabic, since it loads that font.
+  final bool arabic;
 
   @override
   State<DesignSystemWrapper> createState() => _DesignSystemWrapperState();
@@ -54,6 +59,7 @@ class _DesignSystemWrapperState extends State<DesignSystemWrapper>
       context,
       face: widget.face,
       corner: widget.corner,
+      arabic: widget.arabic,
     ).forMode(widget.mode, brightness);
 
     return Theme(

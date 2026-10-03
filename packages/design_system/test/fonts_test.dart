@@ -54,24 +54,31 @@ void main() {
     );
   });
 
-  test('every interface role falls back to Arabic, with or without a face', () {
-    for (final face in [null, DisplayFace.bigShoulders]) {
-      final theme = DesignSystem.monoTextTheme(
-        Typography.material2021().black,
-        face: face,
-      );
-      for (final style in [
-        theme.displayLarge, theme.displayMedium, theme.displaySmall, //
-        theme.headlineLarge, theme.headlineMedium, theme.headlineSmall,
-        theme.titleLarge, theme.titleMedium, theme.titleSmall,
-        theme.bodyLarge, theme.bodyMedium, theme.bodySmall,
-        theme.labelLarge, theme.labelMedium, theme.labelSmall,
-      ]) {
-        expect(
-          style!.fontFamilyFallback!.last,
-          startsWith('NotoSansArabic'),
-          reason: '$face ${style.fontFamily}',
+  // Only in Arabic: building the fallback loads its files (~1 MB on web).
+  test('every role falls back to Arabic only in Arabic, with or without a '
+      'face', () {
+    for (final arabic in [true, false]) {
+      for (final face in [null, DisplayFace.bigShoulders]) {
+        final theme = DesignSystem.monoTextTheme(
+          Typography.material2021().black,
+          face: face,
+          arabic: arabic,
         );
+        for (final style in [
+          theme.displayLarge, theme.displayMedium, theme.displaySmall, //
+          theme.headlineLarge, theme.headlineMedium, theme.headlineSmall,
+          theme.titleLarge, theme.titleMedium, theme.titleSmall,
+          theme.bodyLarge, theme.bodyMedium, theme.bodySmall,
+          theme.labelLarge, theme.labelMedium, theme.labelSmall,
+        ]) {
+          expect(
+            (style!.fontFamilyFallback ?? const []).any(
+              (family) => family.startsWith('NotoSansArabic'),
+            ),
+            arabic,
+            reason: '$arabic $face ${style.fontFamily}',
+          );
+        }
       }
     }
   });
