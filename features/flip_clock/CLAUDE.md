@@ -516,10 +516,12 @@ widget tester's clock):
   playing), two lines at most. A radio group per kind: each tile is
   "<name>, <mood>" with a checked state; Enter / Space activate it. A tap
   saves the pick, turns its kind's switch on and previews it: ticks at 0,
-  1 and 2 s; an alarm until `SoundWave.alarmPreview` (two loops), then
-  `stopAlarm`. One preview at a time: a new tap cancels its timers and
-  stops its alarm; leaving Settings does the same, and calls `stopAlarm`
-  only for an alarm the preview started and that is still looping. A
+  1 and 2 s; an alarm with `previewAlarm` until `SoundWave.alarmPreview`
+  (two loops), then `stopPreview`. One preview at a time: a new tap
+  cancels its timers and stops its preview; leaving Settings does the
+  same, and calls `stopPreview` only for a preview that may still loop.
+  Settings never calls `playAlarm` / `stopAlarm`, so it cannot silence a
+  real alarm. A
   switch off dims its tiles to 45%; they stay tappable.
 - Sound waves: `SoundWave.tick(TickSound)` / `.alarm(AlarmSound)`, one
   `CustomPainter` per sound, the motion ported from the `shapes` object in
@@ -535,9 +537,10 @@ widget tester's clock):
 
 ## Gotchas
 
-- An alarm preview shares the one alarm player with a real alarm: picking
-  an alarm while a finished timer rings replaces it and the preview stops
-  it after two loops. The finished tray still shows.
+- An alarm preview plays on its own player, never the alarm's: picking an
+  alarm while a finished timer rings plays no preview (the alarm keeps
+  ringing), and a timer that finishes during a preview cuts the preview
+  short. Only the wave animates in the first case.
 - In the background the system notification plays the OS default sound,
   not the picked alarm.
 

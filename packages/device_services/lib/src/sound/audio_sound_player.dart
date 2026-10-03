@@ -15,20 +15,23 @@ typedef TickPoolFactory =
     });
 
 /// [SoundPlayer] over this package's `assets/sounds/`: one preloaded
-/// `AudioPool` per tick sound and one `audioplayers` player for the alarm.
+/// `AudioPool` per tick sound, one `audioplayers` player for the alarm and
+/// another for settings previews, so a preview can never stop the alarm.
 class AudioSoundPlayer implements SoundPlayer {
   AudioSoundPlayer({
     required AudioPlayer alarm,
+    required AudioPlayer preview,
     required Logger logger,
     TickPoolFactory createPool = AudioPool.createFromAsset,
     this.alarmLimit = const Duration(seconds: 60),
-  }) : _alarm = alarm,
-       _logger = logger,
+  }) : _logger = logger,
        _createPool = createPool {
-    alarm.audioCache = _cache;
+    _alarm = _Loop(alarm, 'alarm', this);
+    _preview = _Loop(preview, 'preview', this);
   }
 
-  final AudioPlayer _alarm;
+  late final _Loop _alarm;
+  late final _Loop _preview;
   final Logger _logger;
   final TickPoolFactory _createPool;
   final _cache = AudioCache(prefix: 'packages/device_services/assets/sounds/');
@@ -43,9 +46,8 @@ class AudioSoundPlayer implements SoundPlayer {
   TickSound? _lastTick;
   StopFunction? _stopLastTick;
 
-  /// The chime stops by itself after this long.
+  /// The alarm and a preview each stop by themselves after this long.
   final Duration alarmLimit;
-  Timer? _limit;
 
   Future<AudioPool> _pool(TickSound sound) async {
     final pool = _pools[sound] ??= _createPool(
@@ -77,30 +79,66 @@ class AudioSoundPlayer implements SoundPlayer {
 
   @override
   Future<void> playAlarm(AlarmSound sound) async {
-    final looping = _limit != null;
-    _limit?.cancel();
-    _limit = Timer(alarmLimit, stopAlarm);
-    await guarded(_logger, 'alarm sound', () async {
-      if (looping) await _alarm.stop();
-      await _alarm.setReleaseMode(ReleaseMode.loop);
-      await _alarm.play(AssetSource(sound.file));
-    }, null);
+    await _preview.stop();
+    await _alarm.play(sound);
   }
 
   @override
-  Future<void> stopAlarm() {
-    _limit?.cancel();
-    _limit = null;
-    return guarded(_logger, 'stop alarm', _alarm.stop, null);
+  Future<void> stopAlarm() => _alarm.stop();
+
+  @override
+  Future<void> previewAlarm(AlarmSound sound) async {
+    if (_alarm.looping) return;
+    await _preview.play(sound);
   }
 
+  @override
+  Future<void> stopPreview() => _preview.stop();
+
   Future<void> dispose() async {
-    _limit?.cancel();
-    await guarded(_logger, 'dispose players', () async {
-      await _alarm.dispose();
+    await _alarm.dispose();
+    await _preview.dispose();
+    await guarded(_logger, 'dispose tick pools', () async {
       for (final pool in _pools.values) {
         await (await pool).dispose();
       }
     }, null);
+  }
+}
+
+/// One looping player that stops by itself after [AudioSoundPlayer.alarmLimit].
+class _Loop {
+  _Loop(this._player, this._name, this._owner) {
+    _player.audioCache = _owner._cache;
+  }
+
+  final AudioPlayer _player;
+  final String _name;
+  final AudioSoundPlayer _owner;
+  Timer? _limit;
+
+  /// Whether a [play] has not yet been stopped or timed out.
+  bool get looping => _limit != null;
+
+  Future<void> play(AlarmSound sound) async {
+    final wasLooping = looping;
+    _limit?.cancel();
+    _limit = Timer(_owner.alarmLimit, stop);
+    await guarded(_owner._logger, '$_name sound', () async {
+      if (wasLooping) await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.loop);
+      await _player.play(AssetSource(sound.file));
+    }, null);
+  }
+
+  Future<void> stop() {
+    _limit?.cancel();
+    _limit = null;
+    return guarded(_owner._logger, 'stop $_name', _player.stop, null);
+  }
+
+  Future<void> dispose() {
+    _limit?.cancel();
+    return guarded(_owner._logger, 'dispose $_name', _player.dispose, null);
   }
 }
