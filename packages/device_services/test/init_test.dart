@@ -78,6 +78,7 @@ void main() {
     await di.get<ScreenWake>().setEnabled(true);
     await di.reset();
     di.register<Logger>(logger);
+    expect(players, hasLength(2), reason: 'alarm and preview players');
     for (final player in players) {
       verify(player.dispose).called(1);
     }

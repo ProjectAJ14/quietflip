@@ -917,7 +917,7 @@ void main() {
       await wait(tester, 1500);
       expect(sound.ticks, hasLength(3), reason: 'three ticks only');
       expect(wave, findsNothing, reason: 'back to rest');
-      expect(sound.stops, 0);
+      expect(sound.previewStops, 0);
       await close(tester);
     });
 
@@ -925,13 +925,15 @@ void main() {
       await openSound(tester);
       await pick(tester, c.alarm_beeps);
       expect(settings.state.alarmSound, AlarmSound.beeps);
-      expect(sound.played, [AlarmSound.beeps]);
+      expect(sound.previewed, [AlarmSound.beeps]);
       await wait(tester, 2190);
-      expect(sound.stops, 0);
+      expect(sound.previewStops, 0);
       await wait(tester, 20);
-      expect(sound.stops, 1, reason: '2 x 1.1 s');
+      expect(sound.previewStops, 1, reason: '2 x 1.1 s');
       await close(tester);
-      expect(sound.stops, 1, reason: 'leaving does not stop it twice');
+      expect(sound.previewStops, 1, reason: 'leaving does not stop it twice');
+      expect(sound.played, isEmpty, reason: 'a preview is not the alarm');
+      expect(sound.stops, 0, reason: 'a real alarm is never stopped');
     });
 
     testWidgets('a second tap cancels the first preview', (tester) async {
@@ -939,11 +941,12 @@ void main() {
       await pick(tester, c.alarm_bell);
       await wait(tester, 500);
       await pick(tester, c.tick_clockwork);
-      expect(sound.stops, 1, reason: 'the bell preview stops');
+      expect(sound.previewStops, 1, reason: 'the bell preview stops');
       await pick(tester, c.tick_digital);
       await wait(tester, 5000);
-      expect(sound.played, [AlarmSound.bell]);
-      expect(sound.stops, 1, reason: 'the bell timer was cancelled');
+      expect(sound.previewed, [AlarmSound.bell]);
+      expect(sound.previewStops, 1, reason: 'the bell timer was cancelled');
+      expect(sound.stops, 0);
       expect(sound.ticks, [
         TickSound.clockwork,
         for (var i = 0; i < 3; i++) TickSound.digital,
@@ -990,7 +993,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await wait(tester, 5000);
       expect(sound.ticks, [TickSound.splitFlap], reason: 'no more ticks');
-      expect(sound.stops, 0, reason: 'a real alarm keeps ringing');
+      expect(sound.previewStops, 0, reason: 'no alarm preview to stop');
       unawaited(settings.close());
 
       sound = FakeSound();
@@ -1005,7 +1008,8 @@ void main() {
       await pick(tester, c.alarm_rising);
       await wait(tester, 1000);
       await close(tester);
-      expect(sound.stops, 1, reason: 'its own alarm stops');
+      expect(sound.previewStops, 1, reason: 'its own preview stops');
+      expect(sound.stops, 0, reason: 'a real alarm keeps ringing');
     });
 
     testWidgets('tiles dim while their switch is off; a tap turns it on', (

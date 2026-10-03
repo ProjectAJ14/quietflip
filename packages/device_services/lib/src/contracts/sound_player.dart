@@ -37,9 +37,19 @@ abstract interface class SoundPlayer {
   Future<void> warmTick(TickSound sound);
 
   /// Loops [sound] until [stopAlarm] or 60 seconds. A new call while one
-  /// loops switches to [sound]; two alarms never play at once.
+  /// loops switches to [sound]; two alarms never play at once. Stops any
+  /// [previewAlarm] first: the real alarm always wins.
   Future<void> playAlarm(AlarmSound sound);
 
-  /// Stops the alarm; no-op when silent.
+  /// Stops the alarm; no-op when silent. Never touches a preview.
   Future<void> stopAlarm();
+
+  /// Loops [sound] as a settings preview, on its own player, until
+  /// [stopPreview] or 60 seconds. A new call switches the preview. Does
+  /// nothing while a [playAlarm] alarm rings, so a preview never replaces
+  /// or silences it.
+  Future<void> previewAlarm(AlarmSound sound);
+
+  /// Stops the preview; no-op when silent. Never touches the alarm.
+  Future<void> stopPreview();
 }
