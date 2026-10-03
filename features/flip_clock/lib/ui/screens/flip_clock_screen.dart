@@ -40,8 +40,9 @@ const double _besideCornersWidth = 600;
 /// [GestureLayer]: tap toggles the chrome (the island at the top: mode
 /// tabs over the current mode's actions; Skins top-left, Settings
 /// top-right and, on phones, Rotation bottom-right, mirrored in
-/// right-to-left, all in step with the island), a vertical drag changes brightness, a sideways swipe changes
-/// mode. The chrome shrinks to dots after `controlsIdle`, then disappears.
+/// right-to-left, all in step with the island), a vertical drag changes
+/// brightness, a sideways swipe changes mode. The chrome shrinks to dots
+/// after `controlsIdle`, then disappears.
 ///
 /// Keys: any key shows the chrome; Left/Right mode (the next mode in
 /// reading direction, so Left in right-to-left), Up/Down brightness,
