@@ -32,7 +32,7 @@ void main() {
 
     test('defaults to English for unsupported or no languages', () {
       expect(
-        LocalizationProvider.getBestMatchingLocale(const [Locale('ar')]),
+        LocalizationProvider.getBestMatchingLocale(const [Locale('sv')]),
         'en',
       );
       expect(LocalizationProvider.getBestMatchingLocale(const []), 'en');
@@ -56,6 +56,20 @@ void main() {
             const Locale('ja'),
           ]),
           'ja',
+          reason: '$locale',
+        );
+      }
+    });
+
+    test('matches Arabic from any region', () {
+      for (final locale in const [
+        Locale('ar'),
+        Locale('ar', 'EG'),
+        Locale('ar', 'SA'),
+      ]) {
+        expect(
+          LocalizationProvider.getBestMatchingLocale([locale]),
+          'ar',
           reason: '$locale',
         );
       }
@@ -92,7 +106,7 @@ void main() {
 
     test('falls back to English messages', () {
       LocalizationProvider.select(const [Locale('de')]);
-      expect(LocalizationProvider.select(const [Locale('ar')]), 'en');
+      expect(LocalizationProvider.select(const [Locale('sv')]), 'en');
       expect(LocalizationProvider.currentLocale, 'en');
       expect(Intl.defaultLocale, 'en');
       expect(strings.generic.cancel, 'Cancel');
@@ -104,10 +118,10 @@ void main() {
     expect(LocalizationProvider.messages, isA<Messages>());
   });
 
-  test('lists every phase-1 language, English first', () {
+  test('lists every language, English first', () {
     const codes = [
       'en', 'es', 'pt', 'fr', 'de', 'it', 'ja', 'ko', 'zh', 'hi', 'id', //
-      'tr', 'ru',
+      'tr', 'ru', 'ar',
     ];
     expect(LocalizationProvider.supportedLocales, codes);
     expect(LocalizationProvider.locales, [for (final c in codes) Locale(c)]);
@@ -120,7 +134,8 @@ void main() {
   test('isLocaleSupported checks language codes', () {
     expect(LocalizationProvider.isLocaleSupported('en'), isTrue);
     expect(LocalizationProvider.isLocaleSupported('ru'), isTrue);
-    expect(LocalizationProvider.isLocaleSupported('ar'), isFalse);
+    expect(LocalizationProvider.isLocaleSupported('ar'), isTrue);
+    expect(LocalizationProvider.isLocaleSupported('he'), isFalse);
     expect(LocalizationProvider.isLocaleSupported('pt_BR'), isFalse);
   });
 

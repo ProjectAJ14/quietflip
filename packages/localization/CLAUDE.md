@@ -9,8 +9,9 @@ workspace package.
 Languages: English (base and fallback), Spanish `es`, Portuguese (Brazil)
 `pt`, French `fr`, German `de`, Italian `it`, Japanese `ja`, Korean `ko`,
 Chinese (Simplified) `zh`, Hindi `hi`, Indonesian `id`, Turkish `tr`, Russian
-`ru`. The translations are machine-made first drafts; each needs a
-native-speaker review before release. Arabic (right to left) is not shipped.
+`ru`, Arabic `ar` (right to left, Western digits `0-9`). The translations are
+machine-made first drafts; each needs a native-speaker review before release,
+Arabic included.
 
 Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 
@@ -51,7 +52,7 @@ Exported from `package:localization/localization.dart`.
 
 - **Add a string:** add the key to the right group in `lib/messages.i69n.yaml` and its translation to every `lib/messages_<code>.i69n.yaml`, run `dart run melos run generate:i69n` (build_runner + `dart format lib/messages.i69n.dart`), then use `strings.<group>.<key>`. Commit the YAML and the regenerated `.i69n.dart` files together.
 - **Add a parameterised string:** `key(String x): "text $x"` in the YAML, regenerate, call `strings.<group>.key(x)`.
-- **Add a locale:** add `lib/messages_<code>.i69n.yaml`, list the code under `locales` in `build.yaml`, regenerate, then add its generated class to `_messages` in `LocalizationProvider`; extend `test/localization_test.dart`, add the code (Apple's form, e.g. `zh-Hans`) to `CFBundleLocalizations` in both `apps/quietflip/*/Runner/Info.plist` (the app's `bundle_localizations_test.dart` checks it) and check the layout in that language. A right-to-left language also needs a layout pass first.
+- **Add a locale:** add `lib/messages_<code>.i69n.yaml`, list the code under `locales` in `build.yaml`, regenerate, then add its generated class to `_messages` in `LocalizationProvider`; extend `test/localization_test.dart`, add the code (Apple's form, e.g. `zh-Hans`) to `CFBundleLocalizations` in both `apps/quietflip/*/Runner/Info.plist` (the app's `bundle_localizations_test.dart` checks it) and check the layout in that language. A right-to-left language also needs a layout pass first: `MaterialApp` flips `Directionality` for it, so only direction-aware layout mirrors (`EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `TextAlign.start`/`end`); `features/flip_clock/test/rtl_rule_test.dart` fails on the physical forms. Arabic glyphs come from the bundled Noto Sans Arabic fallback in `design_system`; another script needs its own bundled fallback there.
 
 ## Tests
 
