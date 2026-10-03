@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:core/core.dart' as core;
@@ -390,6 +391,114 @@ void main() {
       expect(c.state.status, CountdownStatus.idle);
       await c.close();
       await c.check();
+    });
+  });
+
+  group('CountdownController with a slow save', () {
+    const id = CountdownController.alertId;
+    const ten = Duration(minutes: 10);
+
+    // Holds every write until the returned release is called.
+    void Function() hold() {
+      final gate = Completer<void>();
+      store.hold = gate;
+      return () {
+        store.hold = null;
+        gate.complete();
+      };
+    }
+
+    testWidgets('start then reset: no alert, idle saved', (tester) async {
+      final c = countdown();
+      final release = hold();
+      final starting = c.start(ten);
+      final resetting = c.reset();
+      expect(c.state.status, CountdownStatus.idle);
+      release();
+      await starting;
+      await resetting;
+      expect(alerts.history, isEmpty, reason: 'no obsolete alert scheduled');
+      expect(alerts.scheduled, isEmpty);
+      expect(saved()['status'], 'idle');
+      await c.close();
+    });
+
+    testWidgets('start then pause: no alert, paused saved', (tester) async {
+      final c = countdown();
+      final release = hold();
+      final starting = c.start(ten);
+      final pausing = c.pause();
+      release();
+      await starting;
+      await pausing;
+      expect(alerts.history, isEmpty);
+      expect(alerts.scheduled, isEmpty);
+      expect(saved()['status'], 'paused');
+      await c.close();
+    });
+
+    testWidgets('pause then resume keeps the latest deadline', (tester) async {
+      final c = countdown();
+      await c.start(ten);
+      clock.advance(const Duration(minutes: 1));
+      // Only the pause's write is slow: the resume's lands first.
+      final release = hold();
+      final pausing = c.pause();
+      store.hold = null;
+      clock.advance(const Duration(minutes: 1));
+      final resuming = c.resume();
+      release();
+      await pausing;
+      await resuming;
+      final end = clock.now.add(const Duration(minutes: 9));
+      expect(alerts.scheduled[id], end);
+      expect(alerts.history.last, end);
+      expect(saved()['status'], 'running');
+      await c.close();
+    });
+
+    testWidgets('a settings sync defers to a newer transition', (tester) async {
+      final c = countdown();
+      final release = hold();
+      final starting = c.start(ten);
+      final syncing = c.syncAlert();
+      final pausing = c.pause();
+      release();
+      await Future.wait([starting, syncing, pausing]);
+      expect(alerts.history, isEmpty);
+      expect(saved()['status'], 'paused');
+      await c.close();
+    });
+
+    testWidgets('finish then reset: alarm silenced, idle saved', (
+      tester,
+    ) async {
+      final c = countdown();
+      await c.start(const Duration(seconds: 3));
+      final release = hold();
+      clock.advance(const Duration(seconds: 3));
+      final finishing = c.check();
+      final resetting = c.reset();
+      release();
+      await finishing;
+      await resetting;
+      expect(sound.alarms, 1);
+      expect(sound.stops, 1, reason: 'the stop runs after the alarm');
+      expect(alerts.scheduled, isEmpty);
+      expect(saved()['status'], 'idle');
+      await c.close();
+    });
+
+    testWidgets('a failed alert reaches its caller; later effects run', (
+      tester,
+    ) async {
+      final c = countdown();
+      alerts.failure = Exception('no alerts');
+      await expectLater(c.start(ten), throwsException);
+      await c.reset();
+      expect(alerts.cancelled, [id]);
+      expect(saved()['status'], 'idle');
+      await c.close();
     });
   });
 
