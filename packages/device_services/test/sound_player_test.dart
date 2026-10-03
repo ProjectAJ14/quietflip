@@ -37,6 +37,7 @@ class _FakePool extends Fake implements AudioPool {
 void main() {
   late FakeLogger logger;
   late _MockPlayer alarm;
+  late _MockPlayer preview;
   late List<String> log;
   late List<_FakePool> pools;
   late List<AudioCache?> caches;
@@ -55,6 +56,11 @@ void main() {
     when(() => alarm.setReleaseMode(any())).thenAnswer((_) async {});
     when(alarm.stop).thenAnswer((_) async {});
     when(alarm.dispose).thenAnswer((_) async {});
+    preview = _MockPlayer();
+    when(() => preview.play(any())).thenAnswer((_) async {});
+    when(() => preview.setReleaseMode(any())).thenAnswer((_) async {});
+    when(preview.stop).thenAnswer((_) async {});
+    when(preview.dispose).thenAnswer((_) async {});
     log = [];
     pools = [];
     caches = [];
@@ -84,6 +90,7 @@ void main() {
   AudioSoundPlayer build({Duration limit = const Duration(seconds: 60)}) =>
       AudioSoundPlayer(
         alarm: alarm,
+        preview: preview,
         logger: logger,
         createPool: createPool,
         alarmLimit: limit,
@@ -93,6 +100,7 @@ void main() {
     await build().playTick(TickSound.classic);
     expect(alarm.cache?.prefix, 'packages/device_services/assets/sounds/');
     expect(caches.single, same(alarm.cache));
+    expect(preview.cache, same(alarm.cache));
     expect(sizes.single, 2);
   });
 
@@ -199,6 +207,48 @@ void main() {
     ]);
   });
 
+  test('a preview loops on its own player and stops by itself', () async {
+    final sounds = build(limit: const Duration(milliseconds: 5));
+    await sounds.previewAlarm(AlarmSound.bell);
+    await sounds.previewAlarm(AlarmSound.ring);
+    verifyInOrder([
+      () => preview.setReleaseMode(ReleaseMode.loop),
+      () => preview.play(any(that: AssetSourceMatcher(AlarmSound.bell.file))),
+      preview.stop,
+      () => preview.play(any(that: AssetSourceMatcher(AlarmSound.ring.file))),
+    ]);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    verify(preview.stop).called(1);
+    await sounds.stopPreview();
+    verify(preview.stop).called(1);
+    verifyNever(() => alarm.play(any()));
+    verifyNever(alarm.stop);
+  });
+
+  test('stopping a preview never stops the alarm', () async {
+    final sounds = build();
+    await sounds.previewAlarm(AlarmSound.bell);
+    await sounds.playAlarm(AlarmSound.chime);
+    verify(preview.stop).called(1);
+    await sounds.stopPreview();
+    verify(preview.stop).called(1);
+    verifyNever(alarm.stop);
+  });
+
+  test('a preview while the alarm rings neither replaces nor silences it, '
+      'and previews again once it stops', () async {
+    final sounds = build();
+    await sounds.playAlarm(AlarmSound.chime);
+    await sounds.previewAlarm(AlarmSound.beeps);
+    await sounds.stopPreview();
+    verifyNever(() => preview.play(any()));
+    verify(() => alarm.play(any())).called(1);
+    verifyNever(alarm.stop);
+    await sounds.stopAlarm();
+    await sounds.previewAlarm(AlarmSound.beeps);
+    verify(() => preview.play(any())).called(1);
+  });
+
   test('every bundled sound file exists', () {
     final files = [
       for (final tick in TickSound.values) tick.file,
@@ -233,6 +283,7 @@ void main() {
     await sounds.warmTick(TickSound.digital);
     await sounds.dispose();
     verify(alarm.dispose).called(1);
+    verify(preview.dispose).called(1);
     expect(
       [
         for (final line in log)

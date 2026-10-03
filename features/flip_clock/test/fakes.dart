@@ -65,6 +65,11 @@ class FakeSound implements SoundPlayer {
   final List<TickSound> warmed = [];
   int stops = 0;
 
+  /// Every alarm previewed with [previewAlarm], in order, and the
+  /// [stopPreview] calls.
+  final List<AlarmSound> previewed = [];
+  int previewStops = 0;
+
   int get flips => ticks.length;
   int get alarms => played.length;
 
@@ -79,6 +84,12 @@ class FakeSound implements SoundPlayer {
 
   @override
   Future<void> stopAlarm() async => stops++;
+
+  @override
+  Future<void> previewAlarm(AlarmSound sound) async => previewed.add(sound);
+
+  @override
+  Future<void> stopPreview() async => previewStops++;
 }
 
 class FakeFullScreen implements FullScreenController {

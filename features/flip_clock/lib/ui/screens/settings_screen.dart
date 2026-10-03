@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _denied = false;
 
   // One sound preview at a time: the sound, when it started, its timers,
-  // and whether an alarm it started may still be looping.
+  // and whether an alarm preview it started may still be looping.
   Enum? _previewing;
   DateTime? _previewSince;
   final List<Timer> _previewTimers = [];
@@ -117,8 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  /// Cancels the preview. Stops the alarm only if the preview started it
-  /// and it is still running, so a real alarm behind Settings keeps ringing.
+  /// Cancels the preview, stopping its alarm preview if one may still loop.
+  /// Previews play on their own player, so a real alarm keeps ringing.
   void _stopPreview() {
     for (final timer in _previewTimers) {
       timer.cancel();
@@ -126,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _previewTimers.clear();
     if (_previewAlarm) {
       _previewAlarm = false;
-      unawaited(widget.sound.stopAlarm());
+      unawaited(widget.sound.stopPreview());
     }
   }
 
@@ -161,16 +161,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Selects [alarm] (turning Alarm sound on) and plays two loops of it.
+  /// While a real alarm rings the player skips the preview.
   void _pickAlarm(AlarmSound alarm) {
     _update((now) => now.copyWith(alarmSound: alarm, alertSound: true));
     _stopPreview();
-    unawaited(widget.sound.playAlarm(alarm));
+    unawaited(widget.sound.previewAlarm(alarm));
     _previewAlarm = true;
     final length = SoundWave.alarmPreview(alarm);
     _previewTimers.add(
       Timer(length, () {
         _previewAlarm = false;
-        unawaited(widget.sound.stopAlarm());
+        unawaited(widget.sound.stopPreview());
       }),
     );
     _startPreview(alarm, length);
