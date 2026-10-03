@@ -16,24 +16,30 @@ abstract final class DesignFonts {
 /// `assets/google_fonts/` as `<Family>-<Weight>.ttf` (see [assetName]), so
 /// nothing is fetched at runtime.
 enum DisplayFace {
-  barlowCondensed('Barlow Condensed', FontWeight.w700),
-  bebasNeue('Bebas Neue', FontWeight.w400),
-  anton('Anton', FontWeight.w400),
-  oswald('Oswald', FontWeight.w600),
-  bigShoulders('Big Shoulders', FontWeight.w800),
-  archivoBlack('Archivo Black', FontWeight.w400),
-  jetBrainsMono('JetBrains Mono', FontWeight.w700),
-  spaceGrotesk('Space Grotesk', FontWeight.w700),
-  dmSerifDisplay('DM Serif Display', FontWeight.w400),
-  orbitron('Orbitron', FontWeight.w700);
+  barlowCondensed('Barlow Condensed', FontWeight.w700, 0.351),
+  bebasNeue('Bebas Neue', FontWeight.w400, 0.350),
+  anton('Anton', FontWeight.w400, 0.429),
+  oswald('Oswald', FontWeight.w600, 0.404),
+  bigShoulders('Big Shoulders', FontWeight.w800, 0.400),
+  archivoBlack('Archivo Black', FontWeight.w400, 0.344),
+  jetBrainsMono('JetBrains Mono', FontWeight.w700, 0.365),
+  spaceGrotesk('Space Grotesk', FontWeight.w700, 0.350),
+  dmSerifDisplay('DM Serif Display', FontWeight.w400, 0.315),
+  orbitron('Orbitron', FontWeight.w700, 0.360);
 
-  const DisplayFace(this.family, this.weight);
+  const DisplayFace(this.family, this.weight, this.digitCentre);
 
   /// Google Fonts family name.
   final String family;
 
   /// The one bundled weight.
   final FontWeight weight;
+
+  /// Height of the digits' vertical centre above the baseline, in em:
+  /// the middle of the glyph bounds of `0`-`9`, measured from the bundled
+  /// `.ttf`. Placing the baseline this far below a line centres the digits
+  /// on it for any leading.
+  final double digitCentre;
 
   /// Monospaced faces need wider cards.
   bool get monospaced => this == jetBrainsMono;

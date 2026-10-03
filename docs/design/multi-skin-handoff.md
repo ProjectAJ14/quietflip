@@ -117,7 +117,7 @@ QuietFlip is a calm, ad-free flip clock. The screen belongs to the time. Everyth
 
 ## Layout and shape
 
-- Flip cards: `radius-md` below 160px digits, `radius-lg` above. Gap `space-3` inside a pair, `space-6` between pairs. The seam is a 2px `card-seam` line at exactly half height.
+- Flip cards: `radius-md` below 160px digits, `radius-lg` above. Gap `space-3` inside a pair, `space-6` between pairs. The split line, hinges and flip are replaced by `docs/design/flip-card-craft-handoff.md` (a crack and lip at half height, pins in notches inside the card edge).
 - Island: centred at the bottom, `space-6` above the safe area (bottom-centre keeps it away from the camera notch and thumbs reach it). Corner buttons sit `space-4` (phone) or `space-6` (tablet, desktop) inside the safe area.
 - Settings: grouped inset lists with `radius-sm` cells, `space-8` between groups; see SettingsShell for the three layouts.
 - Hit targets are at least `corner-button` (44px), even when the visible dot is 6px.

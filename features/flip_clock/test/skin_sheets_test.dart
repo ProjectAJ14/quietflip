@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
 import 'fakes.dart';
+import 'flip_card_probe.dart';
 import 'ink.dart';
 
 final now = DateTime(2026, 9, 30, 17, 14);
@@ -396,13 +397,13 @@ void main() {
     );
     expect(mono, findsOne);
     expect(
-      find.descendant(of: tile(c.skin_mono), matching: fill(light.card)),
+      find.descendant(of: tile(c.skin_mono), matching: cardFace(light.card)),
       findsWidgets,
     );
     expect(
       find.descendant(
         of: tile(c.skin_paper),
-        matching: fill(DesignSkinColors.cardPaper),
+        matching: cardFace(DesignSkinColors.cardPaper),
       ),
       findsWidgets,
     );
