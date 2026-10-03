@@ -182,7 +182,7 @@ lib/
   distinct change. Settings > Appearance shows the Orientation control
   (under Theme), the
   clock screen its Rotation corner button and the R key, only when
-  `OrientationLock.supported` (Android/iOS), passed in by the router (the
+  `OrientationLock.supported` (Android/iPhone; not iPad), passed in by the router (the
   widgets never `di.get`). Rotation and R cycle `orientation` auto ->
   portrait -> landscape -> auto (the button's icon shows the current one:
   `screen_rotation`, `stay_current_portrait`, `stay_current_landscape`);

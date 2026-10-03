@@ -7,7 +7,10 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 /// Flutter tests register no plugins. Storage gets an in-memory store and the
 /// audio channels answer with nothing (audioplayers creates its players in the
-/// constructor and would otherwise report an unawaited error). Notifications,
+/// constructor and would otherwise report an unawaited error). The device
+/// info channel answers with nothing too: on iOS, `device_services.init()`
+/// asks for the model (iPad check), and a missing plugin there made the
+/// players' event streams fail in the bootstrap test. Notifications,
 /// wake lock and full screen stay missing, so these tests also prove the clock
 /// boots when those services are unavailable.
 void useInMemoryStorage() {
@@ -18,6 +21,7 @@ void useInMemoryStorage() {
   for (final channel in [
     'xyz.luan/audioplayers',
     'xyz.luan/audioplayers.global',
+    'dev.fluttercommunity.plus/device_info',
   ]) {
     messenger.setMockMethodCallHandler(
       MethodChannel(channel),

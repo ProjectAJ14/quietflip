@@ -18,6 +18,7 @@ import 'package:device_services/src/orientation/system_orientation_lock.dart';
 import 'package:device_services/src/screen_wake/wakelock_screen_wake.dart';
 import 'package:device_services/src/sound/audio_sound_player.dart';
 import 'package:device_services/src/storage/preferences_key_value_store.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:di/di.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +50,7 @@ Future<void> init({
   AudioPlayer Function() audioPlayer = AudioPlayer.new,
   Future<void> Function(List<DeviceOrientation>) orientations =
       SystemChrome.setPreferredOrientations,
+  Future<bool> Function() isIPad = _deviceIsIPad,
   Future<double> Function()? readBrightness,
   Future<void> Function(double)? writeBrightness,
   Future<void> Function()? restoreBrightness,
@@ -58,6 +60,13 @@ Future<void> init({
   final mobile =
       !isWeb &&
       (target == TargetPlatform.android || target == TargetPlatform.iOS);
+  // iPadOS ignores an app's orientation lock while the app supports
+  // multitasking (Split View, Slide Over, windowed), so on iPad the setting
+  // would do nothing: report it unsupported and let Rotation Lock handle it.
+  final iPad =
+      !isWeb &&
+      target == TargetPlatform.iOS &&
+      await guarded(logger, 'iPad check', isIPad, false);
 
   await _registerFullScreen(
     logger,
@@ -70,7 +79,7 @@ Future<void> init({
   di.register<OrientationLock>(
     SystemOrientationLock(
       logger: logger,
-      supported: mobile,
+      supported: mobile && !iPad,
       apply: orientations,
     ),
   );
@@ -111,6 +120,9 @@ Future<void> init({
   );
   logger.i('device_services initialized');
 }
+
+Future<bool> _deviceIsIPad() async =>
+    (await DeviceInfoPlugin().iosInfo).model == 'iPad';
 
 Future<void> _registerFullScreen(
   Logger logger, {

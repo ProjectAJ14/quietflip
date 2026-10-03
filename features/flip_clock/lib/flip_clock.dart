@@ -54,7 +54,7 @@ Future<void> init({CloudSync? sync}) async {
       .listen((_) => unawaited(countdown.syncAlert()));
   // Apply the saved orientation now and on every change. Not awaited: launch
   // never waits on the platform. The lock logs and no-ops where unsupported
-  // (web, desktop).
+  // (web, desktop, iPad).
   final lock = di.get<OrientationLock>();
   Future<void> orient(ClockOrientation o) => lock.set(switch (o) {
     ClockOrientation.auto => ScreenOrientation.auto,
