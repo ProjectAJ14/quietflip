@@ -146,7 +146,7 @@ and the "In use" tile at the top of the sheet cross-fades to it (at once
 with reduced motion). In use always shows the skin you have on, built-in or
 your own, with a Customize button; the sections below never move when you
 tap, and ring the selected tile where it sits. Classic is Mono (the default, white on near-black; black on white in
-the Light theme) plus nine colour variations (Paper and Cyan show seconds
+the Light theme; seconds as cards, today's date, no AM/PM) plus nine colour variations (Paper and Cyan show seconds
 as a small badge, Violet and Amber as cards; picking one turns Show seconds
 on); Bold has presets that show off
 the options (Nightstand, Studio, Arcade, Railway, Desk, Neon, Minimal); Type
@@ -173,7 +173,7 @@ creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.
 
 Picking a skin applies its preset: Show seconds turns on for skins that show
-seconds and off for those that do not (Mono), and Settings or the S key can
+seconds and off for those that do not, and Settings or the S key can
 still change it. With a skin that has no seconds style of its own, seconds
 get their own cards. The skin can add the date line on its own. AM/PM and
 the small seconds grow with the cards, in the skin's font.

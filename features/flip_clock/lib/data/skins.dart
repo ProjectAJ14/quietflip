@@ -9,8 +9,9 @@ abstract final class Skins {
   static const String monoId = 'mono';
 
   /// Colour variations on the default face (the picker's Classic section).
-  /// Paper and Cyan show seconds as a badge, Violet and Amber as cards;
-  /// Mono (the default) and the rest show none.
+  /// Mono (the default) shows seconds as cards, today's date and no AM/PM;
+  /// Paper and Cyan show seconds as a badge, Violet and Amber as cards; the
+  /// rest show none.
   static List<Skin> classic() {
     final c = strings.clock;
     Skin tint(
@@ -21,7 +22,14 @@ abstract final class Skins {
     ]) => Skin(id: id, name: name, digitColor: digits, seconds: seconds);
     return [
       // Follows the app theme: ink on card in Mono Light.
-      Skin(id: monoId, name: c.skin_mono, themed: true),
+      Skin(
+        id: monoId,
+        name: c.skin_mono,
+        seconds: SkinSeconds.cards,
+        meridiem: SkinMeridiem.hidden,
+        showDate: true,
+        themed: true,
+      ),
       Skin(
         id: 'paper',
         name: c.skin_paper,
