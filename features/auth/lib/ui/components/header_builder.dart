@@ -1,12 +1,15 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:localization/localization.dart';
 
-/// Banner shown above the sign-in and register forms.
-///
-/// Deliberately drawn from the theme rather than an image, so a fresh project
-/// has no asset to ship and nothing to fetch. Swap it for your own artwork:
-/// add the file under the app's `assets:` and use `design_system`'s `Header`
-/// with `HeaderType.asset`.
+/// The app icon, 72 logical px at 4x, bundled with this package because a
+/// feature cannot read the app's assets. Resized from
+/// `apps/quietflip/assets/icon/quietflip-master.png`; regenerate it when the
+/// icon changes.
+const appIconAsset = 'assets/app-icon.png';
+
+/// Banner shown above the sign-in and register forms: the app icon, the app
+/// name and why anyone would sign in.
 Widget headerBuilder(BuildContext context) {
   final theme = Theme.of(context);
 
@@ -17,17 +20,14 @@ Widget headerBuilder(BuildContext context) {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            height: 72,
-            width: 72,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.bolt_outlined,
-              size: 40,
-              color: theme.colorScheme.onPrimaryContainer,
+          // Decorative: the app name below says the same thing.
+          ClipRRect(
+            borderRadius: DesignShape.circular(DesignShape.of(context).lg),
+            child: const AppAssetImage(
+              assetPath: appIconAsset,
+              package: 'auth',
+              width: 72,
+              height: 72,
             ),
           ),
           const SizedBox(height: 16),

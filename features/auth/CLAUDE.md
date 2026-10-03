@@ -38,7 +38,7 @@ lib/
   data/token/firebase_auth_token_provider.dart  token cache, expiry, refresh, stale-response guard
   router/router.dart                AuthRouter, authRedirectLocation, authRedirect, signOut, GoAuthRoute
   ui/screens/                       SignIn / Register / ForgotPassword adapters (index.dart barrel)
-  ui/components/                    headerBuilder (theme-drawn, with the sign-in reason line), footerBuilder(context, action, type, logger) + FooterType (not exported)
+  ui/components/                    headerBuilder (app icon from `assets/app-icon.png`, app name, sign-in reason line), footerBuilder(context, action, type, logger) + FooterType (not exported)
 ```
 
 ## Rules
@@ -55,6 +55,11 @@ lib/
 - `AuthServiceImp.signOut` logs and reports failures, then **rethrows**.
   `deleteAccount` logs and rethrows `FirebaseAuthException` (the app maps
   `requires-recent-login` to "sign in again").
+- The header shows the real app icon, bundled in this package as
+  `assets/app-icon.png` (72px at 4x, resized from
+  `apps/quietflip/assets/icon/quietflip-master.png`; a feature cannot read
+  the app's assets). Regenerate it with
+  `sips -Z 288 <master> --out features/auth/assets/app-icon.png` when the icon changes.
 - The header under the logo says why anyone would sign in:
   `strings.sync.sign_in_reason` (an account is only for syncing settings).
 - `allowUnconfigured` exists only for the demo dashboard before Firebase is set up.
@@ -84,7 +89,7 @@ lib/
 |---|---|
 | `auth_service_test.dart` | `AuthServiceImp` identity + sign-out, sign-out error rethrown, `deleteAccount` success / signed out / failure logged and rethrown, `init()` registers types and `di.reset` disposes the token provider |
 | `token_provider_test.dart` | expiry-driven reuse vs refresh, signed-out null, stream publish/clear, read and stream errors, late refresh after sign-out or account change, idempotent dispose, null token |
-| `presentation_test.dart` | `getAuthMethod`, every analytics call, route builders, SDK state actions invoke callbacks, forgot-password push with email, header/footer builders, `GoAuthRoute` for no service / signed out / signed in, `signOut` with and without service, footer navigation |
+| `presentation_test.dart` | `getAuthMethod`, every analytics call, route builders, SDK state actions invoke callbacks, forgot-password push with email, header/footer builders (header draws the bundled app icon), `GoAuthRoute` for no service / signed out / signed in, `signOut` with and without service, footer navigation |
 
 Pattern: `mocktail` mocks of `FirebaseAuth`, `User`, `IdTokenResult`, `AuthService`;
 `setUp(core.init)` / `tearDown(di.reset)` in widget tests.
