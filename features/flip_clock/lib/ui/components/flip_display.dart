@@ -342,7 +342,10 @@ class _FlipCardState extends State<_FlipCard>
       // as on an axle.
       child: CustomPaint(
         key: FlipDisplay.hingeKey,
-        foregroundPainter: _CardPainter(geometry: geometry, skin: skin),
+        foregroundPainter: _CardPainter(
+          geometry: geometry,
+          card: skin.cardColor,
+        ),
         child: Stack(
           children: [
             AnimatedBuilder(
@@ -431,48 +434,151 @@ class _Fold extends StatelessWidget {
   );
 }
 
-/// Over each card: the crack and the lip under it, the notch cavities and
-/// the pins in them, pins last, from the card's [geometry].
+/// [c] darkened by [k]: lightness times (1 - k), so a light skin's crack
+/// is dark too.
+Color _shadeOf(Color c, double k) {
+  final hsl = HSLColor.fromColor(c);
+  return hsl.withLightness(hsl.lightness * (1 - k)).toColor();
+}
+
+/// [c] lightened by [k]: lightness moved k of the way to white.
+Color _lightOf(Color c, double k) {
+  final hsl = HSLColor.fromColor(c);
+  return hsl.withLightness(hsl.lightness + (1 - hsl.lightness) * k).toColor();
+}
+
+/// Over each card, lit from above as on the app icon: the crack with the
+/// flap's underside over it and the lip under it, the notch cavities, then
+/// the metal pins in them, all shaded from the [card] colour.
 class _CardPainter extends CustomPainter {
-  const _CardPainter({required this.geometry, required this.skin});
+  const _CardPainter({required this.geometry, required this.card});
 
   final FlipCardGeometry geometry;
-  final Skin skin;
+  final Color card;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final ground = skin.groundColor;
+    final cavity = _shadeOf(card, 0.85);
     canvas
-      ..drawRect(geometry.crack, Paint()..color = ground)
-      ..drawRect(
-        geometry.lip,
-        Paint()..color = Color.lerp(ground, skin.digitColor, 0.12)!,
-      );
+      ..drawRect(geometry.crack, Paint()..color = cavity)
+      ..drawRect(geometry.underside, Paint()..color = _shadeOf(card, 0.4))
+      ..drawRect(geometry.lip, Paint()..color = _lightOf(card, 0.45));
     if (!geometry.hasHinges) return;
-    final light = Color.lerp(skin.cardColor, skin.digitColor, 0.25)!;
-    final body = Color.lerp(skin.cardColor, ground, 0.45)!;
     for (final left in [true, false]) {
-      canvas.drawPath(geometry.cavity(left: left), Paint()..color = ground);
+      canvas.drawPath(geometry.cavity(left: left), Paint()..color = cavity);
     }
-    for (final pin in [geometry.pinLeft, geometry.pinRight]) {
-      canvas.drawRRect(
+    _pin(canvas, geometry.pinLeft);
+    _pin(canvas, geometry.pinRight);
+  }
+
+  /// A metal rod: one bright band near the top, dark below, thin bright end
+  /// caps at both sides and a dark outline against the notch wall.
+  void _pin(Canvas canvas, RRect pin) {
+    final rim = Paint()
+      ..color = _lightOf(card, 0.6).withValues(alpha: 0.6)
+      ..strokeWidth = 1;
+    final r = pin.tlRadiusY;
+    canvas
+      ..drawRRect(
         pin,
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [light, body, ground],
-            stops: const [0, 0.55, 1],
+            colors: [
+              _shadeOf(card, 0.6),
+              _lightOf(card, 0.35),
+              _lightOf(card, 0.75),
+              _lightOf(card, 0.15),
+              _shadeOf(card, 0.35),
+              _shadeOf(card, 0.55),
+            ],
+            stops: const [0, 0.10, 0.22, 0.40, 0.75, 1],
           ).createShader(pin.outerRect),
+      )
+      ..drawLine(
+        Offset(pin.left + 0.5, pin.top + r),
+        Offset(pin.left + 0.5, pin.bottom - r),
+        rim,
+      )
+      ..drawLine(
+        Offset(pin.right - 0.5, pin.top + r),
+        Offset(pin.right - 0.5, pin.bottom - r),
+        rim,
+      )
+      ..drawRRect(
+        pin.deflate(0.25),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.5
+          ..color = _shadeOf(card, 0.85),
       );
-    }
   }
 
   @override
   bool shouldRepaint(_CardPainter old) =>
+      old.card != card ||
       old.geometry.size != geometry.size ||
-      old.geometry.radius != geometry.radius ||
-      old.skin != skin;
+      old.geometry.radius != geometry.radius;
+}
+
+/// Behind each half: its fill, lit from above (the top half lighter than
+/// the bottom), and on the top half a thin rim along the top edge that
+/// fades down the sides.
+class _FacePainter extends CustomPainter {
+  const _FacePainter({
+    required this.geometry,
+    required this.card,
+    required this.top,
+  });
+
+  final FlipCardGeometry geometry;
+  final Color card;
+  final bool top;
+
+  /// Rim reach down each side, relative to the card height.
+  static const double rimReach = 0.25;
+
+  /// The half's fill, from its top edge to its bottom edge.
+  LinearGradient get fill => LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: top
+        ? [_lightOf(card, 0.10), _shadeOf(card, 0.12)]
+        : [card, _shadeOf(card, 0.18)],
+  );
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, Paint()..shader = fill.createShader(rect));
+    if (!top) return;
+    final reach = geometry.size.height * rimReach;
+    final light = _lightOf(card, 0.55);
+    // Just inside the outline, so the half's clip keeps all of the stroke.
+    final outline = RRect.fromRectAndRadius(
+      Offset.zero & geometry.size,
+      DesignShape.radius(geometry.radius),
+    ).deflate(0.5);
+    canvas.drawRRect(
+      outline,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [light, light.withValues(alpha: 0)],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, reach)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FacePainter old) =>
+      old.card != card ||
+      old.top != top ||
+      old.geometry.size != geometry.size ||
+      old.geometry.radius != geometry.radius;
 }
 
 /// Clips a half to its part of the card: rounded corners on the outside,
@@ -532,7 +638,6 @@ class _Half extends StatelessWidget {
       child: Container(
         width: width,
         height: geometry.axisY,
-        color: skin.cardColor,
         foregroundDecoration: shade > 0 || shadow > 0
             ? BoxDecoration(
                 color: shade > 0 ? ground.withValues(alpha: shade) : null,
@@ -549,32 +654,39 @@ class _Half extends StatelessWidget {
                     : null,
               )
             : null,
-        // A box the full card's height, so both halves share one axle.
-        child: OverflowBox(
-          maxHeight: cardHeight,
-          alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
-          child: SizedBox(
-            width: width,
-            height: cardHeight,
-            // Wide faces shrink to the card instead of clipping sideways,
-            // about the axle, so the digits stay centred on it.
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: SizedBox(
-                height: cardHeight,
-                // Placed by baseline, not by line box: the digits' centre
-                // lands on the axle whatever the face's leading.
-                child: Baseline(
-                  baseline: geometry.axisY + skin.face.digitCentre * fontSize,
-                  baselineType: TextBaseline.alphabetic,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    softWrap: false,
-                    textScaler: TextScaler.noScaling,
-                    style: skin.face.style(
-                      color: skin.digitColor,
-                      fontSize: fontSize,
+        child: CustomPaint(
+          painter: _FacePainter(
+            geometry: geometry,
+            card: skin.cardColor,
+            top: top,
+          ),
+          // A box the full card's height, so both halves share one axle.
+          child: OverflowBox(
+            maxHeight: cardHeight,
+            alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+            child: SizedBox(
+              width: width,
+              height: cardHeight,
+              // Wide faces shrink to the card instead of clipping sideways,
+              // about the axle, so the digits stay centred on it.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: SizedBox(
+                  height: cardHeight,
+                  // Placed by baseline, not by line box: the digits' centre
+                  // lands on the axle whatever the face's leading.
+                  child: Baseline(
+                    baseline: geometry.axisY + skin.face.digitCentre * fontSize,
+                    baselineType: TextBaseline.alphabetic,
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      softWrap: false,
+                      textScaler: TextScaler.noScaling,
+                      style: skin.face.style(
+                        color: skin.digitColor,
+                        fontSize: fontSize,
+                      ),
                     ),
                   ),
                 ),

@@ -7,7 +7,7 @@ import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'card_corner.dart';
+import 'flip_card_probe.dart';
 
 /// Shape code that would let a widget pick its own corner. Only
 /// `DesignShape` turns a radius into a shape. Whitespace-tolerant, so a

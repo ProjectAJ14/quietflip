@@ -16,6 +16,9 @@ void main() {
     near(icon.crack.height, 5);
     expect(icon.crack.center.dy, 304);
     near(icon.lip.height, 3);
+    near(icon.underside.height, 1);
+    expect(icon.underside.bottom, icon.crack.top);
+    expect(icon.underside.left, icon.crack.left);
     expect(icon.lip.top, icon.crack.bottom);
     near(icon.notchLeft.width, 27);
     near(icon.notchLeft.height, 76);

@@ -23,6 +23,10 @@ class FlipCardGeometry {
   static const double crackScale = 0.008;
   static const double minCrack = 1;
 
+  /// The top flap's underside, darkened just above the crack (icon: 1 of
+  /// 608).
+  static const double undersideScale = 0.002;
+
   /// The bright lip under the crack (icon: 3 of 608).
   static const double lipScale = 0.005;
   static const double minLip = 0.5;
@@ -68,6 +72,14 @@ class FlipCardGeometry {
     axisY - _crackHeight / 2,
     _w - _inset,
     axisY + _crackHeight / 2,
+  );
+
+  /// The last sliver of the top half above [crack]: the flap's underside.
+  Rect get underside => Rect.fromLTRB(
+    _inset,
+    crack.top - _h * undersideScale,
+    _w - _inset,
+    crack.top,
   );
 
   /// The bottom half's top edge catching the light, directly under [crack].

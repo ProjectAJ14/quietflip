@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localization/localization.dart';
 
 import 'fakes.dart';
+import 'flip_card_probe.dart';
 import 'ink.dart';
 
 final now = DateTime(2026, 9, 30, 17, 14);
@@ -376,13 +377,11 @@ void main() {
     await close(tester);
   });
 
-  // A tile's ground is a decorated box; a card half is a plain fill.
   Finder fill(Color color) => find.byWidgetPredicate(
     (w) =>
         w is Container &&
-        (w.color == color ||
-            w.decoration is BoxDecoration &&
-                (w.decoration! as BoxDecoration).color == color),
+        w.decoration is BoxDecoration &&
+        (w.decoration! as BoxDecoration).color == color,
   );
 
   testWidgets('Mono Light: Mono tile is ink on card over bg, Paper is '
@@ -398,13 +397,13 @@ void main() {
     );
     expect(mono, findsOne);
     expect(
-      find.descendant(of: tile(c.skin_mono), matching: fill(light.card)),
+      find.descendant(of: tile(c.skin_mono), matching: cardFace(light.card)),
       findsWidgets,
     );
     expect(
       find.descendant(
         of: tile(c.skin_paper),
-        matching: fill(DesignSkinColors.cardPaper),
+        matching: cardFace(DesignSkinColors.cardPaper),
       ),
       findsWidgets,
     );

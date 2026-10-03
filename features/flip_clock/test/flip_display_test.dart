@@ -10,7 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'card_corner.dart';
+import 'flip_card_probe.dart';
 
 const mono = Skin(id: 'mono', name: 'Mono');
 
@@ -44,9 +44,6 @@ FlipDisplay display(
 
 double fontSizeOf(WidgetTester tester, String text) =>
     tester.widget<Text>(find.text(text)).style!.fontSize!;
-
-Finder cardFill(Color color) =>
-    find.byWidgetPredicate((w) => w is Container && w.color == color);
 
 /// Every card of the display.
 final cards = find.byWidgetPredicate((w) => '${w.runtimeType}' == '_FlipCard');
@@ -98,24 +95,24 @@ void main() {
     );
     await tester.pumpWidget(host(display(['12', '34'], skin: skin)));
     // Two halves per card.
-    expect(cardFill(DesignSkinColors.cardPaper), findsNWidgets(4));
+    expect(cardFace(DesignSkinColors.cardPaper), findsNWidgets(4));
     final digit = tester.widget<Text>(find.text('12').first);
     expect(digit.style!.color, DesignSkinColors.cyan);
     expect(digit.style!.fontFamily, startsWith('Orbitron'));
     expect(digit.textScaler, TextScaler.noScaling);
-    // The split line: the crack in ground over a faint light lip.
+    // The split line: a dark crack over a bright lip, shaded from the card.
     final geometry = FlipCardGeometry(tester.getSize(cards.first), 0);
     expect(
       cardPaint(tester),
       paints
-        ..rect(rect: geometry.crack, color: DesignSkinColors.bgPaper)
+        ..rect(
+          rect: geometry.crack,
+          color: shadeOf(DesignSkinColors.cardPaper, 0.85),
+        )
+        ..rect(rect: geometry.underside)
         ..rect(
           rect: geometry.lip,
-          color: Color.lerp(
-            DesignSkinColors.bgPaper,
-            DesignSkinColors.cyan,
-            0.12,
-          ),
+          color: lightOf(DesignSkinColors.cardPaper, 0.45),
         ),
     );
     // No shade on a card at rest.
@@ -208,6 +205,9 @@ void main() {
           cardPaint(tester, i),
           paints
             ..rrect(rrect: geometry.pinLeft)
+            ..line()
+            ..line()
+            ..rrect()
             ..rrect(rrect: geometry.pinRight),
         );
       }
@@ -805,15 +805,176 @@ void main() {
       home: Scaffold(body: display(['12'], skin: mono.copyWith(themed: true))),
     );
     await tester.pumpWidget(themed(DesignColors.light));
-    expect(cardFill(DesignColors.light.card), findsNWidgets(2));
-    expect(cardPaint(tester), paints..rect(color: DesignColors.light.bg));
+    expect(cardFace(DesignColors.light.card), findsNWidgets(2));
+    expect(
+      cardPaint(tester),
+      paints..rect(color: shadeOf(DesignColors.light.card, 0.85)),
+    );
     expect(
       tester.widget<Text>(find.text('12').first).style!.color,
       DesignColors.light.ink,
     );
     await tester.pumpWidget(themed(DesignColors.dark));
     await tester.pumpAndSettle();
-    expect(cardFill(DesignSkinColors.cardInk), findsNWidgets(2));
+    expect(cardFace(DesignSkinColors.cardInk), findsNWidgets(2));
+  });
+
+  group('paint', () {
+    const paper = Skin(
+      id: 'paper',
+      name: 'Paper',
+      digitColor: DesignSkinColors.inkPaper,
+      cardColor: DesignSkinColors.cardPaper,
+      groundColor: DesignSkinColors.bgPaper,
+    );
+
+    testWidgets('the card painter draws crack, lip, cavities, then pins', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(SizedBox(width: 300, height: 300, child: display(['12']))),
+      );
+      const card = DesignSkinColors.cardInk;
+      final g = FlipCardGeometry(tester.getSize(cards.first), 0);
+      expect(g.hasHinges, isTrue);
+      final rims = lightOf(card, 0.6).withValues(alpha: 0.6);
+      PaintPattern pin(PaintPattern p, RRect pin) => p
+        ..rrect(rrect: pin, style: PaintingStyle.fill)
+        ..line(color: rims, strokeWidth: 1)
+        ..line(color: rims, strokeWidth: 1)
+        ..rrect(
+          rrect: pin.deflate(0.25),
+          style: PaintingStyle.stroke,
+          strokeWidth: 0.5,
+          color: shadeOf(card, 0.85),
+        );
+      expect(
+        cardPaint(tester),
+        pin(
+          pin(
+            paints
+              ..rect(rect: g.crack, color: shadeOf(card, 0.85))
+              ..rect(rect: g.underside, color: shadeOf(card, 0.4))
+              ..rect(rect: g.lip, color: lightOf(card, 0.45))
+              ..path(color: shadeOf(card, 0.85))
+              ..path(color: shadeOf(card, 0.85)),
+            g.pinLeft,
+          ),
+          g.pinRight,
+        ),
+      );
+    });
+
+    testWidgets('a card under 80px has the crack and lip but no pins', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(SizedBox(width: 300, height: 79, child: display(['12']))),
+      );
+      expect(tester.getSize(cards.first).height, 79);
+      expect(cardPaint(tester), paintsExactlyCountTimes(#drawRRect, 0));
+      expect(cardPaint(tester), paintsExactlyCountTimes(#drawPath, 0));
+      expect(cardPaint(tester), paintsExactlyCountTimes(#drawRect, 3));
+    });
+
+    testWidgets('the crack is dark on light and dark skins alike', (
+      tester,
+    ) async {
+      for (final skin in [mono, paper]) {
+        await tester.pumpWidget(host(display(['12'], skin: skin)));
+        final crack = shadeOf(skin.cardColor, 0.85);
+        expect(
+          crack.computeLuminance(),
+          lessThan(skin.cardColor.computeLuminance()),
+          reason: skin.name,
+        );
+        expect(crack.computeLuminance(), lessThan(0.05), reason: skin.name);
+        expect(cardPaint(tester), paints..rect(color: crack));
+      }
+    });
+
+    testWidgets('each half is lit from above', (tester) async {
+      for (final skin in [mono, paper]) {
+        await tester.pumpWidget(host(display(['12'], skin: skin)));
+        final faces = cardFace(skin.cardColor);
+        expect(faces, findsNWidgets(2));
+        LinearGradient fill(int i) =>
+            // ignore: avoid_dynamic_calls
+            (tester.widget<CustomPaint>(faces.at(i)).painter! as dynamic).fill
+                as LinearGradient;
+        final top = fill(0).colors;
+        final bottom = fill(1).colors;
+        expect(top.first, lightOf(skin.cardColor, 0.10));
+        expect(top.last, shadeOf(skin.cardColor, 0.12));
+        expect(
+          top.first.computeLuminance(),
+          greaterThan(top.last.computeLuminance()),
+        );
+        expect(bottom.first, skin.cardColor);
+        expect(bottom.last, shadeOf(skin.cardColor, 0.18));
+      }
+    });
+
+    testWidgets('the top half has a rim that fades down the sides', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(SizedBox(width: 300, height: 300, child: display(['12']))),
+      );
+      const card = DesignSkinColors.cardInk;
+      final faces = cardFace(card);
+      final size = tester.getSize(faces.first);
+      void Function(Canvas) face(int i) {
+        final painter = tester.widget<CustomPaint>(faces.at(i)).painter!;
+        return (canvas) => painter.paint(canvas, size);
+      }
+
+      // Fill, then a 1px stroke just inside the card outline.
+      expect(
+        face(0),
+        paints
+          ..rect(rect: Offset.zero & size)
+          ..rrect(style: PaintingStyle.stroke, strokeWidth: 1),
+      );
+      expect(face(1), paintsExactlyCountTimes(#drawRRect, 0));
+    });
+
+    testWidgets('painters repaint only when the card or its colour change', (
+      tester,
+    ) async {
+      CustomPainter cardPainter() => tester
+          .widget<CustomPaint>(find.byKey(FlipDisplay.hingeKey))
+          .foregroundPainter!;
+      CustomPainter facePainter(Color card) =>
+          tester.widget<CustomPaint>(cardFace(card).first).painter!;
+      Widget show(Skin skin, double h) => host(
+        SizedBox(
+          width: 400,
+          height: h,
+          child: display(['12'], skin: skin),
+        ),
+      );
+      await tester.pumpWidget(show(mono, 200));
+      final card = cardPainter();
+      final face = facePainter(mono.cardColor);
+      // A digit colour change leaves the card and its halves alone.
+      await tester.pumpWidget(
+        show(mono.copyWith(digitColor: DesignSkinColors.cyan), 200),
+      );
+      expect(cardPainter().shouldRepaint(card), isFalse);
+      expect(facePainter(mono.cardColor).shouldRepaint(face), isFalse);
+      await tester.pumpWidget(
+        show(mono.copyWith(cardColor: DesignSkinColors.cardPaper), 200),
+      );
+      expect(cardPainter().shouldRepaint(card), isTrue);
+      expect(
+        facePainter(DesignSkinColors.cardPaper).shouldRepaint(face),
+        isTrue,
+      );
+      await tester.pumpWidget(show(mono, 150));
+      expect(cardPainter().shouldRepaint(card), isTrue);
+      expect(facePainter(mono.cardColor).shouldRepaint(face), isTrue);
+    });
   });
 
   group('display values', () {
