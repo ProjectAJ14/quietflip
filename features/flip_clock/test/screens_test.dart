@@ -53,6 +53,7 @@ class Harness {
       settings: () => settings.state,
       logger: di.get<Logger>(),
       now: wall.call,
+      elapsed: wall.monotonic,
     );
     clock = ClockController(now: wall.call);
     stopwatch = StopwatchController(stopwatch: watch);
