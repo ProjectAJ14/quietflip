@@ -159,6 +159,16 @@ lib/
   monotonic `elapsed` on every tick and on app resume; never count frames. The stopwatch uses an injected monotonic
   `Stopwatch`; tick (~100 ms) only while running.
 - Persist every countdown transition; relaunch shows "finished while away".
+- A transition changes the countdown at once and queues its side effects
+  (save, system alert, alarm/stop) behind the earlier ones, one at a time. A
+  queued save writes the countdown as it is when it runs, and only the newest
+  queued transition (or a `syncAlert` with none newer) touches the system
+  alert, so however slow a write is, the snapshot and alert end at the last
+  transition: start then reset/pause never schedules, a slow pause never
+  cancels a newer resume's alert. `saveProgress` (app hidden) writes through
+  the same queue. An effect's error reaches its caller and
+  the queue carries on. Tests: `controllers_test.dart` "with a slow save"
+  (`FakeStore.hold`).
 - `LocalAlerts` is scheduled on start/resume and cancelled on pause/reset/
   dismiss; `init()` also calls `syncAlert()` whenever System notifications is
   switched, so a running countdown gains or loses its alert; permission is
