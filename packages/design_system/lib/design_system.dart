@@ -71,6 +71,9 @@ class DesignSystem {
   /// With a [face] (the app following a skin), every role uses that face at
   /// its one bundled weight instead, keeping the sizes: a skin face ships a
   /// single weight, so asking for another would find no bundled file.
+  ///
+  /// Every role falls back to the bundled [DesignFonts.arabic] for the
+  /// Arabic glyphs the faces lack.
   static TextTheme monoTextTheme(
     TextTheme base, {
     String bodyFont = DesignFonts.ui,
@@ -82,13 +85,16 @@ class DesignSystem {
       bodyFont: bodyFont,
       displayFont: displayFont,
     );
-    if (face == null) return theme;
     TextStyle? inFace(TextStyle? style) => style == null
         ? null
-        : GoogleFonts.getFont(
-            face.family,
-            textStyle: style,
-            fontWeight: face.weight,
+        : DesignFonts.withArabic(
+            face == null
+                ? style
+                : GoogleFonts.getFont(
+                    face.family,
+                    textStyle: style,
+                    fontWeight: face.weight,
+                  ),
           );
     return TextTheme(
       displayLarge: inFace(theme.displayLarge),

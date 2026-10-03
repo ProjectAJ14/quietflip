@@ -204,6 +204,32 @@ void main() {
         semantics.dispose();
       });
 
+      testWidgets('the brightness HUD reads left to right in RTL too', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          mode,
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: _island(hud: const ds.IslandBrightnessHud(0.25, '25%')),
+          ),
+        );
+        final icon = tester.getRect(find.byIcon(Icons.light_mode_outlined));
+        final label = tester.getRect(find.text('25%'));
+        final bar = find.byType(FractionallySizedBox);
+        final track = tester.getRect(
+          find.ancestor(of: bar, matching: find.byType(SizedBox)).first,
+        );
+        final fill = tester.getRect(
+          find.descendant(of: bar, matching: find.byType(ColoredBox)),
+        );
+        expect(icon.right, lessThan(track.left));
+        expect(label.left, greaterThan(track.right));
+        expect(fill.left, track.left);
+        expect(fill.width, closeTo(track.width * 0.25, 0.01));
+      });
+
       testWidgets('tabs select, colour and describe themselves', (
         tester,
       ) async {
@@ -806,6 +832,36 @@ void main() {
         expect(presses, 1);
       });
     }
+
+    testWidgets('a directional corner mirrors in right-to-left', (
+      tester,
+    ) async {
+      for (final (direction, onRight) in [
+        (TextDirection.ltr, false),
+        (TextDirection.rtl, true),
+      ]) {
+        await _pump(
+          tester,
+          ds.AppearanceMode.black,
+          Directionality(
+            textDirection: direction,
+            child: ds.CornerButton(
+              state: ds.ChromeState.dot,
+              icon: Icons.palette_outlined,
+              tooltip: 'Skins',
+              onPressed: () {},
+              corner: AlignmentDirectional.topStart,
+            ),
+          ),
+        );
+        final button = find.byType(ds.CornerButton);
+        expect(
+          onRight ? tester.getTopRight(box) : tester.getTopLeft(box),
+          onRight ? tester.getTopRight(button) : tester.getTopLeft(button),
+          reason: '$direction',
+        );
+      }
+    });
 
     testWidgets('hiding shrinks to the dot before it fades', (tester) async {
       await _pump(
