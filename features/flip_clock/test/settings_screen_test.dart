@@ -181,7 +181,8 @@ void main() {
     await tap(tester, c.show_date);
     // The test device reads 12-hour (English), so the switch turns 24h on.
     expect(settings.state.use24h, isTrue);
-    expect(settings.state.showSeconds, isTrue);
+    // Seconds start on (Mono's default), so the switch turns them off.
+    expect(settings.state.showSeconds, isFalse);
     expect(settings.state.showDate, isTrue);
     // Orientation moved to Appearance.
     expect(find.text(c.orientation), findsNothing);

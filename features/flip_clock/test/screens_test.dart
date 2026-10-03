@@ -185,25 +185,40 @@ void main() {
   setUp(core.init);
   tearDown(di.reset);
 
-  testWidgets('opens on the clock in 24h without seconds; settings toggle it', (
-    tester,
-  ) async {
+  testWidgets('opens on Mono in 24h with seconds cards and the date; '
+      'settings toggle it', (tester) async {
     deviceOn24h(tester);
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await showChrome(tester);
+    final date = MaterialLocalizations.of(
+      tester.element(find.byType(FlipClockScreen)),
+    ).formatFullDate(h.wall.now);
+    expect(h.settings.skin.id, Skins.monoId);
     expect(
-      find.bySemanticsLabel(strings.clock.current_time('09:41')),
+      find.bySemanticsLabel(
+        strings.clock.current_time_and_date('09:41:00', date),
+      ),
       findsOne,
     );
+    expect(find.text(date), findsOne);
+    expect(tester.widget<FlipDisplay>(find.byType(FlipDisplay)).cards, [
+      '09',
+      '41',
+      '00',
+    ]);
     await h.settings.update(
-      h.settings.state.copyWith(use24h: false, showSeconds: true),
+      h.settings.state.copyWith(use24h: false, showSeconds: false),
     );
     await tester.pump();
     expect(
-      find.bySemanticsLabel(strings.clock.current_time('9:41:00 AM')),
+      find.bySemanticsLabel(
+        strings.clock.current_time_and_date('9:41 AM', date),
+      ),
       findsOne,
     );
+    // Mono hides AM/PM on the cards; the label still says it.
+    expect(find.text('AM'), findsNothing);
     await tester.tap(action(strings.clock.action_settings));
     expect(h.settingsOpened, 1);
     await h.dispose(tester);
@@ -215,6 +230,10 @@ void main() {
     deviceOn24h(tester);
     final h = Harness();
     h.wall.now = DateTime(2026, 9, 29, 23, 59, 59);
+    // Minimal has no date line of its own (Mono, the default, does).
+    await h.settings.update(
+      const ClockSettings(showSeconds: false, skinId: 'minimal'),
+    );
     await tester.pumpWidget(h.screen());
     expect(find.text('Tuesday, September 29, 2026'), findsNothing);
 
@@ -625,6 +644,9 @@ void main() {
   testWidgets('S toggles seconds in Clock mode only', (tester) async {
     deviceOn24h(tester);
     final h = Harness();
+    await h.settings.update(
+      const ClockSettings(showSeconds: false, skinId: 'minimal'),
+    );
     await tester.pumpWidget(h.screen());
     await tester.pump();
     await key(tester, LogicalKeyboardKey.keyS);
@@ -1764,7 +1786,9 @@ void main() {
             ..devicePixelRatio = 1;
           addTearDown(tester.view.reset);
           final h = Harness();
-          await h.settings.update(ClockSettings(showSeconds: seconds));
+          await h.settings.update(
+            ClockSettings(showSeconds: seconds, skinId: 'minimal'),
+          );
           await tester.pumpWidget(h.screen());
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
@@ -1814,7 +1838,13 @@ void main() {
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final h = Harness();
-      await h.settings.update(const ClockSettings(showDate: true));
+      await h.settings.update(
+        const ClockSettings(
+          showDate: true,
+          showSeconds: false,
+          skinId: 'minimal',
+        ),
+      );
       await tester.pumpWidget(h.screen());
       await tester.pumpAndSettle();
       // Height-limited cards fill down to the padding (space-4 on a
@@ -1897,7 +1927,10 @@ void main() {
       // The safe area: 393 x 759 from y 59.
       const centre = Offset(393 / 2, 59 + 759 / 2);
       final h = Harness();
-      await h.settings.update(const ClockSettings(showSeconds: true));
+      // Minimal has no date line, so the display alone is centred.
+      await h.settings.update(
+        const ClockSettings(showSeconds: true, skinId: 'minimal'),
+      );
       await tester.pumpWidget(h.screen(orientationSupported: true));
       await showChrome(tester);
       await tester.pumpAndSettle();
@@ -1966,7 +1999,9 @@ void main() {
           side: insets.side,
         );
         final h = Harness();
-        await h.settings.update(ClockSettings(showSeconds: seconds));
+        await h.settings.update(
+          ClockSettings(showSeconds: seconds, skinId: 'minimal'),
+        );
         await tester.pumpWidget(h.screen(orientationSupported: true));
         await tester.pumpAndSettle();
         expect(cardHeight(tester, n, stacked: stacks), closeTo(want, 2));
@@ -2286,6 +2321,10 @@ void main() {
           ..devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         final h = Harness();
+        // Minimal has no date line, so the clock sits in the centre.
+        await h.settings.update(
+          const ClockSettings(showSeconds: false, skinId: 'minimal'),
+        );
         // The real theme and fonts, so the painted size is the real one.
         await tester.pumpWidget(
           DesignSystemWrapper(

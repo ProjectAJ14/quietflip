@@ -205,7 +205,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel(hexOf(DesignSkinColors.bgPaper)));
     await tester.pump();
     await reveal(tester, find.text(c.customize_meridiem_right));
-    await tester.tap(find.text(c.customize_seconds_cards));
+    await tester.tap(find.text(c.customize_seconds_badge));
     await tester.tap(find.text(c.customize_meridiem_right));
     await tester.pump();
     await reveal(tester, find.text(c.show_date));
@@ -221,9 +221,10 @@ void main() {
     expect(saved.digitColor, DesignSkinColors.amber);
     expect(saved.cardColor, DesignSkinColors.cardPaper);
     expect(saved.groundColor, DesignSkinColors.bgPaper);
-    expect(saved.seconds, SkinSeconds.cards);
+    expect(saved.seconds, SkinSeconds.badge);
     expect(saved.meridiem, SkinMeridiem.right);
-    expect(saved.showDate, isTrue);
+    // Mono shows the date; the switch turned it off.
+    expect(saved.showDate, isFalse);
     // It is in use, and first under Your skins.
     expect(tile('Night shift'), findsNWidgets(2));
     // Every card has the split line: there is no switch for it.
@@ -432,11 +433,12 @@ void main() {
           ),
         )
         .cards;
-    expect(previewCards(), hasLength(2));
-    await reveal(tester, find.text(c.customize_meridiem_right));
-    await tester.tap(find.text(c.customize_seconds_cards));
-    await tester.pump();
+    // Mono shows seconds as cards.
     expect(previewCards(), hasLength(3));
+    await reveal(tester, find.text(c.customize_meridiem_right));
+    await tester.tap(find.text(c.customize_seconds_off));
+    await tester.pump();
+    expect(previewCards(), hasLength(2));
     await close(tester);
   });
 
@@ -599,13 +601,13 @@ void main() {
       final date = DateTime(2026, 9, 30);
       // Tall enough that every tile is built.
       await open(tester, size: const Size(1400, 3000));
-      final mono = c.skin_mono;
-      expect(cardsOf(tester, mono), {'17', '14'});
+      final plain = c.skin_minimal;
+      expect(cardsOf(tester, plain), {'17', '14'});
       final formatted = MaterialLocalizations.of(
         tester.element(find.byType(SkinPicker)),
       ).formatFullDate(date);
       expect(
-        find.descendant(of: tile(mono), matching: find.text(formatted)),
+        find.descendant(of: tile(plain), matching: find.text(formatted)),
         findsNothing,
       );
       final cards = Skins.builtIn().firstWhere(
@@ -622,21 +624,27 @@ void main() {
         findsOne,
       );
       // A skin with the date line shows it on its tile.
-      final dated = Skins.builtIn().firstWhere((k) => k.showDate);
+      final dated = Skins.bold().firstWhere((k) => k.showDate);
       expect(
         find.descendant(of: tile(dated.name), matching: find.text(formatted)),
         findsOne,
       );
-      // Show seconds and Show date do not leak into previews: Mono has
+      // Mono, the default, shows seconds cards and the date.
+      expect(cardsOf(tester, c.skin_mono), {'17', '14', '00'});
+      expect(
+        find.descendant(of: tile(c.skin_mono), matching: find.text(formatted)),
+        findsWidgets,
+      );
+      // Show seconds and Show date do not leak into previews: Minimal has
       // neither, so its tile stays HH MM with no date.
       await settings.update(
         settings.state.copyWith(showSeconds: true, showDate: true),
       );
       await tester.pumpAndSettle();
-      expect(cardsOf(tester, mono), {'17', '14'});
+      expect(cardsOf(tester, plain), {'17', '14'});
       expect(cardsOf(tester, cards.name), {'17', '14', '00'});
       expect(
-        find.descendant(of: tile(mono), matching: find.text(formatted)),
+        find.descendant(of: tile(plain), matching: find.text(formatted)),
         findsNothing,
       );
       expect(

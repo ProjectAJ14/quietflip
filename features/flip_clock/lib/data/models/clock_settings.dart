@@ -62,7 +62,7 @@ class ClockSettings {
   const ClockSettings({
     this.theme = ClockTheme.dark,
     this.use24h,
-    this.showSeconds = false,
+    this.showSeconds = true,
     this.flipSound = false,
     this.alertSound = true,
     this.tickSound = TickSound.classic,
