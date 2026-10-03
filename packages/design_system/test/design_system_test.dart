@@ -22,4 +22,29 @@ void main() {
     expect(built.useMaterial3, isTrue);
     expect(built.colorScheme.primary, isNot(Colors.transparent));
   });
+
+  testWidgets('DesignSystemWrapper adds the Arabic fallback only when asked', (
+    tester,
+  ) async {
+    bool hasArabic(ThemeData theme) =>
+        theme.textTheme.bodyLarge!.fontFamilyFallback?.any(
+          (family) => family.startsWith('NotoSansArabic'),
+        ) ??
+        false;
+    late ThemeData built;
+    Widget wrapper({required bool arabic}) => MaterialApp(
+      home: DesignSystemWrapper(
+        arabic: arabic,
+        builder: (context, theme) {
+          built = theme;
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+
+    await tester.pumpWidget(wrapper(arabic: false));
+    expect(hasArabic(built), isFalse);
+    await tester.pumpWidget(wrapper(arabic: true));
+    expect(hasArabic(built), isTrue);
+  });
 }

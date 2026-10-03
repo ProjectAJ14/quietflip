@@ -125,7 +125,16 @@ void main() {
     await tester.pumpAndSettle();
     MaterialLocalizations material() =>
         MaterialLocalizations.of(tester.element(find.byType(_Copy)));
+    // The Arabic font loads (about 1 MB on web) only while in Arabic.
+    bool arabicFont() =>
+        Theme.of(tester.element(find.byType(_Copy)))
+            .textTheme
+            .bodyLarge!
+            .fontFamilyFallback
+            ?.any((family) => family.startsWith('NotoSansArabic')) ??
+        false;
     expect(find.text('Cancel'), findsOneWidget);
+    expect(arabicFont(), isFalse);
     expect(material().cancelButtonLabel, 'Cancel');
 
     // A const widget rebuilds too: strings are read without a context.
@@ -154,6 +163,7 @@ void main() {
       Directionality.of(tester.element(find.byType(_Copy))),
       TextDirection.rtl,
     );
+    expect(arabicFont(), isTrue);
 
     tester.platformDispatcher.localesTestValue = const [Locale('sv')];
     await tester.pumpAndSettle();
@@ -163,6 +173,7 @@ void main() {
       TextDirection.ltr,
     );
     expect(material().cancelButtonLabel, 'Cancel');
+    expect(arabicFont(), isFalse);
     expect(tester.takeException(), isNull);
   });
 
