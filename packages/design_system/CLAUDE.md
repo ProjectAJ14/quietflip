@@ -28,7 +28,7 @@ Everything, including `Toast`, is exported from
 | `Pressable({child, onTap, onLongPress, semanticsLabel, selected, role, focusRadius})` | widget | The one tap: shrinks on pointer down (no tap delay), fires on release inside the tap slop, moving past the slop (drag off, a scroll) releases without firing; long press; focusable, Enter/Space fire with a `pressIn` press-and-release; keyboard focus draws a 2px `accent` ring outside the child at `focusRadius` (default `sm`); click cursor on hover, no wash; null `onTap` = disabled (no press, not focusable, `enabled: false`); semantics `button` (or `role`, which also speaks `selected: false`), label, tap/long-press actions, `selected`; reduced motion dips opacity, no scale; nested, only the innermost enabled one under the finger presses (a tile around its Customize button stays still) |
 | `AppButton.text` / `.filled` / `.outlined({label, onPressed, icon, semanticsLabel})`, `AppButton.text(danger:)`, `AppButton.icon({icon, tooltip, onPressed})` | widget | Every button: a `Pressable` around a `ShapeDecoration` box with the Material 3 values the old button themes gave (filled: `primary` fill, `onPrimary` text; text and outlined: `primary` text, outlined adds a 1.5px `primary` side in every state; icon: `onSurfaceVariant`, 24px glyph, 8 padding, 44 square, `forHeight(44, role: sm)`; disabled `onSurface` at 38% text and 12% fill), `labelLarge` w600, Material's text-scaled padding and icon gap (18px icon), `sm` corner, min 64 x 44 (`DesignSize.cornerButton`). `danger` colours a text button `DesignColors.danger`; `semanticsLabel` replaces the spoken label; the icon variant's `tooltip` is its tooltip and spoken name |
 | `SpringCurve`, `DesignMotion.islandCurve` | curve | A `SpringDescription` played over a `Duration` as a `Curve` (overshoots, ends at exactly 1); `islandCurve` is the island spring over `islandMorph` |
-| `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; the ten bundled digit faces (family, weight, `style()`, `assetName`) |
+| `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; the ten bundled digit faces (family, weight, `style()`, `assetName`, `digitCentre`: the digits' vertical centre above the baseline in em, measured from each `.ttf`'s `0`-`9` glyph bounds, so a caller can centre digits on a line by baseline whatever the leading) |
 | `MaterialTheme` | generated | Color schemes (light, dark, contrast variants) |
 | `NavigationIcons` | constants | Every navigation icon; one edit re-skins the shell |
 | `Toast` | static API | `notification`, `error`, `success`, `warning` |
@@ -138,7 +138,7 @@ Everything, including `Toast`, is exported from
 | File | Covers |
 |---|---|
 | `design_system_test.dart` | Wrapper hands the builder a themed context |
-| `fonts_test.dart` | Every Geist weight and `DisplayFace` has its `.ttf` and OFL licence in `assets/google_fonts/`, declared in `pubspec.yaml` |
+| `fonts_test.dart` | Every Geist weight and `DisplayFace` has its `.ttf` and OFL licence in `assets/google_fonts/`, declared in `pubspec.yaml`; every face has a `digitCentre` in 0.25..0.5 |
 | `shape_test.dart` | `DesignShape` ratios at 0/14/24, `forHeight` cap, value semantics/lerp, `of` fallback, every Material component shape at corner 0/14/24 |
 | `components_test.dart` | Mono themes and tokens, Geist text styles, loaders, error view/screen, asset fallbacks, network image, wrapper brightness + loader, string helpers |
 | `pressable_test.dart` | Scale 0.96 held / 1.0 released, 0.92 for a 44px child, press shows inside the tap delay, fires on up not down, drag-off and scroll release without firing, long press, a second finger, Enter and Space, dispose mid keyboard press, focus ring (2px accent at `focusRadius`, `sm` default), click cursor with no wash, disabled ignores press/keys/focus, disabling mid-press, reduced-motion opacity dip, semantics (button, label, actions, selected; a `role` replaces the button flag) |
@@ -159,6 +159,8 @@ Run `dart run melos exec --scope=design_system -- flutter test`. Keep
   fetched at launch. Changing `bodyFont` / `displayFont`, adding a face, or
   using another weight means bundling that family's `<Family>-<Weight>.ttf`
   (google_fonts' file name) there too; `fonts_test.dart` fails otherwise.
+  A new face also needs its `digitCentre`: the middle of the glyph bounds
+  of `0`-`9` over units-per-em (`fontTools` `BoundsPen` over the `.ttf`).
 - google_fonts renders the nearest bundled weight: the `title` token's 650
   draws Geist SemiBold.
 - With a `face`, all text is one weight (the face's only bundled file):

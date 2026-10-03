@@ -5,7 +5,9 @@ import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 const mono = Skin(id: 'mono', name: 'Mono');
 
@@ -103,6 +105,57 @@ void main() {
     expect(tester.getSize(light.first).height, FlipDisplay.seamHeight / 2);
     // No shade on a card at rest.
     expect(shaded(tester), isEmpty);
+  });
+
+  testWidgets('the digits centre on the axle in every face, shrunk or not', (
+    tester,
+  ) async {
+    for (final face in DisplayFace.values) {
+      // '1' fits the card; '12' is wider than it in the test font and
+      // shrinks.
+      for (final value in ['1', '12']) {
+        await tester.pumpWidget(
+          host(
+            SizedBox(
+              width: 400,
+              height: 200,
+              child: display([value], skin: mono.copyWith(face: face)),
+            ),
+          ),
+        );
+        // Real face metrics, not the test font's: the leading differs.
+        await tester.runAsync(GoogleFonts.pendingFonts);
+        await tester.pumpAndSettle();
+        final card = tester.getRect(
+          find.byWidgetPredicate((w) => '${w.runtimeType}' == '_FlipCard'),
+        );
+        final halves = find.text(value);
+        expect(halves, findsNWidgets(2));
+        for (var i = 0; i < 2; i++) {
+          final text = tester.widget<Text>(halves.at(i));
+          final paragraph = tester.renderObject<RenderParagraph>(halves.at(i));
+          // The paragraph only answers baseline queries during layout; a
+          // painter over the same span, in the same font, gives the same
+          // distance.
+          final painter = TextPainter(
+            text: paragraph.text,
+            textDirection: TextDirection.ltr,
+          )..layout();
+          addTearDown(painter.dispose);
+          final baseline = painter.computeDistanceToActualBaseline(
+            TextBaseline.alphabetic,
+          );
+          final centre = paragraph.localToGlobal(
+            Offset(0, baseline - face.digitCentre * text.style!.fontSize!),
+          );
+          expect(
+            centre.dy,
+            closeTo(card.center.dy, 0.5),
+            reason: '${face.name} $value half $i',
+          );
+        }
+      }
+    }
   });
 
   testWidgets('every card has two hinge pins on the split line, half outside', (

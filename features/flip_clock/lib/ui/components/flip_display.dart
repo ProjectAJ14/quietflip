@@ -361,6 +361,7 @@ class _FlipCardState extends State<_FlipCard>
       skin: skin,
       width: widget.width,
       height: halfHeight,
+      cardHeight: widget.height,
       fontSize: widget.height * FlipDisplay.digitScale,
       radius: widget.radius,
       shade: shade,
@@ -578,6 +579,7 @@ class _Half extends StatelessWidget {
     required this.skin,
     required this.width,
     required this.height,
+    required this.cardHeight,
     required this.fontSize,
     required this.radius,
     this.shade = 0,
@@ -589,6 +591,9 @@ class _Half extends StatelessWidget {
   final Skin skin;
   final double width;
   final double height;
+
+  /// The whole card's height; the axle is at half of it.
+  final double cardHeight;
   final double fontSize;
   final double radius;
 
@@ -628,23 +633,33 @@ class _Half extends StatelessWidget {
                   : null,
             )
           : null,
+      // A box the full card's height, so both halves share one axle.
       child: OverflowBox(
-        maxHeight: height * 2,
+        maxHeight: cardHeight,
         alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
         child: SizedBox(
-          height: height * 2,
-          child: Center(
-            // Wide faces shrink to the card instead of clipping sideways.
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                maxLines: 1,
-                softWrap: false,
-                textScaler: TextScaler.noScaling,
-                style: skin.face.style(
-                  color: skin.digitColor,
-                  fontSize: fontSize,
+          width: width,
+          height: cardHeight,
+          // Wide faces shrink to the card instead of clipping sideways,
+          // about the axle, so the digits stay centred on it.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              height: cardHeight,
+              // Placed by baseline, not by line box: the digits' centre
+              // lands on the axle whatever the face's leading.
+              child: Baseline(
+                baseline: cardHeight / 2 + skin.face.digitCentre * fontSize,
+                baselineType: TextBaseline.alphabetic,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  softWrap: false,
+                  textScaler: TextScaler.noScaling,
+                  style: skin.face.style(
+                    color: skin.digitColor,
+                    fontSize: fontSize,
+                  ),
                 ),
               ),
             ),
