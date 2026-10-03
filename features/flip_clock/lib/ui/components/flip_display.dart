@@ -10,9 +10,10 @@ import 'package:flutter/material.dart';
 /// [cards] (usually a pair of digits). Every card is shaped as on the app
 /// icon ([FlipCardGeometry]): a crack across the middle and a hinge pin in a
 /// notch at each end, inside the card edge. Only cards whose value changed
-/// fold: one turn about the axle over [flipDuration], the top half falling
-/// then the bottom half landing, shaded as they tip; the new value is
-/// authoritative at once. Reduced motion swaps instantly.
+/// fold like a real split-flap ([turnAt]): the top flap falls under gravity
+/// about the axle, between the pins, and slaps onto the bottom half with a
+/// small bounce, shaded as it turns from the light and lit as it lands; the
+/// new value is authoritative at once. Reduced motion swaps instantly.
 ///
 /// Card height fills the space given, times [size]; digits are
 /// [digitScale] x card height and never text-scaled, so the display never
@@ -65,21 +66,33 @@ class FlipDisplay extends StatefulWidget {
   /// the 15% band stops flicker near square windows and during a resize.
   static const double stackGain = 1.15;
 
-  /// One card flip, top fold then bottom fold, 50/50.
+  /// One card flip: the fall, then the bounce.
   static const Duration flipDuration = DesignMotion.flip;
 
-  /// The flip's one curve, from the top half upright (0) to the bottom half
-  /// landed (1): the flap speeds up as it falls and slows as it lands, with
-  /// no change of speed where the halves hand over.
-  static const Curve flipCurve = Curves.easeInOut;
+  /// The fall from upright to landed, the first part of [flipDuration].
+  static const Duration fallDuration = Duration(milliseconds: 300);
+
+  /// How far the landed flap lifts again on the bounce, in radians (3.4
+  /// degrees): a slap, not a wobble, at one flip a second.
+  static const double bounce = 0.06;
+
+  /// The flap's angle at [t] (0..1) of a flip: 0 upright, pi/2 edge-on, pi
+  /// landed. It falls under gravity over [fallDuration], then lifts by
+  /// [bounce] and settles. The fall is an exact u squared (constant
+  /// acceleration), not `Curves.easeIn`, whose cubic is only solved to
+  /// 0.001, so its speed wobbles from frame to frame.
+  static double turnAt(double t) {
+    final fall = fallDuration.inMicroseconds / flipDuration.inMicroseconds;
+    if (t <= fall) return math.pow(t / fall, 2) * math.pi;
+    return math.pi - bounce * math.sin(math.pi * (t - fall) / (1 - fall));
+  }
 
   /// Perspective strength times the card height, so every card size bends
   /// the same (0.002 on a 200px card).
   static const double perspective = 0.4;
 
-  /// Darkest ground-colour shade on a flap edge-on, and on the shadow it
-  /// casts on the half below.
-  static const double maxShade = 0.35;
+  /// Strongest shadow the falling flap casts on the half below (edge-on).
+  static const double castShadow = 0.45;
 
   /// Digit size relative to the card height.
   static const double digitScale = 0.78;
@@ -299,7 +312,8 @@ class _FlipCardState extends State<_FlipCard>
     if (reducedMotion(context)) {
       _previous = oldWidget.value;
       _fold.value = 1;
-    } else if (!_fold.isAnimating || _fold.value >= 0.5) {
+    } else if (!_fold.isAnimating ||
+        FlipDisplay.turnAt(_fold.value) >= math.pi / 2) {
       // Still or landing: finish that flip at once and fall again from the
       // value it showed, so the top half never jumps. While the top half is
       // still falling it keeps falling and lands on the newest value,
@@ -326,6 +340,7 @@ class _FlipCardState extends State<_FlipCard>
       String value, {
       required bool top,
       double shade = 0,
+      double light = 0,
       double shadow = 0,
     }) => _Half(
       value: value,
@@ -334,6 +349,7 @@ class _FlipCardState extends State<_FlipCard>
       geometry: geometry,
       fontSize: widget.height * FlipDisplay.digitScale,
       shade: shade,
+      light: light,
       shadow: shadow,
     );
 
@@ -352,15 +368,11 @@ class _FlipCardState extends State<_FlipCard>
               animation: _fold,
               builder: (context, _) {
                 final folding = _fold.value < 1;
-                // One turn about the axle: 0 upright, pi/2 edge-on, pi
-                // landed.
-                final turn =
-                    FlipDisplay.flipCurve.transform(_fold.value) * math.pi;
+                final turn = FlipDisplay.turnAt(_fold.value);
                 final falling = turn < math.pi / 2;
-                // Darkest edge-on, for both flaps and the shadow they cast.
-                final shade = folding
-                    ? FlipDisplay.maxShade * math.sin(turn)
-                    : 0.0;
+                // Strongest edge-on: the falling flap turns its face from
+                // the light, the landing flap turns its face up into it.
+                final amount = folding ? math.sin(turn) : 0.0;
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -371,8 +383,8 @@ class _FlipCardState extends State<_FlipCard>
                           _Fold(
                             angle: turn,
                             top: true,
-                            height: widget.height,
-                            child: half(_previous, top: true, shade: shade),
+                            axisY: geometry.axisY,
+                            child: half(_previous, top: true, shade: amount),
                           ),
                       ],
                     ),
@@ -381,14 +393,18 @@ class _FlipCardState extends State<_FlipCard>
                         half(
                           folding ? _previous : widget.value,
                           top: false,
-                          shadow: shade,
+                          shadow: falling ? FlipDisplay.castShadow * amount : 0,
                         ),
                         if (folding && !falling)
                           _Fold(
                             angle: math.pi - turn,
                             top: false,
-                            height: widget.height,
-                            child: half(widget.value, top: false, shade: shade),
+                            axisY: geometry.axisY,
+                            child: half(
+                              widget.value,
+                              top: false,
+                              light: amount,
+                            ),
                           ),
                       ],
                     ),
@@ -407,28 +423,31 @@ class _FlipCardState extends State<_FlipCard>
   }
 }
 
-/// The moving flap: the top half falls about its bottom edge, then the
-/// bottom half lands about its top edge; both edges are the axle. Perspective
-/// follows the card [height].
+/// The moving flap, turning about the axle at [axisY] of the card: the top
+/// half's bottom edge, the bottom half's top edge, centred across so the
+/// perspective is symmetric. Perspective follows the card height.
 class _Fold extends StatelessWidget {
   const _Fold({
     required this.angle,
     required this.top,
-    required this.height,
+    required this.axisY,
     required this.child,
   });
 
   final double angle;
   final bool top;
-  final double height;
+  final double axisY;
   final Widget child;
 
   @override
   Widget build(BuildContext context) => Transform(
     key: FlipDisplay.flapKey,
-    alignment: top ? Alignment.bottomCenter : Alignment.topCenter,
+    // In the half's own coordinates: the top half spans 0..axisY, the
+    // bottom half starts at the axle.
+    alignment: Alignment.topCenter,
+    origin: Offset(0, top ? axisY : 0),
     transform: Matrix4.identity()
-      ..setEntry(3, 2, height > 0 ? FlipDisplay.perspective / height : 0)
+      ..setEntry(3, 2, axisY > 0 ? FlipDisplay.perspective / (2 * axisY) : 0)
       ..rotateX(top ? -angle : angle),
     child: child,
   );
@@ -530,11 +549,28 @@ class _FacePainter extends CustomPainter {
     required this.geometry,
     required this.card,
     required this.top,
+    this.shade = 0,
+    this.light = 0,
   });
 
   final FlipCardGeometry geometry;
   final Color card;
   final bool top;
+
+  /// How far the fill moves toward [shadeTarget]: a flap turned away from
+  /// the light.
+  final double shade;
+
+  /// How far the fill moves toward [lightTarget]: a flap facing up into it.
+  final double light;
+
+  Color get shadeTarget => _shadeOf(card, 0.5);
+  Color get lightTarget => _lightOf(card, 0.12);
+
+  /// [c] on a flap turned [shade] of the way from the light: the digits
+  /// darken with the face. The light only lifts the face; it would grey
+  /// light digits.
+  Color shaded(Color c) => Color.lerp(c, shadeTarget, shade)!;
 
   /// Rim reach down each side, relative to the card height.
   static const double rimReach = 0.25;
@@ -543,9 +579,13 @@ class _FacePainter extends CustomPainter {
   LinearGradient get fill => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: top
-        ? [_lightOf(card, 0.10), _shadeOf(card, 0.12)]
-        : [card, _shadeOf(card, 0.18)],
+    colors: [
+      for (final c
+          in top
+              ? [_lightOf(card, 0.10), _shadeOf(card, 0.12)]
+              : [card, _shadeOf(card, 0.18)])
+        Color.lerp(shaded(c), lightTarget, light)!,
+    ],
   );
 
   @override
@@ -577,6 +617,8 @@ class _FacePainter extends CustomPainter {
   bool shouldRepaint(_FacePainter old) =>
       old.card != card ||
       old.top != top ||
+      old.shade != shade ||
+      old.light != light ||
       old.geometry.size != geometry.size ||
       old.geometry.radius != geometry.radius;
 }
@@ -609,6 +651,7 @@ class _Half extends StatelessWidget {
     required this.geometry,
     required this.fontSize,
     this.shade = 0,
+    this.light = 0,
     this.shadow = 0,
   });
 
@@ -620,16 +663,24 @@ class _Half extends StatelessWidget {
   final FlipCardGeometry geometry;
   final double fontSize;
 
-  /// Ground-colour alpha over the whole half (a flap tipping away).
+  /// How far the face moves toward its shade (a flap turned from the
+  /// light) and toward its light (a flap facing up into it), 0..1.
   final double shade;
+  final double light;
 
-  /// Ground-colour alpha at the top edge, fading down (the shadow a flap
+  /// Shadow alpha at the top edge, fading down (the shadow the falling flap
   /// casts on the bottom half).
   final double shadow;
 
   @override
   Widget build(BuildContext context) {
-    final ground = skin.groundColor;
+    final face = _FacePainter(
+      geometry: geometry,
+      card: skin.cardColor,
+      top: top,
+      shade: shade,
+      light: light,
+    );
     final width = geometry.size.width;
     final cardHeight = geometry.size.height;
     // The path owns the shape, so the flap carries the notches too.
@@ -638,28 +689,22 @@ class _Half extends StatelessWidget {
       child: Container(
         width: width,
         height: geometry.axisY,
-        foregroundDecoration: shade > 0 || shadow > 0
+        // Over the digits too: a shadow falls on everything under it.
+        foregroundDecoration: shadow > 0
             ? BoxDecoration(
-                color: shade > 0 ? ground.withValues(alpha: shade) : null,
-                gradient: shadow > 0
-                    ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          ground.withValues(alpha: shadow),
-                          ground.withValues(alpha: 0),
-                        ],
-                        stops: const [0, 0.6],
-                      )
-                    : null,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    face.shadeTarget.withValues(alpha: shadow),
+                    face.shadeTarget.withValues(alpha: 0),
+                  ],
+                  stops: const [0, 0.6],
+                ),
               )
             : null,
         child: CustomPaint(
-          painter: _FacePainter(
-            geometry: geometry,
-            card: skin.cardColor,
-            top: top,
-          ),
+          painter: face,
           // A box the full card's height, so both halves share one axle.
           child: OverflowBox(
             maxHeight: cardHeight,
@@ -684,7 +729,7 @@ class _Half extends StatelessWidget {
                       softWrap: false,
                       textScaler: TextScaler.noScaling,
                       style: skin.face.style(
-                        color: skin.digitColor,
+                        color: face.shaded(skin.digitColor),
                         fontSize: fontSize,
                       ),
                     ),

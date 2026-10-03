@@ -64,8 +64,18 @@ List<BoxDecoration> shaded(WidgetTester tester) => tester
     .whereType<BoxDecoration>()
     .toList();
 
-/// The fold's angle at [t] of a flip: 0 upright, pi landed.
-double turnAt(double t) => FlipDisplay.flipCurve.transform(t) * math.pi;
+/// The face painter fill of the flap (the half that turns).
+LinearGradient flapFill(WidgetTester tester) {
+  final face = find.descendant(
+    of: find.byKey(FlipDisplay.flapKey),
+    matching: find.byWidgetPredicate(
+      (w) => w is CustomPaint && '${w.painter.runtimeType}' == '_FacePainter',
+    ),
+  );
+  // ignore: avoid_dynamic_calls
+  return (tester.widget<CustomPaint>(face).painter! as dynamic).fill
+      as LinearGradient;
+}
 
 /// English markers, as `MaterialLocalizations` gives them in English.
 const en = (am: 'AM', pm: 'PM');
@@ -357,7 +367,34 @@ void main() {
     expect(find.byKey(FlipDisplay.hingeKey), findsOneWidget);
   });
 
-  testWidgets('the flap turns once about the pins, shaded as it tips', (
+  test('the flap falls under gravity, then bounces once, barely', () {
+    const fallEnd = 300 / 360;
+    expect(FlipDisplay.turnAt(0), 0);
+    expect(FlipDisplay.turnAt(fallEnd), math.pi);
+    // Speeds up all the way down: increasing, and each step bigger.
+    var last = 0.0;
+    var step = 0.0;
+    for (var i = 1; i <= 60; i++) {
+      final turn = FlipDisplay.turnAt(fallEnd * i / 60);
+      expect(turn - last, greaterThan(0));
+      expect(turn - last, greaterThanOrEqualTo(step - 1e-9), reason: '$i');
+      step = turn - last;
+      last = turn;
+    }
+    // The bounce lifts 0.06 rad at its middle and settles flat.
+    for (var i = 0; i <= 60; i++) {
+      final t = fallEnd + (1 - fallEnd) * i / 60;
+      expect(
+        FlipDisplay.turnAt(t),
+        greaterThanOrEqualTo(math.pi - 0.06 - 1e-9),
+      );
+      expect(FlipDisplay.turnAt(t), lessThanOrEqualTo(math.pi));
+    }
+    expect(FlipDisplay.turnAt(330 / 360), closeTo(math.pi - 0.06, 1e-12));
+    expect(FlipDisplay.turnAt(1), math.pi);
+  });
+
+  testWidgets('both flaps turn about the axle, shaded and lit as they turn', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -366,23 +403,21 @@ void main() {
     await tester.pumpWidget(
       host(SizedBox(width: 200, height: 160, child: display(['02']))),
     );
+    const card = DesignSkinColors.cardInk;
     final height = tester.getSize(cards.first).height;
     final ms = FlipDisplay.flipDuration.inMilliseconds;
     var elapsed = 0;
-    for (final t in const [0.25, 0.75]) {
-      final at = (ms * t).round();
+    // Mid-fall, mid-landing, and the top of the bounce.
+    for (final at in const [90, 270, 330]) {
       await tester.pump(Duration(milliseconds: at - elapsed));
       elapsed = at;
-      final turn = turnAt(at / ms);
-      final shade = FlipDisplay.maxShade * math.sin(turn);
+      final turn = FlipDisplay.turnAt(at / ms);
+      final falling = turn < math.pi / 2;
       final fold = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
-      final falling = t < 0.5;
-      // The top half falls about its bottom edge; the bottom lands about
-      // its top edge.
-      expect(
-        fold.alignment,
-        falling ? Alignment.bottomCenter : Alignment.topCenter,
-      );
+      // The axle: the top flap's bottom edge, the bottom flap's top edge,
+      // centred across so the perspective stays symmetric.
+      expect(fold.alignment, Alignment.topCenter);
+      expect(fold.origin, Offset(0, falling ? height / 2 : 0));
       // Perspective follows the card height (the rotation scales it by cos).
       final angle = falling ? turn : math.pi - turn;
       expect(
@@ -390,27 +425,53 @@ void main() {
         closeTo(FlipDisplay.perspective / height * math.cos(angle), 1e-9),
       );
       // The flap shows the old value while falling and the new one landing.
-      expect(
-        find.descendant(
-          of: find.byKey(FlipDisplay.flapKey),
-          matching: find.text(falling ? '01' : '02'),
-        ),
-        findsOneWidget,
+      final digits = find.descendant(
+        of: find.byKey(FlipDisplay.flapKey),
+        matching: find.text(falling ? '01' : '02'),
       );
-      // The flap darkens edge-on and casts a fading shadow on the bottom half.
-      final decorations = shaded(tester);
-      expect(decorations, hasLength(2));
-      final flat = decorations.firstWhere((d) => d.color != null);
-      expect(flat.color!.a, closeTo(shade, 0.01));
-      final cast = decorations.firstWhere((d) => d.gradient != null);
-      final colors = (cast.gradient! as LinearGradient).colors;
-      expect(colors.first.a, closeTo(shade, 0.01));
-      expect(colors.last.a, 0);
+      expect(digits, findsOneWidget);
+      final amount = math.sin(turn);
+      final fill = flapFill(tester).colors.first;
+      final shadow = shaded(tester);
+      if (falling) {
+        // Turning its face away from the light: toward shadeOf(card, 0.5),
+        // digits included; and a shadow cast on the half below.
+        final target = shadeOf(card, 0.5);
+        expect(
+          fill,
+          isSameColorAs(Color.lerp(lightOf(card, 0.10), target, amount)!),
+        );
+        expect(
+          fill.computeLuminance(),
+          lessThan(lightOf(card, 0.10).computeLuminance()),
+        );
+        expect(
+          tester.widget<Text>(digits).style!.color,
+          isSameColorAs(Color.lerp(DesignSkinColors.mono, target, amount)!),
+        );
+        expect(shadow, hasLength(1));
+        final colors = (shadow.single.gradient! as LinearGradient).colors;
+        expect(
+          colors.first,
+          isSameColorAs(target.withValues(alpha: 0.45 * amount)),
+        );
+        expect(colors.last.a, 0);
+      } else {
+        // Its face points up into the light: toward lightOf(card, 0.12).
+        final target = lightOf(card, 0.12);
+        expect(fill, isSameColorAs(Color.lerp(card, target, amount)!));
+        expect(fill.computeLuminance(), greaterThan(card.computeLuminance()));
+        // The digits keep their colour: lighting would grey them.
+        expect(tester.widget<Text>(digits).style!.color, DesignSkinColors.mono);
+        expect(shadow, isEmpty);
+      }
     }
     await tester.pumpAndSettle();
     expect(find.byKey(FlipDisplay.flapKey), findsNothing);
     expect(shaded(tester), isEmpty);
     expect(find.text('01'), findsNothing);
+    // At rest every half is plain.
+    expect(cardFace(card), findsNWidgets(2));
   });
 
   testWidgets('a change mid-fall keeps falling; mid-landing falls again', (
@@ -443,7 +504,7 @@ void main() {
     await tester.pumpWidget(show('05'));
     await tester.pump(const Duration(milliseconds: 10));
     final fold = tester.widget<Transform>(find.byKey(FlipDisplay.flapKey));
-    expect(fold.alignment, Alignment.bottomCenter);
+    expect(fold.origin, Offset(0, tester.getSize(cards.first).height / 2));
     expect(
       find.descendant(
         of: find.byKey(FlipDisplay.flapKey),
