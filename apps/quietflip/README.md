@@ -26,7 +26,9 @@ Then from this folder:
 `flutter build web --release --no-web-resources-cdn`, then
 `firebase deploy --only hosting --project quietflip`. Every file is served
 `no-cache` (the browser revalidates and gets a cheap 304 when nothing changed),
-so a returning visitor gets a new release on the next load.
+so a returning visitor gets a new release on the next load. CI does this for
+you: once its checks pass, a push to `main` goes live and a pull request gets a
+preview link (see the root `CLAUDE.md`).
 
 App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,

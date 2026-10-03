@@ -53,7 +53,16 @@ firebase deploy --only firestore:rules --project quietflip # after editing fires
 The web app is served by Firebase Hosting at `https://quietflip.web.app`
 (`hosting` in `firebase.json`: `build/web`, every path rewritten to
 `index.html` so deep links load, and `Cache-Control: no-cache` on every file
-because Flutter's output names are not content-hashed). Deploy by hand:
+because Flutter's output names are not content-hashed). CI deploys it: the
+`Deploy` job in `.github/workflows/quality.yml` runs after Lint, Tests and Web
+build pass, publishes pull requests to a 7-day preview channel (link commented
+on the PR) and pushes to `main` to the live site, through
+`FirebaseExtended/action-hosting-deploy` with the
+`FIREBASE_SERVICE_ACCOUNT_QUIETFLIP` repository secret (a service-account JSON
+key; create it with `firebase init hosting:github` in `apps/quietflip`, never
+commit it). Preview URLs (`quietflip--<channel>.web.app`) are not Authorized
+domains, so sign-in fails there unless added in Authentication > Settings.
+Deploy by hand:
 
 ```sh
 cd apps/quietflip

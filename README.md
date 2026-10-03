@@ -168,7 +168,7 @@ that generated fixture before retrying.
 Coverage is not a proof of correctness, branch completeness, security, or native
 plugin compatibility. Keep assertions about behavior, and add device integration
 tests for your Firebase project, native permissions, provider sign-in and backend.
-The GitHub Actions workflow (`CI`) runs three parallel jobs: Lint, Tests (100% coverage) and Web build. It runs on pull requests and pushes to `main`; a newer push cancels the older run, and changes that only touch `.md` files skip it.
+The GitHub Actions workflow (`CI`) runs three parallel jobs: Lint, Tests (100% coverage) and Web build. It runs on pull requests and pushes to `main`; a newer push cancels the older run, and changes that only touch `.md` files skip it. When all three pass, a fourth job, Deploy, publishes the Web build to Firebase Hosting: a pull request gets a 7-day preview channel whose link is commented on the PR, and a push to `main` goes live at `https://quietflip.web.app`. It needs the `FIREBASE_SERVICE_ACCOUNT_QUIETFLIP` repository secret; pull requests from forks skip it.
 
 ### Authentication and demo mode
 
