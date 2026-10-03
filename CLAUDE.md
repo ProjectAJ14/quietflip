@@ -60,8 +60,9 @@ on the PR) and pushes to `main` to the live site, through
 `FirebaseExtended/action-hosting-deploy` with the
 `FIREBASE_SERVICE_ACCOUNT_QUIETFLIP` repository secret (a service-account JSON
 key; create it with `firebase init hosting:github` in `apps/quietflip`, never
-commit it). Preview URLs (`quietflip--<channel>.web.app`) are not Authorized
-domains, so sign-in fails there unless added in Authentication > Settings.
+commit it). That command grants the account Firebase Authentication Admin
+and Service Usage Consumer, so each deploy adds its preview URL
+(`quietflip--<channel>.web.app`) to Authorized domains and sign-in works there.
 Deploy by hand:
 
 ```sh
