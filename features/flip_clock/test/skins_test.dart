@@ -132,10 +132,11 @@ void main() {
       );
     });
 
-    test('Classic: Paper and Cyan show a badge, Violet and Amber cards', () {
+    test('Classic: Paper and Cyan show a badge, Mono, Violet and Amber '
+        'cards', () {
       final seconds = {for (final s in Skins.classic()) s.id: s.seconds};
       expect(seconds, {
-        Skins.monoId: SkinSeconds.off,
+        Skins.monoId: SkinSeconds.cards,
         'paper': SkinSeconds.badge,
         'rose': SkinSeconds.off,
         'violet': SkinSeconds.cards,
@@ -170,6 +171,10 @@ void main() {
       expect(mono.cardColor, DesignSkinColors.cardInk);
       expect(mono.groundColor, const Color(0xff000000));
       expect(mono.face, DisplayFace.barlowCondensed);
+      // The default layout: seconds as cards, the date, no AM/PM.
+      expect(mono.seconds, SkinSeconds.cards);
+      expect(mono.meridiem, SkinMeridiem.hidden);
+      expect(mono.showDate, isTrue);
     });
 
     test('every built-in skin passes 4.5:1 digits on card', () {
@@ -277,7 +282,7 @@ void main() {
       expect(c.state.showSeconds, isTrue);
       await c.selectSkin('desk');
       expect(c.state.showSeconds, isTrue);
-      await c.selectSkin(Skins.monoId);
+      await c.selectSkin('minimal');
       expect(c.state.showSeconds, isFalse);
       await c.selectSkin('paper');
       expect(c.state.showSeconds, isTrue);
@@ -286,25 +291,27 @@ void main() {
       await c.selectSkin('violet');
       expect(c.state.showSeconds, isTrue);
       await c.selectSkin(Skins.monoId);
-      expect(c.state.showSeconds, isFalse);
-      // The user can still toggle it after.
-      await c.update(c.state.copyWith(showSeconds: true));
-      expect(c.state.skinId, Skins.monoId);
       expect(c.state.showSeconds, isTrue);
-      await c.selectSkin('gone');
+      // The user can still toggle it after.
+      await c.update(c.state.copyWith(showSeconds: false));
+      expect(c.state.skinId, Skins.monoId);
       expect(c.state.showSeconds, isFalse);
+      await c.selectSkin('rose');
+      // An unknown id is Mono, which shows seconds.
+      await c.selectSkin('gone');
+      expect(c.state.showSeconds, isTrue);
     });
 
     test('saving sets Show seconds from the skin; custom skins are never '
         'themed', () async {
       final mono = Skins.classic().first;
-      await c.saveSkin(mono.copyWith(id: '', seconds: SkinSeconds.cards));
-      expect(c.state.showSeconds, isTrue);
+      await c.saveSkin(mono.copyWith(id: '', seconds: SkinSeconds.off));
+      expect(c.state.showSeconds, isFalse);
       expect(c.state.customSkins.single.themed, isFalse);
       await c.saveSkin(c.state.customSkins.single.copyWith(themed: true));
       expect(c.state.customSkins.single.themed, isFalse);
       await c.saveSkin(mono.copyWith(id: ''));
-      expect(c.state.showSeconds, isFalse);
+      expect(c.state.showSeconds, isTrue);
     });
 
     test('saving a built-in adds a copy first and selects it', () async {
