@@ -1,7 +1,7 @@
 # device_services
 
 Platform adapters for QuietFlip behind small contracts: `FullScreenController`,
-`ScreenWake`, `OrientationLock`, `ScreenBrightness`, `LocalAlerts`, `SoundPlayer`, `KeyValueStore`. Call `init()` after
+`ScreenWake`, `OrientationLock` (Android and iPhone; iPadOS ignores the lock), `ScreenBrightness`, `LocalAlerts`, `SoundPlayer`, `KeyValueStore`. Call `init()` after
 `core.init()`. Bundled sounds live in `assets/sounds/`: five ticks (`TickSound`,
 played with `playTick` from a preloaded pool per sound; `warmTick` loads one
 ahead of its first tick) and five looping alarms (`AlarmSound`, `playAlarm` /

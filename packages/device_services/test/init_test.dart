@@ -43,9 +43,11 @@ void main() {
     BrowserFullScreen? browser,
     bool Function()? wakeCalled,
     Future<void> Function(List<DeviceOrientation>)? orientations,
+    Future<bool> Function()? isIPad,
     List<String>? brightness,
   }) => init(
     orientations: orientations ?? (_) async {},
+    isIPad: isIPad ?? () async => false,
     readBrightness: () async {
       brightness?.add('read');
       return 0.5;
@@ -104,6 +106,64 @@ void main() {
       di.register<Logger>(logger);
     }
     expect(applied, hasLength(2));
+  });
+
+  test('orientation lock is unsupported on iPad', () async {
+    var checks = 0;
+    final applied = <List<DeviceOrientation>>[];
+    await run(
+      platform: TargetPlatform.iOS,
+      isIPad: () async {
+        checks++;
+        return true;
+      },
+      orientations: (o) async => applied.add(o),
+    );
+    final lock = di.get<OrientationLock>();
+    expect(lock.supported, isFalse);
+    await lock.set(ScreenOrientation.landscape);
+    expect(applied, isEmpty);
+    expect(checks, 1);
+  });
+
+  test('the iPad check runs only on native iOS', () async {
+    for (final (web, platform) in [
+      (false, TargetPlatform.android),
+      (true, TargetPlatform.iOS),
+    ]) {
+      await run(
+        isWeb: web,
+        platform: platform,
+        isIPad: () => fail('checked on $platform web=$web'),
+      );
+      await di.reset();
+      di.register<Logger>(logger);
+    }
+  });
+
+  test('a failing iPad check is logged and keeps the lock', () async {
+    await run(
+      platform: TargetPlatform.iOS,
+      isIPad: () => Future.error(PlatformException(code: 'no')),
+    );
+    expect(di.get<OrientationLock>().supported, isTrue);
+    expect(logger.errors, hasLength(1));
+  });
+
+  test('the default iPad check reads the device model', () async {
+    // No native device_info side in tests: the lookup fails, is logged and
+    // the lock stays supported.
+    await init(
+      platform: TargetPlatform.iOS,
+      preferences: _MockPreferences(),
+      audioPlayer: () {
+        final player = _MockPlayer();
+        when(player.dispose).thenAnswer((_) async {});
+        return player;
+      },
+    );
+    expect(di.get<OrientationLock>().supported, isTrue);
+    expect(logger.errors, hasLength(1));
   });
 
   test('screen brightness is supported only on Android and iOS', () async {

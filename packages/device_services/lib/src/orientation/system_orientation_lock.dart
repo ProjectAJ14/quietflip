@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 
 /// [OrientationLock] over `SystemChrome.setPreferredOrientations`.
 ///
-/// `init()` makes it [supported] only on Android and iOS; elsewhere [set] is
-/// a no-op.
+/// `init()` makes it [supported] only on Android and iPhone (iPadOS ignores
+/// the lock while the app supports multitasking); elsewhere [set] is a no-op.
 class SystemOrientationLock implements OrientationLock {
   SystemOrientationLock({
     required Logger logger,
