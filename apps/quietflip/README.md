@@ -34,6 +34,23 @@ App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
 because the only encryption is Firebase's TLS and sign-in, which is exempt.
 
+## Store screenshots
+
+Every store image (App Store iPhone and iPad, Mac App Store, Google Play
+phone, 7" and 10" tablets and feature graphic, Microsoft Store, and the web
+`og:image`) in all 14 languages comes from the app itself:
+
+```sh
+dart run tool/fetch_store_fonts.dart     # from the repository root, once
+cd apps/quietflip && flutter test store_screenshots/
+```
+
+Output lands in `build/store_screenshots/`, one folder per store and
+language in the layout fastlane `deliver` / `supply` expect, plus
+`contact/<language>.png` to review a language at a glance. Headlines are in
+`store_screenshots/copy/` (English is the source). See `CLAUDE.md` to add a
+card, a language or a store size.
+
 ## Launch screen
 
 The logo shows on black from the moment the app opens (iOS, Android,

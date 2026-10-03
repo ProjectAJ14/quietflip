@@ -355,42 +355,49 @@ class SkinTile extends StatelessWidget {
             constraints: const BoxConstraints(
               minHeight: DesignSize.cornerButton,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ExcludeSemantics(
-                    child: Text(
-                      skin.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.copyWith(
-                        color: selected ? colors.ink : colors.inkMuted,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                if (customize != null)
-                  // Its own focusable button, spoken with the skin name.
-                  AppButton.text(
-                    onPressed: customize,
-                    icon: Icons.edit_outlined,
-                    label: strings.clock.skins_customize,
-                    semanticsLabel: strings.clock.skins_customize_named(
-                      skin.name,
-                    ),
-                  )
-                else
-                  Flexible(
+            child: LayoutBuilder(
+              builder: (context, caption) => Row(
+                children: [
+                  Expanded(
                     child: ExcludeSemantics(
                       child: Text(
-                        skin.face.family,
+                        skin.name,
                         overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: text.copyWith(color: colors.inkMuted),
+                        style: text.copyWith(
+                          color: selected ? colors.ink : colors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-              ],
+                  if (customize != null)
+                    // Its own focusable button, spoken with the skin name.
+                    // At most the row's width (a Row gives it unbounded
+                    // width), so a long label wraps instead of overflowing.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: caption.maxWidth),
+                      child: AppButton.text(
+                        onPressed: customize,
+                        icon: Icons.edit_outlined,
+                        label: strings.clock.skins_customize,
+                        semanticsLabel: strings.clock.skins_customize_named(
+                          skin.name,
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ExcludeSemantics(
+                        child: Text(
+                          skin.face.family,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: text.copyWith(color: colors.inkMuted),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],

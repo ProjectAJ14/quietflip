@@ -1,0 +1,11 @@
+# Store headlines. English is the source: change a line here first, then
+# every other copy/<code>.yaml (copy_test.dart checks they share the keys).
+# Keys are the card ids in targets.dart, plus `feature` for the feature
+# graphic and og:image. Every claim must be true of the shipped build.
+clock: "A flip clock. No ads."
+pomodoro: "Focus in calm cycles"
+stopwatch: "Laps, splits, nothing else"
+skins: "20+ skins and faces"
+customize: "Make it yours"
+nightstand: "Made for the nightstand"
+feature: "A calm flip clock, timer and stopwatch. No ads."

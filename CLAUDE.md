@@ -17,8 +17,10 @@ agent (or person) changing this repository. Before editing, read the nested
 | `features/*` | Vertical slices: screens, state, feature data access, routes | packages, never another feature or an app |
 | `packages/*` | Shared capabilities behind small contracts | lower packages only (see `packages/CLAUDE.md`) |
 | `plugins/*` | Native platform integrations | nothing above them |
-| `tool/check.dart` | Format + analyzer gate over every `lib/` and `test/` | - |
+| `tool/check.dart` | Format + analyzer gate over every `lib/` and `test/`, plus `tool/` and `apps/quietflip/store_screenshots/` | - |
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
+| `apps/quietflip/store_screenshots/` | Store screenshot renderer: boots the real app in `flutter test`, composes store cards, writes every store/locale PNG to `apps/quietflip/build/store_screenshots/` (see `apps/quietflip/CLAUDE.md`). Not under `test/`, so `melos run test` and coverage skip it; nothing imports it | the app |
+| `tool/fetch_store_fonts.dart` | Downloads the pinned, sha256-checked Noto Sans JP/KR/SC/Devanagari the screenshots need into `.dart_tool/store_fonts/` (never shipped in the app) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
 | `apps/quietflip/firestore.rules` | Firestore security rules: owner-only `users/{uid}/sync/{doc}` with `{data: map, updatedAt: int}` | - |
@@ -114,6 +116,8 @@ Melos version is used (a global `melos` also works if versions match).
 | `dart run melos run generate` | `build_runner` in packages that use it (`*.g.dart`) |
 | `dart run melos run generate:i69n` | Regenerate `packages/localization` strings |
 | `dart run melos run clean:flutter` | `flutter clean` everywhere |
+| `dart run tool/fetch_store_fonts.dart` | Once per machine/CI cache: the CJK and Devanagari fonts for the store screenshots |
+| `cd apps/quietflip && flutter test store_screenshots/` | Renders every store screenshot (all stores, all 14 languages, contact sheets) into `apps/quietflip/build/store_screenshots/`; fails on a missing file, a wrong pixel size, a failed ready-check or an overflowing headline |
 
 Workspace operations (adding packages, dependencies, scripts) are in the
 `melos-workspace` skill. A new feature end to end is in the `new-feature` skill.
