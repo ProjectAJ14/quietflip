@@ -41,14 +41,14 @@ void main() {
         ),
       );
       for (final (extension, label, size, expectedSize) in [
-        ('jpg', 'JPEG Image', 20, '20 B'),
-        ('png', 'PNG Image', 1024, '1.0 KB'),
-        ('gif', 'GIF Image', 1048576, '1.0 MB'),
-        ('webp', 'WebP Image', 0, '0 B'),
-        ('bmp', 'BMP Image', 0, '0 B'),
-        ('tiff', 'TIFF Image', 0, '0 B'),
-        ('heic', 'HEIF Image', 0, '0 B'),
-        ('unknown', 'Image File', 0, '0 B'),
+        ('jpg', 'JPEG image', 20, '20 B'),
+        ('png', 'PNG image', 1024, '1.0 KB'),
+        ('gif', 'GIF image', 1048576, '1.0 MB'),
+        ('webp', 'WebP image', 0, '0 B'),
+        ('bmp', 'BMP image', 0, '0 B'),
+        ('tiff', 'TIFF image', 0, '0 B'),
+        ('heic', 'HEIF image', 0, '0 B'),
+        ('unknown', 'Image file', 0, '0 B'),
       ]) {
         final file = _File();
         final stat = _Stat();

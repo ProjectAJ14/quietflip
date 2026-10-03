@@ -61,6 +61,9 @@ List<BoxDecoration> shaded(WidgetTester tester) => tester
 /// The fold's angle at [t] of a flip: 0 upright, pi landed.
 double turnAt(double t) => FlipDisplay.flipCurve.transform(t) * math.pi;
 
+/// English markers, as `MaterialLocalizations` gives them in English.
+const en = (am: 'AM', pm: 'PM');
+
 void main() {
   testWidgets('one card per entry, a single semantics label', (tester) async {
     await tester.pumpWidget(
@@ -547,7 +550,13 @@ void main() {
         'switching at runtime updates the display', (tester) async {
       final t = DateTime(2026, 9, 30, 21, 5);
       Widget show({required bool use24h}) {
-        final v = clockValue(t, use24h: use24h, showSeconds: false, skin: mono);
+        final v = clockValue(
+          t,
+          use24h: use24h,
+          showSeconds: false,
+          skin: mono,
+          meridiem: en,
+        );
         return host(display(v.cards, meridiem: v.meridiem, badge: v.badge));
       }
 
@@ -754,7 +763,13 @@ void main() {
     final t = DateTime(2026, 9, 30, 21, 5, 7);
 
     test('clock: 24h, 12h and each seconds style', () {
-      final off = clockValue(t, use24h: true, showSeconds: false, skin: mono);
+      final off = clockValue(
+        t,
+        use24h: true,
+        showSeconds: false,
+        skin: mono,
+        meridiem: en,
+      );
       expect(off.cards, ['21', '05']);
       expect(off.badge, isNull);
       expect(off.meridiem, isNull);
@@ -763,6 +778,7 @@ void main() {
         use24h: false,
         showSeconds: true,
         skin: mono.copyWith(seconds: SkinSeconds.badge),
+        meridiem: en,
       );
       expect(badge.cards, ['09', '05']);
       expect(badge.badge, '07');
@@ -772,6 +788,7 @@ void main() {
         use24h: false,
         showSeconds: true,
         skin: mono.copyWith(seconds: SkinSeconds.cards),
+        meridiem: en,
       );
       expect(cards.cards, ['12', '01', '00']);
       expect(cards.meridiem, 'AM');
@@ -780,13 +797,20 @@ void main() {
         use24h: true,
         showSeconds: true,
         skin: mono.copyWith(seconds: SkinSeconds.off),
+        meridiem: en,
       );
       // A skin without seconds of its own shows them as cards, so the
       // Show seconds switch always shows something.
       expect(none.cards, ['21', '05', '07']);
       expect(none.badge, isNull);
       expect(
-        clockValue(t, use24h: true, showSeconds: false, skin: mono).cards,
+        clockValue(
+          t,
+          use24h: true,
+          showSeconds: false,
+          skin: mono,
+          meridiem: en,
+        ).cards,
         ['21', '05'],
       );
     });

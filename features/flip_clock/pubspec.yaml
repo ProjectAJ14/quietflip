@@ -13,6 +13,7 @@ dependencies:
   bloc: ^9.0.0
   flutter_bloc: ^9.1.1
   go_router: ^18.0.1
+  intl: ^0.20.2
   cloud_sync:
     path: ../../packages/cloud_sync
   core:
@@ -29,6 +30,8 @@ dependencies:
     path: ../../packages/timekeeping
 
 dev_dependencies:
+  flutter_localizations:
+    sdk: flutter
   fake_async: ^1.3.3
   google_fonts: ^8.2.1
   mocktail: ^1.0.4

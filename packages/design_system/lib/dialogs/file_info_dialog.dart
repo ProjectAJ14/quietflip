@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:design_system/toast/toasts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:localization/localization.dart';
 
 class FileInfoDialog extends StatelessWidget {
   final File file;
@@ -23,23 +24,23 @@ class FileInfoDialog extends StatelessWidget {
     switch (extension.toLowerCase()) {
       case 'jpg':
       case 'jpeg':
-        return 'JPEG Image';
+        return strings.files.image_type('JPEG');
       case 'png':
-        return 'PNG Image';
+        return strings.files.image_type('PNG');
       case 'gif':
-        return 'GIF Image';
+        return strings.files.image_type('GIF');
       case 'webp':
-        return 'WebP Image';
+        return strings.files.image_type('WebP');
       case 'bmp':
-        return 'BMP Image';
+        return strings.files.image_type('BMP');
       case 'tiff':
       case 'tif':
-        return 'TIFF Image';
+        return strings.files.image_type('TIFF');
       case 'heic':
       case 'heif':
-        return 'HEIF Image';
+        return strings.files.image_type('HEIF');
       default:
-        return 'Image File';
+        return strings.files.image_file;
     }
   }
 
@@ -105,7 +106,7 @@ class FileInfoDialog extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String value, String label) {
     Clipboard.setData(ClipboardData(text: value));
-    Toast.success(context, message: '$label copied to clipboard');
+    Toast.success(context, message: strings.files.copied(label));
   }
 
   @override
@@ -146,7 +147,7 @@ class FileInfoDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'File Information',
+                      strings.files.info_title,
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: colorScheme.onPrimaryContainer,
@@ -172,27 +173,33 @@ class FileInfoDialog extends StatelessWidget {
                   children: [
                     _buildInfoRow(
                       icon: Icons.image_outlined,
-                      label: 'File Name',
+                      label: strings.files.name,
                       value: fileName,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
-                      onTap: () =>
-                          _copyToClipboard(context, fileName, 'File name'),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        fileName,
+                        strings.files.name,
+                      ),
                     ),
                     _buildInfoRow(
                       icon: Icons.category_outlined,
-                      label: 'File Type',
+                      label: strings.files.type,
                       value: fileType,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
-                      onTap: () =>
-                          _copyToClipboard(context, fileType, 'File type'),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        fileType,
+                        strings.files.type,
+                      ),
                     ),
                     _buildInfoRow(
                       icon: Icons.extension_outlined,
-                      label: 'File Extension',
+                      label: strings.files.extension,
                       value: '.$fileExtension',
                       colorScheme: colorScheme,
                       textTheme: textTheme,
@@ -200,12 +207,12 @@ class FileInfoDialog extends StatelessWidget {
                       onTap: () => _copyToClipboard(
                         context,
                         '.$fileExtension',
-                        'File extension',
+                        strings.files.extension,
                       ),
                     ),
                     _buildInfoRow(
                       icon: Icons.storage_outlined,
-                      label: 'File Size',
+                      label: strings.files.size,
                       value: _formatFileSize(fileSize),
                       colorScheme: colorScheme,
                       textTheme: textTheme,
@@ -213,19 +220,22 @@ class FileInfoDialog extends StatelessWidget {
                       onTap: () => _copyToClipboard(
                         context,
                         _formatFileSize(fileSize),
-                        'File size',
+                        strings.files.size,
                       ),
                     ),
                     _buildInfoRow(
                       icon: Icons.folder_outlined,
-                      label: 'File Path',
+                      label: strings.files.path,
                       value: file.path,
                       colorScheme: colorScheme,
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
                       isPath: true,
-                      onTap: () =>
-                          _copyToClipboard(context, file.path, 'File path'),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        file.path,
+                        strings.files.path,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -248,7 +258,7 @@ class FileInfoDialog extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Tap any field to copy to clipboard',
+                              strings.files.copy_hint,
                               style: textTheme.bodySmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                                 fontStyle: FontStyle.italic,

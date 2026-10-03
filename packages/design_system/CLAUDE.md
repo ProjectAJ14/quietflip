@@ -184,5 +184,5 @@ Run `dart run melos exec --scope=design_system -- flutter test`. Keep
   the nearest navigator) opened from a row would cover only the shell.
   Dialogs default to the root navigator and are unaffected.
 - `FileInfoDialog` takes a `dart:io` `File`, so it does not work on web. Its
-  labels ("File Information", "File Name", ...) are still raw English
-  literals, not `strings.*`.
+  labels come from `strings.files`; the size units (`B`, `KB`, `MB`) stay
+  as they are.

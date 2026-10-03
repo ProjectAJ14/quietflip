@@ -179,7 +179,8 @@ void main() {
     await tap(tester, c.use_24h);
     await tap(tester, c.show_seconds);
     await tap(tester, c.show_date);
-    expect(settings.state.use24h, isFalse);
+    // The test device reads 12-hour (English), so the switch turns 24h on.
+    expect(settings.state.use24h, isTrue);
     expect(settings.state.showSeconds, isTrue);
     expect(settings.state.showDate, isTrue);
     // Orientation moved to Appearance.
@@ -548,7 +549,8 @@ void main() {
         c.settings_clock,
         find.text(c.use_24h),
         find.text(c.show_date),
-        () => !settings.state.use24h,
+        // The test device reads 12-hour (English), so the switch turns 24h on.
+        () => settings.state.use24h ?? false,
         () => settings.state.showDate,
       ),
       (
@@ -971,7 +973,7 @@ void main() {
         await openSound(tester);
         await tester.ensureVisible(find.text(first));
         await tester.pump();
-        final use24h = settings.state.use24h;
+        final use24h = settings.state.use24h ?? false;
         // No pump between: the second tap runs on the frame the first saw.
         await tester.tap(find.text(first));
         unawaited(settings.update(settings.state.copyWith(use24h: !use24h)));

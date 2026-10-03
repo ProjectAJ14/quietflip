@@ -22,7 +22,7 @@ Read the root `CLAUDE.md` and `features/CLAUDE.md` first. Load the
 | `appearance()` | `ValueListenable<AppearanceMode>` | The chosen theme for `DesignSystemWrapper(mode:)`; Black by default, even when the OS is light |
 | `appCorner()` | `ValueListenable<double>` | `ClockSettings.corner` for `DesignSystemWrapper(corner:)`: the one corner every shape in the app follows |
 | `appFace()` | `ValueListenable<DisplayFace?>` | The face the whole app is set in for `DesignSystemWrapper(face:)`: the selected skin's face, or null (Geist) for the default Barlow Condensed face, so Mono and the Classic skins keep Geist |
-| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), 24h, no seconds, flip sound off, alert sound on, tick sound Classic and alarm sound Chime (`tickSound` / `alarmSound`: `device_services`' `TickSound` / `AlarmSound`, JSON by name, unknown -> default; `flipSound` / `alertSound` stay the on/off switches), system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped and snapped to a step on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
+| `ClockSettings`, `ClockTheme`, `ClockMode` (pomodoro, clock, stopwatch: panel order; a saved `timer` reads as pomodoro), `TimerPreset` (sealed: `PomodoroCycle`, `Minutes(duration)`), `ClockOrientation` | model | Defaults: theme dark (`ClockTheme` dark / light / system; a saved `black` reads as dark), Mono skin (`skinId` `'mono'`, no `customSkins`), `use24h` null (unpicked: `uses24h(context, settings)` follows the device's 24-hour switch, else its language, so English reads 12-hour and German 24-hour; JSON absent or non-bool -> null; the Settings switch shows the resolved value and saves an explicit choice), no seconds, flip sound off, alert sound on, tick sound Classic and alarm sound Chime (`tickSound` / `alarmSound`: `device_services`' `TickSound` / `AlarmSound`, JSON by name, unknown -> default; `flipSound` / `alertSound` stay the on/off switches), system alerts off, keep awake off, last mode clock, digit brightness 1.0 (0.2..1.0; `fromJson` clamps numbers into range), subtle movement off, date off, orientation auto, tap toggles controls on, controls idle 4 s (`controlsIdleChoices` 2/4/8 s or `Duration.zero` = Never; `controlsIdleMs`, other values -> 4 s), brightness gesture on (`gestureBrightness`), mode swipe on (`gestureModes`), card size large (`CardSize` small / medium / large, `factor` 0.6 / 0.8 / 1.0; JSON `cardSize` by name), timer presets 5 / 10 / 15 min (`timerPresets`, JSON `timerPresetsMs`; `normalizePresets`: valid per `Countdown.isValid`, no duplicates, ascending, at most `maxTimerPresets` = 6, bad entries dropped), corner 14 (`corner`, `DesignShape.minCorner`..`maxCorner` = 0..24, steps of `cornerStep` 2 in Settings, clamped and snapped to a step on read), default timer the cycle (`defaultTimer`, JSON `defaultTimerMs`, absent = cycle; `copyWith`/`fromJson` turn a default that is not among the presets back into the cycle). `fromJson` falls back per field. `ClockSettings.nextDim` is the quick-dim cycle |
 
 ## Layout
 
@@ -121,7 +121,9 @@ lib/
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
-                                           display_value (clock/duration/stopwatch -> cards),
+                                           display_value (clock/duration/stopwatch -> cards,
+                                           `uses24h`, `meridiemOf`: AM/PM from `intl`'s
+                                           CLDR data, e.g. 午前 / 午後, a. m. / p. m.),
                                            TimerPicker (showTimerPicker: minutes + seconds
                                            fields, 0:01..99:59, refuses a preset that already exists
                                            with a live-region message), presetLabel (`5m` / `1:30`),
@@ -468,6 +470,12 @@ transition, repository corrupt data, each screen state, shortcuts and route
 navigation. `setUp(core.init)`, `tearDown(di.reset)`. Coverage stays 100%.
 
 ## Edge cases
+
+`test/language_layout_test.dart`: every Settings page, and the clock
+(12-hour, seconds, date) with its Pomodoro tray, lay out without overflow in
+German and Japanese on a phone (390x844) and a tablet (1024x1366). The
+`Harness.screen(locale:)` adds Flutter's localizations; tests that need a
+24-hour device call `deviceOn24h(tester)` (`fakes.dart`).
 
 Verified in `test/edge_cases_test.dart` (fake time via `fake_async` and the
 widget tester's clock):

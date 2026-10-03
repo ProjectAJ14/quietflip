@@ -170,6 +170,7 @@ class _Preview extends StatelessWidget {
       use24h: use24h,
       showSeconds: skin.seconds != SkinSeconds.off,
       skin: skin,
+      meridiem: meridiemOf(context),
     );
     final date = MaterialLocalizations.of(context).formatFullDate(now);
     return ColoredBox(

@@ -24,7 +24,8 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | `toJson()` / `Countdown.fromJson(json, {now})` | persistence | Corrupt input -> idle default, never throws. A running snapshot whose `endsAt` has passed restores as running so `checkFinished()` reports it |
 | `PomodoroPhase` | enum | `focus` (25 min), `rest` (5 min, shown as "Break"); `.duration` |
 | `Pomodoro({phase, round})` | value | Defaults focus, round 1. `duration`; `next()` is focus -> break (same round) -> focus (round + 1); `toJson()` `{phase, round}`; `Pomodoro.fromJson(json)` returns null for anything invalid, never throws |
-| `formatClock(t, {use24h, showSeconds})` | function | `09:41`, `09:41:07`, `9:41 AM`, `12:05 AM` (midnight), `12:30 PM` (noon) |
+| `formatClock(t, {use24h, showSeconds, meridiem})` | function | `09:41`, `09:41:07`, `9:41 AM`, `12:05 AM` (midnight), `12:30 PM` (noon); the marker comes from `meridiem` |
+| `Meridiem`, `meridiemFor(t, meridiem)` | typedef, function | `({String am, String pm})`, the 12-hour markers in the display language; `meridiemFor` picks one for `t` |
 | `formatHms(d)` | function | `HH:MM:SS`; callers pass `ceilToSecond(remaining)` |
 | `ceilToSecond(d)` | function | Rounds up to a whole second (`400ms -> 1s`, `0 -> 0`) |
 | `formatStopwatch(d)` | function | `H:MM:SS.t`, tenths truncated, hours unbounded |
@@ -35,7 +36,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 |---|---|
 | `lib/timekeeping.dart` | Barrel |
 | `lib/src/countdown.dart` | `CountdownStatus`, `Countdown` |
-| `lib/src/format.dart` | `formatClock`, `formatHms`, `ceilToSecond`, `formatStopwatch` |
+| `lib/src/format.dart` | `Meridiem`, `meridiemFor`, `formatClock`, `formatHms`, `ceilToSecond`, `formatStopwatch` |
 | `lib/src/pomodoro.dart` | `PomodoroPhase`, `Pomodoro` (phase durations and sequence; the timing itself is a `Countdown`) |
 | `test/` | Tests for every public behavior |
 
@@ -71,5 +72,6 @@ must stay 100%.
   swallow the completion; the next `checkFinished()` still reports it.
 - JSON keys: `durationMs`, `status`, `endsAtMs` (running, epoch ms UTC),
   `remainingMs` (paused). Any invalid field restores the whole idle default.
-- `formatClock` emits literal `AM`/`PM`; localise in the caller if a locale
-  ever needs different markers.
+- `formatClock` has no English default: callers pass the markers
+  (`flip_clock`'s `meridiemOf(context)`, from `intl`). The marker always
+  follows the time, even where the language puts it first (`午前 9:41`).

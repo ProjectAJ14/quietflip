@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:device_services/device_services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 class FakeStore implements KeyValueStore {
   final Map<String, String> data = {};
@@ -267,4 +268,18 @@ class FakeCloudSync implements CloudSync {
     deletes++;
     if (deleteFailure case final e?) throw e;
   }
+}
+
+/// Sets the test device's 24-hour switch on, so a clock style left unpicked
+/// reads 24-hour (the English test locale alone reads 12-hour).
+/// The root `MediaQuery` outlives a test and only re-reads the device on a
+/// platform callback, so this fires one.
+void deviceOn24h(WidgetTester tester) {
+  final dispatcher = tester.platformDispatcher;
+  dispatcher.alwaysUse24HourFormatTestValue = true;
+  dispatcher.onMetricsChanged?.call();
+  addTearDown(() {
+    dispatcher.clearAlwaysUse24HourTestValue();
+    dispatcher.onMetricsChanged?.call();
+  });
 }

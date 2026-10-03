@@ -20,10 +20,10 @@ Nothing depends on the app. These are its seams, used by its own tests:
 
 | Symbol | File | Used for |
 |---|---|---|
-| `startApp({initialize, mount})` | `lib/main.dart` | Entrypoint with injectable bootstrap and `runApp` |
+| `startApp({initialize, mount})` | `lib/main.dart` | Entrypoint with injectable bootstrap and `runApp`; selects the device language (`LocalizationProvider.select`) before bootstrap, so the notification channel is named in it |
 | `init({onOpenRoute, firebaseOptions, useEmulators, isWeb})` | `lib/bootstrap.dart` | Module bring-up; `firebaseOptions` overrides `DefaultFirebaseOptions` in tests; `isWeb` (default `kIsWeb`) skips Crashlytics, which has no web SDK |
 | `defaultFirebaseOptions` | `lib/bootstrap.dart` | `@visibleForTesting`; where `init` reads options when none are passed; tests swap in a throwing `UnsupportedError` to boot with Firebase off |
-| `App({required router, required appearance})` | `lib/app.dart` | `MaterialApp.router` inside `GlobalEventChannelProvider` + `DesignSystemWrapper(mode:)`; `appearance` is `flip_clock.appearance()` (Black by default, regardless of OS brightness) |
+| `App({required router, required appearance})` | `lib/app.dart` | `MaterialApp.router` inside `GlobalEventChannelProvider` + `DesignSystemWrapper(mode:)`; `appearance` is `flip_clock.appearance()` (Black by default, regardless of OS brightness). Language: `locale` is `LocalizationProvider.currentLocale`, `supportedLocales` its `locales`, `GlobalMaterialLocalizations.delegates` (`flutter_localizations`); a change of the device languages re-selects and rebuilds every element, since `strings` is read without a context |
 | `AppRouter.createRouter({initialLocation})` | `lib/router/router.dart` | Builds the router; defaults to `core.CoreRoutes.root` |
 | `AppRouter.signOut(context)` | `lib/router/router.dart` | `@visibleForTesting`; unregisters the device push token, then `auth.signOut` |
 | `NotificationLifecycle({child, logger, client})` | `lib/notification_lifecycle.dart` | Post-frame `client.init()`; on resume `init()` again (picks up a permission granted since; never prompts) then `clearBadge()` |

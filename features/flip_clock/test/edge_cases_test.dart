@@ -105,6 +105,9 @@ DateTime pacificFields(DateTime instant, DateTime jump) => instant.add(
       : const Duration(hours: -7),
 );
 
+/// English markers, as `MaterialLocalizations` gives them in English.
+const en = (am: 'AM', pm: 'PM');
+
 void main() {
   setUp(core.init);
   tearDown(di.reset);
@@ -114,6 +117,7 @@ void main() {
       DateTime(2026, 1, 1, h, m),
       use24h: use24h,
       showSeconds: false,
+      meridiem: en,
     );
 
     test('12h reads 12 at midnight and noon, never 0 or 13', () {
@@ -146,7 +150,9 @@ void main() {
         );
         final shown = <String>[];
         final sub = c.stream.listen(
-          (t) => shown.add(formatClock(t, use24h: true, showSeconds: true)),
+          (t) => shown.add(
+            formatClock(t, use24h: true, showSeconds: true, meridiem: en),
+          ),
         );
         c.start();
         async.elapse(const Duration(seconds: 3));
@@ -173,12 +179,12 @@ void main() {
         final c = ClockController(now: () => fields(start.add(async.elapsed)))
           ..start();
         expect(
-          formatClock(c.state, use24h: false, showSeconds: true),
+          formatClock(c.state, use24h: false, showSeconds: true, meridiem: en),
           '1:59:59 AM',
         );
         async.elapse(const Duration(seconds: 1));
         expect(
-          formatClock(c.state, use24h: false, showSeconds: true),
+          formatClock(c.state, use24h: false, showSeconds: true, meridiem: en),
           '1:00:00 AM',
         );
         expect(async.pendingTimers, hasLength(1));
@@ -225,7 +231,12 @@ void main() {
       // Instant +59 min: the wall fields read 03:29 (two hours later).
       now = now.add(const Duration(minutes: 59));
       expect(
-        formatClock(pacificFields(now, jump), use24h: true, showSeconds: false),
+        formatClock(
+          pacificFields(now, jump),
+          use24h: true,
+          showSeconds: false,
+          meridiem: en,
+        ),
         '03:29',
       );
       expect(c.remaining(), const Duration(minutes: 1));
@@ -242,8 +253,12 @@ void main() {
         final c = ClockController(
           now: () => start.add(async.elapsed).add(offset),
         )..start();
-        String shown() =>
-            formatClock(c.state, use24h: true, showSeconds: false);
+        String shown() => formatClock(
+          c.state,
+          use24h: true,
+          showSeconds: false,
+          meridiem: en,
+        );
         expect(shown(), '18:41');
         offset = const Duration(hours: -4); // flew to New York
         async.elapse(const Duration(seconds: 1));
@@ -454,6 +469,7 @@ void main() {
     testWidgets('the screen ticks for hours: aligned, no leak, awake', (
       tester,
     ) async {
+      deviceOn24h(tester);
       final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9, 41, 7, 500)));
       await rig.settings.update(
         const ClockSettings(keepAwake: true, showSeconds: true),

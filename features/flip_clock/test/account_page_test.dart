@@ -262,6 +262,7 @@ void main() {
   testWidgets('last synced: just now, minutes, today, an earlier date, never', (
     tester,
   ) async {
+    deviceOn24h(tester);
     signIn(last: now.subtract(const Duration(seconds: 30)));
     await open(tester, category: 'account');
     expect(find.text(s.just_now), findsOneWidget);

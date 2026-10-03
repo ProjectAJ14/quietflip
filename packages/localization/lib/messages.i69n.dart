@@ -45,6 +45,7 @@ class Messages implements i69n.I69nMessageBundle {
   NotificationsMessages get notifications => NotificationsMessages(this);
   ErrorsMessages get errors => ErrorsMessages(this);
   ValidationMessages get validation => ValidationMessages(this);
+  FilesMessages get files => FilesMessages(this);
   DeveloperMessages get developer => DeveloperMessages(this);
   ClockMessages get clock => ClockMessages(this);
   SyncMessages get sync => SyncMessages(this);
@@ -73,6 +74,8 @@ class Messages implements i69n.I69nMessageBundle {
         return errors;
       case 'validation':
         return validation;
+      case 'files':
+        return files;
       case 'developer':
         return developer;
       case 'clock':
@@ -571,6 +574,52 @@ class ValidationMessages implements i69n.I69nMessageBundle {
         return passwords_dont_match;
       case 'invalid_key_config':
         return invalid_key_config;
+      default:
+        return key;
+    }
+  }
+}
+
+class FilesMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const FilesMessages(this._parent);
+  String get info_title => "File Information";
+  String get name => "File Name";
+  String get type => "File Type";
+  String get extension => "File Extension";
+  String get size => "File Size";
+  String get path => "File Path";
+  String get copy_hint => "Tap any field to copy to clipboard";
+  String copied(String field) => "$field copied to clipboard";
+  String image_type(String format) => "$format image";
+  String get image_file => "Image file";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'info_title':
+        return info_title;
+      case 'name':
+        return name;
+      case 'type':
+        return type;
+      case 'extension':
+        return extension;
+      case 'size':
+        return size;
+      case 'path':
+        return path;
+      case 'copy_hint':
+        return copy_hint;
+      case 'copied':
+        return copied;
+      case 'image_type':
+        return image_type;
+      case 'image_file':
+        return image_file;
       default:
         return key;
     }
