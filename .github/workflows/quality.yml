@@ -58,5 +58,38 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
       - run: dart pub get
-      - run: flutter build web --no-web-resources-cdn
+      - run: flutter build web --release --no-web-resources-cdn
         working-directory: apps/quietflip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: apps/quietflip/build/web
+          retention-days: 1
+
+  # Ships the Web build job's output only after every check passes: a pull
+  # request gets a preview channel (link commented on the PR, expires after
+  # 7 days), a push to main goes live at https://quietflip.web.app. Pull
+  # requests from forks have no secrets, so they skip it.
+  deploy:
+    name: Deploy (Firebase Hosting)
+    needs: [lint, coverage, web]
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: write # preview status check
+      pull-requests: write # preview link comment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: apps/quietflip/build/web
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_QUIETFLIP }}
+          projectId: quietflip
+          entryPoint: apps/quietflip
+          channelId: ${{ github.event_name == 'push' && 'live' || '' }}
