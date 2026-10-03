@@ -35,6 +35,14 @@ void main() {
     }
   });
 
+  test('every display face knows where its digits centre', () {
+    for (final face in DisplayFace.values) {
+      expect(face.digitCentre, inInclusiveRange(0.25, 0.5), reason: face.name);
+    }
+    expect(DisplayFace.barlowCondensed.digitCentre, 0.351);
+    expect(DisplayFace.dmSerifDisplay.digitCentre, 0.315);
+  });
+
   test('a face style carries its family, weight and size', () {
     final style = DisplayFace.bigShoulders.style(
       color: const Color(0xff000000),

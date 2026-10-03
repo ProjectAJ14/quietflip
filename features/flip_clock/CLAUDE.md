@@ -33,7 +33,7 @@ lib/
   data/models/clock_settings.dart          ClockSettings, ClockTheme, ClockMode, TimerPreset,
                                            ClockOrientation, CardSize
   data/models/skin.dart                    Skin (face, digit/card/ground colour (no radius or seam:
-                                           corners are global, every card has the split line;
+                                           corners are global, every card has the crack and hinges;
                                            old `cardRadius` and `seam` keys are ignored),
                                            seconds off (default)/badge/cards, AM/PM
                                            hidden/left/right, date, `themed`); JSON with ARGB
@@ -121,6 +121,8 @@ lib/
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
+                                           flip_card_geometry (FlipCardGeometry: axle, crack,
+                                           lip, notches, pins and half paths from the icon),
                                            display_value (clock/duration/stopwatch -> cards,
                                            `uses24h`, `meridiemOf`: AM/PM from `intl`'s
                                            CLDR data, e.g. 午前 / 午後, a. m. / p. m.),
@@ -180,33 +182,52 @@ lib/
 - Wake lock only when `keepAwake` and the app is resumed and this screen is
   visible; released otherwise.
 - Every string from `strings.clock.*`; chrome colours from
-  `Theme.of(context)` / `DesignColors.of(context)`. The clock's digits, cards,
-  seam and ground come only from the selected `Skin` (the one place a
+  `Theme.of(context)` / `DesignColors.of(context)`. The clock's digits, cards
+  (crack and pins shaded from the card colour) and ground come only from the
+  selected `Skin` (the one place a
   `Color(int)` is built from a value, because custom skins are user data);
   built-ins use `DesignSkinColors` only. A skin never colours controls.
 - `FlipDisplay` is one card per entry (a pair of digits): card height fills
   the box, digits are 0.78 x height and not text-scaled, width 1.0 x height
-  (1.3 x for a monospaced face), `space-6` between cards, the 2px split
-  line at half height on every card (1px ground over 1px ground lerped
-  12% to the digit colour), the app's corner (`DesignShape` `md`,
-  capped at half the card) becoming `lg` once
-  digits reach 160px. Each card has two hinge pins as on the app icon:
-  `hingeHeightScale` 0.11 x `hingeWidth` (0.05 x card height, at most
-  `hingeMaxWidth` 20px so two half pins fit the `space-6` gap), centred on
-  the split line and on the side edges, half outside, painted from the
-  skin (card lerped to ground, lit by the digit colour) over the flaps.
-  The width maths leaves room for the two outer half pins (a padding of
-  half a pin around the cards), so pins never leave the display. A flip
-  is `DesignMotion.flip` (360 ms): one `flipCurve` (`easeInOut`) turn of
-  0..pi about the pins, the top half falling until pi/2, then the bottom
-  half landing; each flap and the shadow cast on the bottom half are
-  shaded with the ground colour at `maxShade` (0.35) x sin(turn), and the
-  perspective is `perspective` (0.4) / card height. A new value while the
-  top half falls keeps it falling and lands on the newest value; while
-  landing (or still) the card falls again from the value it showed. Each
+  (1.3 x for a monospaced face), `space-6` between cards, so the display is
+  exactly n x height x ratio + gaps wide; the app's corner (`DesignShape`
+  `md`, capped at half the card) becoming `lg` once digits reach 160px.
+  Digits are placed by baseline (`DisplayFace.digitCentre`) so their centre
+  sits on the axle in every face, shrunk or not.
+  The card is shaped as on the app icon by `FlipCardGeometry`
+  (`flip_card_geometry.dart`, the only place its proportions exist, as
+  fractions of card height h): the axle at h/2; a crack (0.008h, at least
+  1px) and a lip under it (0.005h) from notch to notch; a notch cut into
+  each side edge (0.045h x 0.125h, inner corners 0.015h, rounded 0.006h into
+  the edge) with a pin inside it (0.035h x 0.104h, corner 0.3 x its width)
+  whose outer face is flush with the card side, so nothing sticks out. No
+  notch and no pins below an 80px card (skin tiles). Each half is a
+  `ClipPath` of its half of the rounded card minus the notches, so the flap
+  carries the notch. Paint is derived from the skin's card colour in HSL
+  (`shadeOf` lightness x (1 - k), `lightOf` towards white by k), so a light
+  skin gets a dark crack: a face painter behind each half lights it from
+  above (top `lightOf` 0.10 -> `shadeOf` 0.12, bottom card -> `shadeOf`
+  0.18) with a 1px top rim (`lightOf` 0.55) fading out by 0.25h; one card
+  painter per card (`hingeKey`) over the halves and flap draws the crack
+  (`shadeOf` 0.85, the flap's underside 0.002h above it at 0.4), the lip
+  (`lightOf` 0.45), the notch cavities, then the metal pins (a specular band
+  at 22%, bright end caps, a dark outline). A flip is `DesignMotion.flip`
+  (360 ms), mapped by `FlipDisplay.turnAt`: a `fallDuration` (300 ms) fall
+  under gravity (an exact u squared; `Curves.easeIn` is solved only to 0.001
+  and its speed wobbles), the old value on the top flap until pi/2 and the
+  new one on the bottom flap after, then a 60 ms `bounce` that lifts the
+  landed flap 0.06 rad and settles. Both flaps turn about the axle (a
+  `Transform` origin on it, centred across) with perspective 0.4 / card
+  height, passing between the pins. The falling flap moves toward
+  `shadeOf(card, 0.5)` by sin(turn), digits included, and casts a shadow of
+  that colour (`castShadow` 0.45 x sin(turn), clear by 60% of the half) on
+  the bottom half; the landing flap's face lifts toward `lightOf(card, 0.12)`.
+  A new value while the top flap falls keeps it falling and lands on the
+  newest value; while landing (or still) the card falls again from the value
+  it showed. Each
   card is a `RepaintBoundary`. It honours
   `reducedMotion(context)` (`disableAnimations` or iOS `reduceMotion`:
-  instant swap, no shade; pins and line stay) and
+  instant swap, no shade, no bounce; pins and crack stay) and
   never clip; AM/PM and small seconds are plain text in the skin's face at
   70% of the digit colour, never cards, sized 0.12 x card height (AM/PM)
   and 0.1 x (badge) with 0.05 x corner padding, so they stay in the card's
@@ -463,6 +484,8 @@ lib/
 `account_page_test.dart` covers the card and page in every look and status (no card without a sync, card below the list / at the sidebar bottom, providers, switch, every status line and icon, denied and Try again, last-synced wording, the 30 s refresh and its timer's cleanup, sign-out and delete confirmations and outcomes, `category=account`, text scale 2, the card's merged semantics); `screens_test.dart` the router's account wiring, `shortcutsFor` per platform and size, and the settings route passing the groups (iPhone, then resized to an iPad, then macOS). `settings_screen_test.dart` covers Shortcuts per platform (iPhone and web on one: touch only, no headers; iPad: Touch then Keyboard headers; macOS: keys, keyboard icon), "Off" following each gesture setting, and the touch rows in both themes at text scale 2; it pumps a fixed time on that page because the glyphs loop. Every row saves through `_update`, an edit applied to `settings.state` at the moment of the change (not the copy the frame drew), so two changes in one frame never revert each other; `settings_screen_test.dart` taps two rows of each kind (switch, segmented, slider, value) in one frame with an outside change between, and the tick and alarm tiles the same way. `settings_sync_test.dart` covers the debounce, the stamp, last-write-wins both ways, no echo, first sign-in, device-only keys, loosely typed cloud maps, a failed push keeping the local save, close, and `init` with and without a `CloudSync`.
 
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
+
+`flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` fall and bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
 
 `dart run melos exec --scope=flip_clock -- flutter test`. Fakes for every
 `device_services` contract and a controllable clock; cover each Cubit

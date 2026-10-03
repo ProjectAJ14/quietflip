@@ -24,7 +24,7 @@ dart pub add design_system
 
 - `DesignColors` (theme extension), `DesignSkinColors`, `DesignSpace`, `DesignSize`, `DesignMotion`: the exact `tokens.json` values.
 - `DesignShape` (theme extension, `DesignShape.of(context)`): every corner in the app from one value, `DesignSystemWrapper(corner:)` (default 14, 0 is square). Roles `xs` / `sm` / `md` / `lg` keep the token ratios (6 / 10 / 14 / 22 at 14); `forHeight(h, role:)` caps a role at half the height, so nothing is rounder than a pill and the island dot stays a dot. `DesignShape.circular` / `radius` / `rounded` are the only way to build a radius; every Material component shape in the theme follows it. No circles or stadiums anywhere.
-- Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700).
+- Interface font: Geist 400/500/600/700. Digit faces: `DisplayFace` (Barlow Condensed 700, Bebas Neue, Anton, Oswald 600, Big Shoulders 800, Archivo Black, JetBrains Mono 700, Space Grotesk 700, DM Serif Display, Orbitron 700). Each knows its `digitCentre` (em above the baseline), so the flip cards centre digits on the split line in every face.
 - Every font is bundled in `assets/google_fonts/` with its `OFL-<Family>.txt`; nothing downloads at runtime.
 
 ## Taps: `Pressable` and `AppButton`

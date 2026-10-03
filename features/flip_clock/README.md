@@ -162,8 +162,11 @@ New skin, opens the customizer on that skin: face, digit / card /
 background colour (token swatches or a hex colour), seconds style (off,
 small, cards), AM/PM (hidden, inside the first card, beside the last) and
 the date line. Corners follow Settings > Appearance > Corners for the whole
-app. Every card has the split line with a hinge pin at each end, as on the
-app icon; it is not a skin option. Saving a built-in skin
+app. Every card is drawn like the app icon: lit from above with a thin
+bright rim, a dark crack with a bright lip under it, and a metal hinge pin
+in a notch at each end, inside the card edge (small cards under 80px, like
+the skin tiles, show the crack but no pins). A flip falls under gravity
+and lands with a small bounce. None of this is a skin option. Saving a built-in skin
 creates a copy under Your skins; custom skins can be edited or deleted. A
 skin controls only the digits, cards and ground, never the controls.
 
