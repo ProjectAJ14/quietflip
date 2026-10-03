@@ -3,11 +3,14 @@ import 'dart:math' as math;
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
+import 'package:flip_clock/ui/components/flip_card_geometry.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'card_corner.dart';
 
 const mono = Skin(id: 'mono', name: 'Mono');
 
@@ -42,16 +45,20 @@ FlipDisplay display(
 double fontSizeOf(WidgetTester tester, String text) =>
     tester.widget<Text>(find.text(text)).style!.fontSize!;
 
-Finder cardFill(Color color) => find.byWidgetPredicate(
-  (w) =>
-      w is Container &&
-      w.decoration is BoxDecoration &&
-      (w.decoration! as BoxDecoration).color == color,
-);
+Finder cardFill(Color color) =>
+    find.byWidgetPredicate((w) => w is Container && w.color == color);
 
-/// Plain split-line strips painted [color].
-Finder lineOf(Color color) =>
-    find.byWidgetPredicate((w) => w is ColoredBox && w.color == color);
+/// Every card of the display.
+final cards = find.byWidgetPredicate((w) => '${w.runtimeType}' == '_FlipCard');
+
+/// Card [i]'s own painter (pins, crack) as a canvas callback, so `paints`
+/// sees only what it draws and not the halves under it.
+void Function(Canvas) cardPaint(WidgetTester tester, [int i = 0]) {
+  final finder = find.byKey(FlipDisplay.hingeKey).at(i);
+  final painter = tester.widget<CustomPaint>(finder).foregroundPainter!;
+  final size = tester.getSize(finder);
+  return (canvas) => painter.paint(canvas, size);
+}
 
 /// The card halves that carry a shade or a cast shadow right now.
 List<BoxDecoration> shaded(WidgetTester tester) => tester
@@ -96,13 +103,21 @@ void main() {
     expect(digit.style!.color, DesignSkinColors.cyan);
     expect(digit.style!.fontFamily, startsWith('Orbitron'));
     expect(digit.textScaler, TextScaler.noScaling);
-    // The split line: 1px of ground over 1px of light, one per card.
-    expect(lineOf(DesignSkinColors.bgPaper), findsNWidgets(2));
-    final light = lineOf(
-      Color.lerp(DesignSkinColors.bgPaper, DesignSkinColors.cyan, 0.12)!,
+    // The split line: the crack in ground over a faint light lip.
+    final geometry = FlipCardGeometry(tester.getSize(cards.first), 0);
+    expect(
+      cardPaint(tester),
+      paints
+        ..rect(rect: geometry.crack, color: DesignSkinColors.bgPaper)
+        ..rect(
+          rect: geometry.lip,
+          color: Color.lerp(
+            DesignSkinColors.bgPaper,
+            DesignSkinColors.cyan,
+            0.12,
+          ),
+        ),
     );
-    expect(light, findsNWidgets(2));
-    expect(tester.getSize(light.first).height, FlipDisplay.seamHeight / 2);
     // No shade on a card at rest.
     expect(shaded(tester), isEmpty);
   });
@@ -158,7 +173,7 @@ void main() {
     }
   });
 
-  testWidgets('every card has two hinge pins on the split line, half outside', (
+  testWidgets('pins sit inside the card; nothing is painted outside', (
     tester,
   ) async {
     for (final skin in [mono, mono.copyWith(themed: true)]) {
@@ -171,59 +186,60 @@ void main() {
           ),
         ),
       );
-      final pins = find.byKey(FlipDisplay.hingeKey);
-      expect(pins, findsNWidgets(4));
-      final top = tester.getRect(cardFill(DesignSkinColors.cardInk).at(0));
-      final bottom = tester.getRect(cardFill(DesignSkinColors.cardInk).at(1));
-      final height = bottom.bottom - top.top;
-      final left = tester.getRect(pins.at(0));
-      final right = tester.getRect(pins.at(1));
-      expect(left.height, closeTo(height * FlipDisplay.hingeHeightScale, 0.01));
-      expect(left.width, closeTo(FlipDisplay.hingeWidth(height), 0.01));
-      // Centred on the split line and on the card's side edges.
-      expect(left.center.dy, closeTo((top.bottom + bottom.top) / 2, 0.01));
-      expect(left.center.dx, closeTo(top.left, 0.01));
-      expect(right.center.dx, closeTo(top.right, 0.01));
-      // Inside the display, clear of the next card's pins.
+      // One painter per card draws its pins and crack, over the card.
+      final painters = find.byKey(FlipDisplay.hingeKey);
+      expect(painters, findsNWidgets(2));
       final box = tester.getRect(find.byType(FlipDisplay));
-      for (var i = 0; i < 4; i++) {
-        final pin = tester.getRect(pins.at(i));
-        expect(pin.left, greaterThanOrEqualTo(box.left - 0.01));
-        expect(pin.right, lessThanOrEqualTo(box.right + 0.01));
+      for (var i = 0; i < 2; i++) {
+        final card = tester.getRect(cards.at(i));
+        expect(tester.getRect(painters.at(i)), card);
+        final geometry = FlipCardGeometry(card.size, 0);
+        expect(geometry.hasHinges, isTrue);
+        // Every pin pixel lies inside the card, so inside the display.
+        for (final pin in [geometry.pinLeft, geometry.pinRight]) {
+          final rect = pin.outerRect.shift(card.topLeft);
+          expect(card.contains(rect.topLeft), isTrue);
+          expect(rect.right, lessThanOrEqualTo(card.right));
+          expect(rect.bottom, lessThanOrEqualTo(card.bottom));
+        }
+        expect(box.contains(card.topLeft), isTrue);
+        expect(card.right, lessThanOrEqualTo(box.right));
+        expect(
+          cardPaint(tester, i),
+          paints
+            ..rrect(rrect: geometry.pinLeft)
+            ..rrect(rrect: geometry.pinRight),
+        );
       }
-      expect(
-        tester.getRect(pins.at(2)).left,
-        greaterThan(tester.getRect(pins.at(1)).right),
-      );
     }
   });
 
-  testWidgets('pins stay in the gap and the window at the largest size', (
-    tester,
-  ) async {
+  testWidgets('the display is exactly its cards and gaps wide', (tester) async {
     tester.view
-      ..physicalSize = const Size(2000, 1200)
+      ..physicalSize = const Size(2000, 760)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    for (final stackable in [false, true]) {
+    for (final (face, ratio) in const [
+      (DisplayFace.barlowCondensed, 1.0),
+      (DisplayFace.jetBrainsMono, 1.3),
+    ]) {
       await tester.pumpWidget(
-        host(display(['12', '34', '56'], stackable: stackable)),
+        host(
+          SizedBox(
+            width: 1200,
+            height: 300,
+            child: display(['12', '34', '56'], skin: mono.copyWith(face: face)),
+          ),
+        ),
       );
-      final pins = find.byKey(FlipDisplay.hingeKey);
-      expect(pins, findsNWidgets(6));
-      for (var i = 0; i < 6; i++) {
-        final pin = tester.getRect(pins.at(i));
-        expect(pin.left, greaterThanOrEqualTo(0));
-        expect(pin.right, lessThanOrEqualTo(2000));
-        expect(pin.width, lessThanOrEqualTo(FlipDisplay.hingeMaxWidth));
-      }
-      for (var i = 1; i < 5; i += 2) {
-        final a = tester.getRect(pins.at(i));
-        final b = tester.getRect(pins.at(i + 1));
-        expect(a.overlaps(b), isFalse);
-      }
+      final height = tester.getSize(cards.first).height;
+      expect(
+        tester.getRect(cards.last).right - tester.getRect(cards.first).left,
+        closeTo(3 * height * ratio + 2 * DesignSpace.s6, 1e-9),
+      );
+      // The cards are as tall as the box allows (nothing reserved for pins).
+      expect(height, math.min(300, (1200 - 2 * DesignSpace.s6) / (3 * ratio)));
     }
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('cards fill a large space; digits are 0.78 x card height', (
@@ -233,32 +249,30 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(host(display(['22', '42'])));
-    final card = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
-    // Two cards, one 24px gap and two outer half pins (20px wide at this
-    // size) across 1280px: 618px cards (under 760).
-    expect(card.height, closeTo((618 - 2) / 2, 0.01));
+    final card = tester.getSize(cards.first);
+    // Two cards and one 24px gap across 1280px: 628px cards (under 760).
+    expect(card.height, 628);
     final digit = tester.widget<Text>(find.text('22').first);
-    expect(digit.style!.fontSize, closeTo(618 * 0.78, 0.01));
+    expect(digit.style!.fontSize, closeTo(628 * 0.78, 0.01));
   });
 
   testWidgets('md cards become lg at digit-l sizes, from the app corner', (
     tester,
   ) async {
-    BorderRadius radiusAt(Size size) {
-      final c = tester.widget<Container>(
-        cardFill(DesignSkinColors.cardInk).first,
-      );
-      return (c.decoration! as BoxDecoration).borderRadius! as BorderRadius;
-    }
-
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(800, 400);
     await tester.pumpWidget(host(display(['22', '42'])));
-    expect(radiusAt(const Size(800, 400)).topLeft.x, const DesignShape().lg);
+    expect(
+      cardCorner(tester, cards.first),
+      closeTo(const DesignShape().lg, 0.05),
+    );
     tester.view.physicalSize = const Size(300, 100);
     await tester.pumpWidget(host(display(['22', '42'])));
-    expect(radiusAt(const Size(300, 100)).topLeft.x, const DesignShape().md);
+    expect(
+      cardCorner(tester, cards.first),
+      closeTo(const DesignShape().md, 0.05),
+    );
   });
 
   testWidgets('a monospaced face gets wider cards', (tester) async {
@@ -270,7 +284,7 @@ void main() {
         display(['12'], skin: mono.copyWith(face: DisplayFace.jetBrainsMono)),
       ),
     );
-    final card = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
+    final card = tester.getSize(cards.first);
     expect(card.width, closeTo(400 * 1.3, 0.01));
   });
 
@@ -340,8 +354,7 @@ void main() {
     expect(find.text('01'), findsNothing);
     expect(shaded(tester), isEmpty);
     // The pins and split line do not move, so they stay.
-    expect(find.byKey(FlipDisplay.hingeKey), findsNWidgets(2));
-    expect(lineOf(DesignSkinColors.bgInk), findsOneWidget);
+    expect(find.byKey(FlipDisplay.hingeKey), findsOneWidget);
   });
 
   testWidgets('the flap turns once about the pins, shaded as it tips', (
@@ -353,9 +366,7 @@ void main() {
     await tester.pumpWidget(
       host(SizedBox(width: 200, height: 160, child: display(['02']))),
     );
-    final half = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
-    final height = half.height * 2 + FlipDisplay.seamHeight;
-    debugPrint('H $height ${tester.getSize(find.byType(FlipDisplay))}');
+    final height = tester.getSize(cards.first).height;
     final ms = FlipDisplay.flipDuration.inMilliseconds;
     var elapsed = 0;
     for (final t in const [0.25, 0.75]) {
@@ -525,7 +536,7 @@ void main() {
         startsWith('Orbitron'),
       );
       // The corner padding grows too: PM sits well inside the card.
-      final card = tester.getRect(cardFill(DesignSkinColors.cardInk).first);
+      final card = tester.getRect(cards.first);
       expect(
         tester.getRect(find.text('PM')).left - card.left,
         greaterThan(DesignSpace.s3),
@@ -563,8 +574,7 @@ void main() {
             ),
           ),
         );
-        final card = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
-        final cardHeight = card.height * 2 + FlipDisplay.seamHeight;
+        final cardHeight = tester.getSize(cards.first).height;
         expect(
           fontSizeOf(tester, 'AM'),
           closeTo(cardHeight * FlipDisplay.meridiemScale, 0.01),
@@ -575,9 +585,7 @@ void main() {
         );
         // AM/PM stays in the card's bottom margin, below the digit glyphs.
         final am = tester.getRect(find.text('AM'));
-        final cardRect = tester.getRect(
-          cardFill(DesignSkinColors.cardInk).at(1),
-        );
+        final cardRect = tester.getRect(cards.first);
         expect(am.bottom, lessThanOrEqualTo(cardRect.bottom));
         expect(
           am.top,
@@ -636,16 +644,13 @@ void main() {
       ..physicalSize = const Size(1280, 760)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    double cardHeight(double size) {
-      final half = tester.getSize(cardFill(DesignSkinColors.cardInk).first);
-      return half.height * 2 + FlipDisplay.seamHeight;
-    }
+    double cardHeight(double size) => tester.getSize(cards.first).height;
 
     for (final (size, expected) in const [
-      (1.0, 618.0),
-      (0.6, 618 * 0.6),
-      (2.0, 618.0),
-      (0.0, 61.8),
+      (1.0, 628.0),
+      (0.6, 628 * 0.6),
+      (2.0, 628.0),
+      (0.0, 62.8),
     ]) {
       await tester.pumpWidget(host(display(['22', '42'], size: size)));
       expect(cardHeight(size), closeTo(expected, 0.01), reason: '$size');
@@ -801,8 +806,7 @@ void main() {
     );
     await tester.pumpWidget(themed(DesignColors.light));
     expect(cardFill(DesignColors.light.card), findsNWidgets(2));
-    expect(lineOf(DesignColors.light.bg), findsOneWidget);
-    expect(find.byKey(FlipDisplay.hingeKey), findsNWidgets(2));
+    expect(cardPaint(tester), paints..rect(color: DesignColors.light.bg));
     expect(
       tester.widget<Text>(find.text('12').first).style!.color,
       DesignColors.light.ink,

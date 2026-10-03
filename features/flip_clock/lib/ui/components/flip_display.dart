@@ -2,15 +2,17 @@ import 'dart:math' as math;
 
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
+import 'package:flip_clock/ui/components/flip_card_geometry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Split-flap cards styled entirely by [skin]: one card per entry of
-/// [cards] (usually a pair of digits). Every card has a bevelled split line
-/// with a hinge pin at each end, half outside the card. Only cards whose
-/// value changed fold: one turn about the pins over [flipDuration], the top
-/// half falling then the bottom half landing, shaded as they tip; the new
-/// value is authoritative at once. Reduced motion swaps instantly.
+/// [cards] (usually a pair of digits). Every card is shaped as on the app
+/// icon ([FlipCardGeometry]): a crack across the middle and a hinge pin in a
+/// notch at each end, inside the card edge. Only cards whose value changed
+/// fold: one turn about the axle over [flipDuration], the top half falling
+/// then the bottom half landing, shaded as they tip; the new value is
+/// authoritative at once. Reduced motion swaps instantly.
 ///
 /// Card height fills the space given, times [size]; digits are
 /// [digitScale] x card height and never text-scaled, so the display never
@@ -82,21 +84,6 @@ class FlipDisplay extends StatefulWidget {
   /// Digit size relative to the card height.
   static const double digitScale = 0.78;
 
-  /// Height of the split line: a dark line over a faint light one.
-  static const double seamHeight = 2;
-
-  /// Hinge pin size relative to the card height, as on the app icon.
-  static const double hingeHeightScale = 0.11;
-  static const double hingeWidthScale = 0.05;
-
-  /// Widest pin: two half pins always fit the gap between cards.
-  static const double hingeMaxWidth = DesignSpace.s6 - DesignSpace.s1;
-
-  /// Width of the pins on a card [height] tall; they stick out half this
-  /// on each side.
-  static double hingeWidth(double height) =>
-      math.min(height * hingeWidthScale, hingeMaxWidth);
-
   /// AM/PM, badge and corner padding relative to the card height. They scale
   /// with the card, so they sit in its bottom margin at every size: at
   /// 150px AM/PM reaches the `meridiem` token's 18px, a 130px card gives the
@@ -109,7 +96,7 @@ class FlipDisplay extends StatefulWidget {
   /// Key of the folding half while a card animates (for tests).
   static const Key flapKey = ValueKey('flip-flap');
 
-  /// Key of each hinge pin (for tests).
+  /// Key of each card's painter of pins and crack (for tests).
   static const Key hingeKey = ValueKey('flip-hinge');
 
   @override
@@ -143,22 +130,12 @@ class _FlipDisplayState extends State<FlipDisplay> {
           builder: (context, box) {
             const gap = DesignSpace.s6;
             final width = box.maxWidth.isFinite ? box.maxWidth : 1000.0;
-            // The outer pins stick out half a pin each side; leave room
-            // for the pins of the largest card each layout could get.
-            double across(double room, int count) {
-              final most = room / (count * ratio);
-              return (room - FlipDisplay.hingeWidth(most)) / (count * ratio);
-            }
-
-            final fit = across(width - gap * (n - 1), n);
+            final fit = (width - gap * (n - 1)) / (n * ratio);
             final tall = box.maxHeight.isFinite;
             // The largest card each layout fits, before the size choice.
             final row = tall ? math.min(box.maxHeight, fit) : fit;
             final stack = tall
-                ? math.min(
-                    (box.maxHeight - gap * (n - 1)) / n,
-                    across(width, 1),
-                  )
+                ? math.min((box.maxHeight - gap * (n - 1)) / n, width / ratio)
                 : 0.0;
             if (!widget.stackable || !tall || n < 2) {
               _stacked = false;
@@ -248,12 +225,7 @@ class _FlipDisplayState extends State<FlipDisplay> {
                 child: FittedBox(
                   key: ValueKey(stacked),
                   fit: BoxFit.scaleDown,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: FlipDisplay.hingeWidth(height) / 2,
-                    ),
-                    child: cards,
-                  ),
+                  child: cards,
                 ),
               ),
             );
@@ -346,10 +318,10 @@ class _FlipCardState extends State<_FlipCard>
   @override
   Widget build(BuildContext context) {
     final skin = widget.skin;
-    const seam = FlipDisplay.seamHeight;
-    final halfHeight = math.max(0.0, (widget.height - seam) / 2);
-    final pinWidth = FlipDisplay.hingeWidth(widget.height);
-    final pinHeight = widget.height * FlipDisplay.hingeHeightScale;
+    final geometry = FlipCardGeometry(
+      Size(widget.width, widget.height),
+      widget.radius,
+    );
     Widget half(
       String value, {
       required bool top,
@@ -359,94 +331,82 @@ class _FlipCardState extends State<_FlipCard>
       value: value,
       top: top,
       skin: skin,
-      width: widget.width,
-      height: halfHeight,
-      cardHeight: widget.height,
+      geometry: geometry,
       fontSize: widget.height * FlipDisplay.digitScale,
-      radius: widget.radius,
       shade: shade,
       shadow: shadow,
     );
-    Widget pin({required bool left}) => Positioned(
-      left: left ? -pinWidth / 2 : null,
-      right: left ? null : -pinWidth / 2,
-      top: halfHeight + seam / 2 - pinHeight / 2,
-      child: _Hinge(
-        key: FlipDisplay.hingeKey,
-        skin: skin,
-        width: pinWidth,
-        height: pinHeight,
-      ),
-    );
 
     return RepaintBoundary(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          AnimatedBuilder(
-            animation: _fold,
-            builder: (context, _) {
-              final folding = _fold.value < 1;
-              // One turn about the pins: 0 upright, pi/2 edge-on, pi landed.
-              final turn =
-                  FlipDisplay.flipCurve.transform(_fold.value) * math.pi;
-              final falling = turn < math.pi / 2;
-              // Darkest edge-on, for both flaps and the shadow they cast.
-              final shade = folding
-                  ? FlipDisplay.maxShade * math.sin(turn)
-                  : 0.0;
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    children: [
-                      half(widget.value, top: true),
-                      if (folding && falling)
-                        _Fold(
-                          angle: turn,
-                          top: true,
-                          height: widget.height,
-                          child: half(_previous, top: true, shade: shade),
-                        ),
-                    ],
-                  ),
-                  _Seam(skin: skin, width: widget.width),
-                  Stack(
-                    children: [
-                      half(
-                        folding ? _previous : widget.value,
-                        top: false,
-                        shadow: shade,
-                      ),
-                      if (folding && !falling)
-                        _Fold(
-                          angle: math.pi - turn,
+      // Over the halves and the flap, so the flaps turn between the pins
+      // as on an axle.
+      child: CustomPaint(
+        key: FlipDisplay.hingeKey,
+        foregroundPainter: _CardPainter(geometry: geometry, skin: skin),
+        child: Stack(
+          children: [
+            AnimatedBuilder(
+              animation: _fold,
+              builder: (context, _) {
+                final folding = _fold.value < 1;
+                // One turn about the axle: 0 upright, pi/2 edge-on, pi
+                // landed.
+                final turn =
+                    FlipDisplay.flipCurve.transform(_fold.value) * math.pi;
+                final falling = turn < math.pi / 2;
+                // Darkest edge-on, for both flaps and the shadow they cast.
+                final shade = folding
+                    ? FlipDisplay.maxShade * math.sin(turn)
+                    : 0.0;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      children: [
+                        half(widget.value, top: true),
+                        if (folding && falling)
+                          _Fold(
+                            angle: turn,
+                            top: true,
+                            height: widget.height,
+                            child: half(_previous, top: true, shade: shade),
+                          ),
+                      ],
+                    ),
+                    Stack(
+                      children: [
+                        half(
+                          folding ? _previous : widget.value,
                           top: false,
-                          height: widget.height,
-                          child: half(widget.value, top: false, shade: shade),
+                          shadow: shade,
                         ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-          if (widget.bottomLeft != null)
-            Positioned(left: 0, bottom: 0, child: widget.bottomLeft!),
-          if (widget.bottomRight != null)
-            Positioned(right: 0, bottom: 0, child: widget.bottomRight!),
-          // Over the flaps, so they turn behind the pins as on an axle.
-          pin(left: true),
-          pin(left: false),
-        ],
+                        if (folding && !falling)
+                          _Fold(
+                            angle: math.pi - turn,
+                            top: false,
+                            height: widget.height,
+                            child: half(widget.value, top: false, shade: shade),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (widget.bottomLeft != null)
+              Positioned(left: 0, bottom: 0, child: widget.bottomLeft!),
+            if (widget.bottomRight != null)
+              Positioned(right: 0, bottom: 0, child: widget.bottomRight!),
+          ],
+        ),
       ),
     );
   }
 }
 
 /// The moving flap: the top half falls about its bottom edge, then the
-/// bottom half lands about its top edge. Perspective follows the card
-/// [height].
+/// bottom half lands about its top edge; both edges are the axle. Perspective
+/// follows the card [height].
 class _Fold extends StatelessWidget {
   const _Fold({
     required this.angle,
@@ -471,104 +431,67 @@ class _Fold extends StatelessWidget {
   );
 }
 
-/// The split line: the ground through the card, with a faint light line
-/// under it where the bottom half's edge catches the light.
-class _Seam extends StatelessWidget {
-  const _Seam({required this.skin, required this.width});
+/// Over each card: the crack and the lip under it, the notch cavities and
+/// the pins in them, pins last, from the card's [geometry].
+class _CardPainter extends CustomPainter {
+  const _CardPainter({required this.geometry, required this.skin});
 
+  final FlipCardGeometry geometry;
   final Skin skin;
-  final double width;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: width,
-    height: FlipDisplay.seamHeight,
-    child: Column(
-      children: [
-        Expanded(child: ColoredBox(color: skin.groundColor)),
-        Expanded(
-          child: ColoredBox(
-            color: Color.lerp(skin.groundColor, skin.digitColor, 0.12)!,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-/// A hinge pin: a raised knob in the card's colours, lit from above, with
-/// the split line running through it.
-class _Hinge extends StatelessWidget {
-  const _Hinge({
-    super.key,
-    required this.skin,
-    required this.width,
-    required this.height,
-  });
-
-  final Skin skin;
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: Size(width, height),
-    painter: _HingePainter(
-      body: Color.lerp(skin.cardColor, skin.groundColor, 0.45)!,
-      light: Color.lerp(skin.cardColor, skin.digitColor, 0.25)!,
-      ground: skin.groundColor,
-    ),
-  );
-}
-
-class _HingePainter extends CustomPainter {
-  const _HingePainter({
-    required this.body,
-    required this.light,
-    required this.ground,
-  });
-
-  final Color body;
-  final Color light;
-  final Color ground;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final knob = RRect.fromRectAndRadius(
-      rect,
-      DesignShape.radius(size.width * 0.4),
-    );
+    final ground = skin.groundColor;
     canvas
-      ..drawRRect(
-        knob,
+      ..drawRect(geometry.crack, Paint()..color = ground)
+      ..drawRect(
+        geometry.lip,
+        Paint()..color = Color.lerp(ground, skin.digitColor, 0.12)!,
+      );
+    if (!geometry.hasHinges) return;
+    final light = Color.lerp(skin.cardColor, skin.digitColor, 0.25)!;
+    final body = Color.lerp(skin.cardColor, ground, 0.45)!;
+    for (final left in [true, false]) {
+      canvas.drawPath(geometry.cavity(left: left), Paint()..color = ground);
+    }
+    for (final pin in [geometry.pinLeft, geometry.pinRight]) {
+      canvas.drawRRect(
+        pin,
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [light, body, ground],
             stops: const [0, 0.55, 1],
-          ).createShader(rect),
-      )
-      ..drawRRect(
-        knob.deflate(0.5),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..color = ground,
-      )
-      ..drawRect(
-        Rect.fromCenter(
-          center: rect.center,
-          width: size.width,
-          height: FlipDisplay.seamHeight / 2,
-        ),
-        Paint()..color = ground,
+          ).createShader(pin.outerRect),
       );
+    }
   }
 
   @override
-  bool shouldRepaint(_HingePainter old) =>
-      old.body != body || old.light != light || old.ground != ground;
+  bool shouldRepaint(_CardPainter old) =>
+      old.geometry.size != geometry.size ||
+      old.geometry.radius != geometry.radius ||
+      old.skin != skin;
+}
+
+/// Clips a half to its part of the card: rounded corners on the outside,
+/// its half of each notch.
+class _HalfClipper extends CustomClipper<Path> {
+  const _HalfClipper(this.geometry, {required this.top});
+
+  final FlipCardGeometry geometry;
+  final bool top;
+
+  @override
+  Path getClip(Size size) =>
+      geometry.halfPath(top: top).shift(Offset(0, top ? 0 : -geometry.axisY));
+
+  @override
+  bool shouldReclip(_HalfClipper old) =>
+      old.top != top ||
+      old.geometry.size != geometry.size ||
+      old.geometry.radius != geometry.radius;
 }
 
 /// Top or bottom half of a card face showing [value].
@@ -577,11 +500,8 @@ class _Half extends StatelessWidget {
     required this.value,
     required this.top,
     required this.skin,
-    required this.width,
-    required this.height,
-    required this.cardHeight,
+    required this.geometry,
     required this.fontSize,
-    required this.radius,
     this.shade = 0,
     this.shadow = 0,
   });
@@ -589,13 +509,10 @@ class _Half extends StatelessWidget {
   final String value;
   final bool top;
   final Skin skin;
-  final double width;
-  final double height;
 
-  /// The whole card's height; the axle is at half of it.
-  final double cardHeight;
+  /// The whole card; this half is its top or bottom, cut at the axle.
+  final FlipCardGeometry geometry;
   final double fontSize;
-  final double radius;
 
   /// Ground-colour alpha over the whole half (a flap tipping away).
   final double shade;
@@ -606,59 +523,59 @@ class _Half extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final r = DesignShape.radius(radius);
-    final corners = top
-        ? BorderRadius.vertical(top: r)
-        : BorderRadius.vertical(bottom: r);
     final ground = skin.groundColor;
-    return Container(
-      width: width,
-      height: height,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: skin.cardColor, borderRadius: corners),
-      foregroundDecoration: shade > 0 || shadow > 0
-          ? BoxDecoration(
-              borderRadius: corners,
-              color: shade > 0 ? ground.withValues(alpha: shade) : null,
-              gradient: shadow > 0
-                  ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        ground.withValues(alpha: shadow),
-                        ground.withValues(alpha: 0),
-                      ],
-                      stops: const [0, 0.6],
-                    )
-                  : null,
-            )
-          : null,
-      // A box the full card's height, so both halves share one axle.
-      child: OverflowBox(
-        maxHeight: cardHeight,
-        alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
-        child: SizedBox(
-          width: width,
-          height: cardHeight,
-          // Wide faces shrink to the card instead of clipping sideways,
-          // about the axle, so the digits stay centred on it.
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: SizedBox(
-              height: cardHeight,
-              // Placed by baseline, not by line box: the digits' centre
-              // lands on the axle whatever the face's leading.
-              child: Baseline(
-                baseline: cardHeight / 2 + skin.face.digitCentre * fontSize,
-                baselineType: TextBaseline.alphabetic,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  softWrap: false,
-                  textScaler: TextScaler.noScaling,
-                  style: skin.face.style(
-                    color: skin.digitColor,
-                    fontSize: fontSize,
+    final width = geometry.size.width;
+    final cardHeight = geometry.size.height;
+    // The path owns the shape, so the flap carries the notches too.
+    return ClipPath(
+      clipper: _HalfClipper(geometry, top: top),
+      child: Container(
+        width: width,
+        height: geometry.axisY,
+        color: skin.cardColor,
+        foregroundDecoration: shade > 0 || shadow > 0
+            ? BoxDecoration(
+                color: shade > 0 ? ground.withValues(alpha: shade) : null,
+                gradient: shadow > 0
+                    ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          ground.withValues(alpha: shadow),
+                          ground.withValues(alpha: 0),
+                        ],
+                        stops: const [0, 0.6],
+                      )
+                    : null,
+              )
+            : null,
+        // A box the full card's height, so both halves share one axle.
+        child: OverflowBox(
+          maxHeight: cardHeight,
+          alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+          child: SizedBox(
+            width: width,
+            height: cardHeight,
+            // Wide faces shrink to the card instead of clipping sideways,
+            // about the axle, so the digits stay centred on it.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                height: cardHeight,
+                // Placed by baseline, not by line box: the digits' centre
+                // lands on the axle whatever the face's leading.
+                child: Baseline(
+                  baseline: geometry.axisY + skin.face.digitCentre * fontSize,
+                  baselineType: TextBaseline.alphabetic,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    softWrap: false,
+                    textScaler: TextScaler.noScaling,
+                    style: skin.face.style(
+                      color: skin.digitColor,
+                      fontSize: fontSize,
+                    ),
                   ),
                 ),
               ),

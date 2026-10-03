@@ -7,6 +7,8 @@ import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'card_corner.dart';
+
 /// Shape code that would let a widget pick its own corner. Only
 /// `DesignShape` turns a radius into a shape. Whitespace-tolerant, so a
 /// call the formatter splits across lines is still caught.
@@ -131,15 +133,13 @@ void main() {
       );
       expect(_radiusOf(tile.decoration), shape.md);
       // The big card (200 high) is under digit-l: the md role.
-      final card = tester
-          .widgetList<Container>(
-            find.descendant(
-              of: find.byType(FlipDisplay).last,
-              matching: find.byType(Container),
-            ),
-          )
-          .firstWhere((c) => c.decoration is BoxDecoration);
-      expect(_radiusOf(card.decoration), shape.forHeight(200));
+      final card = find.descendant(
+        of: find.byType(FlipDisplay).last,
+        matching: find.byWidgetPredicate(
+          (w) => '${w.runtimeType}' == '_FlipCard',
+        ),
+      );
+      expect(cardCorner(tester, card), closeTo(shape.forHeight(200), 0.05));
 
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();

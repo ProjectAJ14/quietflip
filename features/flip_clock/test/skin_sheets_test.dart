@@ -376,11 +376,13 @@ void main() {
     await close(tester);
   });
 
+  // A tile's ground is a decorated box; a card half is a plain fill.
   Finder fill(Color color) => find.byWidgetPredicate(
     (w) =>
         w is Container &&
-        w.decoration is BoxDecoration &&
-        (w.decoration! as BoxDecoration).color == color,
+        (w.color == color ||
+            w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).color == color),
   );
 
   testWidgets('Mono Light: Mono tile is ink on card over bg, Paper is '
