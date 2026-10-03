@@ -178,8 +178,11 @@ class FileInfoDialog extends StatelessWidget {
                       colorScheme: colorScheme,
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
-                      onTap: () =>
-                          _copyToClipboard(context, fileName, strings.files.name),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        fileName,
+                        strings.files.name,
+                      ),
                     ),
                     _buildInfoRow(
                       icon: Icons.category_outlined,
@@ -188,8 +191,11 @@ class FileInfoDialog extends StatelessWidget {
                       colorScheme: colorScheme,
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
-                      onTap: () =>
-                          _copyToClipboard(context, fileType, strings.files.type),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        fileType,
+                        strings.files.type,
+                      ),
                     ),
                     _buildInfoRow(
                       icon: Icons.extension_outlined,
@@ -225,8 +231,11 @@ class FileInfoDialog extends StatelessWidget {
                       textTheme: textTheme,
                       shape: DesignShape.of(context),
                       isPath: true,
-                      onTap: () =>
-                          _copyToClipboard(context, file.path, strings.files.path),
+                      onTap: () => _copyToClipboard(
+                        context,
+                        file.path,
+                        strings.files.path,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(

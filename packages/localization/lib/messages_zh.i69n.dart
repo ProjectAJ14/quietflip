@@ -2,9 +2,10 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
 
-String get _languageCode => 'en';
-String get _localeName => 'en';
+String get _languageCode => 'zh';
+String get _localeName => 'zh';
 
 String _plural(int count,
         {String? zero,
@@ -34,21 +35,21 @@ String _cardinal(int count,
     i69n.cardinal(count, _languageCode,
         zero: zero, one: one, two: two, few: few, many: many, other: other);
 
-class Messages implements i69n.I69nMessageBundle {
-  const Messages();
-  AppMessages get app => AppMessages(this);
-  GenericMessages get generic => GenericMessages(this);
-  CommonMessages get common => CommonMessages(this);
-  AuthMessages get auth => AuthMessages(this);
-  ProfileMessages get profile => ProfileMessages(this);
-  NavMessages get nav => NavMessages(this);
-  NotificationsMessages get notifications => NotificationsMessages(this);
-  ErrorsMessages get errors => ErrorsMessages(this);
-  ValidationMessages get validation => ValidationMessages(this);
-  FilesMessages get files => FilesMessages(this);
-  DeveloperMessages get developer => DeveloperMessages(this);
-  ClockMessages get clock => ClockMessages(this);
-  SyncMessages get sync => SyncMessages(this);
+class Messages_zh extends Messages {
+  const Messages_zh();
+  AppMessages_zh get app => AppMessages_zh(this);
+  GenericMessages_zh get generic => GenericMessages_zh(this);
+  CommonMessages_zh get common => CommonMessages_zh(this);
+  AuthMessages_zh get auth => AuthMessages_zh(this);
+  ProfileMessages_zh get profile => ProfileMessages_zh(this);
+  NavMessages_zh get nav => NavMessages_zh(this);
+  NotificationsMessages_zh get notifications => NotificationsMessages_zh(this);
+  ErrorsMessages_zh get errors => ErrorsMessages_zh(this);
+  ValidationMessages_zh get validation => ValidationMessages_zh(this);
+  FilesMessages_zh get files => FilesMessages_zh(this);
+  DeveloperMessages_zh get developer => DeveloperMessages_zh(this);
+  ClockMessages_zh get clock => ClockMessages_zh(this);
+  SyncMessages_zh get sync => SyncMessages_zh(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,18 +84,17 @@ class Messages implements i69n.I69nMessageBundle {
       case 'sync':
         return sync;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AppMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AppMessages(this._parent);
+class AppMessages_zh extends AppMessages {
+  final Messages_zh _parent;
+  const AppMessages_zh(this._parent) : super(_parent);
   String get name => "QuietFlip";
-  String get description =>
-      "An ad-free flip clock, countdown timer, and stopwatch.";
-  String get welcome_to_app => "Welcome to Quietflip!";
+  String get description => "无广告的翻页时钟、倒计时器和秒表。";
+  String get welcome_to_app => "欢迎使用 QuietFlip！";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -109,37 +109,37 @@ class AppMessages implements i69n.I69nMessageBundle {
       case 'welcome_to_app':
         return welcome_to_app;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class GenericMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const GenericMessages(this._parent);
-  String get ok => "OK";
-  String get cancel => "Cancel";
-  String get save => "Save";
-  String get delete => "Delete";
-  String get edit => "Edit";
-  String get update => "Update";
-  String get submit => "Submit";
-  String get close => "Close";
-  String get back => "Back";
-  String get next => "Next";
-  String get previous => "Previous";
-  String get done => "Done";
-  String get loading => "Loading...";
-  String get error => "Error";
-  String get success => "Success";
-  String get warning => "Warning";
-  String get info => "Info";
-  String get retry => "Retry";
-  String get refresh => "Refresh";
-  String get yes => "Yes";
-  String get no => "No";
-  String get add => "+ Add";
-  String get try_again => "Try Again";
+class GenericMessages_zh extends GenericMessages {
+  final Messages_zh _parent;
+  const GenericMessages_zh(this._parent) : super(_parent);
+  String get ok => "好";
+  String get cancel => "取消";
+  String get save => "保存";
+  String get delete => "删除";
+  String get edit => "编辑";
+  String get update => "更新";
+  String get submit => "提交";
+  String get close => "关闭";
+  String get back => "返回";
+  String get next => "下一步";
+  String get previous => "上一步";
+  String get done => "完成";
+  String get loading => "正在加载…";
+  String get error => "错误";
+  String get success => "成功";
+  String get warning => "警告";
+  String get info => "信息";
+  String get retry => "重试";
+  String get refresh => "刷新";
+  String get yes => "是";
+  String get no => "否";
+  String get add => "+ 添加";
+  String get try_again => "重试";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -194,16 +194,16 @@ class GenericMessages implements i69n.I69nMessageBundle {
       case 'try_again':
         return try_again;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class CommonMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const CommonMessages(this._parent);
-  String get week => "Week";
-  String get month => "Month";
+class CommonMessages_zh extends CommonMessages {
+  final Messages_zh _parent;
+  const CommonMessages_zh(this._parent) : super(_parent);
+  String get week => "周";
+  String get month => "月";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -216,20 +216,20 @@ class CommonMessages implements i69n.I69nMessageBundle {
       case 'month':
         return month;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AuthMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthMessages(this._parent);
-  String get register => "Register";
-  String get sign_in => "Sign In";
-  String get sign_out => "Sign Out";
-  String get dont_have_account => "Don't have an account? ";
-  String get already_have_account => "Already have an account? ";
-  String get sign_out_confirmation => "Are you sure you want to sign out?";
+class AuthMessages_zh extends AuthMessages {
+  final Messages_zh _parent;
+  const AuthMessages_zh(this._parent) : super(_parent);
+  String get register => "注册";
+  String get sign_in => "登录";
+  String get sign_out => "退出登录";
+  String get dont_have_account => "还没有账号？";
+  String get already_have_account => "已有账号？";
+  String get sign_out_confirmation => "确定要退出登录吗？";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -250,26 +250,25 @@ class AuthMessages implements i69n.I69nMessageBundle {
       case 'sign_out_confirmation':
         return sign_out_confirmation;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ProfileMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ProfileMessages(this._parent);
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get account => "Account";
-  String get personal_info => "Personal Information";
-  String get privacy_settings => "Privacy Settings";
-  String get name => "Name";
-  String get email_address => "Email Address";
-  String get phone_number => "Phone Number";
-  String get date_of_birth => "Date of Birth";
-  String get delete_confirmation => "Delete Confirmation";
-  String get delete_confirmation_message =>
-      "Are you sure you want to delete this item? This action cannot be undone.";
+class ProfileMessages_zh extends ProfileMessages {
+  final Messages_zh _parent;
+  const ProfileMessages_zh(this._parent) : super(_parent);
+  String get profile => "个人资料";
+  String get settings => "设置";
+  String get account => "账号";
+  String get personal_info => "个人信息";
+  String get privacy_settings => "隐私设置";
+  String get name => "姓名";
+  String get email_address => "电子邮件地址";
+  String get phone_number => "手机号码";
+  String get date_of_birth => "出生日期";
+  String get delete_confirmation => "确认删除";
+  String get delete_confirmation_message => "确定要删除此项吗？此操作无法撤销。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -300,22 +299,21 @@ class ProfileMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NavMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NavMessages(this._parent);
-  String get home => "Home";
-  String get dashboard => "Dashboard";
-  String get explore => "Explore";
-  String get explore_placeholder =>
-      "Your second tab. Replace this with a real feature.";
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get notifications => "Notifications";
+class NavMessages_zh extends NavMessages {
+  final Messages_zh _parent;
+  const NavMessages_zh(this._parent) : super(_parent);
+  String get home => "首页";
+  String get dashboard => "仪表板";
+  String get explore => "探索";
+  String get explore_placeholder => "这是第二个标签页。请替换为实际功能。";
+  String get profile => "个人资料";
+  String get settings => "设置";
+  String get notifications => "通知";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -338,32 +336,30 @@ class NavMessages implements i69n.I69nMessageBundle {
       case 'notifications':
         return notifications;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NotificationsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NotificationsMessages(this._parent);
-  String get title => "Notifications";
-  String get mark_as_read => "Mark as read";
-  String get mark_all_read => "Mark all as read";
-  String get delete => "Delete";
-  String get filter_all => "All";
-  String get filter_unread => "Unread";
-  String get filter_read => "Read";
-  String get type_reminder => "Reminder";
-  String get type_alert => "Alert";
-  String get type_promotion => "Promotion";
-  String get type_system => "System";
-  String get type_custom => "Custom";
-  String get empty_title => "No notifications";
-  String get empty_description =>
-      "You're all caught up! New notifications will appear here.";
-  String get delete_confirmation_title => "Delete notification?";
-  String get delete_confirmation_message =>
-      "This notification will be permanently removed from your list.";
+class NotificationsMessages_zh extends NotificationsMessages {
+  final Messages_zh _parent;
+  const NotificationsMessages_zh(this._parent) : super(_parent);
+  String get title => "通知";
+  String get mark_as_read => "标为已读";
+  String get mark_all_read => "全部标为已读";
+  String get delete => "删除";
+  String get filter_all => "全部";
+  String get filter_unread => "未读";
+  String get filter_read => "已读";
+  String get type_reminder => "提醒";
+  String get type_alert => "警报";
+  String get type_promotion => "推广";
+  String get type_system => "系统";
+  String get type_custom => "自定义";
+  String get empty_title => "没有通知";
+  String get empty_description => "全部看完了！新通知会显示在这里。";
+  String get delete_confirmation_title => "删除通知？";
+  String get delete_confirmation_message => "此通知将从列表中永久移除。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -404,67 +400,62 @@ class NotificationsMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ErrorsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ErrorsMessages(this._parent);
-  String get network_error => "Network error. Please check your connection.";
-  String get unknown_error => "An unknown error occurred.";
-  String get validation_error => "Please check your input and try again.";
-  String get server_error => "Server error. Please try again later.";
-  String get default_error_message =>
-      "Oops! Something went wrong. Please try again.";
-  String get user_not_found => "User not found. Please check your credentials.";
+class ErrorsMessages_zh extends ErrorsMessages {
+  final Messages_zh _parent;
+  const ErrorsMessages_zh(this._parent) : super(_parent);
+  String get network_error => "网络错误，请检查网络连接。";
+  String get unknown_error => "发生未知错误。";
+  String get validation_error => "请检查输入内容后重试。";
+  String get server_error => "服务器错误，请稍后重试。";
+  String get default_error_message => "哎呀，出了点问题。请重试。";
+  String get user_not_found => "未找到用户，请检查登录信息。";
   String get default_error_description =>
-      "We encountered an error while processing your request. We apologize for the inconvenience. Please try again later or contact support if the issue persists.";
-  String get page_not_found => "Page Not Found";
-  String get page_not_found_description =>
-      "The page you are looking for does not exist.";
-  String get unexpected_error => "An unexpected error occurred.";
-  String get redirect_error => "Redirect Error";
-  String get bad_request => "Invalid request. Please check your input.";
-  String get unauthorized => "Authentication required. Please sign in again.";
-  String get forbidden => "Access denied. You don't have permission.";
-  String get not_found => "Requested resource not found.";
-  String get conflict => "Data conflict. Please refresh and try again.";
-  String get unprocessable_entity =>
-      "Invalid data format. Please check your input.";
-  String get internal_server_error => "Server error. Please try again later.";
-  String get connection_timeout =>
-      "Connection timeout. Please check your internet.";
-  String get receive_timeout => "Request timeout. Please try again.";
-  String get send_timeout => "Upload timeout. Please try again.";
-  String get no_internet =>
-      "No internet connection. Please check your network.";
-  String get unknown_network => "Network error occurred. Please try again.";
+      "处理你的请求时出错。给你带来不便，我们深表歉意。请稍后重试，如果问题仍然存在，请联系支持人员。";
+  String get page_not_found => "找不到页面";
+  String get page_not_found_description => "你要查找的页面不存在。";
+  String get unexpected_error => "发生意外错误。";
+  String get redirect_error => "重定向错误";
+  String get bad_request => "请求无效，请检查输入内容。";
+  String get unauthorized => "需要验证身份，请重新登录。";
+  String get forbidden => "访问被拒绝，你没有权限。";
+  String get not_found => "未找到请求的资源。";
+  String get conflict => "数据冲突，请刷新后重试。";
+  String get unprocessable_entity => "数据格式无效，请检查输入内容。";
+  String get internal_server_error => "服务器错误，请稍后重试。";
+  String get connection_timeout => "连接超时，请检查网络。";
+  String get receive_timeout => "请求超时，请重试。";
+  String get send_timeout => "上传超时，请重试。";
+  String get no_internet => "没有网络连接，请检查网络。";
+  String get unknown_network => "发生网络错误，请重试。";
   String format_exception_message(String code, String postfix) =>
-      "This data is wearing the wrong costume, I don't recognize it [$code] $postfix";
+      "这份数据格式不对，我认不出来 [$code] $postfix";
   String type_error_message(String code, String postfix) =>
-      "This data is not what I expected, I can't process it [$code] $postfix";
+      "这份数据和预期不符，无法处理 [$code] $postfix";
   String index_error_message(String code, String postfix) =>
-      "Hmm, I can't seem to find that item in the list [$code] $postfix";
+      "嗯，列表里找不到这一项 [$code] $postfix";
   String range_error_message(String code, String postfix) =>
-      "Oops! That number is way out of my comfort zone [$code] $postfix";
+      "哎呀，这个数字超出范围了 [$code] $postfix";
   String argument_error_message(String code, String postfix) =>
-      "Hey! Something's not right with what you gave me [$code] $postfix";
+      "嘿，传入的内容有点问题 [$code] $postfix";
   String state_error_message(String code, String postfix) =>
-      "I'm a bit confused about what I should be doing right now [$code] $postfix";
+      "我有点搞不清现在该做什么 [$code] $postfix";
   String unimplemented_error_message(String code, String postfix) =>
-      "This feature is still under construction [$code] $postfix";
+      "此功能仍在开发中 [$code] $postfix";
   String unsupported_error_message(String code, String postfix) =>
-      "Sorry, I don't know how to do that yet [$code] $postfix";
+      "抱歉，暂时还不支持这个操作 [$code] $postfix";
   String concurrent_modification_error_message(String code, String postfix) =>
-      "Whoa! Too many things happening at once [$code] $postfix";
+      "哇，同时发生的事情太多了 [$code] $postfix";
   String out_of_memory_error_message(String code, String postfix) =>
-      "My brain is full! Need to clear some space [$code] $postfix";
+      "内存满了！需要腾出一些空间 [$code] $postfix";
   String stack_overflow_error_message(String code, String postfix) =>
-      "I'm stuck in a loop and getting dizzy [$code] $postfix";
+      "我陷入循环，转晕了 [$code] $postfix";
   String unknown_error_message(String code, String postfix) =>
-      "Something unexpected happened, but don't worry [$code] $postfix";
+      "发生了意外情况，但别担心 [$code] $postfix";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -543,20 +534,19 @@ class ErrorsMessages implements i69n.I69nMessageBundle {
       case 'unknown_error_message':
         return unknown_error_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ValidationMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ValidationMessages(this._parent);
-  String get required_field => "This field is required";
-  String get invalid_email => "Please enter a valid email address";
-  String get password_too_short => "Password must be at least 8 characters";
-  String get passwords_dont_match => "Passwords do not match";
-  String invalid_key_config(String of, String key) =>
-      "Invalid configuration for $key in $of. Please check your settings.";
+class ValidationMessages_zh extends ValidationMessages {
+  final Messages_zh _parent;
+  const ValidationMessages_zh(this._parent) : super(_parent);
+  String get required_field => "此项为必填项";
+  String get invalid_email => "请输入有效的电子邮件地址";
+  String get password_too_short => "密码至少需要 8 个字符";
+  String get passwords_dont_match => "两次输入的密码不一致";
+  String invalid_key_config(String of, String key) => "$of 中的 $key 配置无效。请检查设置。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -575,24 +565,24 @@ class ValidationMessages implements i69n.I69nMessageBundle {
       case 'invalid_key_config':
         return invalid_key_config;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class FilesMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const FilesMessages(this._parent);
-  String get info_title => "File Information";
-  String get name => "File Name";
-  String get type => "File Type";
-  String get extension => "File Extension";
-  String get size => "File Size";
-  String get path => "File Path";
-  String get copy_hint => "Tap any field to copy to clipboard";
-  String copied(String field) => "$field copied to clipboard";
-  String image_type(String format) => "$format image";
-  String get image_file => "Image file";
+class FilesMessages_zh extends FilesMessages {
+  final Messages_zh _parent;
+  const FilesMessages_zh(this._parent) : super(_parent);
+  String get info_title => "文件信息";
+  String get name => "文件名";
+  String get type => "文件类型";
+  String get extension => "文件扩展名";
+  String get size => "文件大小";
+  String get path => "文件路径";
+  String get copy_hint => "轻点任一字段即可复制到剪贴板";
+  String copied(String field) => "已将 $field 复制到剪贴板";
+  String image_type(String format) => "$format 图片";
+  String get image_file => "图片文件";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -621,15 +611,15 @@ class FilesMessages implements i69n.I69nMessageBundle {
       case 'image_file':
         return image_file;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class DeveloperMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const DeveloperMessages(this._parent);
-  String get no_viewer => "This logger has no interactive viewer.";
+class DeveloperMessages_zh extends DeveloperMessages {
+  final Messages_zh _parent;
+  const DeveloperMessages_zh(this._parent) : super(_parent);
+  String get no_viewer => "此日志记录器没有交互式查看器。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -640,235 +630,226 @@ class DeveloperMessages implements i69n.I69nMessageBundle {
       case 'no_viewer':
         return no_viewer;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ClockMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ClockMessages(this._parent);
-  String get clock => "Clock";
-  String get stopwatch => "Stopwatch";
-  String get modes => "Mode";
-  String get settings => "Settings";
-  String get times_up => "Time's up";
-  String get timer_finished_title => "Time's up";
-  String get timer_finished_body => "Your QuietFlip timer has finished.";
-  String get alerts_channel => "Timer alerts";
-  String get show_controls => "Tap or move the mouse to show controls";
-  String get theme => "Theme";
-  String get theme_light => "Light";
-  String get use_24h => "24-hour time";
-  String get show_seconds => "Show seconds";
-  String get sound_tick_group => "Tick";
-  String get sound_tick_hint => "plays on every flip";
-  String get sound_alarm_group => "Alarm";
-  String get sound_alarm_hint => "loops until dismissed, 60 s max";
-  String get tick_sound => "Tick sound";
-  String get tick_sound_description => "A soft sound each time a card flips";
-  String get alarm_sound => "Alarm sound";
-  String get alarm_sound_description =>
-      "Plays when a timer or Pomodoro phase ends";
-  String get tick_classic => "Classic";
-  String get tick_classic_mood => "soft click";
-  String get tick_split_flap => "Split-flap";
-  String get tick_split_flap_mood => "flaps patter";
-  String get tick_clockwork => "Clockwork";
-  String get tick_clockwork_mood => "watch tick";
-  String get tick_woodblock => "Woodblock";
-  String get tick_woodblock_mood => "hollow knock";
-  String get tick_digital => "Digital";
-  String get tick_digital_mood => "clean blip";
-  String get alarm_chime => "Chime";
-  String get alarm_chime_mood => "two tones";
-  String get alarm_bell => "Bell";
-  String get alarm_bell_mood => "struck bell";
-  String get alarm_beeps => "Beeps";
-  String get alarm_beeps_mood => "bedside";
-  String get alarm_rising => "Rising";
-  String get alarm_rising_mood => "marimba";
-  String get alarm_ring => "Ring";
-  String get alarm_ring_mood => "twin bells";
-  String get system_notifications => "System notifications";
+class ClockMessages_zh extends ClockMessages {
+  final Messages_zh _parent;
+  const ClockMessages_zh(this._parent) : super(_parent);
+  String get clock => "时钟";
+  String get stopwatch => "秒表";
+  String get modes => "模式";
+  String get settings => "设置";
+  String get times_up => "时间到";
+  String get timer_finished_title => "时间到";
+  String get timer_finished_body => "你的 QuietFlip 计时器已结束。";
+  String get alerts_channel => "计时器提醒";
+  String get show_controls => "轻点或移动鼠标以显示控件";
+  String get theme => "主题";
+  String get theme_light => "浅色";
+  String get use_24h => "24 小时制";
+  String get show_seconds => "显示秒";
+  String get sound_tick_group => "嘀嗒声";
+  String get sound_tick_hint => "每次翻页时播放";
+  String get sound_alarm_group => "闹铃";
+  String get sound_alarm_hint => "循环播放直到关闭，最长 60 秒";
+  String get tick_sound => "嘀嗒声";
+  String get tick_sound_description => "每次翻牌时发出轻柔的声音";
+  String get alarm_sound => "闹铃声";
+  String get alarm_sound_description => "计时器或番茄钟阶段结束时播放";
+  String get tick_classic => "经典";
+  String get tick_classic_mood => "轻柔咔嗒";
+  String get tick_split_flap => "翻牌";
+  String get tick_split_flap_mood => "翻页啪嗒";
+  String get tick_clockwork => "发条";
+  String get tick_clockwork_mood => "手表嘀嗒";
+  String get tick_woodblock => "木鱼";
+  String get tick_woodblock_mood => "空心敲击";
+  String get tick_digital => "数字";
+  String get tick_digital_mood => "清脆哔声";
+  String get alarm_chime => "钟鸣";
+  String get alarm_chime_mood => "双音";
+  String get alarm_bell => "铃";
+  String get alarm_bell_mood => "敲钟";
+  String get alarm_beeps => "哔哔";
+  String get alarm_beeps_mood => "床头闹钟";
+  String get alarm_rising => "渐强";
+  String get alarm_rising_mood => "马林巴";
+  String get alarm_ring => "响铃";
+  String get alarm_ring_mood => "双铃";
+  String get system_notifications => "系统通知";
   String get system_notifications_description =>
-      "Get a notification when a timer finishes, even if QuietFlip is in the background.";
-  String get permission_denied =>
-      "Notifications are turned off for QuietFlip. You will still see and hear the alert while the app is open.";
-  String get web_closed_tab_note =>
-      "In a browser, alerts only work while this tab stays open.";
-  String get keep_screen_awake => "Keep screen awake";
-  String get keep_screen_awake_description =>
-      "Stop the screen from sleeping while the clock is showing.";
-  String current_time(String time) => "Current time $time";
-  String time_remaining(String time) => "Time remaining $time";
-  String elapsed(String time) => "Elapsed time $time";
-  String get digit_brightness => "Digit brightness";
+      "即使 QuietFlip 在后台运行，计时器结束时也会收到通知。";
+  String get permission_denied => "QuietFlip 的通知已关闭。应用打开时，你仍能看到并听到提醒。";
+  String get web_closed_tab_note => "在浏览器中，只有此标签页保持打开时提醒才有效。";
+  String get keep_screen_awake => "保持屏幕常亮";
+  String get keep_screen_awake_description => "显示时钟时阻止屏幕休眠。";
+  String current_time(String time) => "当前时间 $time";
+  String time_remaining(String time) => "剩余时间 $time";
+  String elapsed(String time) => "已用时间 $time";
+  String get digit_brightness => "数字亮度";
   String percent(String value) => "$value%";
-  String get subtle_movement => "Subtle movement";
+  String get subtle_movement => "细微移动";
   String get subtle_movement_description =>
-      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+      "全屏时，每分钟将时钟移动几个像素，避免同一批像素整夜常亮。可降低但无法完全避免烧屏风险。";
   String get full_screen_note =>
-      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
-  String get show_date => "Show date";
-  String current_time_and_date(String time, String date) =>
-      "Current time $time, $date";
-  String get orientation => "Orientation";
-  String get orientation_auto => "Auto";
-  String get orientation_landscape => "Landscape";
-  String get orientation_portrait => "Portrait";
-  String get settings_card_size => "Card size";
-  String get card_size_small => "Small";
-  String get card_size_medium => "Medium";
-  String get card_size_large => "Large";
-  String get settings_corners => "Corners";
-  String get corners_square => "Square";
-  String get corners_round => "Round";
+      "全屏会在 QuietFlip 打开时隐藏控件。应用必须保持打开。它不是锁屏或屏幕保护程序。";
+  String get show_date => "显示日期";
+  String current_time_and_date(String time, String date) => "当前时间 $time，$date";
+  String get orientation => "方向";
+  String get orientation_auto => "自动";
+  String get orientation_landscape => "横向";
+  String get orientation_portrait => "纵向";
+  String get settings_card_size => "卡片大小";
+  String get card_size_small => "小";
+  String get card_size_medium => "中";
+  String get card_size_large => "大";
+  String get settings_corners => "圆角";
+  String get corners_square => "直角";
+  String get corners_round => "圆角";
   String corners_value(String value) => "$value px";
-  String get pomodoro => "Pomodoro";
-  String pomodoro_focus(int round) => "Focus · Round $round";
-  String pomodoro_break(int round) => "Break · Round $round";
-  String get pomodoro_focus_done => "Focus done. Time for a break.";
-  String get pomodoro_break_done => "Break over. Back to focus.";
-  String get start_focus => "Start focus";
-  String get start_break => "Start break";
-  String get skins_title => "Skins";
-  String get skins_customize => "Customize";
-  String skins_customize_named(String name) => "Customize $name";
-  String get skins_done => "Done";
-  String get skins_in_use => "In use";
-  String get skins_yours => "Your skins";
-  String get skins_classic => "Classic";
-  String get skins_bold => "Bold";
-  String get skins_type => "Type";
-  String get skins_new => "New skin";
-  String get skins_from_current => "From current";
-  String get customize_title => "Customize skin";
-  String get customize_name => "Name";
-  String customize_copy_name(String name) => "$name copy";
-  String get customize_font => "Font";
-  String get customize_digits => "Digits";
-  String get customize_card => "Card";
-  String get customize_ground => "Background";
-  String get customize_custom_colour => "Custom colour";
-  String get customize_hex_hint => "Hex, for example #FF7A00";
-  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
-  String get customize_apply => "Apply";
-  String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_details => "Details";
-  String get customize_seconds => "Seconds";
-  String get customize_seconds_off => "Off";
-  String get customize_seconds_badge => "Small";
-  String get customize_seconds_cards => "Cards";
-  String get customize_meridiem => "AM / PM";
-  String get customize_meridiem_hidden => "Hidden";
-  String get customize_meridiem_left => "Inside";
-  String get customize_meridiem_right => "Beside";
-  String get customize_save => "Save skin";
-  String get customize_reset => "Reset";
-  String get customize_delete => "Delete skin";
-  String get skin_mono => "Mono";
-  String get skin_paper => "Paper";
-  String get skin_rose => "Rose";
-  String get skin_violet => "Violet";
-  String get skin_amber => "Amber";
-  String get skin_signal => "Signal";
-  String get skin_field => "Field";
-  String get skin_mint => "Mint";
-  String get skin_cyan => "Cyan";
-  String get skin_taxi => "Taxi";
+  String get pomodoro => "番茄钟";
+  String pomodoro_focus(int round) => "专注 · 第 $round 轮";
+  String pomodoro_break(int round) => "休息 · 第 $round 轮";
+  String get pomodoro_focus_done => "专注结束，休息一下吧。";
+  String get pomodoro_break_done => "休息结束，继续专注。";
+  String get start_focus => "开始专注";
+  String get start_break => "开始休息";
+  String get skins_title => "皮肤";
+  String get skins_customize => "自定义";
+  String skins_customize_named(String name) => "自定义 $name";
+  String get skins_done => "完成";
+  String get skins_in_use => "使用中";
+  String get skins_yours => "我的皮肤";
+  String get skins_classic => "经典";
+  String get skins_bold => "粗体";
+  String get skins_type => "字体";
+  String get skins_new => "新建皮肤";
+  String get skins_from_current => "基于当前";
+  String get customize_title => "自定义皮肤";
+  String get customize_name => "名称";
+  String customize_copy_name(String name) => "$name 副本";
+  String get customize_font => "字体";
+  String get customize_digits => "数字";
+  String get customize_card => "卡片";
+  String get customize_ground => "背景";
+  String get customize_custom_colour => "自定义颜色";
+  String get customize_hex_hint => "十六进制，例如 #FF7A00";
+  String get customize_hex_invalid => "请输入六位十六进制数，例如 #FF7A00。";
+  String get customize_apply => "应用";
+  String get customize_low_contrast => "数字可能难以看清。";
+  String get customize_details => "细节";
+  String get customize_seconds => "秒";
+  String get customize_seconds_off => "关";
+  String get customize_seconds_badge => "小";
+  String get customize_seconds_cards => "卡片";
+  String get customize_meridiem => "上午 / 下午";
+  String get customize_meridiem_hidden => "隐藏";
+  String get customize_meridiem_left => "内侧";
+  String get customize_meridiem_right => "旁边";
+  String get customize_save => "保存皮肤";
+  String get customize_reset => "重置";
+  String get customize_delete => "删除皮肤";
+  String get skin_mono => "单色";
+  String get skin_paper => "纸张";
+  String get skin_rose => "玫瑰";
+  String get skin_violet => "紫罗兰";
+  String get skin_amber => "琥珀";
+  String get skin_signal => "信号";
+  String get skin_field => "田野";
+  String get skin_mint => "薄荷";
+  String get skin_cyan => "青色";
+  String get skin_taxi => "出租车";
   String get skin_bebas => "Bebas";
   String get skin_anton => "Anton";
   String get skin_oswald => "Oswald";
   String get skin_shoulders => "Shoulders";
-  String get skin_poster => "Poster";
+  String get skin_poster => "海报";
   String get skin_terminal => "Terminal";
   String get skin_grotesk => "Grotesk";
-  String get skin_serif => "Serif";
-  String get skin_orbit => "Orbit";
-  String get skin_nightstand => "Nightstand";
-  String get skin_studio => "Studio";
-  String get skin_arcade => "Arcade";
-  String get skin_railway => "Railway";
-  String get skin_desk => "Desk";
-  String get skin_neon => "Neon";
-  String get skin_minimal => "Minimal";
-  String get mode_pomodoro => "Pomodoro";
-  String get mode_clock => "Clock";
-  String get mode_stopwatch => "Stopwatch";
-  String get action_start => "Start";
-  String get action_pause => "Pause";
-  String get action_resume => "Resume";
-  String get action_reset => "Reset";
-  String get action_restart => "Restart";
-  String get action_done => "Done";
-  String get action_skins => "Skins";
-  String get action_settings => "Settings";
-  String get action_rotation => "Screen rotation";
-  String get action_timer_settings => "Timer settings";
-  String preset_minutes(int minutes) => "${minutes}m";
+  String get skin_serif => "衬线";
+  String get skin_orbit => "轨道";
+  String get skin_nightstand => "床头柜";
+  String get skin_studio => "工作室";
+  String get skin_arcade => "街机";
+  String get skin_railway => "铁路";
+  String get skin_desk => "书桌";
+  String get skin_neon => "霓虹";
+  String get skin_minimal => "极简";
+  String get mode_pomodoro => "番茄钟";
+  String get mode_clock => "时钟";
+  String get mode_stopwatch => "秒表";
+  String get action_start => "开始";
+  String get action_pause => "暂停";
+  String get action_resume => "继续";
+  String get action_reset => "重置";
+  String get action_restart => "重新开始";
+  String get action_done => "完成";
+  String get action_skins => "皮肤";
+  String get action_settings => "设置";
+  String get action_rotation => "屏幕旋转";
+  String get action_timer_settings => "计时器设置";
+  String preset_minutes(int minutes) => "${minutes}分";
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
-  String get preset_pomodoro => "Pomodoro";
-  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
-  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String get preset_pomodoro => "番茄钟";
+  String preset_spoken_minutes(int minutes) => "${minutes}分钟计时器";
+  String preset_spoken_seconds(int seconds) => "${seconds}秒计时器";
   String preset_spoken_both(int minutes, int seconds) =>
-      "$minutes minute $seconds second timer";
-  String get action_lap => "Lap";
-  String lap_label(int number, String time) => "Lap $number  $time";
+      "${minutes}分${seconds}秒计时器";
+  String get action_lap => "计次";
+  String lap_label(int number, String time) => "计次 $number  $time";
   String brightness_value(String percent) => "$percent%";
-  String get settings_appearance => "Appearance";
-  String get settings_clock => "Clock";
-  String get settings_gestures => "Gestures";
-  String get settings_timers => "Timers";
-  String get settings_sound => "Sound & alerts";
-  String get settings_awake => "Keep awake";
-  String get settings_shortcuts => "Shortcuts";
-  String get settings_about => "About";
-  String get theme_dark => "Dark";
-  String get theme_system => "Match system";
-  String get gesture_swipes => "Swipes";
-  String get gesture_brightness => "Swipe up or down for brightness";
-  String get gesture_modes => "Swipe sideways to change mode";
-  String get gesture_footer =>
-      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
-  String get gesture_controls => "Controls";
-  String get gesture_tap => "Tap to show controls";
-  String get gesture_idle => "Hide controls after";
-  String gesture_idle_seconds(int seconds) => "${seconds}s";
-  String get gesture_idle_never => "Never";
-  String get gesture_controls_footer =>
-      "Controls shrink to a dot, then disappear.";
-  String get timers_default => "Default timer";
-  String get timers_start_runs => "Start runs";
-  String get timers_presets => "Presets";
-  String get timers_add => "Add timer";
-  String get timers_limit_footer =>
-      "Six timers fit the island. Delete one to add another.";
-  String timers_delete(String timer) => "Delete $timer";
-  String get timers_duplicate => "You already have this timer.";
-  String get timers_picker_minutes => "Minutes";
-  String get timers_picker_seconds => "Seconds";
-  String get skins_view_all => "View all";
-  String get timers_pomodoro_focus => "Focus";
-  String get timers_pomodoro_break => "Break";
-  String timers_minutes(int minutes) => "$minutes min";
-  String get sound_footer =>
-      "The in-app alert always plays, even with notifications off.";
-  String get shortcuts_touch => "Touch";
-  String get shortcuts_keyboard => "Keyboard";
-  String get touch_controls => "Show or hide controls";
-  String get shortcut_off => "Off";
-  String get key_start_pause => "Start or pause";
-  String get key_change_mode => "Change mode";
-  String get key_brightness => "Brightness";
-  String get key_show_seconds => "Show seconds";
-  String get key_full_screen => "Full screen";
-  String get key_hide_controls => "Hide controls";
-  String get key_dim => "Dim the digits";
-  String get key_lap => "Lap (stopwatch)";
-  String get key_rotation => "Screen rotation";
-  String get keycap_space => "Space";
+  String get settings_appearance => "外观";
+  String get settings_clock => "时钟";
+  String get settings_gestures => "手势";
+  String get settings_timers => "计时器";
+  String get settings_sound => "声音与提醒";
+  String get settings_awake => "保持常亮";
+  String get settings_shortcuts => "快捷键";
+  String get settings_about => "关于";
+  String get theme_dark => "深色";
+  String get theme_system => "跟随系统";
+  String get gesture_swipes => "滑动";
+  String get gesture_brightness => "上下滑动调节亮度";
+  String get gesture_modes => "左右滑动切换模式";
+  String get gesture_footer => "在时钟任意位置滑动。在 Mac、Windows 和网页上，调暗的是数字而不是屏幕。";
+  String get gesture_controls => "控件";
+  String get gesture_tap => "轻点显示控件";
+  String get gesture_idle => "控件自动隐藏";
+  String gesture_idle_seconds(int seconds) => "${seconds}秒";
+  String get gesture_idle_never => "永不";
+  String get gesture_controls_footer => "控件会先缩成一个圆点，然后消失。";
+  String get timers_default => "默认计时器";
+  String get timers_start_runs => "开始时运行";
+  String get timers_presets => "预设";
+  String get timers_add => "添加计时器";
+  String get timers_limit_footer => "灵动岛最多容纳六个计时器。删除一个才能再添加。";
+  String timers_delete(String timer) => "删除 $timer";
+  String get timers_duplicate => "你已有这个计时器。";
+  String get timers_picker_minutes => "分钟";
+  String get timers_picker_seconds => "秒";
+  String get skins_view_all => "查看全部";
+  String get timers_pomodoro_focus => "专注";
+  String get timers_pomodoro_break => "休息";
+  String timers_minutes(int minutes) => "${minutes}分钟";
+  String get sound_footer => "即使关闭通知，应用内提醒也始终会播放。";
+  String get shortcuts_touch => "触控";
+  String get shortcuts_keyboard => "键盘";
+  String get touch_controls => "显示或隐藏控件";
+  String get shortcut_off => "关";
+  String get key_start_pause => "开始或暂停";
+  String get key_change_mode => "切换模式";
+  String get key_brightness => "亮度";
+  String get key_show_seconds => "显示秒";
+  String get key_full_screen => "全屏";
+  String get key_hide_controls => "隐藏控件";
+  String get key_dim => "调暗数字";
+  String get key_lap => "计次（秒表）";
+  String get key_rotation => "屏幕旋转";
+  String get keycap_space => "空格";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
   String get keycap_s => "S";
@@ -877,10 +858,9 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_d => "D";
   String get keycap_l => "L";
   String get keycap_r => "R";
-  String get about_licenses => "Licenses";
-  String get about_privacy => "Privacy";
-  String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+  String get about_licenses => "许可";
+  String get about_privacy => "隐私";
+  String get about_privacy_value => "无广告。无跟踪。账号可选。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1325,57 +1305,49 @@ class ClockMessages implements i69n.I69nMessageBundle {
       case 'about_privacy_value':
         return about_privacy_value;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class SyncMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const SyncMessages(this._parent);
-  String get account => "Account";
-  String get card_title_signed_out => "Your settings stay on this device";
-  String get card_body_signed_out =>
-      "Sign in only if you want them on your other devices.";
-  String get card_title_on => "Sync is on";
-  String get card_title_off => "Sync is off";
-  String card_last_synced(String when) => "Last synced $when";
-  String get headline => "Your settings stay on this device";
-  String get body =>
-      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
-  String get sign_in => "Sign in to sync";
-  String get sign_in_reason =>
-      "Only needed to sync your settings across devices.";
-  String get what_syncs => "What syncs";
-  String get what_syncs_body =>
-      "Theme, skins, sounds, clock and timer settings.";
-  String get stays_body =>
-      "Stays on this device: brightness, rotation, notifications and a running timer.";
-  String get sync_header => "Sync";
-  String get sync_settings => "Sync settings";
-  String get sync_settings_note =>
-      "Your settings follow you to every device you sign in on.";
-  String get last_synced => "Last synced";
-  String get just_now => "Just now";
-  String minutes_ago(int n) => "$n min ago";
-  String today_at(String time) => "Today at $time";
-  String get never => "Not yet";
-  String get syncing => "Syncing…";
-  String get waiting => "Waiting for a connection";
-  String get off_note => "Sync is off. Changes stay on this device.";
-  String get failed_offline =>
-      "Couldn't sync: no connection. It will try again when you're back online.";
-  String get failed_denied => "Couldn't sync: sign in again.";
-  String get failed_unknown => "Couldn't sync. Try again.";
-  String get try_again => "Try again";
-  String get sign_out_note => "Signing out keeps your settings on this device.";
-  String get delete_account => "Delete account";
-  String get delete_title => "Delete your account?";
-  String get delete_body =>
-      "Your synced settings are removed from the cloud. Settings on this device stay.";
-  String get delete_recent_login => "Sign in again to delete your account";
-  String get delete_failed => "Couldn't delete your account. Try again.";
-  String get provider_email => "Email";
+class SyncMessages_zh extends SyncMessages {
+  final Messages_zh _parent;
+  const SyncMessages_zh(this._parent) : super(_parent);
+  String get account => "账号";
+  String get card_title_signed_out => "你的设置只保存在本设备上";
+  String get card_body_signed_out => "只有想在其他设备上使用时才需要登录。";
+  String get card_title_on => "同步已开启";
+  String get card_title_off => "同步已关闭";
+  String card_last_synced(String when) => "上次同步：$when";
+  String get headline => "你的设置只保存在本设备上";
+  String get body => "QuietFlip 无需账号。只有想在其他设备上使用你的时钟、皮肤和声音时才需要登录。";
+  String get sign_in => "登录以同步";
+  String get sign_in_reason => "仅用于在设备间同步设置。";
+  String get what_syncs => "同步内容";
+  String get what_syncs_body => "主题、皮肤、声音、时钟和计时器设置。";
+  String get stays_body => "仅保留在本设备：亮度、旋转、通知和正在运行的计时器。";
+  String get sync_header => "同步";
+  String get sync_settings => "同步设置";
+  String get sync_settings_note => "在你登录的每台设备上都使用同一套设置。";
+  String get last_synced => "上次同步";
+  String get just_now => "刚刚";
+  String minutes_ago(int n) => "${n}分钟前";
+  String today_at(String time) => "今天 $time";
+  String get never => "尚未同步";
+  String get syncing => "正在同步…";
+  String get waiting => "正在等待连接";
+  String get off_note => "同步已关闭。更改仅保存在本设备上。";
+  String get failed_offline => "无法同步：没有网络连接。恢复联网后会自动重试。";
+  String get failed_denied => "无法同步：请重新登录。";
+  String get failed_unknown => "无法同步，请重试。";
+  String get try_again => "重试";
+  String get sign_out_note => "退出登录后，设置仍保留在本设备上。";
+  String get delete_account => "删除账号";
+  String get delete_title => "删除你的账号？";
+  String get delete_body => "已同步的设置将从云端删除。本设备上的设置会保留。";
+  String get delete_recent_login => "请重新登录以删除账号";
+  String get delete_failed => "无法删除账号，请重试。";
+  String get provider_email => "电子邮件";
   String get provider_google => "Google";
   String get provider_apple => "Apple";
   Object operator [](String key) {
@@ -1460,7 +1432,7 @@ class SyncMessages implements i69n.I69nMessageBundle {
       case 'provider_apple':
         return provider_apple;
       default:
-        return key;
+        return super[key];
     }
   }
 }

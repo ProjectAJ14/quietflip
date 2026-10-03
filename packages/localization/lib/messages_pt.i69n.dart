@@ -2,9 +2,10 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
 
-String get _languageCode => 'en';
-String get _localeName => 'en';
+String get _languageCode => 'pt';
+String get _localeName => 'pt';
 
 String _plural(int count,
         {String? zero,
@@ -34,21 +35,21 @@ String _cardinal(int count,
     i69n.cardinal(count, _languageCode,
         zero: zero, one: one, two: two, few: few, many: many, other: other);
 
-class Messages implements i69n.I69nMessageBundle {
-  const Messages();
-  AppMessages get app => AppMessages(this);
-  GenericMessages get generic => GenericMessages(this);
-  CommonMessages get common => CommonMessages(this);
-  AuthMessages get auth => AuthMessages(this);
-  ProfileMessages get profile => ProfileMessages(this);
-  NavMessages get nav => NavMessages(this);
-  NotificationsMessages get notifications => NotificationsMessages(this);
-  ErrorsMessages get errors => ErrorsMessages(this);
-  ValidationMessages get validation => ValidationMessages(this);
-  FilesMessages get files => FilesMessages(this);
-  DeveloperMessages get developer => DeveloperMessages(this);
-  ClockMessages get clock => ClockMessages(this);
-  SyncMessages get sync => SyncMessages(this);
+class Messages_pt extends Messages {
+  const Messages_pt();
+  AppMessages_pt get app => AppMessages_pt(this);
+  GenericMessages_pt get generic => GenericMessages_pt(this);
+  CommonMessages_pt get common => CommonMessages_pt(this);
+  AuthMessages_pt get auth => AuthMessages_pt(this);
+  ProfileMessages_pt get profile => ProfileMessages_pt(this);
+  NavMessages_pt get nav => NavMessages_pt(this);
+  NotificationsMessages_pt get notifications => NotificationsMessages_pt(this);
+  ErrorsMessages_pt get errors => ErrorsMessages_pt(this);
+  ValidationMessages_pt get validation => ValidationMessages_pt(this);
+  FilesMessages_pt get files => FilesMessages_pt(this);
+  DeveloperMessages_pt get developer => DeveloperMessages_pt(this);
+  ClockMessages_pt get clock => ClockMessages_pt(this);
+  SyncMessages_pt get sync => SyncMessages_pt(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,18 +84,17 @@ class Messages implements i69n.I69nMessageBundle {
       case 'sync':
         return sync;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AppMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AppMessages(this._parent);
+class AppMessages_pt extends AppMessages {
+  final Messages_pt _parent;
+  const AppMessages_pt(this._parent) : super(_parent);
   String get name => "QuietFlip";
-  String get description =>
-      "An ad-free flip clock, countdown timer, and stopwatch.";
-  String get welcome_to_app => "Welcome to Quietflip!";
+  String get description => "Relógio flip, timer e cronômetro sem anúncios.";
+  String get welcome_to_app => "Boas-vindas ao QuietFlip!";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -109,37 +109,37 @@ class AppMessages implements i69n.I69nMessageBundle {
       case 'welcome_to_app':
         return welcome_to_app;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class GenericMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const GenericMessages(this._parent);
+class GenericMessages_pt extends GenericMessages {
+  final Messages_pt _parent;
+  const GenericMessages_pt(this._parent) : super(_parent);
   String get ok => "OK";
-  String get cancel => "Cancel";
-  String get save => "Save";
-  String get delete => "Delete";
-  String get edit => "Edit";
-  String get update => "Update";
-  String get submit => "Submit";
-  String get close => "Close";
-  String get back => "Back";
-  String get next => "Next";
-  String get previous => "Previous";
-  String get done => "Done";
-  String get loading => "Loading...";
-  String get error => "Error";
-  String get success => "Success";
-  String get warning => "Warning";
-  String get info => "Info";
-  String get retry => "Retry";
-  String get refresh => "Refresh";
-  String get yes => "Yes";
-  String get no => "No";
-  String get add => "+ Add";
-  String get try_again => "Try Again";
+  String get cancel => "Cancelar";
+  String get save => "Salvar";
+  String get delete => "Excluir";
+  String get edit => "Editar";
+  String get update => "Atualizar";
+  String get submit => "Enviar";
+  String get close => "Fechar";
+  String get back => "Voltar";
+  String get next => "Próximo";
+  String get previous => "Anterior";
+  String get done => "Concluído";
+  String get loading => "Carregando...";
+  String get error => "Erro";
+  String get success => "Sucesso";
+  String get warning => "Aviso";
+  String get info => "Informação";
+  String get retry => "Tentar novamente";
+  String get refresh => "Atualizar";
+  String get yes => "Sim";
+  String get no => "Não";
+  String get add => "+ Adicionar";
+  String get try_again => "Tentar novamente";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -194,16 +194,16 @@ class GenericMessages implements i69n.I69nMessageBundle {
       case 'try_again':
         return try_again;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class CommonMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const CommonMessages(this._parent);
-  String get week => "Week";
-  String get month => "Month";
+class CommonMessages_pt extends CommonMessages {
+  final Messages_pt _parent;
+  const CommonMessages_pt(this._parent) : super(_parent);
+  String get week => "Semana";
+  String get month => "Mês";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -216,20 +216,20 @@ class CommonMessages implements i69n.I69nMessageBundle {
       case 'month':
         return month;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AuthMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthMessages(this._parent);
-  String get register => "Register";
-  String get sign_in => "Sign In";
-  String get sign_out => "Sign Out";
-  String get dont_have_account => "Don't have an account? ";
-  String get already_have_account => "Already have an account? ";
-  String get sign_out_confirmation => "Are you sure you want to sign out?";
+class AuthMessages_pt extends AuthMessages {
+  final Messages_pt _parent;
+  const AuthMessages_pt(this._parent) : super(_parent);
+  String get register => "Cadastrar";
+  String get sign_in => "Entrar";
+  String get sign_out => "Sair";
+  String get dont_have_account => "Não tem uma conta? ";
+  String get already_have_account => "Já tem uma conta? ";
+  String get sign_out_confirmation => "Tem certeza de que quer sair?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -250,26 +250,26 @@ class AuthMessages implements i69n.I69nMessageBundle {
       case 'sign_out_confirmation':
         return sign_out_confirmation;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ProfileMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ProfileMessages(this._parent);
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get account => "Account";
-  String get personal_info => "Personal Information";
-  String get privacy_settings => "Privacy Settings";
-  String get name => "Name";
-  String get email_address => "Email Address";
-  String get phone_number => "Phone Number";
-  String get date_of_birth => "Date of Birth";
-  String get delete_confirmation => "Delete Confirmation";
+class ProfileMessages_pt extends ProfileMessages {
+  final Messages_pt _parent;
+  const ProfileMessages_pt(this._parent) : super(_parent);
+  String get profile => "Perfil";
+  String get settings => "Configurações";
+  String get account => "Conta";
+  String get personal_info => "Informações pessoais";
+  String get privacy_settings => "Configurações de privacidade";
+  String get name => "Nome";
+  String get email_address => "Endereço de e-mail";
+  String get phone_number => "Número de telefone";
+  String get date_of_birth => "Data de nascimento";
+  String get delete_confirmation => "Confirmar exclusão";
   String get delete_confirmation_message =>
-      "Are you sure you want to delete this item? This action cannot be undone.";
+      "Tem certeza de que quer excluir este item? Esta ação não pode ser desfeita.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -300,22 +300,22 @@ class ProfileMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NavMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NavMessages(this._parent);
-  String get home => "Home";
-  String get dashboard => "Dashboard";
-  String get explore => "Explore";
+class NavMessages_pt extends NavMessages {
+  final Messages_pt _parent;
+  const NavMessages_pt(this._parent) : super(_parent);
+  String get home => "Início";
+  String get dashboard => "Painel";
+  String get explore => "Explorar";
   String get explore_placeholder =>
-      "Your second tab. Replace this with a real feature.";
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get notifications => "Notifications";
+      "Sua segunda aba. Substitua por um recurso real.";
+  String get profile => "Perfil";
+  String get settings => "Configurações";
+  String get notifications => "Notificações";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -338,32 +338,32 @@ class NavMessages implements i69n.I69nMessageBundle {
       case 'notifications':
         return notifications;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NotificationsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NotificationsMessages(this._parent);
-  String get title => "Notifications";
-  String get mark_as_read => "Mark as read";
-  String get mark_all_read => "Mark all as read";
-  String get delete => "Delete";
-  String get filter_all => "All";
-  String get filter_unread => "Unread";
-  String get filter_read => "Read";
-  String get type_reminder => "Reminder";
-  String get type_alert => "Alert";
-  String get type_promotion => "Promotion";
-  String get type_system => "System";
-  String get type_custom => "Custom";
-  String get empty_title => "No notifications";
+class NotificationsMessages_pt extends NotificationsMessages {
+  final Messages_pt _parent;
+  const NotificationsMessages_pt(this._parent) : super(_parent);
+  String get title => "Notificações";
+  String get mark_as_read => "Marcar como lida";
+  String get mark_all_read => "Marcar todas como lidas";
+  String get delete => "Excluir";
+  String get filter_all => "Todas";
+  String get filter_unread => "Não lidas";
+  String get filter_read => "Lidas";
+  String get type_reminder => "Lembrete";
+  String get type_alert => "Alerta";
+  String get type_promotion => "Promoção";
+  String get type_system => "Sistema";
+  String get type_custom => "Personalizada";
+  String get empty_title => "Nenhuma notificação";
   String get empty_description =>
-      "You're all caught up! New notifications will appear here.";
-  String get delete_confirmation_title => "Delete notification?";
+      "Tudo em dia! Novas notificações aparecerão aqui.";
+  String get delete_confirmation_title => "Excluir notificação?";
   String get delete_confirmation_message =>
-      "This notification will be permanently removed from your list.";
+      "Esta notificação será removida da sua lista permanentemente.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -404,67 +404,68 @@ class NotificationsMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ErrorsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ErrorsMessages(this._parent);
-  String get network_error => "Network error. Please check your connection.";
-  String get unknown_error => "An unknown error occurred.";
-  String get validation_error => "Please check your input and try again.";
-  String get server_error => "Server error. Please try again later.";
-  String get default_error_message =>
-      "Oops! Something went wrong. Please try again.";
-  String get user_not_found => "User not found. Please check your credentials.";
+class ErrorsMessages_pt extends ErrorsMessages {
+  final Messages_pt _parent;
+  const ErrorsMessages_pt(this._parent) : super(_parent);
+  String get network_error => "Erro de rede. Verifique sua conexão.";
+  String get unknown_error => "Ocorreu um erro desconhecido.";
+  String get validation_error => "Verifique os dados e tente novamente.";
+  String get server_error => "Erro no servidor. Tente novamente mais tarde.";
+  String get default_error_message => "Ops! Algo deu errado. Tente novamente.";
+  String get user_not_found =>
+      "Usuário não encontrado. Verifique suas credenciais.";
   String get default_error_description =>
-      "We encountered an error while processing your request. We apologize for the inconvenience. Please try again later or contact support if the issue persists.";
-  String get page_not_found => "Page Not Found";
+      "Ocorreu um erro ao processar sua solicitação. Pedimos desculpas pelo transtorno. Tente novamente mais tarde ou fale com o suporte se o problema continuar.";
+  String get page_not_found => "Página não encontrada";
   String get page_not_found_description =>
-      "The page you are looking for does not exist.";
-  String get unexpected_error => "An unexpected error occurred.";
-  String get redirect_error => "Redirect Error";
-  String get bad_request => "Invalid request. Please check your input.";
-  String get unauthorized => "Authentication required. Please sign in again.";
-  String get forbidden => "Access denied. You don't have permission.";
-  String get not_found => "Requested resource not found.";
-  String get conflict => "Data conflict. Please refresh and try again.";
+      "A página que você procura não existe.";
+  String get unexpected_error => "Ocorreu um erro inesperado.";
+  String get redirect_error => "Erro de redirecionamento";
+  String get bad_request => "Solicitação inválida. Verifique os dados.";
+  String get unauthorized => "Autenticação necessária. Entre novamente.";
+  String get forbidden => "Acesso negado. Você não tem permissão.";
+  String get not_found => "Recurso solicitado não encontrado.";
+  String get conflict => "Conflito de dados. Atualize e tente novamente.";
   String get unprocessable_entity =>
-      "Invalid data format. Please check your input.";
-  String get internal_server_error => "Server error. Please try again later.";
+      "Formato de dados inválido. Verifique os dados.";
+  String get internal_server_error =>
+      "Erro no servidor. Tente novamente mais tarde.";
   String get connection_timeout =>
-      "Connection timeout. Please check your internet.";
-  String get receive_timeout => "Request timeout. Please try again.";
-  String get send_timeout => "Upload timeout. Please try again.";
-  String get no_internet =>
-      "No internet connection. Please check your network.";
-  String get unknown_network => "Network error occurred. Please try again.";
+      "Tempo de conexão esgotado. Verifique sua internet.";
+  String get receive_timeout =>
+      "Tempo da solicitação esgotado. Tente novamente.";
+  String get send_timeout => "Tempo de envio esgotado. Tente novamente.";
+  String get no_internet => "Sem conexão com a internet. Verifique sua rede.";
+  String get unknown_network => "Ocorreu um erro de rede. Tente novamente.";
   String format_exception_message(String code, String postfix) =>
-      "This data is wearing the wrong costume, I don't recognize it [$code] $postfix";
+      "Estes dados estão com a fantasia errada, não os reconheço [$code] $postfix";
   String type_error_message(String code, String postfix) =>
-      "This data is not what I expected, I can't process it [$code] $postfix";
+      "Estes dados não são o que eu esperava, não consigo processá-los [$code] $postfix";
   String index_error_message(String code, String postfix) =>
-      "Hmm, I can't seem to find that item in the list [$code] $postfix";
+      "Hmm, não encontro esse item na lista [$code] $postfix";
   String range_error_message(String code, String postfix) =>
-      "Oops! That number is way out of my comfort zone [$code] $postfix";
+      "Ops! Esse número está bem fora da minha zona de conforto [$code] $postfix";
   String argument_error_message(String code, String postfix) =>
-      "Hey! Something's not right with what you gave me [$code] $postfix";
+      "Ei! Tem algo errado com o que você me passou [$code] $postfix";
   String state_error_message(String code, String postfix) =>
-      "I'm a bit confused about what I should be doing right now [$code] $postfix";
+      "Estou meio confuso sobre o que devo fazer agora [$code] $postfix";
   String unimplemented_error_message(String code, String postfix) =>
-      "This feature is still under construction [$code] $postfix";
+      "Este recurso ainda está em construção [$code] $postfix";
   String unsupported_error_message(String code, String postfix) =>
-      "Sorry, I don't know how to do that yet [$code] $postfix";
+      "Desculpe, ainda não sei fazer isso [$code] $postfix";
   String concurrent_modification_error_message(String code, String postfix) =>
-      "Whoa! Too many things happening at once [$code] $postfix";
+      "Opa! Coisas demais acontecendo ao mesmo tempo [$code] $postfix";
   String out_of_memory_error_message(String code, String postfix) =>
-      "My brain is full! Need to clear some space [$code] $postfix";
+      "Minha cabeça está cheia! Preciso liberar espaço [$code] $postfix";
   String stack_overflow_error_message(String code, String postfix) =>
-      "I'm stuck in a loop and getting dizzy [$code] $postfix";
+      "Fiquei preso num loop e estou tonto [$code] $postfix";
   String unknown_error_message(String code, String postfix) =>
-      "Something unexpected happened, but don't worry [$code] $postfix";
+      "Aconteceu algo inesperado, mas não se preocupe [$code] $postfix";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -543,20 +544,20 @@ class ErrorsMessages implements i69n.I69nMessageBundle {
       case 'unknown_error_message':
         return unknown_error_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ValidationMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ValidationMessages(this._parent);
-  String get required_field => "This field is required";
-  String get invalid_email => "Please enter a valid email address";
-  String get password_too_short => "Password must be at least 8 characters";
-  String get passwords_dont_match => "Passwords do not match";
+class ValidationMessages_pt extends ValidationMessages {
+  final Messages_pt _parent;
+  const ValidationMessages_pt(this._parent) : super(_parent);
+  String get required_field => "Este campo é obrigatório";
+  String get invalid_email => "Digite um endereço de e-mail válido";
+  String get password_too_short => "A senha deve ter pelo menos 8 caracteres";
+  String get passwords_dont_match => "As senhas não coincidem";
   String invalid_key_config(String of, String key) =>
-      "Invalid configuration for $key in $of. Please check your settings.";
+      "Configuração inválida para $key em $of. Verifique suas configurações.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -575,24 +576,25 @@ class ValidationMessages implements i69n.I69nMessageBundle {
       case 'invalid_key_config':
         return invalid_key_config;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class FilesMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const FilesMessages(this._parent);
-  String get info_title => "File Information";
-  String get name => "File Name";
-  String get type => "File Type";
-  String get extension => "File Extension";
-  String get size => "File Size";
-  String get path => "File Path";
-  String get copy_hint => "Tap any field to copy to clipboard";
-  String copied(String field) => "$field copied to clipboard";
-  String image_type(String format) => "$format image";
-  String get image_file => "Image file";
+class FilesMessages_pt extends FilesMessages {
+  final Messages_pt _parent;
+  const FilesMessages_pt(this._parent) : super(_parent);
+  String get info_title => "Informações do arquivo";
+  String get name => "Nome do arquivo";
+  String get type => "Tipo de arquivo";
+  String get extension => "Extensão do arquivo";
+  String get size => "Tamanho do arquivo";
+  String get path => "Caminho do arquivo";
+  String get copy_hint =>
+      "Toque em um campo para copiar para a área de transferência";
+  String copied(String field) => "$field copiado para a área de transferência";
+  String image_type(String format) => "Imagem $format";
+  String get image_file => "Arquivo de imagem";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -621,15 +623,15 @@ class FilesMessages implements i69n.I69nMessageBundle {
       case 'image_file':
         return image_file;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class DeveloperMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const DeveloperMessages(this._parent);
-  String get no_viewer => "This logger has no interactive viewer.";
+class DeveloperMessages_pt extends DeveloperMessages {
+  final Messages_pt _parent;
+  const DeveloperMessages_pt(this._parent) : super(_parent);
+  String get no_viewer => "Este registro não tem visualizador interativo.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -640,235 +642,237 @@ class DeveloperMessages implements i69n.I69nMessageBundle {
       case 'no_viewer':
         return no_viewer;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ClockMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ClockMessages(this._parent);
-  String get clock => "Clock";
-  String get stopwatch => "Stopwatch";
-  String get modes => "Mode";
-  String get settings => "Settings";
-  String get times_up => "Time's up";
-  String get timer_finished_title => "Time's up";
-  String get timer_finished_body => "Your QuietFlip timer has finished.";
-  String get alerts_channel => "Timer alerts";
-  String get show_controls => "Tap or move the mouse to show controls";
-  String get theme => "Theme";
-  String get theme_light => "Light";
-  String get use_24h => "24-hour time";
-  String get show_seconds => "Show seconds";
-  String get sound_tick_group => "Tick";
-  String get sound_tick_hint => "plays on every flip";
-  String get sound_alarm_group => "Alarm";
-  String get sound_alarm_hint => "loops until dismissed, 60 s max";
-  String get tick_sound => "Tick sound";
-  String get tick_sound_description => "A soft sound each time a card flips";
-  String get alarm_sound => "Alarm sound";
+class ClockMessages_pt extends ClockMessages {
+  final Messages_pt _parent;
+  const ClockMessages_pt(this._parent) : super(_parent);
+  String get clock => "Relógio";
+  String get stopwatch => "Cronômetro";
+  String get modes => "Modo";
+  String get settings => "Configurações";
+  String get times_up => "Tempo esgotado";
+  String get timer_finished_title => "Tempo esgotado";
+  String get timer_finished_body => "Seu timer do QuietFlip terminou.";
+  String get alerts_channel => "Alertas do timer";
+  String get show_controls => "Toque ou mova o mouse para ver os controles";
+  String get theme => "Tema";
+  String get theme_light => "Claro";
+  String get use_24h => "Formato 24 horas";
+  String get show_seconds => "Mostrar segundos";
+  String get sound_tick_group => "Tique";
+  String get sound_tick_hint => "toca a cada virada";
+  String get sound_alarm_group => "Alarme";
+  String get sound_alarm_hint => "repete até ser dispensado, máx. 60 s";
+  String get tick_sound => "Som de tique";
+  String get tick_sound_description => "Um som suave a cada virada de placa";
+  String get alarm_sound => "Som de alarme";
   String get alarm_sound_description =>
-      "Plays when a timer or Pomodoro phase ends";
-  String get tick_classic => "Classic";
-  String get tick_classic_mood => "soft click";
-  String get tick_split_flap => "Split-flap";
-  String get tick_split_flap_mood => "flaps patter";
-  String get tick_clockwork => "Clockwork";
-  String get tick_clockwork_mood => "watch tick";
-  String get tick_woodblock => "Woodblock";
-  String get tick_woodblock_mood => "hollow knock";
+      "Toca quando um timer ou uma fase Pomodoro termina";
+  String get tick_classic => "Clássico";
+  String get tick_classic_mood => "clique suave";
+  String get tick_split_flap => "Placas";
+  String get tick_split_flap_mood => "placas batendo";
+  String get tick_clockwork => "Mecânico";
+  String get tick_clockwork_mood => "tique de relógio";
+  String get tick_woodblock => "Bloco de madeira";
+  String get tick_woodblock_mood => "batida oca";
   String get tick_digital => "Digital";
-  String get tick_digital_mood => "clean blip";
-  String get alarm_chime => "Chime";
-  String get alarm_chime_mood => "two tones";
-  String get alarm_bell => "Bell";
-  String get alarm_bell_mood => "struck bell";
-  String get alarm_beeps => "Beeps";
-  String get alarm_beeps_mood => "bedside";
-  String get alarm_rising => "Rising";
+  String get tick_digital_mood => "bipe limpo";
+  String get alarm_chime => "Carrilhão";
+  String get alarm_chime_mood => "dois tons";
+  String get alarm_bell => "Sino";
+  String get alarm_bell_mood => "badalada";
+  String get alarm_beeps => "Bipes";
+  String get alarm_beeps_mood => "despertador";
+  String get alarm_rising => "Crescente";
   String get alarm_rising_mood => "marimba";
-  String get alarm_ring => "Ring";
-  String get alarm_ring_mood => "twin bells";
-  String get system_notifications => "System notifications";
+  String get alarm_ring => "Campainha";
+  String get alarm_ring_mood => "dois sinos";
+  String get system_notifications => "Notificações do sistema";
   String get system_notifications_description =>
-      "Get a notification when a timer finishes, even if QuietFlip is in the background.";
+      "Receba uma notificação quando um timer terminar, mesmo com o QuietFlip em segundo plano.";
   String get permission_denied =>
-      "Notifications are turned off for QuietFlip. You will still see and hear the alert while the app is open.";
+      "As notificações do QuietFlip estão desativadas. Você ainda verá e ouvirá o alerta enquanto o app estiver aberto.";
   String get web_closed_tab_note =>
-      "In a browser, alerts only work while this tab stays open.";
-  String get keep_screen_awake => "Keep screen awake";
+      "No navegador, os alertas só funcionam enquanto esta aba estiver aberta.";
+  String get keep_screen_awake => "Manter tela ligada";
   String get keep_screen_awake_description =>
-      "Stop the screen from sleeping while the clock is showing.";
-  String current_time(String time) => "Current time $time";
-  String time_remaining(String time) => "Time remaining $time";
-  String elapsed(String time) => "Elapsed time $time";
-  String get digit_brightness => "Digit brightness";
+      "Impede que a tela apague enquanto o relógio é exibido.";
+  String current_time(String time) => "Hora atual $time";
+  String time_remaining(String time) => "Tempo restante $time";
+  String elapsed(String time) => "Tempo decorrido $time";
+  String get digit_brightness => "Brilho dos dígitos";
   String percent(String value) => "$value%";
-  String get subtle_movement => "Subtle movement";
+  String get subtle_movement => "Movimento sutil";
   String get subtle_movement_description =>
-      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+      "Em tela cheia, move o relógio alguns pixels por minuto para que os mesmos pixels não fiquem acesos a noite toda. Reduz, mas não evita, o risco de marcas na tela.";
   String get full_screen_note =>
-      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
-  String get show_date => "Show date";
+      "A tela cheia oculta os controles enquanto o QuietFlip está aberto. O app precisa ficar aberto. Não é uma tela de bloqueio nem um protetor de tela.";
+  String get show_date => "Mostrar data";
   String current_time_and_date(String time, String date) =>
-      "Current time $time, $date";
-  String get orientation => "Orientation";
-  String get orientation_auto => "Auto";
-  String get orientation_landscape => "Landscape";
-  String get orientation_portrait => "Portrait";
-  String get settings_card_size => "Card size";
-  String get card_size_small => "Small";
-  String get card_size_medium => "Medium";
-  String get card_size_large => "Large";
-  String get settings_corners => "Corners";
-  String get corners_square => "Square";
-  String get corners_round => "Round";
+      "Hora atual $time, $date";
+  String get orientation => "Orientação";
+  String get orientation_auto => "Automática";
+  String get orientation_landscape => "Paisagem";
+  String get orientation_portrait => "Retrato";
+  String get settings_card_size => "Tamanho da placa";
+  String get card_size_small => "Pequeno";
+  String get card_size_medium => "Médio";
+  String get card_size_large => "Grande";
+  String get settings_corners => "Cantos";
+  String get corners_square => "Retos";
+  String get corners_round => "Arredondados";
   String corners_value(String value) => "$value px";
   String get pomodoro => "Pomodoro";
-  String pomodoro_focus(int round) => "Focus · Round $round";
-  String pomodoro_break(int round) => "Break · Round $round";
-  String get pomodoro_focus_done => "Focus done. Time for a break.";
-  String get pomodoro_break_done => "Break over. Back to focus.";
-  String get start_focus => "Start focus";
-  String get start_break => "Start break";
-  String get skins_title => "Skins";
-  String get skins_customize => "Customize";
-  String skins_customize_named(String name) => "Customize $name";
-  String get skins_done => "Done";
-  String get skins_in_use => "In use";
-  String get skins_yours => "Your skins";
-  String get skins_classic => "Classic";
-  String get skins_bold => "Bold";
-  String get skins_type => "Type";
-  String get skins_new => "New skin";
-  String get skins_from_current => "From current";
-  String get customize_title => "Customize skin";
-  String get customize_name => "Name";
-  String customize_copy_name(String name) => "$name copy";
-  String get customize_font => "Font";
-  String get customize_digits => "Digits";
-  String get customize_card => "Card";
-  String get customize_ground => "Background";
-  String get customize_custom_colour => "Custom colour";
-  String get customize_hex_hint => "Hex, for example #FF7A00";
-  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
-  String get customize_apply => "Apply";
-  String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_details => "Details";
-  String get customize_seconds => "Seconds";
-  String get customize_seconds_off => "Off";
-  String get customize_seconds_badge => "Small";
-  String get customize_seconds_cards => "Cards";
+  String pomodoro_focus(int round) => "Foco · Rodada $round";
+  String pomodoro_break(int round) => "Pausa · Rodada $round";
+  String get pomodoro_focus_done => "Foco concluído. Hora da pausa.";
+  String get pomodoro_break_done => "Pausa encerrada. De volta ao foco.";
+  String get start_focus => "Iniciar foco";
+  String get start_break => "Iniciar pausa";
+  String get skins_title => "Temas visuais";
+  String get skins_customize => "Personalizar";
+  String skins_customize_named(String name) => "Personalizar $name";
+  String get skins_done => "Concluído";
+  String get skins_in_use => "Em uso";
+  String get skins_yours => "Seus visuais";
+  String get skins_classic => "Clássicos";
+  String get skins_bold => "Marcantes";
+  String get skins_type => "Tipografia";
+  String get skins_new => "Novo visual";
+  String get skins_from_current => "Do atual";
+  String get customize_title => "Personalizar visual";
+  String get customize_name => "Nome";
+  String customize_copy_name(String name) => "Cópia de $name";
+  String get customize_font => "Fonte";
+  String get customize_digits => "Dígitos";
+  String get customize_card => "Placa";
+  String get customize_ground => "Fundo";
+  String get customize_custom_colour => "Cor personalizada";
+  String get customize_hex_hint => "Hex, por exemplo #FF7A00";
+  String get customize_hex_invalid => "Digite seis dígitos hex, como #FF7A00.";
+  String get customize_apply => "Aplicar";
+  String get customize_low_contrast =>
+      "Os dígitos podem ficar difíceis de ler.";
+  String get customize_details => "Detalhes";
+  String get customize_seconds => "Segundos";
+  String get customize_seconds_off => "Não";
+  String get customize_seconds_badge => "Pequenos";
+  String get customize_seconds_cards => "Placas";
   String get customize_meridiem => "AM / PM";
-  String get customize_meridiem_hidden => "Hidden";
-  String get customize_meridiem_left => "Inside";
-  String get customize_meridiem_right => "Beside";
-  String get customize_save => "Save skin";
-  String get customize_reset => "Reset";
-  String get customize_delete => "Delete skin";
+  String get customize_meridiem_hidden => "Oculto";
+  String get customize_meridiem_left => "Dentro";
+  String get customize_meridiem_right => "Ao lado";
+  String get customize_save => "Salvar visual";
+  String get customize_reset => "Redefinir";
+  String get customize_delete => "Excluir visual";
   String get skin_mono => "Mono";
-  String get skin_paper => "Paper";
-  String get skin_rose => "Rose";
-  String get skin_violet => "Violet";
-  String get skin_amber => "Amber";
-  String get skin_signal => "Signal";
-  String get skin_field => "Field";
-  String get skin_mint => "Mint";
-  String get skin_cyan => "Cyan";
-  String get skin_taxi => "Taxi";
+  String get skin_paper => "Papel";
+  String get skin_rose => "Rosa";
+  String get skin_violet => "Violeta";
+  String get skin_amber => "Âmbar";
+  String get skin_signal => "Sinal";
+  String get skin_field => "Campo";
+  String get skin_mint => "Menta";
+  String get skin_cyan => "Ciano";
+  String get skin_taxi => "Táxi";
   String get skin_bebas => "Bebas";
   String get skin_anton => "Anton";
   String get skin_oswald => "Oswald";
   String get skin_shoulders => "Shoulders";
-  String get skin_poster => "Poster";
+  String get skin_poster => "Pôster";
   String get skin_terminal => "Terminal";
   String get skin_grotesk => "Grotesk";
   String get skin_serif => "Serif";
-  String get skin_orbit => "Orbit";
-  String get skin_nightstand => "Nightstand";
-  String get skin_studio => "Studio";
-  String get skin_arcade => "Arcade";
-  String get skin_railway => "Railway";
-  String get skin_desk => "Desk";
+  String get skin_orbit => "Órbita";
+  String get skin_nightstand => "Criado-mudo";
+  String get skin_studio => "Estúdio";
+  String get skin_arcade => "Fliperama";
+  String get skin_railway => "Estação";
+  String get skin_desk => "Escrivaninha";
   String get skin_neon => "Neon";
-  String get skin_minimal => "Minimal";
+  String get skin_minimal => "Mínimo";
   String get mode_pomodoro => "Pomodoro";
-  String get mode_clock => "Clock";
-  String get mode_stopwatch => "Stopwatch";
-  String get action_start => "Start";
-  String get action_pause => "Pause";
-  String get action_resume => "Resume";
-  String get action_reset => "Reset";
-  String get action_restart => "Restart";
-  String get action_done => "Done";
-  String get action_skins => "Skins";
-  String get action_settings => "Settings";
-  String get action_rotation => "Screen rotation";
-  String get action_timer_settings => "Timer settings";
-  String preset_minutes(int minutes) => "${minutes}m";
+  String get mode_clock => "Relógio";
+  String get mode_stopwatch => "Cronômetro";
+  String get action_start => "Iniciar";
+  String get action_pause => "Pausar";
+  String get action_resume => "Retomar";
+  String get action_reset => "Zerar";
+  String get action_restart => "Reiniciar";
+  String get action_done => "Concluído";
+  String get action_skins => "Visuais";
+  String get action_settings => "Configurações";
+  String get action_rotation => "Rotação da tela";
+  String get action_timer_settings => "Configurações do timer";
+  String preset_minutes(int minutes) => "${minutes} min";
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
   String get preset_pomodoro => "Pomodoro";
-  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
-  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String preset_spoken_minutes(int minutes) => "Timer de $minutes min";
+  String preset_spoken_seconds(int seconds) => "Timer de $seconds s";
   String preset_spoken_both(int minutes, int seconds) =>
-      "$minutes minute $seconds second timer";
-  String get action_lap => "Lap";
-  String lap_label(int number, String time) => "Lap $number  $time";
+      "Timer de $minutes min e $seconds s";
+  String get action_lap => "Volta";
+  String lap_label(int number, String time) => "Volta $number  $time";
   String brightness_value(String percent) => "$percent%";
-  String get settings_appearance => "Appearance";
-  String get settings_clock => "Clock";
-  String get settings_gestures => "Gestures";
+  String get settings_appearance => "Aparência";
+  String get settings_clock => "Relógio";
+  String get settings_gestures => "Gestos";
   String get settings_timers => "Timers";
-  String get settings_sound => "Sound & alerts";
-  String get settings_awake => "Keep awake";
-  String get settings_shortcuts => "Shortcuts";
-  String get settings_about => "About";
-  String get theme_dark => "Dark";
-  String get theme_system => "Match system";
-  String get gesture_swipes => "Swipes";
-  String get gesture_brightness => "Swipe up or down for brightness";
-  String get gesture_modes => "Swipe sideways to change mode";
+  String get settings_sound => "Som e alertas";
+  String get settings_awake => "Tela ligada";
+  String get settings_shortcuts => "Atalhos";
+  String get settings_about => "Sobre";
+  String get theme_dark => "Escuro";
+  String get theme_system => "Igual ao sistema";
+  String get gesture_swipes => "Deslizes";
+  String get gesture_brightness =>
+      "Deslize para cima ou para baixo para o brilho";
+  String get gesture_modes => "Deslize para os lados para mudar de modo";
   String get gesture_footer =>
-      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
-  String get gesture_controls => "Controls";
-  String get gesture_tap => "Tap to show controls";
-  String get gesture_idle => "Hide controls after";
-  String gesture_idle_seconds(int seconds) => "${seconds}s";
-  String get gesture_idle_never => "Never";
+      "Deslize em qualquer parte do relógio. No Mac, no Windows e na web, o brilho escurece os dígitos em vez da tela.";
+  String get gesture_controls => "Controles";
+  String get gesture_tap => "Toque para ver os controles";
+  String get gesture_idle => "Ocultar controles após";
+  String gesture_idle_seconds(int seconds) => "${seconds} s";
+  String get gesture_idle_never => "Nunca";
   String get gesture_controls_footer =>
-      "Controls shrink to a dot, then disappear.";
-  String get timers_default => "Default timer";
-  String get timers_start_runs => "Start runs";
-  String get timers_presets => "Presets";
-  String get timers_add => "Add timer";
+      "Os controles viram um ponto e depois somem.";
+  String get timers_default => "Timer padrão";
+  String get timers_start_runs => "Ao iniciar";
+  String get timers_presets => "Predefinições";
+  String get timers_add => "Adicionar timer";
   String get timers_limit_footer =>
-      "Six timers fit the island. Delete one to add another.";
-  String timers_delete(String timer) => "Delete $timer";
-  String get timers_duplicate => "You already have this timer.";
-  String get timers_picker_minutes => "Minutes";
-  String get timers_picker_seconds => "Seconds";
-  String get skins_view_all => "View all";
-  String get timers_pomodoro_focus => "Focus";
-  String get timers_pomodoro_break => "Break";
+      "Cabem seis timers na ilha. Exclua um para adicionar outro.";
+  String timers_delete(String timer) => "Excluir $timer";
+  String get timers_duplicate => "Você já tem este timer.";
+  String get timers_picker_minutes => "Minutos";
+  String get timers_picker_seconds => "Segundos";
+  String get skins_view_all => "Ver todos";
+  String get timers_pomodoro_focus => "Foco";
+  String get timers_pomodoro_break => "Pausa";
   String timers_minutes(int minutes) => "$minutes min";
   String get sound_footer =>
-      "The in-app alert always plays, even with notifications off.";
-  String get shortcuts_touch => "Touch";
-  String get shortcuts_keyboard => "Keyboard";
-  String get touch_controls => "Show or hide controls";
-  String get shortcut_off => "Off";
-  String get key_start_pause => "Start or pause";
-  String get key_change_mode => "Change mode";
-  String get key_brightness => "Brightness";
-  String get key_show_seconds => "Show seconds";
-  String get key_full_screen => "Full screen";
-  String get key_hide_controls => "Hide controls";
-  String get key_dim => "Dim the digits";
-  String get key_lap => "Lap (stopwatch)";
-  String get key_rotation => "Screen rotation";
-  String get keycap_space => "Space";
+      "O alerta no app sempre toca, mesmo com as notificações desativadas.";
+  String get shortcuts_touch => "Toque";
+  String get shortcuts_keyboard => "Teclado";
+  String get touch_controls => "Mostrar ou ocultar controles";
+  String get shortcut_off => "Não";
+  String get key_start_pause => "Iniciar ou pausar";
+  String get key_change_mode => "Mudar de modo";
+  String get key_brightness => "Brilho";
+  String get key_show_seconds => "Mostrar segundos";
+  String get key_full_screen => "Tela cheia";
+  String get key_hide_controls => "Ocultar controles";
+  String get key_dim => "Escurecer os dígitos";
+  String get key_lap => "Volta (cronômetro)";
+  String get key_rotation => "Rotação da tela";
+  String get keycap_space => "Espaço";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
   String get keycap_s => "S";
@@ -877,10 +881,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_d => "D";
   String get keycap_l => "L";
   String get keycap_r => "R";
-  String get about_licenses => "Licenses";
-  String get about_privacy => "Privacy";
+  String get about_licenses => "Licenças";
+  String get about_privacy => "Privacidade";
   String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+      "Sem anúncios. Sem rastreamento. A conta é opcional.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1325,57 +1329,61 @@ class ClockMessages implements i69n.I69nMessageBundle {
       case 'about_privacy_value':
         return about_privacy_value;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class SyncMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const SyncMessages(this._parent);
-  String get account => "Account";
-  String get card_title_signed_out => "Your settings stay on this device";
+class SyncMessages_pt extends SyncMessages {
+  final Messages_pt _parent;
+  const SyncMessages_pt(this._parent) : super(_parent);
+  String get account => "Conta";
+  String get card_title_signed_out =>
+      "Suas configurações ficam neste dispositivo";
   String get card_body_signed_out =>
-      "Sign in only if you want them on your other devices.";
-  String get card_title_on => "Sync is on";
-  String get card_title_off => "Sync is off";
-  String card_last_synced(String when) => "Last synced $when";
-  String get headline => "Your settings stay on this device";
+      "Entre só se quiser levá-las para seus outros dispositivos.";
+  String get card_title_on => "Sincronização ativada";
+  String get card_title_off => "Sincronização desativada";
+  String card_last_synced(String when) => "Última sincronização: $when";
+  String get headline => "Suas configurações ficam neste dispositivo";
   String get body =>
-      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
-  String get sign_in => "Sign in to sync";
+      "O QuietFlip nunca exige uma conta. Entre só se quiser seu relógio, visuais e sons nos seus outros dispositivos.";
+  String get sign_in => "Entrar para sincronizar";
   String get sign_in_reason =>
-      "Only needed to sync your settings across devices.";
-  String get what_syncs => "What syncs";
+      "Só é necessário para sincronizar suas configurações entre dispositivos.";
+  String get what_syncs => "O que é sincronizado";
   String get what_syncs_body =>
-      "Theme, skins, sounds, clock and timer settings.";
+      "Tema, visuais, sons e configurações do relógio e do timer.";
   String get stays_body =>
-      "Stays on this device: brightness, rotation, notifications and a running timer.";
-  String get sync_header => "Sync";
-  String get sync_settings => "Sync settings";
+      "Fica neste dispositivo: brilho, rotação, notificações e um timer em andamento.";
+  String get sync_header => "Sincronização";
+  String get sync_settings => "Sincronizar configurações";
   String get sync_settings_note =>
-      "Your settings follow you to every device you sign in on.";
-  String get last_synced => "Last synced";
-  String get just_now => "Just now";
-  String minutes_ago(int n) => "$n min ago";
-  String today_at(String time) => "Today at $time";
-  String get never => "Not yet";
-  String get syncing => "Syncing…";
-  String get waiting => "Waiting for a connection";
-  String get off_note => "Sync is off. Changes stay on this device.";
+      "Suas configurações acompanham você em cada dispositivo em que entrar.";
+  String get last_synced => "Última sincronização";
+  String get just_now => "Agora mesmo";
+  String minutes_ago(int n) => "Há $n min";
+  String today_at(String time) => "Hoje às $time";
+  String get never => "Ainda não";
+  String get syncing => "Sincronizando…";
+  String get waiting => "Aguardando conexão";
+  String get off_note =>
+      "A sincronização está desativada. As alterações ficam neste dispositivo.";
   String get failed_offline =>
-      "Couldn't sync: no connection. It will try again when you're back online.";
-  String get failed_denied => "Couldn't sync: sign in again.";
-  String get failed_unknown => "Couldn't sync. Try again.";
-  String get try_again => "Try again";
-  String get sign_out_note => "Signing out keeps your settings on this device.";
-  String get delete_account => "Delete account";
-  String get delete_title => "Delete your account?";
+      "Não foi possível sincronizar: sem conexão. Vamos tentar de novo quando você estiver on-line.";
+  String get failed_denied => "Não foi possível sincronizar: entre novamente.";
+  String get failed_unknown => "Não foi possível sincronizar. Tente novamente.";
+  String get try_again => "Tentar novamente";
+  String get sign_out_note =>
+      "Ao sair, suas configurações continuam neste dispositivo.";
+  String get delete_account => "Excluir conta";
+  String get delete_title => "Excluir sua conta?";
   String get delete_body =>
-      "Your synced settings are removed from the cloud. Settings on this device stay.";
-  String get delete_recent_login => "Sign in again to delete your account";
-  String get delete_failed => "Couldn't delete your account. Try again.";
-  String get provider_email => "Email";
+      "Suas configurações sincronizadas são removidas da nuvem. As configurações deste dispositivo continuam.";
+  String get delete_recent_login => "Entre novamente para excluir sua conta";
+  String get delete_failed =>
+      "Não foi possível excluir sua conta. Tente novamente.";
+  String get provider_email => "E-mail";
   String get provider_google => "Google";
   String get provider_apple => "Apple";
   Object operator [](String key) {
@@ -1460,7 +1468,7 @@ class SyncMessages implements i69n.I69nMessageBundle {
       case 'provider_apple':
         return provider_apple;
       default:
-        return key;
+        return super[key];
     }
   }
 }

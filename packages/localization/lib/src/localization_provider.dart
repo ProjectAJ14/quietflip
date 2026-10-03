@@ -65,8 +65,7 @@ class LocalizationProvider {
   ];
 
   /// Whether [locale] (a language code) has generated messages.
-  static bool isLocaleSupported(String locale) =>
-      _messages.containsKey(locale);
+  static bool isLocaleSupported(String locale) => _messages.containsKey(locale);
 
   /// The first of [preferredLocales] Quietflip speaks, matched by language
   /// (`pt_BR` and `pt_PT` -> `pt`), else `'en'`. Traditional Chinese

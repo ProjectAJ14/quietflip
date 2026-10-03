@@ -2,9 +2,10 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
 
-String get _languageCode => 'en';
-String get _localeName => 'en';
+String get _languageCode => 'tr';
+String get _localeName => 'tr';
 
 String _plural(int count,
         {String? zero,
@@ -34,21 +35,21 @@ String _cardinal(int count,
     i69n.cardinal(count, _languageCode,
         zero: zero, one: one, two: two, few: few, many: many, other: other);
 
-class Messages implements i69n.I69nMessageBundle {
-  const Messages();
-  AppMessages get app => AppMessages(this);
-  GenericMessages get generic => GenericMessages(this);
-  CommonMessages get common => CommonMessages(this);
-  AuthMessages get auth => AuthMessages(this);
-  ProfileMessages get profile => ProfileMessages(this);
-  NavMessages get nav => NavMessages(this);
-  NotificationsMessages get notifications => NotificationsMessages(this);
-  ErrorsMessages get errors => ErrorsMessages(this);
-  ValidationMessages get validation => ValidationMessages(this);
-  FilesMessages get files => FilesMessages(this);
-  DeveloperMessages get developer => DeveloperMessages(this);
-  ClockMessages get clock => ClockMessages(this);
-  SyncMessages get sync => SyncMessages(this);
+class Messages_tr extends Messages {
+  const Messages_tr();
+  AppMessages_tr get app => AppMessages_tr(this);
+  GenericMessages_tr get generic => GenericMessages_tr(this);
+  CommonMessages_tr get common => CommonMessages_tr(this);
+  AuthMessages_tr get auth => AuthMessages_tr(this);
+  ProfileMessages_tr get profile => ProfileMessages_tr(this);
+  NavMessages_tr get nav => NavMessages_tr(this);
+  NotificationsMessages_tr get notifications => NotificationsMessages_tr(this);
+  ErrorsMessages_tr get errors => ErrorsMessages_tr(this);
+  ValidationMessages_tr get validation => ValidationMessages_tr(this);
+  FilesMessages_tr get files => FilesMessages_tr(this);
+  DeveloperMessages_tr get developer => DeveloperMessages_tr(this);
+  ClockMessages_tr get clock => ClockMessages_tr(this);
+  SyncMessages_tr get sync => SyncMessages_tr(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,18 +84,18 @@ class Messages implements i69n.I69nMessageBundle {
       case 'sync':
         return sync;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AppMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AppMessages(this._parent);
+class AppMessages_tr extends AppMessages {
+  final Messages_tr _parent;
+  const AppMessages_tr(this._parent) : super(_parent);
   String get name => "QuietFlip";
   String get description =>
-      "An ad-free flip clock, countdown timer, and stopwatch.";
-  String get welcome_to_app => "Welcome to Quietflip!";
+      "Reklamsız çevirmeli saat, geri sayım ve kronometre.";
+  String get welcome_to_app => "QuietFlip'e hoş geldiniz!";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -109,37 +110,37 @@ class AppMessages implements i69n.I69nMessageBundle {
       case 'welcome_to_app':
         return welcome_to_app;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class GenericMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const GenericMessages(this._parent);
-  String get ok => "OK";
-  String get cancel => "Cancel";
-  String get save => "Save";
-  String get delete => "Delete";
-  String get edit => "Edit";
-  String get update => "Update";
-  String get submit => "Submit";
-  String get close => "Close";
-  String get back => "Back";
-  String get next => "Next";
-  String get previous => "Previous";
-  String get done => "Done";
-  String get loading => "Loading...";
-  String get error => "Error";
-  String get success => "Success";
-  String get warning => "Warning";
-  String get info => "Info";
-  String get retry => "Retry";
-  String get refresh => "Refresh";
-  String get yes => "Yes";
-  String get no => "No";
-  String get add => "+ Add";
-  String get try_again => "Try Again";
+class GenericMessages_tr extends GenericMessages {
+  final Messages_tr _parent;
+  const GenericMessages_tr(this._parent) : super(_parent);
+  String get ok => "Tamam";
+  String get cancel => "İptal";
+  String get save => "Kaydet";
+  String get delete => "Sil";
+  String get edit => "Düzenle";
+  String get update => "Güncelle";
+  String get submit => "Gönder";
+  String get close => "Kapat";
+  String get back => "Geri";
+  String get next => "İleri";
+  String get previous => "Önceki";
+  String get done => "Bitti";
+  String get loading => "Yükleniyor…";
+  String get error => "Hata";
+  String get success => "Başarılı";
+  String get warning => "Uyarı";
+  String get info => "Bilgi";
+  String get retry => "Yeniden dene";
+  String get refresh => "Yenile";
+  String get yes => "Evet";
+  String get no => "Hayır";
+  String get add => "+ Ekle";
+  String get try_again => "Tekrar dene";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -194,16 +195,16 @@ class GenericMessages implements i69n.I69nMessageBundle {
       case 'try_again':
         return try_again;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class CommonMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const CommonMessages(this._parent);
-  String get week => "Week";
-  String get month => "Month";
+class CommonMessages_tr extends CommonMessages {
+  final Messages_tr _parent;
+  const CommonMessages_tr(this._parent) : super(_parent);
+  String get week => "Hafta";
+  String get month => "Ay";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -216,20 +217,21 @@ class CommonMessages implements i69n.I69nMessageBundle {
       case 'month':
         return month;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AuthMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthMessages(this._parent);
-  String get register => "Register";
-  String get sign_in => "Sign In";
-  String get sign_out => "Sign Out";
-  String get dont_have_account => "Don't have an account? ";
-  String get already_have_account => "Already have an account? ";
-  String get sign_out_confirmation => "Are you sure you want to sign out?";
+class AuthMessages_tr extends AuthMessages {
+  final Messages_tr _parent;
+  const AuthMessages_tr(this._parent) : super(_parent);
+  String get register => "Kaydol";
+  String get sign_in => "Oturum aç";
+  String get sign_out => "Oturumu kapat";
+  String get dont_have_account => "Hesabınız yok mu? ";
+  String get already_have_account => "Zaten hesabınız var mı? ";
+  String get sign_out_confirmation =>
+      "Oturumu kapatmak istediğinizden emin misiniz?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -250,26 +252,26 @@ class AuthMessages implements i69n.I69nMessageBundle {
       case 'sign_out_confirmation':
         return sign_out_confirmation;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ProfileMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ProfileMessages(this._parent);
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get account => "Account";
-  String get personal_info => "Personal Information";
-  String get privacy_settings => "Privacy Settings";
-  String get name => "Name";
-  String get email_address => "Email Address";
-  String get phone_number => "Phone Number";
-  String get date_of_birth => "Date of Birth";
-  String get delete_confirmation => "Delete Confirmation";
+class ProfileMessages_tr extends ProfileMessages {
+  final Messages_tr _parent;
+  const ProfileMessages_tr(this._parent) : super(_parent);
+  String get profile => "Profil";
+  String get settings => "Ayarlar";
+  String get account => "Hesap";
+  String get personal_info => "Kişisel bilgiler";
+  String get privacy_settings => "Gizlilik ayarları";
+  String get name => "Ad";
+  String get email_address => "E-posta adresi";
+  String get phone_number => "Telefon numarası";
+  String get date_of_birth => "Doğum tarihi";
+  String get delete_confirmation => "Silme onayı";
   String get delete_confirmation_message =>
-      "Are you sure you want to delete this item? This action cannot be undone.";
+      "Bu öğeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -300,22 +302,22 @@ class ProfileMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NavMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NavMessages(this._parent);
-  String get home => "Home";
-  String get dashboard => "Dashboard";
-  String get explore => "Explore";
+class NavMessages_tr extends NavMessages {
+  final Messages_tr _parent;
+  const NavMessages_tr(this._parent) : super(_parent);
+  String get home => "Ana sayfa";
+  String get dashboard => "Pano";
+  String get explore => "Keşfet";
   String get explore_placeholder =>
-      "Your second tab. Replace this with a real feature.";
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get notifications => "Notifications";
+      "İkinci sekmeniz. Bunu gerçek bir özellikle değiştirin.";
+  String get profile => "Profil";
+  String get settings => "Ayarlar";
+  String get notifications => "Bildirimler";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -338,32 +340,32 @@ class NavMessages implements i69n.I69nMessageBundle {
       case 'notifications':
         return notifications;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NotificationsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NotificationsMessages(this._parent);
-  String get title => "Notifications";
-  String get mark_as_read => "Mark as read";
-  String get mark_all_read => "Mark all as read";
-  String get delete => "Delete";
-  String get filter_all => "All";
-  String get filter_unread => "Unread";
-  String get filter_read => "Read";
-  String get type_reminder => "Reminder";
-  String get type_alert => "Alert";
-  String get type_promotion => "Promotion";
-  String get type_system => "System";
-  String get type_custom => "Custom";
-  String get empty_title => "No notifications";
+class NotificationsMessages_tr extends NotificationsMessages {
+  final Messages_tr _parent;
+  const NotificationsMessages_tr(this._parent) : super(_parent);
+  String get title => "Bildirimler";
+  String get mark_as_read => "Okundu olarak işaretle";
+  String get mark_all_read => "Tümünü okundu işaretle";
+  String get delete => "Sil";
+  String get filter_all => "Tümü";
+  String get filter_unread => "Okunmamış";
+  String get filter_read => "Okunmuş";
+  String get type_reminder => "Hatırlatıcı";
+  String get type_alert => "Uyarı";
+  String get type_promotion => "Tanıtım";
+  String get type_system => "Sistem";
+  String get type_custom => "Özel";
+  String get empty_title => "Bildirim yok";
   String get empty_description =>
-      "You're all caught up! New notifications will appear here.";
-  String get delete_confirmation_title => "Delete notification?";
+      "Hepsi bu kadar! Yeni bildirimler burada görünecek.";
+  String get delete_confirmation_title => "Bildirim silinsin mi?";
   String get delete_confirmation_message =>
-      "This notification will be permanently removed from your list.";
+      "Bu bildirim listenizden kalıcı olarak kaldırılacak.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -404,67 +406,73 @@ class NotificationsMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ErrorsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ErrorsMessages(this._parent);
-  String get network_error => "Network error. Please check your connection.";
-  String get unknown_error => "An unknown error occurred.";
-  String get validation_error => "Please check your input and try again.";
-  String get server_error => "Server error. Please try again later.";
+class ErrorsMessages_tr extends ErrorsMessages {
+  final Messages_tr _parent;
+  const ErrorsMessages_tr(this._parent) : super(_parent);
+  String get network_error => "Ağ hatası. Lütfen bağlantınızı kontrol edin.";
+  String get unknown_error => "Bilinmeyen bir hata oluştu.";
+  String get validation_error =>
+      "Lütfen girdiğiniz bilgileri kontrol edip tekrar deneyin.";
+  String get server_error => "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
   String get default_error_message =>
-      "Oops! Something went wrong. Please try again.";
-  String get user_not_found => "User not found. Please check your credentials.";
+      "Hay aksi! Bir şeyler ters gitti. Lütfen tekrar deneyin.";
+  String get user_not_found =>
+      "Kullanıcı bulunamadı. Lütfen bilgilerinizi kontrol edin.";
   String get default_error_description =>
-      "We encountered an error while processing your request. We apologize for the inconvenience. Please try again later or contact support if the issue persists.";
-  String get page_not_found => "Page Not Found";
-  String get page_not_found_description =>
-      "The page you are looking for does not exist.";
-  String get unexpected_error => "An unexpected error occurred.";
-  String get redirect_error => "Redirect Error";
-  String get bad_request => "Invalid request. Please check your input.";
-  String get unauthorized => "Authentication required. Please sign in again.";
-  String get forbidden => "Access denied. You don't have permission.";
-  String get not_found => "Requested resource not found.";
-  String get conflict => "Data conflict. Please refresh and try again.";
+      "İsteğiniz işlenirken bir hata oluştu. Verdiğimiz rahatsızlıktan dolayı özür dileriz. Lütfen daha sonra tekrar deneyin veya sorun devam ederse destek ekibiyle iletişime geçin.";
+  String get page_not_found => "Sayfa bulunamadı";
+  String get page_not_found_description => "Aradığınız sayfa mevcut değil.";
+  String get unexpected_error => "Beklenmeyen bir hata oluştu.";
+  String get redirect_error => "Yönlendirme hatası";
+  String get bad_request =>
+      "Geçersiz istek. Lütfen girdiğiniz bilgileri kontrol edin.";
+  String get unauthorized =>
+      "Kimlik doğrulama gerekli. Lütfen tekrar oturum açın.";
+  String get forbidden => "Erişim reddedildi. Bu işlem için izniniz yok.";
+  String get not_found => "İstenen kaynak bulunamadı.";
+  String get conflict => "Veri çakışması. Lütfen yenileyip tekrar deneyin.";
   String get unprocessable_entity =>
-      "Invalid data format. Please check your input.";
-  String get internal_server_error => "Server error. Please try again later.";
+      "Geçersiz veri biçimi. Lütfen girdiğiniz bilgileri kontrol edin.";
+  String get internal_server_error =>
+      "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
   String get connection_timeout =>
-      "Connection timeout. Please check your internet.";
-  String get receive_timeout => "Request timeout. Please try again.";
-  String get send_timeout => "Upload timeout. Please try again.";
+      "Bağlantı zaman aşımına uğradı. Lütfen internetinizi kontrol edin.";
+  String get receive_timeout =>
+      "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.";
+  String get send_timeout =>
+      "Yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.";
   String get no_internet =>
-      "No internet connection. Please check your network.";
-  String get unknown_network => "Network error occurred. Please try again.";
+      "İnternet bağlantısı yok. Lütfen ağınızı kontrol edin.";
+  String get unknown_network => "Ağ hatası oluştu. Lütfen tekrar deneyin.";
   String format_exception_message(String code, String postfix) =>
-      "This data is wearing the wrong costume, I don't recognize it [$code] $postfix";
+      "Bu veri yanlış kılıkta, tanıyamadım [$code] $postfix";
   String type_error_message(String code, String postfix) =>
-      "This data is not what I expected, I can't process it [$code] $postfix";
+      "Bu veri beklediğim gibi değil, işleyemiyorum [$code] $postfix";
   String index_error_message(String code, String postfix) =>
-      "Hmm, I can't seem to find that item in the list [$code] $postfix";
+      "Hmm, bu öğeyi listede bulamıyorum [$code] $postfix";
   String range_error_message(String code, String postfix) =>
-      "Oops! That number is way out of my comfort zone [$code] $postfix";
+      "Hay aksi! Bu sayı benim için fazla uçta [$code] $postfix";
   String argument_error_message(String code, String postfix) =>
-      "Hey! Something's not right with what you gave me [$code] $postfix";
+      "Hey! Verdiğin şeyde bir tuhaflık var [$code] $postfix";
   String state_error_message(String code, String postfix) =>
-      "I'm a bit confused about what I should be doing right now [$code] $postfix";
+      "Şu an ne yapmam gerektiği konusunda biraz kafam karışık [$code] $postfix";
   String unimplemented_error_message(String code, String postfix) =>
-      "This feature is still under construction [$code] $postfix";
+      "Bu özellik hâlâ yapım aşamasında [$code] $postfix";
   String unsupported_error_message(String code, String postfix) =>
-      "Sorry, I don't know how to do that yet [$code] $postfix";
+      "Üzgünüm, bunu henüz yapmayı bilmiyorum [$code] $postfix";
   String concurrent_modification_error_message(String code, String postfix) =>
-      "Whoa! Too many things happening at once [$code] $postfix";
+      "Vay! Aynı anda çok fazla şey oluyor [$code] $postfix";
   String out_of_memory_error_message(String code, String postfix) =>
-      "My brain is full! Need to clear some space [$code] $postfix";
+      "Kafam doldu! Biraz yer açmam lazım [$code] $postfix";
   String stack_overflow_error_message(String code, String postfix) =>
-      "I'm stuck in a loop and getting dizzy [$code] $postfix";
+      "Bir döngüye takıldım, başım dönüyor [$code] $postfix";
   String unknown_error_message(String code, String postfix) =>
-      "Something unexpected happened, but don't worry [$code] $postfix";
+      "Beklenmedik bir şey oldu ama endişelenmeyin [$code] $postfix";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -543,20 +551,20 @@ class ErrorsMessages implements i69n.I69nMessageBundle {
       case 'unknown_error_message':
         return unknown_error_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ValidationMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ValidationMessages(this._parent);
-  String get required_field => "This field is required";
-  String get invalid_email => "Please enter a valid email address";
-  String get password_too_short => "Password must be at least 8 characters";
-  String get passwords_dont_match => "Passwords do not match";
+class ValidationMessages_tr extends ValidationMessages {
+  final Messages_tr _parent;
+  const ValidationMessages_tr(this._parent) : super(_parent);
+  String get required_field => "Bu alan zorunludur";
+  String get invalid_email => "Lütfen geçerli bir e-posta adresi girin";
+  String get password_too_short => "Şifre en az 8 karakter olmalıdır";
+  String get passwords_dont_match => "Şifreler eşleşmiyor";
   String invalid_key_config(String of, String key) =>
-      "Invalid configuration for $key in $of. Please check your settings.";
+      "$of içinde $key için geçersiz yapılandırma. Lütfen ayarlarınızı kontrol edin.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -575,24 +583,24 @@ class ValidationMessages implements i69n.I69nMessageBundle {
       case 'invalid_key_config':
         return invalid_key_config;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class FilesMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const FilesMessages(this._parent);
-  String get info_title => "File Information";
-  String get name => "File Name";
-  String get type => "File Type";
-  String get extension => "File Extension";
-  String get size => "File Size";
-  String get path => "File Path";
-  String get copy_hint => "Tap any field to copy to clipboard";
-  String copied(String field) => "$field copied to clipboard";
-  String image_type(String format) => "$format image";
-  String get image_file => "Image file";
+class FilesMessages_tr extends FilesMessages {
+  final Messages_tr _parent;
+  const FilesMessages_tr(this._parent) : super(_parent);
+  String get info_title => "Dosya bilgileri";
+  String get name => "Dosya adı";
+  String get type => "Dosya türü";
+  String get extension => "Dosya uzantısı";
+  String get size => "Dosya boyutu";
+  String get path => "Dosya yolu";
+  String get copy_hint => "Panoya kopyalamak için bir alana dokunun";
+  String copied(String field) => "$field panoya kopyalandı";
+  String image_type(String format) => "$format görüntüsü";
+  String get image_file => "Görüntü dosyası";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -621,15 +629,15 @@ class FilesMessages implements i69n.I69nMessageBundle {
       case 'image_file':
         return image_file;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class DeveloperMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const DeveloperMessages(this._parent);
-  String get no_viewer => "This logger has no interactive viewer.";
+class DeveloperMessages_tr extends DeveloperMessages {
+  final Messages_tr _parent;
+  const DeveloperMessages_tr(this._parent) : super(_parent);
+  String get no_viewer => "Bu günlükçünün etkileşimli görüntüleyicisi yok.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -640,235 +648,236 @@ class DeveloperMessages implements i69n.I69nMessageBundle {
       case 'no_viewer':
         return no_viewer;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ClockMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ClockMessages(this._parent);
-  String get clock => "Clock";
-  String get stopwatch => "Stopwatch";
-  String get modes => "Mode";
-  String get settings => "Settings";
-  String get times_up => "Time's up";
-  String get timer_finished_title => "Time's up";
-  String get timer_finished_body => "Your QuietFlip timer has finished.";
-  String get alerts_channel => "Timer alerts";
-  String get show_controls => "Tap or move the mouse to show controls";
-  String get theme => "Theme";
-  String get theme_light => "Light";
-  String get use_24h => "24-hour time";
-  String get show_seconds => "Show seconds";
-  String get sound_tick_group => "Tick";
-  String get sound_tick_hint => "plays on every flip";
+class ClockMessages_tr extends ClockMessages {
+  final Messages_tr _parent;
+  const ClockMessages_tr(this._parent) : super(_parent);
+  String get clock => "Saat";
+  String get stopwatch => "Kronometre";
+  String get modes => "Mod";
+  String get settings => "Ayarlar";
+  String get times_up => "Süre doldu";
+  String get timer_finished_title => "Süre doldu";
+  String get timer_finished_body => "QuietFlip zamanlayıcınız bitti.";
+  String get alerts_channel => "Zamanlayıcı uyarıları";
+  String get show_controls =>
+      "Kontrolleri göstermek için dokunun veya fareyi hareket ettirin";
+  String get theme => "Tema";
+  String get theme_light => "Açık";
+  String get use_24h => "24 saat biçimi";
+  String get show_seconds => "Saniyeleri göster";
+  String get sound_tick_group => "Tik sesi";
+  String get sound_tick_hint => "her çevrilişte çalar";
   String get sound_alarm_group => "Alarm";
-  String get sound_alarm_hint => "loops until dismissed, 60 s max";
-  String get tick_sound => "Tick sound";
-  String get tick_sound_description => "A soft sound each time a card flips";
-  String get alarm_sound => "Alarm sound";
+  String get sound_alarm_hint => "kapatılana dek tekrarlar, en çok 60 sn";
+  String get tick_sound => "Tik sesi";
+  String get tick_sound_description => "Her kart çevrildiğinde yumuşak bir ses";
+  String get alarm_sound => "Alarm sesi";
   String get alarm_sound_description =>
-      "Plays when a timer or Pomodoro phase ends";
-  String get tick_classic => "Classic";
-  String get tick_classic_mood => "soft click";
-  String get tick_split_flap => "Split-flap";
-  String get tick_split_flap_mood => "flaps patter";
-  String get tick_clockwork => "Clockwork";
-  String get tick_clockwork_mood => "watch tick";
-  String get tick_woodblock => "Woodblock";
-  String get tick_woodblock_mood => "hollow knock";
-  String get tick_digital => "Digital";
-  String get tick_digital_mood => "clean blip";
-  String get alarm_chime => "Chime";
-  String get alarm_chime_mood => "two tones";
-  String get alarm_bell => "Bell";
-  String get alarm_bell_mood => "struck bell";
-  String get alarm_beeps => "Beeps";
-  String get alarm_beeps_mood => "bedside";
-  String get alarm_rising => "Rising";
+      "Zamanlayıcı veya Pomodoro aşaması bitince çalar";
+  String get tick_classic => "Klasik";
+  String get tick_classic_mood => "yumuşak tık";
+  String get tick_split_flap => "Paleta";
+  String get tick_split_flap_mood => "kanat tıkırtısı";
+  String get tick_clockwork => "Saat mekanizması";
+  String get tick_clockwork_mood => "saat tiki";
+  String get tick_woodblock => "Tahta blok";
+  String get tick_woodblock_mood => "boğuk vuruş";
+  String get tick_digital => "Dijital";
+  String get tick_digital_mood => "temiz bip";
+  String get alarm_chime => "Çan";
+  String get alarm_chime_mood => "iki ton";
+  String get alarm_bell => "Zil";
+  String get alarm_bell_mood => "vurulan zil";
+  String get alarm_beeps => "Bipler";
+  String get alarm_beeps_mood => "başucu";
+  String get alarm_rising => "Yükselen";
   String get alarm_rising_mood => "marimba";
-  String get alarm_ring => "Ring";
-  String get alarm_ring_mood => "twin bells";
-  String get system_notifications => "System notifications";
+  String get alarm_ring => "Çınlama";
+  String get alarm_ring_mood => "ikiz zil";
+  String get system_notifications => "Sistem bildirimleri";
   String get system_notifications_description =>
-      "Get a notification when a timer finishes, even if QuietFlip is in the background.";
+      "QuietFlip arka planda olsa bile zamanlayıcı bitince bildirim alın.";
   String get permission_denied =>
-      "Notifications are turned off for QuietFlip. You will still see and hear the alert while the app is open.";
+      "QuietFlip için bildirimler kapalı. Uygulama açıkken uyarıyı yine görür ve duyarsınız.";
   String get web_closed_tab_note =>
-      "In a browser, alerts only work while this tab stays open.";
-  String get keep_screen_awake => "Keep screen awake";
+      "Tarayıcıda uyarılar yalnızca bu sekme açık kaldığı sürece çalışır.";
+  String get keep_screen_awake => "Ekranı açık tut";
   String get keep_screen_awake_description =>
-      "Stop the screen from sleeping while the clock is showing.";
-  String current_time(String time) => "Current time $time";
-  String time_remaining(String time) => "Time remaining $time";
-  String elapsed(String time) => "Elapsed time $time";
-  String get digit_brightness => "Digit brightness";
-  String percent(String value) => "$value%";
-  String get subtle_movement => "Subtle movement";
+      "Saat görünürken ekranın uyku moduna geçmesini engeller.";
+  String current_time(String time) => "Şu anki saat $time";
+  String time_remaining(String time) => "Kalan süre $time";
+  String elapsed(String time) => "Geçen süre $time";
+  String get digit_brightness => "Rakam parlaklığı";
+  String percent(String value) => "%$value";
+  String get subtle_movement => "Hafif kaydırma";
   String get subtle_movement_description =>
-      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+      "Tam ekranda, aynı pikseller bütün gece yanmasın diye saati her dakika birkaç piksel kaydırır. Ekran izi riskini azaltır ama tamamen önlemez.";
   String get full_screen_note =>
-      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
-  String get show_date => "Show date";
+      "Tam ekran, QuietFlip açıkken kontrolleri gizler. Uygulama açık kalmalıdır. Bu bir kilit ekranı veya ekran koruyucu değildir.";
+  String get show_date => "Tarihi göster";
   String current_time_and_date(String time, String date) =>
-      "Current time $time, $date";
-  String get orientation => "Orientation";
-  String get orientation_auto => "Auto";
-  String get orientation_landscape => "Landscape";
-  String get orientation_portrait => "Portrait";
-  String get settings_card_size => "Card size";
-  String get card_size_small => "Small";
-  String get card_size_medium => "Medium";
-  String get card_size_large => "Large";
-  String get settings_corners => "Corners";
-  String get corners_square => "Square";
-  String get corners_round => "Round";
+      "Şu anki saat $time, $date";
+  String get orientation => "Yön";
+  String get orientation_auto => "Otomatik";
+  String get orientation_landscape => "Yatay";
+  String get orientation_portrait => "Dikey";
+  String get settings_card_size => "Kart boyutu";
+  String get card_size_small => "Küçük";
+  String get card_size_medium => "Orta";
+  String get card_size_large => "Büyük";
+  String get settings_corners => "Köşeler";
+  String get corners_square => "Köşeli";
+  String get corners_round => "Yuvarlak";
   String corners_value(String value) => "$value px";
   String get pomodoro => "Pomodoro";
-  String pomodoro_focus(int round) => "Focus · Round $round";
-  String pomodoro_break(int round) => "Break · Round $round";
-  String get pomodoro_focus_done => "Focus done. Time for a break.";
-  String get pomodoro_break_done => "Break over. Back to focus.";
-  String get start_focus => "Start focus";
-  String get start_break => "Start break";
-  String get skins_title => "Skins";
-  String get skins_customize => "Customize";
-  String skins_customize_named(String name) => "Customize $name";
-  String get skins_done => "Done";
-  String get skins_in_use => "In use";
-  String get skins_yours => "Your skins";
-  String get skins_classic => "Classic";
-  String get skins_bold => "Bold";
-  String get skins_type => "Type";
-  String get skins_new => "New skin";
-  String get skins_from_current => "From current";
-  String get customize_title => "Customize skin";
-  String get customize_name => "Name";
-  String customize_copy_name(String name) => "$name copy";
-  String get customize_font => "Font";
-  String get customize_digits => "Digits";
-  String get customize_card => "Card";
-  String get customize_ground => "Background";
-  String get customize_custom_colour => "Custom colour";
-  String get customize_hex_hint => "Hex, for example #FF7A00";
-  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
-  String get customize_apply => "Apply";
-  String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_details => "Details";
-  String get customize_seconds => "Seconds";
-  String get customize_seconds_off => "Off";
-  String get customize_seconds_badge => "Small";
-  String get customize_seconds_cards => "Cards";
-  String get customize_meridiem => "AM / PM";
-  String get customize_meridiem_hidden => "Hidden";
-  String get customize_meridiem_left => "Inside";
-  String get customize_meridiem_right => "Beside";
-  String get customize_save => "Save skin";
-  String get customize_reset => "Reset";
-  String get customize_delete => "Delete skin";
+  String pomodoro_focus(int round) => "Odak · Tur $round";
+  String pomodoro_break(int round) => "Mola · Tur $round";
+  String get pomodoro_focus_done => "Odak bitti. Mola zamanı.";
+  String get pomodoro_break_done => "Mola bitti. Odağa dönün.";
+  String get start_focus => "Odağı başlat";
+  String get start_break => "Molayı başlat";
+  String get skins_title => "Görünümler";
+  String get skins_customize => "Özelleştir";
+  String skins_customize_named(String name) => "Özelleştir: $name";
+  String get skins_done => "Bitti";
+  String get skins_in_use => "Kullanımda";
+  String get skins_yours => "Görünümleriniz";
+  String get skins_classic => "Klasik";
+  String get skins_bold => "Kalın";
+  String get skins_type => "Yazı";
+  String get skins_new => "Yeni görünüm";
+  String get skins_from_current => "Mevcuttan";
+  String get customize_title => "Görünümü özelleştir";
+  String get customize_name => "Ad";
+  String customize_copy_name(String name) => "$name kopyası";
+  String get customize_font => "Yazı tipi";
+  String get customize_digits => "Rakamlar";
+  String get customize_card => "Kart";
+  String get customize_ground => "Arka plan";
+  String get customize_custom_colour => "Özel renk";
+  String get customize_hex_hint => "Hex, örneğin #FF7A00";
+  String get customize_hex_invalid => "#FF7A00 gibi altı hex basamağı girin.";
+  String get customize_apply => "Uygula";
+  String get customize_low_contrast => "Rakamlar zor okunabilir.";
+  String get customize_details => "Ayrıntılar";
+  String get customize_seconds => "Saniyeler";
+  String get customize_seconds_off => "Kapalı";
+  String get customize_seconds_badge => "Küçük";
+  String get customize_seconds_cards => "Kartlar";
+  String get customize_meridiem => "ÖÖ / ÖS";
+  String get customize_meridiem_hidden => "Gizli";
+  String get customize_meridiem_left => "İçinde";
+  String get customize_meridiem_right => "Yanında";
+  String get customize_save => "Görünümü kaydet";
+  String get customize_reset => "Sıfırla";
+  String get customize_delete => "Görünümü sil";
   String get skin_mono => "Mono";
-  String get skin_paper => "Paper";
-  String get skin_rose => "Rose";
-  String get skin_violet => "Violet";
-  String get skin_amber => "Amber";
-  String get skin_signal => "Signal";
-  String get skin_field => "Field";
-  String get skin_mint => "Mint";
-  String get skin_cyan => "Cyan";
-  String get skin_taxi => "Taxi";
+  String get skin_paper => "Kâğıt";
+  String get skin_rose => "Gül";
+  String get skin_violet => "Mor";
+  String get skin_amber => "Kehribar";
+  String get skin_signal => "Sinyal";
+  String get skin_field => "Kır";
+  String get skin_mint => "Nane";
+  String get skin_cyan => "Camgöbeği";
+  String get skin_taxi => "Taksi";
   String get skin_bebas => "Bebas";
   String get skin_anton => "Anton";
   String get skin_oswald => "Oswald";
   String get skin_shoulders => "Shoulders";
-  String get skin_poster => "Poster";
+  String get skin_poster => "Afiş";
   String get skin_terminal => "Terminal";
   String get skin_grotesk => "Grotesk";
   String get skin_serif => "Serif";
-  String get skin_orbit => "Orbit";
-  String get skin_nightstand => "Nightstand";
-  String get skin_studio => "Studio";
-  String get skin_arcade => "Arcade";
-  String get skin_railway => "Railway";
-  String get skin_desk => "Desk";
+  String get skin_orbit => "Yörünge";
+  String get skin_nightstand => "Komodin";
+  String get skin_studio => "Stüdyo";
+  String get skin_arcade => "Atari";
+  String get skin_railway => "Gar";
+  String get skin_desk => "Masa";
   String get skin_neon => "Neon";
   String get skin_minimal => "Minimal";
   String get mode_pomodoro => "Pomodoro";
-  String get mode_clock => "Clock";
-  String get mode_stopwatch => "Stopwatch";
-  String get action_start => "Start";
-  String get action_pause => "Pause";
-  String get action_resume => "Resume";
-  String get action_reset => "Reset";
-  String get action_restart => "Restart";
-  String get action_done => "Done";
-  String get action_skins => "Skins";
-  String get action_settings => "Settings";
-  String get action_rotation => "Screen rotation";
-  String get action_timer_settings => "Timer settings";
-  String preset_minutes(int minutes) => "${minutes}m";
+  String get mode_clock => "Saat";
+  String get mode_stopwatch => "Kronometre";
+  String get action_start => "Başlat";
+  String get action_pause => "Duraklat";
+  String get action_resume => "Sürdür";
+  String get action_reset => "Sıfırla";
+  String get action_restart => "Yeniden başlat";
+  String get action_done => "Bitti";
+  String get action_skins => "Görünümler";
+  String get action_settings => "Ayarlar";
+  String get action_rotation => "Ekran döndürme";
+  String get action_timer_settings => "Zamanlayıcı ayarları";
+  String preset_minutes(int minutes) => "$minutes dk";
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
   String get preset_pomodoro => "Pomodoro";
-  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
-  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String preset_spoken_minutes(int minutes) => "$minutes dakikalık zamanlayıcı";
+  String preset_spoken_seconds(int seconds) => "$seconds saniyelik zamanlayıcı";
   String preset_spoken_both(int minutes, int seconds) =>
-      "$minutes minute $seconds second timer";
-  String get action_lap => "Lap";
-  String lap_label(int number, String time) => "Lap $number  $time";
-  String brightness_value(String percent) => "$percent%";
-  String get settings_appearance => "Appearance";
-  String get settings_clock => "Clock";
-  String get settings_gestures => "Gestures";
-  String get settings_timers => "Timers";
-  String get settings_sound => "Sound & alerts";
-  String get settings_awake => "Keep awake";
-  String get settings_shortcuts => "Shortcuts";
-  String get settings_about => "About";
-  String get theme_dark => "Dark";
-  String get theme_system => "Match system";
-  String get gesture_swipes => "Swipes";
-  String get gesture_brightness => "Swipe up or down for brightness";
-  String get gesture_modes => "Swipe sideways to change mode";
+      "$minutes dakika $seconds saniyelik zamanlayıcı";
+  String get action_lap => "Tur";
+  String lap_label(int number, String time) => "Tur $number  $time";
+  String brightness_value(String percent) => "%$percent";
+  String get settings_appearance => "Görünüm";
+  String get settings_clock => "Saat";
+  String get settings_gestures => "Hareketler";
+  String get settings_timers => "Zamanlayıcılar";
+  String get settings_sound => "Ses ve uyarılar";
+  String get settings_awake => "Açık tut";
+  String get settings_shortcuts => "Kısayollar";
+  String get settings_about => "Hakkında";
+  String get theme_dark => "Koyu";
+  String get theme_system => "Sistemle aynı";
+  String get gesture_swipes => "Kaydırmalar";
+  String get gesture_brightness => "Parlaklık için yukarı veya aşağı kaydırın";
+  String get gesture_modes => "Modu değiştirmek için yana kaydırın";
   String get gesture_footer =>
-      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
-  String get gesture_controls => "Controls";
-  String get gesture_tap => "Tap to show controls";
-  String get gesture_idle => "Hide controls after";
-  String gesture_idle_seconds(int seconds) => "${seconds}s";
-  String get gesture_idle_never => "Never";
+      "Saatin herhangi bir yerinde kaydırın. Mac, Windows ve web'de parlaklık ekranı değil rakamları karartır.";
+  String get gesture_controls => "Kontroller";
+  String get gesture_tap => "Kontrolleri göstermek için dokunun";
+  String get gesture_idle => "Kontrolleri gizleme süresi";
+  String gesture_idle_seconds(int seconds) => "$seconds sn";
+  String get gesture_idle_never => "Asla";
   String get gesture_controls_footer =>
-      "Controls shrink to a dot, then disappear.";
-  String get timers_default => "Default timer";
-  String get timers_start_runs => "Start runs";
-  String get timers_presets => "Presets";
-  String get timers_add => "Add timer";
+      "Kontroller önce bir noktaya küçülür, sonra kaybolur.";
+  String get timers_default => "Varsayılan zamanlayıcı";
+  String get timers_start_runs => "Başlat ile çalışan";
+  String get timers_presets => "Hazır ayarlar";
+  String get timers_add => "Zamanlayıcı ekle";
   String get timers_limit_footer =>
-      "Six timers fit the island. Delete one to add another.";
-  String timers_delete(String timer) => "Delete $timer";
-  String get timers_duplicate => "You already have this timer.";
-  String get timers_picker_minutes => "Minutes";
-  String get timers_picker_seconds => "Seconds";
-  String get skins_view_all => "View all";
-  String get timers_pomodoro_focus => "Focus";
-  String get timers_pomodoro_break => "Break";
-  String timers_minutes(int minutes) => "$minutes min";
+      "Adaya altı zamanlayıcı sığar. Yenisini eklemek için birini silin.";
+  String timers_delete(String timer) => "Sil: $timer";
+  String get timers_duplicate => "Bu zamanlayıcı zaten var.";
+  String get timers_picker_minutes => "Dakika";
+  String get timers_picker_seconds => "Saniye";
+  String get skins_view_all => "Tümünü gör";
+  String get timers_pomodoro_focus => "Odak";
+  String get timers_pomodoro_break => "Mola";
+  String timers_minutes(int minutes) => "$minutes dk";
   String get sound_footer =>
-      "The in-app alert always plays, even with notifications off.";
-  String get shortcuts_touch => "Touch";
-  String get shortcuts_keyboard => "Keyboard";
-  String get touch_controls => "Show or hide controls";
-  String get shortcut_off => "Off";
-  String get key_start_pause => "Start or pause";
-  String get key_change_mode => "Change mode";
-  String get key_brightness => "Brightness";
-  String get key_show_seconds => "Show seconds";
-  String get key_full_screen => "Full screen";
-  String get key_hide_controls => "Hide controls";
-  String get key_dim => "Dim the digits";
-  String get key_lap => "Lap (stopwatch)";
-  String get key_rotation => "Screen rotation";
-  String get keycap_space => "Space";
+      "Uygulama içi uyarı, bildirimler kapalıyken bile her zaman çalar.";
+  String get shortcuts_touch => "Dokunma";
+  String get shortcuts_keyboard => "Klavye";
+  String get touch_controls => "Kontrolleri göster veya gizle";
+  String get shortcut_off => "Kapalı";
+  String get key_start_pause => "Başlat veya duraklat";
+  String get key_change_mode => "Modu değiştir";
+  String get key_brightness => "Parlaklık";
+  String get key_show_seconds => "Saniyeleri göster";
+  String get key_full_screen => "Tam ekran";
+  String get key_hide_controls => "Kontrolleri gizle";
+  String get key_dim => "Rakamları karart";
+  String get key_lap => "Tur (kronometre)";
+  String get key_rotation => "Ekran döndürme";
+  String get keycap_space => "Boşluk";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
   String get keycap_s => "S";
@@ -877,10 +886,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_d => "D";
   String get keycap_l => "L";
   String get keycap_r => "R";
-  String get about_licenses => "Licenses";
-  String get about_privacy => "Privacy";
+  String get about_licenses => "Lisanslar";
+  String get about_privacy => "Gizlilik";
   String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+      "Reklam yok. İzleme yok. Hesap isteğe bağlıdır.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1325,57 +1334,57 @@ class ClockMessages implements i69n.I69nMessageBundle {
       case 'about_privacy_value':
         return about_privacy_value;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class SyncMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const SyncMessages(this._parent);
-  String get account => "Account";
-  String get card_title_signed_out => "Your settings stay on this device";
+class SyncMessages_tr extends SyncMessages {
+  final Messages_tr _parent;
+  const SyncMessages_tr(this._parent) : super(_parent);
+  String get account => "Hesap";
+  String get card_title_signed_out => "Ayarlarınız bu cihazda kalır";
   String get card_body_signed_out =>
-      "Sign in only if you want them on your other devices.";
-  String get card_title_on => "Sync is on";
-  String get card_title_off => "Sync is off";
-  String card_last_synced(String when) => "Last synced $when";
-  String get headline => "Your settings stay on this device";
+      "Yalnızca diğer cihazlarınızda da istiyorsanız oturum açın.";
+  String get card_title_on => "Eşitleme açık";
+  String get card_title_off => "Eşitleme kapalı";
+  String card_last_synced(String when) => "Son eşitleme: $when";
+  String get headline => "Ayarlarınız bu cihazda kalır";
   String get body =>
-      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
-  String get sign_in => "Sign in to sync";
+      "QuietFlip hiçbir zaman hesap gerektirmez. Saatinizi, görünümlerinizi ve seslerinizi diğer cihazlarınızda da istiyorsanız oturum açın.";
+  String get sign_in => "Eşitlemek için oturum açın";
   String get sign_in_reason =>
-      "Only needed to sync your settings across devices.";
-  String get what_syncs => "What syncs";
+      "Yalnızca ayarlarınızı cihazlar arasında eşitlemek için gerekir.";
+  String get what_syncs => "Neler eşitlenir";
   String get what_syncs_body =>
-      "Theme, skins, sounds, clock and timer settings.";
+      "Tema, görünümler, sesler, saat ve zamanlayıcı ayarları.";
   String get stays_body =>
-      "Stays on this device: brightness, rotation, notifications and a running timer.";
-  String get sync_header => "Sync";
-  String get sync_settings => "Sync settings";
+      "Bu cihazda kalanlar: parlaklık, döndürme, bildirimler ve çalışan zamanlayıcı.";
+  String get sync_header => "Eşitleme";
+  String get sync_settings => "Ayarları eşitle";
   String get sync_settings_note =>
-      "Your settings follow you to every device you sign in on.";
-  String get last_synced => "Last synced";
-  String get just_now => "Just now";
-  String minutes_ago(int n) => "$n min ago";
-  String today_at(String time) => "Today at $time";
-  String get never => "Not yet";
-  String get syncing => "Syncing…";
-  String get waiting => "Waiting for a connection";
-  String get off_note => "Sync is off. Changes stay on this device.";
+      "Ayarlarınız oturum açtığınız her cihazda sizinle olur.";
+  String get last_synced => "Son eşitleme";
+  String get just_now => "Az önce";
+  String minutes_ago(int n) => "$n dk önce";
+  String today_at(String time) => "Bugün $time";
+  String get never => "Henüz yok";
+  String get syncing => "Eşitleniyor…";
+  String get waiting => "Bağlantı bekleniyor";
+  String get off_note => "Eşitleme kapalı. Değişiklikler bu cihazda kalır.";
   String get failed_offline =>
-      "Couldn't sync: no connection. It will try again when you're back online.";
-  String get failed_denied => "Couldn't sync: sign in again.";
-  String get failed_unknown => "Couldn't sync. Try again.";
-  String get try_again => "Try again";
-  String get sign_out_note => "Signing out keeps your settings on this device.";
-  String get delete_account => "Delete account";
-  String get delete_title => "Delete your account?";
+      "Eşitlenemedi: bağlantı yok. Tekrar çevrimiçi olduğunuzda yeniden denenecek.";
+  String get failed_denied => "Eşitlenemedi: tekrar oturum açın.";
+  String get failed_unknown => "Eşitlenemedi. Tekrar deneyin.";
+  String get try_again => "Tekrar dene";
+  String get sign_out_note => "Oturumu kapatmak ayarlarınızı bu cihazda tutar.";
+  String get delete_account => "Hesabı sil";
+  String get delete_title => "Hesabınız silinsin mi?";
   String get delete_body =>
-      "Your synced settings are removed from the cloud. Settings on this device stay.";
-  String get delete_recent_login => "Sign in again to delete your account";
-  String get delete_failed => "Couldn't delete your account. Try again.";
-  String get provider_email => "Email";
+      "Eşitlenen ayarlarınız buluttan kaldırılır. Bu cihazdaki ayarlar kalır.";
+  String get delete_recent_login => "Hesabınızı silmek için tekrar oturum açın";
+  String get delete_failed => "Hesabınız silinemedi. Tekrar deneyin.";
+  String get provider_email => "E-posta";
   String get provider_google => "Google";
   String get provider_apple => "Apple";
   Object operator [](String key) {
@@ -1460,7 +1469,7 @@ class SyncMessages implements i69n.I69nMessageBundle {
       case 'provider_apple':
         return provider_apple;
       default:
-        return key;
+        return super[key];
     }
   }
 }

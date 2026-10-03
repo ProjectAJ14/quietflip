@@ -594,6 +594,7 @@ void main() {
     testWidgets('tiles show seconds and date only for skins that show them', (
       tester,
     ) async {
+      deviceOn24h(tester);
       final date = DateTime(2026, 9, 30);
       // Tall enough that every tile is built.
       await open(tester, size: const Size(1400, 3000));

@@ -469,6 +469,7 @@ void main() {
     testWidgets('the screen ticks for hours: aligned, no leak, awake', (
       tester,
     ) async {
+      deviceOn24h(tester);
       final rig = Rig(fakeWall(tester, DateTime(2026, 9, 29, 9, 41, 7, 500)));
       await rig.settings.update(
         const ClockSettings(keepAwake: true, showSeconds: true),

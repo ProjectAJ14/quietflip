@@ -50,7 +50,9 @@ void main() {
             .whereType<File>()
             .where((f) => f.path.endsWith('.dart'))
             .where((f) => !f.path.contains('/generated/'))
-            .where((f) => !RegExp(r'\.(g|freezed|i69n)\.dart$').hasMatch(f.path))
+            .where(
+              (f) => !RegExp(r'\.(g|freezed|i69n)\.dart$').hasMatch(f.path),
+            )
             .where((f) => !f.path.endsWith('firebase_options.dart'));
         for (final file in files) {
           final path = file.path.substring(root.length + 1);

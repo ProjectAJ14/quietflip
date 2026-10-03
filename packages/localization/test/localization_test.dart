@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:localization/localization.dart';
+import 'package:localization/messages_ja.i69n.dart';
 
 void main() {
   tearDown(() => LocalizationProvider.select(const []));
@@ -50,7 +51,10 @@ void main() {
         Locale('zh', 'MO'),
       ]) {
         expect(
-          LocalizationProvider.getBestMatchingLocale([locale, const Locale('ja')]),
+          LocalizationProvider.getBestMatchingLocale([
+            locale,
+            const Locale('ja'),
+          ]),
           'ja',
           reason: '$locale',
         );

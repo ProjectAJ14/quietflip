@@ -1,6 +1,7 @@
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 
@@ -28,10 +29,15 @@ String presetLabel(Duration preset) {
       : strings.clock.preset_minutes_seconds(preset.inMinutes, _two(seconds));
 }
 
-/// The app language's AM / PM markers, from Flutter's own translations.
+/// The app language's AM / PM markers (`午前` / `午後`, `a. m.` / `p. m.`),
+/// from the CLDR data in `intl`; Flutter's own labels are English in many
+/// languages.
 Meridiem meridiemOf(BuildContext context) {
-  final l = MaterialLocalizations.of(context);
-  return (am: l.anteMeridiemAbbreviation, pm: l.postMeridiemAbbreviation);
+  final format = DateFormat('a', Localizations.localeOf(context).toString());
+  return (
+    am: format.format(DateTime(2000)),
+    pm: format.format(DateTime(2000, 1, 1, 12)),
+  );
 }
 
 /// Whether the clock reads in 24-hour time: [settings]' choice, else the

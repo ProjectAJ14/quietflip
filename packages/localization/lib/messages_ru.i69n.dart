@@ -2,9 +2,10 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
 
-String get _languageCode => 'en';
-String get _localeName => 'en';
+String get _languageCode => 'ru';
+String get _localeName => 'ru';
 
 String _plural(int count,
         {String? zero,
@@ -34,21 +35,21 @@ String _cardinal(int count,
     i69n.cardinal(count, _languageCode,
         zero: zero, one: one, two: two, few: few, many: many, other: other);
 
-class Messages implements i69n.I69nMessageBundle {
-  const Messages();
-  AppMessages get app => AppMessages(this);
-  GenericMessages get generic => GenericMessages(this);
-  CommonMessages get common => CommonMessages(this);
-  AuthMessages get auth => AuthMessages(this);
-  ProfileMessages get profile => ProfileMessages(this);
-  NavMessages get nav => NavMessages(this);
-  NotificationsMessages get notifications => NotificationsMessages(this);
-  ErrorsMessages get errors => ErrorsMessages(this);
-  ValidationMessages get validation => ValidationMessages(this);
-  FilesMessages get files => FilesMessages(this);
-  DeveloperMessages get developer => DeveloperMessages(this);
-  ClockMessages get clock => ClockMessages(this);
-  SyncMessages get sync => SyncMessages(this);
+class Messages_ru extends Messages {
+  const Messages_ru();
+  AppMessages_ru get app => AppMessages_ru(this);
+  GenericMessages_ru get generic => GenericMessages_ru(this);
+  CommonMessages_ru get common => CommonMessages_ru(this);
+  AuthMessages_ru get auth => AuthMessages_ru(this);
+  ProfileMessages_ru get profile => ProfileMessages_ru(this);
+  NavMessages_ru get nav => NavMessages_ru(this);
+  NotificationsMessages_ru get notifications => NotificationsMessages_ru(this);
+  ErrorsMessages_ru get errors => ErrorsMessages_ru(this);
+  ValidationMessages_ru get validation => ValidationMessages_ru(this);
+  FilesMessages_ru get files => FilesMessages_ru(this);
+  DeveloperMessages_ru get developer => DeveloperMessages_ru(this);
+  ClockMessages_ru get clock => ClockMessages_ru(this);
+  SyncMessages_ru get sync => SyncMessages_ru(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,18 +84,17 @@ class Messages implements i69n.I69nMessageBundle {
       case 'sync':
         return sync;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AppMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AppMessages(this._parent);
+class AppMessages_ru extends AppMessages {
+  final Messages_ru _parent;
+  const AppMessages_ru(this._parent) : super(_parent);
   String get name => "QuietFlip";
-  String get description =>
-      "An ad-free flip clock, countdown timer, and stopwatch.";
-  String get welcome_to_app => "Welcome to Quietflip!";
+  String get description => "Перекидные часы, таймер и секундомер без рекламы.";
+  String get welcome_to_app => "Добро пожаловать в QuietFlip!";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -109,37 +109,37 @@ class AppMessages implements i69n.I69nMessageBundle {
       case 'welcome_to_app':
         return welcome_to_app;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class GenericMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const GenericMessages(this._parent);
-  String get ok => "OK";
-  String get cancel => "Cancel";
-  String get save => "Save";
-  String get delete => "Delete";
-  String get edit => "Edit";
-  String get update => "Update";
-  String get submit => "Submit";
-  String get close => "Close";
-  String get back => "Back";
-  String get next => "Next";
-  String get previous => "Previous";
-  String get done => "Done";
-  String get loading => "Loading...";
-  String get error => "Error";
-  String get success => "Success";
-  String get warning => "Warning";
-  String get info => "Info";
-  String get retry => "Retry";
-  String get refresh => "Refresh";
-  String get yes => "Yes";
-  String get no => "No";
-  String get add => "+ Add";
-  String get try_again => "Try Again";
+class GenericMessages_ru extends GenericMessages {
+  final Messages_ru _parent;
+  const GenericMessages_ru(this._parent) : super(_parent);
+  String get ok => "ОК";
+  String get cancel => "Отмена";
+  String get save => "Сохранить";
+  String get delete => "Удалить";
+  String get edit => "Изменить";
+  String get update => "Обновить";
+  String get submit => "Отправить";
+  String get close => "Закрыть";
+  String get back => "Назад";
+  String get next => "Далее";
+  String get previous => "Назад";
+  String get done => "Готово";
+  String get loading => "Загрузка…";
+  String get error => "Ошибка";
+  String get success => "Готово";
+  String get warning => "Внимание";
+  String get info => "Информация";
+  String get retry => "Повторить";
+  String get refresh => "Обновить";
+  String get yes => "Да";
+  String get no => "Нет";
+  String get add => "+ Добавить";
+  String get try_again => "Повторить";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -194,16 +194,16 @@ class GenericMessages implements i69n.I69nMessageBundle {
       case 'try_again':
         return try_again;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class CommonMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const CommonMessages(this._parent);
-  String get week => "Week";
-  String get month => "Month";
+class CommonMessages_ru extends CommonMessages {
+  final Messages_ru _parent;
+  const CommonMessages_ru(this._parent) : super(_parent);
+  String get week => "Неделя";
+  String get month => "Месяц";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -216,20 +216,20 @@ class CommonMessages implements i69n.I69nMessageBundle {
       case 'month':
         return month;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AuthMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthMessages(this._parent);
-  String get register => "Register";
-  String get sign_in => "Sign In";
-  String get sign_out => "Sign Out";
-  String get dont_have_account => "Don't have an account? ";
-  String get already_have_account => "Already have an account? ";
-  String get sign_out_confirmation => "Are you sure you want to sign out?";
+class AuthMessages_ru extends AuthMessages {
+  final Messages_ru _parent;
+  const AuthMessages_ru(this._parent) : super(_parent);
+  String get register => "Регистрация";
+  String get sign_in => "Войти";
+  String get sign_out => "Выйти";
+  String get dont_have_account => "Нет аккаунта? ";
+  String get already_have_account => "Уже есть аккаунт? ";
+  String get sign_out_confirmation => "Выйти из аккаунта?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -250,26 +250,26 @@ class AuthMessages implements i69n.I69nMessageBundle {
       case 'sign_out_confirmation':
         return sign_out_confirmation;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ProfileMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ProfileMessages(this._parent);
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get account => "Account";
-  String get personal_info => "Personal Information";
-  String get privacy_settings => "Privacy Settings";
-  String get name => "Name";
-  String get email_address => "Email Address";
-  String get phone_number => "Phone Number";
-  String get date_of_birth => "Date of Birth";
-  String get delete_confirmation => "Delete Confirmation";
+class ProfileMessages_ru extends ProfileMessages {
+  final Messages_ru _parent;
+  const ProfileMessages_ru(this._parent) : super(_parent);
+  String get profile => "Профиль";
+  String get settings => "Настройки";
+  String get account => "Аккаунт";
+  String get personal_info => "Личные данные";
+  String get privacy_settings => "Конфиденциальность";
+  String get name => "Имя";
+  String get email_address => "Эл. почта";
+  String get phone_number => "Номер телефона";
+  String get date_of_birth => "Дата рождения";
+  String get delete_confirmation => "Подтверждение удаления";
   String get delete_confirmation_message =>
-      "Are you sure you want to delete this item? This action cannot be undone.";
+      "Удалить этот элемент? Это действие нельзя отменить.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -300,22 +300,22 @@ class ProfileMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NavMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NavMessages(this._parent);
-  String get home => "Home";
-  String get dashboard => "Dashboard";
-  String get explore => "Explore";
+class NavMessages_ru extends NavMessages {
+  final Messages_ru _parent;
+  const NavMessages_ru(this._parent) : super(_parent);
+  String get home => "Главная";
+  String get dashboard => "Панель";
+  String get explore => "Обзор";
   String get explore_placeholder =>
-      "Your second tab. Replace this with a real feature.";
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get notifications => "Notifications";
+      "Ваша вторая вкладка. Замените её настоящей функцией.";
+  String get profile => "Профиль";
+  String get settings => "Настройки";
+  String get notifications => "Уведомления";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -338,32 +338,32 @@ class NavMessages implements i69n.I69nMessageBundle {
       case 'notifications':
         return notifications;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NotificationsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NotificationsMessages(this._parent);
-  String get title => "Notifications";
-  String get mark_as_read => "Mark as read";
-  String get mark_all_read => "Mark all as read";
-  String get delete => "Delete";
-  String get filter_all => "All";
-  String get filter_unread => "Unread";
-  String get filter_read => "Read";
-  String get type_reminder => "Reminder";
-  String get type_alert => "Alert";
-  String get type_promotion => "Promotion";
-  String get type_system => "System";
-  String get type_custom => "Custom";
-  String get empty_title => "No notifications";
+class NotificationsMessages_ru extends NotificationsMessages {
+  final Messages_ru _parent;
+  const NotificationsMessages_ru(this._parent) : super(_parent);
+  String get title => "Уведомления";
+  String get mark_as_read => "Отметить как прочитанное";
+  String get mark_all_read => "Прочитать все";
+  String get delete => "Удалить";
+  String get filter_all => "Все";
+  String get filter_unread => "Непрочитанные";
+  String get filter_read => "Прочитанные";
+  String get type_reminder => "Напоминание";
+  String get type_alert => "Оповещение";
+  String get type_promotion => "Акция";
+  String get type_system => "Система";
+  String get type_custom => "Другое";
+  String get empty_title => "Нет уведомлений";
   String get empty_description =>
-      "You're all caught up! New notifications will appear here.";
-  String get delete_confirmation_title => "Delete notification?";
+      "Всё прочитано! Новые уведомления появятся здесь.";
+  String get delete_confirmation_title => "Удалить уведомление?";
   String get delete_confirmation_message =>
-      "This notification will be permanently removed from your list.";
+      "Это уведомление будет навсегда удалено из списка.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -404,67 +404,71 @@ class NotificationsMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ErrorsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ErrorsMessages(this._parent);
-  String get network_error => "Network error. Please check your connection.";
-  String get unknown_error => "An unknown error occurred.";
-  String get validation_error => "Please check your input and try again.";
-  String get server_error => "Server error. Please try again later.";
+class ErrorsMessages_ru extends ErrorsMessages {
+  final Messages_ru _parent;
+  const ErrorsMessages_ru(this._parent) : super(_parent);
+  String get network_error => "Ошибка сети. Проверьте подключение.";
+  String get unknown_error => "Произошла неизвестная ошибка.";
+  String get validation_error =>
+      "Проверьте введённые данные и повторите попытку.";
+  String get server_error => "Ошибка сервера. Повторите попытку позже.";
   String get default_error_message =>
-      "Oops! Something went wrong. Please try again.";
-  String get user_not_found => "User not found. Please check your credentials.";
+      "Ой! Что-то пошло не так. Повторите попытку.";
+  String get user_not_found =>
+      "Пользователь не найден. Проверьте данные для входа.";
   String get default_error_description =>
-      "We encountered an error while processing your request. We apologize for the inconvenience. Please try again later or contact support if the issue persists.";
-  String get page_not_found => "Page Not Found";
+      "При обработке запроса произошла ошибка. Приносим извинения за неудобства. Повторите попытку позже или обратитесь в поддержку, если проблема не исчезнет.";
+  String get page_not_found => "Страница не найдена";
   String get page_not_found_description =>
-      "The page you are looking for does not exist.";
-  String get unexpected_error => "An unexpected error occurred.";
-  String get redirect_error => "Redirect Error";
-  String get bad_request => "Invalid request. Please check your input.";
-  String get unauthorized => "Authentication required. Please sign in again.";
-  String get forbidden => "Access denied. You don't have permission.";
-  String get not_found => "Requested resource not found.";
-  String get conflict => "Data conflict. Please refresh and try again.";
+      "Запрошенная страница не существует.";
+  String get unexpected_error => "Произошла непредвиденная ошибка.";
+  String get redirect_error => "Ошибка перенаправления";
+  String get bad_request => "Неверный запрос. Проверьте введённые данные.";
+  String get unauthorized => "Требуется вход. Войдите снова.";
+  String get forbidden => "Доступ запрещён. У вас нет разрешения.";
+  String get not_found => "Запрошенный ресурс не найден.";
+  String get conflict =>
+      "Конфликт данных. Обновите страницу и повторите попытку.";
   String get unprocessable_entity =>
-      "Invalid data format. Please check your input.";
-  String get internal_server_error => "Server error. Please try again later.";
+      "Неверный формат данных. Проверьте введённые данные.";
+  String get internal_server_error =>
+      "Ошибка сервера. Повторите попытку позже.";
   String get connection_timeout =>
-      "Connection timeout. Please check your internet.";
-  String get receive_timeout => "Request timeout. Please try again.";
-  String get send_timeout => "Upload timeout. Please try again.";
-  String get no_internet =>
-      "No internet connection. Please check your network.";
-  String get unknown_network => "Network error occurred. Please try again.";
+      "Время подключения истекло. Проверьте интернет.";
+  String get receive_timeout =>
+      "Время ожидания запроса истекло. Повторите попытку.";
+  String get send_timeout => "Время загрузки истекло. Повторите попытку.";
+  String get no_internet => "Нет подключения к интернету. Проверьте сеть.";
+  String get unknown_network => "Произошла ошибка сети. Повторите попытку.";
   String format_exception_message(String code, String postfix) =>
-      "This data is wearing the wrong costume, I don't recognize it [$code] $postfix";
+      "Эти данные в чужом костюме, я их не узнаю [$code] $postfix";
   String type_error_message(String code, String postfix) =>
-      "This data is not what I expected, I can't process it [$code] $postfix";
+      "Это не те данные, что я ждал, не могу их обработать [$code] $postfix";
   String index_error_message(String code, String postfix) =>
-      "Hmm, I can't seem to find that item in the list [$code] $postfix";
+      "Хм, не могу найти этот элемент в списке [$code] $postfix";
   String range_error_message(String code, String postfix) =>
-      "Oops! That number is way out of my comfort zone [$code] $postfix";
+      "Ой! Это число далеко за пределами моей зоны комфорта [$code] $postfix";
   String argument_error_message(String code, String postfix) =>
-      "Hey! Something's not right with what you gave me [$code] $postfix";
+      "Эй! С переданными данными что-то не так [$code] $postfix";
   String state_error_message(String code, String postfix) =>
-      "I'm a bit confused about what I should be doing right now [$code] $postfix";
+      "Я немного запутался, что сейчас делать [$code] $postfix";
   String unimplemented_error_message(String code, String postfix) =>
-      "This feature is still under construction [$code] $postfix";
+      "Эта функция ещё в разработке [$code] $postfix";
   String unsupported_error_message(String code, String postfix) =>
-      "Sorry, I don't know how to do that yet [$code] $postfix";
+      "Извините, я пока не умею это делать [$code] $postfix";
   String concurrent_modification_error_message(String code, String postfix) =>
-      "Whoa! Too many things happening at once [$code] $postfix";
+      "Ого! Слишком много всего сразу [$code] $postfix";
   String out_of_memory_error_message(String code, String postfix) =>
-      "My brain is full! Need to clear some space [$code] $postfix";
+      "Голова переполнена! Нужно освободить место [$code] $postfix";
   String stack_overflow_error_message(String code, String postfix) =>
-      "I'm stuck in a loop and getting dizzy [$code] $postfix";
+      "Я застрял в цикле, и у меня кружится голова [$code] $postfix";
   String unknown_error_message(String code, String postfix) =>
-      "Something unexpected happened, but don't worry [$code] $postfix";
+      "Случилось что-то неожиданное, но не волнуйтесь [$code] $postfix";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -543,20 +547,21 @@ class ErrorsMessages implements i69n.I69nMessageBundle {
       case 'unknown_error_message':
         return unknown_error_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ValidationMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ValidationMessages(this._parent);
-  String get required_field => "This field is required";
-  String get invalid_email => "Please enter a valid email address";
-  String get password_too_short => "Password must be at least 8 characters";
-  String get passwords_dont_match => "Passwords do not match";
+class ValidationMessages_ru extends ValidationMessages {
+  final Messages_ru _parent;
+  const ValidationMessages_ru(this._parent) : super(_parent);
+  String get required_field => "Обязательное поле";
+  String get invalid_email => "Введите правильный адрес эл. почты";
+  String get password_too_short =>
+      "Пароль должен содержать не менее 8 символов";
+  String get passwords_dont_match => "Пароли не совпадают";
   String invalid_key_config(String of, String key) =>
-      "Invalid configuration for $key in $of. Please check your settings.";
+      "Неверная настройка $key в $of. Проверьте настройки.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -575,24 +580,24 @@ class ValidationMessages implements i69n.I69nMessageBundle {
       case 'invalid_key_config':
         return invalid_key_config;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class FilesMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const FilesMessages(this._parent);
-  String get info_title => "File Information";
-  String get name => "File Name";
-  String get type => "File Type";
-  String get extension => "File Extension";
-  String get size => "File Size";
-  String get path => "File Path";
-  String get copy_hint => "Tap any field to copy to clipboard";
-  String copied(String field) => "$field copied to clipboard";
-  String image_type(String format) => "$format image";
-  String get image_file => "Image file";
+class FilesMessages_ru extends FilesMessages {
+  final Messages_ru _parent;
+  const FilesMessages_ru(this._parent) : super(_parent);
+  String get info_title => "Сведения о файле";
+  String get name => "Имя файла";
+  String get type => "Тип файла";
+  String get extension => "Расширение";
+  String get size => "Размер файла";
+  String get path => "Путь к файлу";
+  String get copy_hint => "Нажмите на поле, чтобы скопировать его";
+  String copied(String field) => "$field: скопировано";
+  String image_type(String format) => "Изображение $format";
+  String get image_file => "Файл изображения";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -621,15 +626,15 @@ class FilesMessages implements i69n.I69nMessageBundle {
       case 'image_file':
         return image_file;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class DeveloperMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const DeveloperMessages(this._parent);
-  String get no_viewer => "This logger has no interactive viewer.";
+class DeveloperMessages_ru extends DeveloperMessages {
+  final Messages_ru _parent;
+  const DeveloperMessages_ru(this._parent) : super(_parent);
+  String get no_viewer => "У этого журнала нет интерактивного просмотра.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -640,235 +645,238 @@ class DeveloperMessages implements i69n.I69nMessageBundle {
       case 'no_viewer':
         return no_viewer;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ClockMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ClockMessages(this._parent);
-  String get clock => "Clock";
-  String get stopwatch => "Stopwatch";
-  String get modes => "Mode";
-  String get settings => "Settings";
-  String get times_up => "Time's up";
-  String get timer_finished_title => "Time's up";
-  String get timer_finished_body => "Your QuietFlip timer has finished.";
-  String get alerts_channel => "Timer alerts";
-  String get show_controls => "Tap or move the mouse to show controls";
-  String get theme => "Theme";
-  String get theme_light => "Light";
-  String get use_24h => "24-hour time";
-  String get show_seconds => "Show seconds";
-  String get sound_tick_group => "Tick";
-  String get sound_tick_hint => "plays on every flip";
-  String get sound_alarm_group => "Alarm";
-  String get sound_alarm_hint => "loops until dismissed, 60 s max";
-  String get tick_sound => "Tick sound";
-  String get tick_sound_description => "A soft sound each time a card flips";
-  String get alarm_sound => "Alarm sound";
+class ClockMessages_ru extends ClockMessages {
+  final Messages_ru _parent;
+  const ClockMessages_ru(this._parent) : super(_parent);
+  String get clock => "Часы";
+  String get stopwatch => "Секундомер";
+  String get modes => "Режим";
+  String get settings => "Настройки";
+  String get times_up => "Время вышло";
+  String get timer_finished_title => "Время вышло";
+  String get timer_finished_body => "Таймер QuietFlip завершён.";
+  String get alerts_channel => "Сигналы таймера";
+  String get show_controls =>
+      "Коснитесь экрана или двиньте мышь, чтобы показать кнопки";
+  String get theme => "Тема";
+  String get theme_light => "Светлая";
+  String get use_24h => "24-часовой формат";
+  String get show_seconds => "Показывать секунды";
+  String get sound_tick_group => "Тиканье";
+  String get sound_tick_hint => "звучит при каждом перевороте";
+  String get sound_alarm_group => "Сигнал";
+  String get sound_alarm_hint => "повторяется до отключения, макс. 60 с";
+  String get tick_sound => "Звук тиканья";
+  String get tick_sound_description =>
+      "Тихий звук при каждом перевороте карточки";
+  String get alarm_sound => "Звук сигнала";
   String get alarm_sound_description =>
-      "Plays when a timer or Pomodoro phase ends";
-  String get tick_classic => "Classic";
-  String get tick_classic_mood => "soft click";
-  String get tick_split_flap => "Split-flap";
-  String get tick_split_flap_mood => "flaps patter";
-  String get tick_clockwork => "Clockwork";
-  String get tick_clockwork_mood => "watch tick";
-  String get tick_woodblock => "Woodblock";
-  String get tick_woodblock_mood => "hollow knock";
-  String get tick_digital => "Digital";
-  String get tick_digital_mood => "clean blip";
-  String get alarm_chime => "Chime";
-  String get alarm_chime_mood => "two tones";
-  String get alarm_bell => "Bell";
-  String get alarm_bell_mood => "struck bell";
-  String get alarm_beeps => "Beeps";
-  String get alarm_beeps_mood => "bedside";
-  String get alarm_rising => "Rising";
-  String get alarm_rising_mood => "marimba";
-  String get alarm_ring => "Ring";
-  String get alarm_ring_mood => "twin bells";
-  String get system_notifications => "System notifications";
+      "Звучит по окончании таймера или фазы Pomodoro";
+  String get tick_classic => "Классика";
+  String get tick_classic_mood => "мягкий щелчок";
+  String get tick_split_flap => "Табло";
+  String get tick_split_flap_mood => "шелест флажков";
+  String get tick_clockwork => "Механизм";
+  String get tick_clockwork_mood => "тиканье часов";
+  String get tick_woodblock => "Коробочка";
+  String get tick_woodblock_mood => "глухой стук";
+  String get tick_digital => "Цифровой";
+  String get tick_digital_mood => "чистый сигнал";
+  String get alarm_chime => "Перезвон";
+  String get alarm_chime_mood => "два тона";
+  String get alarm_bell => "Колокол";
+  String get alarm_bell_mood => "удар колокола";
+  String get alarm_beeps => "Писк";
+  String get alarm_beeps_mood => "прикроватный";
+  String get alarm_rising => "Нарастающий";
+  String get alarm_rising_mood => "маримба";
+  String get alarm_ring => "Звонок";
+  String get alarm_ring_mood => "два звонка";
+  String get system_notifications => "Системные уведомления";
   String get system_notifications_description =>
-      "Get a notification when a timer finishes, even if QuietFlip is in the background.";
+      "Уведомление об окончании таймера, даже если QuietFlip работает в фоне.";
   String get permission_denied =>
-      "Notifications are turned off for QuietFlip. You will still see and hear the alert while the app is open.";
+      "Уведомления для QuietFlip отключены. Пока приложение открыто, сигнал всё равно будет виден и слышен.";
   String get web_closed_tab_note =>
-      "In a browser, alerts only work while this tab stays open.";
-  String get keep_screen_awake => "Keep screen awake";
+      "В браузере сигналы работают, только пока эта вкладка открыта.";
+  String get keep_screen_awake => "Не выключать экран";
   String get keep_screen_awake_description =>
-      "Stop the screen from sleeping while the clock is showing.";
-  String current_time(String time) => "Current time $time";
-  String time_remaining(String time) => "Time remaining $time";
-  String elapsed(String time) => "Elapsed time $time";
-  String get digit_brightness => "Digit brightness";
-  String percent(String value) => "$value%";
-  String get subtle_movement => "Subtle movement";
+      "Экран не гаснет, пока показаны часы.";
+  String current_time(String time) => "Текущее время $time";
+  String time_remaining(String time) => "Осталось $time";
+  String elapsed(String time) => "Прошло $time";
+  String get digit_brightness => "Яркость цифр";
+  String percent(String value) => "$value %";
+  String get subtle_movement => "Лёгкое смещение";
   String get subtle_movement_description =>
-      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+      "В полноэкранном режиме часы каждую минуту сдвигаются на несколько пикселей, чтобы одни и те же пиксели не светились всю ночь. Снижает, но не исключает риск выгорания.";
   String get full_screen_note =>
-      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
-  String get show_date => "Show date";
+      "Полноэкранный режим скрывает кнопки, пока QuietFlip открыт. Приложение должно оставаться открытым. Это не экран блокировки и не заставка.";
+  String get show_date => "Показывать дату";
   String current_time_and_date(String time, String date) =>
-      "Current time $time, $date";
-  String get orientation => "Orientation";
-  String get orientation_auto => "Auto";
-  String get orientation_landscape => "Landscape";
-  String get orientation_portrait => "Portrait";
-  String get settings_card_size => "Card size";
-  String get card_size_small => "Small";
-  String get card_size_medium => "Medium";
-  String get card_size_large => "Large";
-  String get settings_corners => "Corners";
-  String get corners_square => "Square";
-  String get corners_round => "Round";
-  String corners_value(String value) => "$value px";
+      "Текущее время $time, $date";
+  String get orientation => "Ориентация";
+  String get orientation_auto => "Авто";
+  String get orientation_landscape => "Альбомная";
+  String get orientation_portrait => "Книжная";
+  String get settings_card_size => "Размер карточек";
+  String get card_size_small => "Маленький";
+  String get card_size_medium => "Средний";
+  String get card_size_large => "Большой";
+  String get settings_corners => "Углы";
+  String get corners_square => "Прямые";
+  String get corners_round => "Скруглённые";
+  String corners_value(String value) => "$value пкс";
   String get pomodoro => "Pomodoro";
-  String pomodoro_focus(int round) => "Focus · Round $round";
-  String pomodoro_break(int round) => "Break · Round $round";
-  String get pomodoro_focus_done => "Focus done. Time for a break.";
-  String get pomodoro_break_done => "Break over. Back to focus.";
-  String get start_focus => "Start focus";
-  String get start_break => "Start break";
-  String get skins_title => "Skins";
-  String get skins_customize => "Customize";
-  String skins_customize_named(String name) => "Customize $name";
-  String get skins_done => "Done";
-  String get skins_in_use => "In use";
-  String get skins_yours => "Your skins";
-  String get skins_classic => "Classic";
-  String get skins_bold => "Bold";
-  String get skins_type => "Type";
-  String get skins_new => "New skin";
-  String get skins_from_current => "From current";
-  String get customize_title => "Customize skin";
-  String get customize_name => "Name";
-  String customize_copy_name(String name) => "$name copy";
-  String get customize_font => "Font";
-  String get customize_digits => "Digits";
-  String get customize_card => "Card";
-  String get customize_ground => "Background";
-  String get customize_custom_colour => "Custom colour";
-  String get customize_hex_hint => "Hex, for example #FF7A00";
-  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
-  String get customize_apply => "Apply";
-  String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_details => "Details";
-  String get customize_seconds => "Seconds";
-  String get customize_seconds_off => "Off";
-  String get customize_seconds_badge => "Small";
-  String get customize_seconds_cards => "Cards";
+  String pomodoro_focus(int round) => "Фокус · Раунд $round";
+  String pomodoro_break(int round) => "Перерыв · Раунд $round";
+  String get pomodoro_focus_done => "Фокус завершён. Время перерыва.";
+  String get pomodoro_break_done => "Перерыв окончен. Снова за работу.";
+  String get start_focus => "Начать фокус";
+  String get start_break => "Начать перерыв";
+  String get skins_title => "Скины";
+  String get skins_customize => "Настроить";
+  String skins_customize_named(String name) => "Настроить «$name»";
+  String get skins_done => "Готово";
+  String get skins_in_use => "Используется";
+  String get skins_yours => "Ваши скины";
+  String get skins_classic => "Классика";
+  String get skins_bold => "Жирные";
+  String get skins_type => "Шрифт";
+  String get skins_new => "Новый скин";
+  String get skins_from_current => "Из текущего";
+  String get customize_title => "Настройка скина";
+  String get customize_name => "Название";
+  String customize_copy_name(String name) => "$name (копия)";
+  String get customize_font => "Шрифт";
+  String get customize_digits => "Цифры";
+  String get customize_card => "Карточка";
+  String get customize_ground => "Фон";
+  String get customize_custom_colour => "Свой цвет";
+  String get customize_hex_hint => "Hex, например #FF7A00";
+  String get customize_hex_invalid =>
+      "Введите шесть hex-цифр, например #FF7A00.";
+  String get customize_apply => "Применить";
+  String get customize_low_contrast => "Цифры могут плохо читаться.";
+  String get customize_details => "Детали";
+  String get customize_seconds => "Секунды";
+  String get customize_seconds_off => "Выкл.";
+  String get customize_seconds_badge => "Мелко";
+  String get customize_seconds_cards => "Карточки";
   String get customize_meridiem => "AM / PM";
-  String get customize_meridiem_hidden => "Hidden";
-  String get customize_meridiem_left => "Inside";
-  String get customize_meridiem_right => "Beside";
-  String get customize_save => "Save skin";
-  String get customize_reset => "Reset";
-  String get customize_delete => "Delete skin";
-  String get skin_mono => "Mono";
-  String get skin_paper => "Paper";
-  String get skin_rose => "Rose";
-  String get skin_violet => "Violet";
-  String get skin_amber => "Amber";
-  String get skin_signal => "Signal";
-  String get skin_field => "Field";
-  String get skin_mint => "Mint";
-  String get skin_cyan => "Cyan";
-  String get skin_taxi => "Taxi";
+  String get customize_meridiem_hidden => "Скрыто";
+  String get customize_meridiem_left => "Внутри";
+  String get customize_meridiem_right => "Рядом";
+  String get customize_save => "Сохранить скин";
+  String get customize_reset => "Сбросить";
+  String get customize_delete => "Удалить скин";
+  String get skin_mono => "Моно";
+  String get skin_paper => "Бумага";
+  String get skin_rose => "Роза";
+  String get skin_violet => "Фиалка";
+  String get skin_amber => "Янтарь";
+  String get skin_signal => "Сигнал";
+  String get skin_field => "Поле";
+  String get skin_mint => "Мята";
+  String get skin_cyan => "Циан";
+  String get skin_taxi => "Такси";
   String get skin_bebas => "Bebas";
   String get skin_anton => "Anton";
   String get skin_oswald => "Oswald";
   String get skin_shoulders => "Shoulders";
-  String get skin_poster => "Poster";
-  String get skin_terminal => "Terminal";
+  String get skin_poster => "Афиша";
+  String get skin_terminal => "Терминал";
   String get skin_grotesk => "Grotesk";
-  String get skin_serif => "Serif";
-  String get skin_orbit => "Orbit";
-  String get skin_nightstand => "Nightstand";
-  String get skin_studio => "Studio";
-  String get skin_arcade => "Arcade";
-  String get skin_railway => "Railway";
-  String get skin_desk => "Desk";
-  String get skin_neon => "Neon";
-  String get skin_minimal => "Minimal";
+  String get skin_serif => "Антиква";
+  String get skin_orbit => "Орбита";
+  String get skin_nightstand => "Тумбочка";
+  String get skin_studio => "Студия";
+  String get skin_arcade => "Аркада";
+  String get skin_railway => "Вокзал";
+  String get skin_desk => "Стол";
+  String get skin_neon => "Неон";
+  String get skin_minimal => "Минимал";
   String get mode_pomodoro => "Pomodoro";
-  String get mode_clock => "Clock";
-  String get mode_stopwatch => "Stopwatch";
-  String get action_start => "Start";
-  String get action_pause => "Pause";
-  String get action_resume => "Resume";
-  String get action_reset => "Reset";
-  String get action_restart => "Restart";
-  String get action_done => "Done";
-  String get action_skins => "Skins";
-  String get action_settings => "Settings";
-  String get action_rotation => "Screen rotation";
-  String get action_timer_settings => "Timer settings";
-  String preset_minutes(int minutes) => "${minutes}m";
+  String get mode_clock => "Часы";
+  String get mode_stopwatch => "Секундомер";
+  String get action_start => "Старт";
+  String get action_pause => "Пауза";
+  String get action_resume => "Продолжить";
+  String get action_reset => "Сброс";
+  String get action_restart => "Заново";
+  String get action_done => "Готово";
+  String get action_skins => "Скины";
+  String get action_settings => "Настройки";
+  String get action_rotation => "Поворот экрана";
+  String get action_timer_settings => "Настройки таймера";
+  String preset_minutes(int minutes) => "$minutes мин";
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
   String get preset_pomodoro => "Pomodoro";
-  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
-  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String preset_spoken_minutes(int minutes) => "Таймер на $minutes мин";
+  String preset_spoken_seconds(int seconds) => "Таймер на $seconds с";
   String preset_spoken_both(int minutes, int seconds) =>
-      "$minutes minute $seconds second timer";
-  String get action_lap => "Lap";
-  String lap_label(int number, String time) => "Lap $number  $time";
-  String brightness_value(String percent) => "$percent%";
-  String get settings_appearance => "Appearance";
-  String get settings_clock => "Clock";
-  String get settings_gestures => "Gestures";
-  String get settings_timers => "Timers";
-  String get settings_sound => "Sound & alerts";
-  String get settings_awake => "Keep awake";
-  String get settings_shortcuts => "Shortcuts";
-  String get settings_about => "About";
-  String get theme_dark => "Dark";
-  String get theme_system => "Match system";
-  String get gesture_swipes => "Swipes";
-  String get gesture_brightness => "Swipe up or down for brightness";
-  String get gesture_modes => "Swipe sideways to change mode";
+      "Таймер на $minutes мин $seconds с";
+  String get action_lap => "Круг";
+  String lap_label(int number, String time) => "Круг $number  $time";
+  String brightness_value(String percent) => "$percent %";
+  String get settings_appearance => "Оформление";
+  String get settings_clock => "Часы";
+  String get settings_gestures => "Жесты";
+  String get settings_timers => "Таймеры";
+  String get settings_sound => "Звук и сигналы";
+  String get settings_awake => "Без сна";
+  String get settings_shortcuts => "Сочетания клавиш";
+  String get settings_about => "О приложении";
+  String get theme_dark => "Тёмная";
+  String get theme_system => "Как в системе";
+  String get gesture_swipes => "Свайпы";
+  String get gesture_brightness => "Свайп вверх или вниз меняет яркость";
+  String get gesture_modes => "Свайп в сторону меняет режим";
   String get gesture_footer =>
-      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
-  String get gesture_controls => "Controls";
-  String get gesture_tap => "Tap to show controls";
-  String get gesture_idle => "Hide controls after";
-  String gesture_idle_seconds(int seconds) => "${seconds}s";
-  String get gesture_idle_never => "Never";
+      "Проводите в любом месте часов. На Mac, Windows и в браузере меняется яркость цифр, а не экрана.";
+  String get gesture_controls => "Кнопки";
+  String get gesture_tap => "Касание показывает кнопки";
+  String get gesture_idle => "Скрывать кнопки через";
+  String gesture_idle_seconds(int seconds) => "$seconds с";
+  String get gesture_idle_never => "Никогда";
   String get gesture_controls_footer =>
-      "Controls shrink to a dot, then disappear.";
-  String get timers_default => "Default timer";
-  String get timers_start_runs => "Start runs";
-  String get timers_presets => "Presets";
-  String get timers_add => "Add timer";
+      "Кнопки сжимаются в точку, а затем исчезают.";
+  String get timers_default => "Таймер по умолчанию";
+  String get timers_start_runs => "Кнопка «Старт» запускает";
+  String get timers_presets => "Шаблоны";
+  String get timers_add => "Добавить таймер";
   String get timers_limit_footer =>
-      "Six timers fit the island. Delete one to add another.";
-  String timers_delete(String timer) => "Delete $timer";
-  String get timers_duplicate => "You already have this timer.";
-  String get timers_picker_minutes => "Minutes";
-  String get timers_picker_seconds => "Seconds";
-  String get skins_view_all => "View all";
-  String get timers_pomodoro_focus => "Focus";
-  String get timers_pomodoro_break => "Break";
-  String timers_minutes(int minutes) => "$minutes min";
+      "На острове помещается шесть таймеров. Удалите один, чтобы добавить новый.";
+  String timers_delete(String timer) => "Удалить $timer";
+  String get timers_duplicate => "Такой таймер уже есть.";
+  String get timers_picker_minutes => "Минуты";
+  String get timers_picker_seconds => "Секунды";
+  String get skins_view_all => "Все";
+  String get timers_pomodoro_focus => "Фокус";
+  String get timers_pomodoro_break => "Перерыв";
+  String timers_minutes(int minutes) => "$minutes мин";
   String get sound_footer =>
-      "The in-app alert always plays, even with notifications off.";
-  String get shortcuts_touch => "Touch";
-  String get shortcuts_keyboard => "Keyboard";
-  String get touch_controls => "Show or hide controls";
-  String get shortcut_off => "Off";
-  String get key_start_pause => "Start or pause";
-  String get key_change_mode => "Change mode";
-  String get key_brightness => "Brightness";
-  String get key_show_seconds => "Show seconds";
-  String get key_full_screen => "Full screen";
-  String get key_hide_controls => "Hide controls";
-  String get key_dim => "Dim the digits";
-  String get key_lap => "Lap (stopwatch)";
-  String get key_rotation => "Screen rotation";
-  String get keycap_space => "Space";
+      "Сигнал в приложении звучит всегда, даже если уведомления выключены.";
+  String get shortcuts_touch => "Касания";
+  String get shortcuts_keyboard => "Клавиатура";
+  String get touch_controls => "Показать или скрыть кнопки";
+  String get shortcut_off => "Выкл.";
+  String get key_start_pause => "Старт или пауза";
+  String get key_change_mode => "Сменить режим";
+  String get key_brightness => "Яркость";
+  String get key_show_seconds => "Показывать секунды";
+  String get key_full_screen => "Во весь экран";
+  String get key_hide_controls => "Скрыть кнопки";
+  String get key_dim => "Приглушить цифры";
+  String get key_lap => "Круг (секундомер)";
+  String get key_rotation => "Поворот экрана";
+  String get keycap_space => "Пробел";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
   String get keycap_s => "S";
@@ -877,10 +885,10 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_d => "D";
   String get keycap_l => "L";
   String get keycap_r => "R";
-  String get about_licenses => "Licenses";
-  String get about_privacy => "Privacy";
+  String get about_licenses => "Лицензии";
+  String get about_privacy => "Конфиденциальность";
   String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+      "Без рекламы. Без отслеживания. Аккаунт не обязателен.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1325,57 +1333,60 @@ class ClockMessages implements i69n.I69nMessageBundle {
       case 'about_privacy_value':
         return about_privacy_value;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class SyncMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const SyncMessages(this._parent);
-  String get account => "Account";
-  String get card_title_signed_out => "Your settings stay on this device";
+class SyncMessages_ru extends SyncMessages {
+  final Messages_ru _parent;
+  const SyncMessages_ru(this._parent) : super(_parent);
+  String get account => "Аккаунт";
+  String get card_title_signed_out => "Настройки хранятся на этом устройстве";
   String get card_body_signed_out =>
-      "Sign in only if you want them on your other devices.";
-  String get card_title_on => "Sync is on";
-  String get card_title_off => "Sync is off";
-  String card_last_synced(String when) => "Last synced $when";
-  String get headline => "Your settings stay on this device";
+      "Войдите, только если хотите перенести их на другие устройства.";
+  String get card_title_on => "Синхронизация включена";
+  String get card_title_off => "Синхронизация выключена";
+  String card_last_synced(String when) => "Последняя синхронизация: $when";
+  String get headline => "Настройки хранятся на этом устройстве";
   String get body =>
-      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
-  String get sign_in => "Sign in to sync";
+      "QuietFlip не требует аккаунта. Войдите, только если хотите видеть свои часы, скины и звуки на других устройствах.";
+  String get sign_in => "Войти для синхронизации";
   String get sign_in_reason =>
-      "Only needed to sync your settings across devices.";
-  String get what_syncs => "What syncs";
+      "Нужно только для синхронизации настроек между устройствами.";
+  String get what_syncs => "Что синхронизируется";
   String get what_syncs_body =>
-      "Theme, skins, sounds, clock and timer settings.";
+      "Тема, скины, звуки, настройки часов и таймеров.";
   String get stays_body =>
-      "Stays on this device: brightness, rotation, notifications and a running timer.";
-  String get sync_header => "Sync";
-  String get sync_settings => "Sync settings";
+      "Остаётся на этом устройстве: яркость, поворот, уведомления и запущенный таймер.";
+  String get sync_header => "Синхронизация";
+  String get sync_settings => "Синхронизировать настройки";
   String get sync_settings_note =>
-      "Your settings follow you to every device you sign in on.";
-  String get last_synced => "Last synced";
-  String get just_now => "Just now";
-  String minutes_ago(int n) => "$n min ago";
-  String today_at(String time) => "Today at $time";
-  String get never => "Not yet";
-  String get syncing => "Syncing…";
-  String get waiting => "Waiting for a connection";
-  String get off_note => "Sync is off. Changes stay on this device.";
+      "Ваши настройки будут на каждом устройстве, где вы вошли.";
+  String get last_synced => "Последняя синхронизация";
+  String get just_now => "Только что";
+  String minutes_ago(int n) => "$n мин назад";
+  String today_at(String time) => "Сегодня в $time";
+  String get never => "Ещё нет";
+  String get syncing => "Синхронизация…";
+  String get waiting => "Ожидание подключения";
+  String get off_note =>
+      "Синхронизация выключена. Изменения остаются на этом устройстве.";
   String get failed_offline =>
-      "Couldn't sync: no connection. It will try again when you're back online.";
-  String get failed_denied => "Couldn't sync: sign in again.";
-  String get failed_unknown => "Couldn't sync. Try again.";
-  String get try_again => "Try again";
-  String get sign_out_note => "Signing out keeps your settings on this device.";
-  String get delete_account => "Delete account";
-  String get delete_title => "Delete your account?";
+      "Не удалось синхронизировать: нет подключения. Повторим, когда вы снова будете в сети.";
+  String get failed_denied => "Не удалось синхронизировать: войдите снова.";
+  String get failed_unknown =>
+      "Не удалось синхронизировать. Повторите попытку.";
+  String get try_again => "Повторить";
+  String get sign_out_note =>
+      "После выхода настройки останутся на этом устройстве.";
+  String get delete_account => "Удалить аккаунт";
+  String get delete_title => "Удалить аккаунт?";
   String get delete_body =>
-      "Your synced settings are removed from the cloud. Settings on this device stay.";
-  String get delete_recent_login => "Sign in again to delete your account";
-  String get delete_failed => "Couldn't delete your account. Try again.";
-  String get provider_email => "Email";
+      "Синхронизированные настройки будут удалены из облака. Настройки на этом устройстве останутся.";
+  String get delete_recent_login => "Войдите снова, чтобы удалить аккаунт";
+  String get delete_failed => "Не удалось удалить аккаунт. Повторите попытку.";
+  String get provider_email => "Эл. почта";
   String get provider_google => "Google";
   String get provider_apple => "Apple";
   Object operator [](String key) {
@@ -1460,7 +1471,7 @@ class SyncMessages implements i69n.I69nMessageBundle {
       case 'provider_apple':
         return provider_apple;
       default:
-        return key;
+        return super[key];
     }
   }
 }

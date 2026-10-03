@@ -45,13 +45,19 @@ void main() {
         isFalse,
       );
       expect(
-        await inApp(tester, (c) => uses24h(c, const ClockSettings(use24h: true))),
+        await inApp(
+          tester,
+          (c) => uses24h(c, const ClockSettings(use24h: true)),
+        ),
         isTrue,
       );
     });
 
     testWidgets('unpicked, the language decides', (tester) async {
-      expect(await inApp(tester, (c) => uses24h(c, const ClockSettings())), isFalse);
+      expect(
+        await inApp(tester, (c) => uses24h(c, const ClockSettings())),
+        isFalse,
+      );
       expect(
         await inApp(
           tester,
@@ -76,9 +82,9 @@ void main() {
 
   testWidgets('meridiemOf gives the language\'s markers', (tester) async {
     expect(await inApp(tester, meridiemOf), (am: 'AM', pm: 'PM'));
-    expect(
-      await inApp(tester, meridiemOf, locale: const Locale('ja')),
-      (am: '午前', pm: '午後'),
-    );
+    expect(await inApp(tester, meridiemOf, locale: const Locale('ja')), (
+      am: '午前',
+      pm: '午後',
+    ));
   });
 }

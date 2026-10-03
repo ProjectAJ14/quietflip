@@ -2,9 +2,10 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
 
-String get _languageCode => 'en';
-String get _localeName => 'en';
+String get _languageCode => 'ja';
+String get _localeName => 'ja';
 
 String _plural(int count,
         {String? zero,
@@ -34,21 +35,21 @@ String _cardinal(int count,
     i69n.cardinal(count, _languageCode,
         zero: zero, one: one, two: two, few: few, many: many, other: other);
 
-class Messages implements i69n.I69nMessageBundle {
-  const Messages();
-  AppMessages get app => AppMessages(this);
-  GenericMessages get generic => GenericMessages(this);
-  CommonMessages get common => CommonMessages(this);
-  AuthMessages get auth => AuthMessages(this);
-  ProfileMessages get profile => ProfileMessages(this);
-  NavMessages get nav => NavMessages(this);
-  NotificationsMessages get notifications => NotificationsMessages(this);
-  ErrorsMessages get errors => ErrorsMessages(this);
-  ValidationMessages get validation => ValidationMessages(this);
-  FilesMessages get files => FilesMessages(this);
-  DeveloperMessages get developer => DeveloperMessages(this);
-  ClockMessages get clock => ClockMessages(this);
-  SyncMessages get sync => SyncMessages(this);
+class Messages_ja extends Messages {
+  const Messages_ja();
+  AppMessages_ja get app => AppMessages_ja(this);
+  GenericMessages_ja get generic => GenericMessages_ja(this);
+  CommonMessages_ja get common => CommonMessages_ja(this);
+  AuthMessages_ja get auth => AuthMessages_ja(this);
+  ProfileMessages_ja get profile => ProfileMessages_ja(this);
+  NavMessages_ja get nav => NavMessages_ja(this);
+  NotificationsMessages_ja get notifications => NotificationsMessages_ja(this);
+  ErrorsMessages_ja get errors => ErrorsMessages_ja(this);
+  ValidationMessages_ja get validation => ValidationMessages_ja(this);
+  FilesMessages_ja get files => FilesMessages_ja(this);
+  DeveloperMessages_ja get developer => DeveloperMessages_ja(this);
+  ClockMessages_ja get clock => ClockMessages_ja(this);
+  SyncMessages_ja get sync => SyncMessages_ja(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,18 +84,17 @@ class Messages implements i69n.I69nMessageBundle {
       case 'sync':
         return sync;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AppMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AppMessages(this._parent);
+class AppMessages_ja extends AppMessages {
+  final Messages_ja _parent;
+  const AppMessages_ja(this._parent) : super(_parent);
   String get name => "QuietFlip";
-  String get description =>
-      "An ad-free flip clock, countdown timer, and stopwatch.";
-  String get welcome_to_app => "Welcome to Quietflip!";
+  String get description => "広告なしのフリップ時計、タイマー、ストップウォッチ。";
+  String get welcome_to_app => "QuietFlip へようこそ!";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -109,37 +109,37 @@ class AppMessages implements i69n.I69nMessageBundle {
       case 'welcome_to_app':
         return welcome_to_app;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class GenericMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const GenericMessages(this._parent);
+class GenericMessages_ja extends GenericMessages {
+  final Messages_ja _parent;
+  const GenericMessages_ja(this._parent) : super(_parent);
   String get ok => "OK";
-  String get cancel => "Cancel";
-  String get save => "Save";
-  String get delete => "Delete";
-  String get edit => "Edit";
-  String get update => "Update";
-  String get submit => "Submit";
-  String get close => "Close";
-  String get back => "Back";
-  String get next => "Next";
-  String get previous => "Previous";
-  String get done => "Done";
-  String get loading => "Loading...";
-  String get error => "Error";
-  String get success => "Success";
-  String get warning => "Warning";
-  String get info => "Info";
-  String get retry => "Retry";
-  String get refresh => "Refresh";
-  String get yes => "Yes";
-  String get no => "No";
-  String get add => "+ Add";
-  String get try_again => "Try Again";
+  String get cancel => "キャンセル";
+  String get save => "保存";
+  String get delete => "削除";
+  String get edit => "編集";
+  String get update => "更新";
+  String get submit => "送信";
+  String get close => "閉じる";
+  String get back => "戻る";
+  String get next => "次へ";
+  String get previous => "前へ";
+  String get done => "完了";
+  String get loading => "読み込み中…";
+  String get error => "エラー";
+  String get success => "成功";
+  String get warning => "警告";
+  String get info => "情報";
+  String get retry => "再試行";
+  String get refresh => "更新";
+  String get yes => "はい";
+  String get no => "いいえ";
+  String get add => "+ 追加";
+  String get try_again => "再試行";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -194,16 +194,16 @@ class GenericMessages implements i69n.I69nMessageBundle {
       case 'try_again':
         return try_again;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class CommonMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const CommonMessages(this._parent);
-  String get week => "Week";
-  String get month => "Month";
+class CommonMessages_ja extends CommonMessages {
+  final Messages_ja _parent;
+  const CommonMessages_ja(this._parent) : super(_parent);
+  String get week => "週";
+  String get month => "月";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -216,20 +216,20 @@ class CommonMessages implements i69n.I69nMessageBundle {
       case 'month':
         return month;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class AuthMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthMessages(this._parent);
-  String get register => "Register";
-  String get sign_in => "Sign In";
-  String get sign_out => "Sign Out";
-  String get dont_have_account => "Don't have an account? ";
-  String get already_have_account => "Already have an account? ";
-  String get sign_out_confirmation => "Are you sure you want to sign out?";
+class AuthMessages_ja extends AuthMessages {
+  final Messages_ja _parent;
+  const AuthMessages_ja(this._parent) : super(_parent);
+  String get register => "登録";
+  String get sign_in => "ログイン";
+  String get sign_out => "ログアウト";
+  String get dont_have_account => "アカウントをお持ちでない場合 ";
+  String get already_have_account => "アカウントをお持ちの場合 ";
+  String get sign_out_confirmation => "ログアウトしますか?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -250,26 +250,25 @@ class AuthMessages implements i69n.I69nMessageBundle {
       case 'sign_out_confirmation':
         return sign_out_confirmation;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ProfileMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ProfileMessages(this._parent);
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get account => "Account";
-  String get personal_info => "Personal Information";
-  String get privacy_settings => "Privacy Settings";
-  String get name => "Name";
-  String get email_address => "Email Address";
-  String get phone_number => "Phone Number";
-  String get date_of_birth => "Date of Birth";
-  String get delete_confirmation => "Delete Confirmation";
-  String get delete_confirmation_message =>
-      "Are you sure you want to delete this item? This action cannot be undone.";
+class ProfileMessages_ja extends ProfileMessages {
+  final Messages_ja _parent;
+  const ProfileMessages_ja(this._parent) : super(_parent);
+  String get profile => "プロフィール";
+  String get settings => "設定";
+  String get account => "アカウント";
+  String get personal_info => "個人情報";
+  String get privacy_settings => "プライバシー設定";
+  String get name => "名前";
+  String get email_address => "メールアドレス";
+  String get phone_number => "電話番号";
+  String get date_of_birth => "生年月日";
+  String get delete_confirmation => "削除の確認";
+  String get delete_confirmation_message => "この項目を削除しますか?この操作は取り消せません。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -300,22 +299,21 @@ class ProfileMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NavMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NavMessages(this._parent);
-  String get home => "Home";
-  String get dashboard => "Dashboard";
-  String get explore => "Explore";
-  String get explore_placeholder =>
-      "Your second tab. Replace this with a real feature.";
-  String get profile => "Profile";
-  String get settings => "Settings";
-  String get notifications => "Notifications";
+class NavMessages_ja extends NavMessages {
+  final Messages_ja _parent;
+  const NavMessages_ja(this._parent) : super(_parent);
+  String get home => "ホーム";
+  String get dashboard => "ダッシュボード";
+  String get explore => "見つける";
+  String get explore_placeholder => "2つ目のタブです。実際の機能に置き換えてください。";
+  String get profile => "プロフィール";
+  String get settings => "設定";
+  String get notifications => "通知";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -338,32 +336,30 @@ class NavMessages implements i69n.I69nMessageBundle {
       case 'notifications':
         return notifications;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class NotificationsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const NotificationsMessages(this._parent);
-  String get title => "Notifications";
-  String get mark_as_read => "Mark as read";
-  String get mark_all_read => "Mark all as read";
-  String get delete => "Delete";
-  String get filter_all => "All";
-  String get filter_unread => "Unread";
-  String get filter_read => "Read";
-  String get type_reminder => "Reminder";
-  String get type_alert => "Alert";
-  String get type_promotion => "Promotion";
-  String get type_system => "System";
-  String get type_custom => "Custom";
-  String get empty_title => "No notifications";
-  String get empty_description =>
-      "You're all caught up! New notifications will appear here.";
-  String get delete_confirmation_title => "Delete notification?";
-  String get delete_confirmation_message =>
-      "This notification will be permanently removed from your list.";
+class NotificationsMessages_ja extends NotificationsMessages {
+  final Messages_ja _parent;
+  const NotificationsMessages_ja(this._parent) : super(_parent);
+  String get title => "通知";
+  String get mark_as_read => "既読にする";
+  String get mark_all_read => "すべて既読にする";
+  String get delete => "削除";
+  String get filter_all => "すべて";
+  String get filter_unread => "未読";
+  String get filter_read => "既読";
+  String get type_reminder => "リマインダー";
+  String get type_alert => "アラート";
+  String get type_promotion => "お知らせ";
+  String get type_system => "システム";
+  String get type_custom => "カスタム";
+  String get empty_title => "通知はありません";
+  String get empty_description => "すべて確認済みです。新しい通知はここに表示されます。";
+  String get delete_confirmation_title => "通知を削除しますか?";
+  String get delete_confirmation_message => "この通知はリストから完全に削除されます。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -404,67 +400,62 @@ class NotificationsMessages implements i69n.I69nMessageBundle {
       case 'delete_confirmation_message':
         return delete_confirmation_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ErrorsMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ErrorsMessages(this._parent);
-  String get network_error => "Network error. Please check your connection.";
-  String get unknown_error => "An unknown error occurred.";
-  String get validation_error => "Please check your input and try again.";
-  String get server_error => "Server error. Please try again later.";
-  String get default_error_message =>
-      "Oops! Something went wrong. Please try again.";
-  String get user_not_found => "User not found. Please check your credentials.";
+class ErrorsMessages_ja extends ErrorsMessages {
+  final Messages_ja _parent;
+  const ErrorsMessages_ja(this._parent) : super(_parent);
+  String get network_error => "ネットワークエラーです。接続を確認してください。";
+  String get unknown_error => "不明なエラーが発生しました。";
+  String get validation_error => "入力内容を確認して、もう一度お試しください。";
+  String get server_error => "サーバーエラーです。しばらくしてからお試しください。";
+  String get default_error_message => "問題が発生しました。もう一度お試しください。";
+  String get user_not_found => "ユーザーが見つかりません。ログイン情報を確認してください。";
   String get default_error_description =>
-      "We encountered an error while processing your request. We apologize for the inconvenience. Please try again later or contact support if the issue persists.";
-  String get page_not_found => "Page Not Found";
-  String get page_not_found_description =>
-      "The page you are looking for does not exist.";
-  String get unexpected_error => "An unexpected error occurred.";
-  String get redirect_error => "Redirect Error";
-  String get bad_request => "Invalid request. Please check your input.";
-  String get unauthorized => "Authentication required. Please sign in again.";
-  String get forbidden => "Access denied. You don't have permission.";
-  String get not_found => "Requested resource not found.";
-  String get conflict => "Data conflict. Please refresh and try again.";
-  String get unprocessable_entity =>
-      "Invalid data format. Please check your input.";
-  String get internal_server_error => "Server error. Please try again later.";
-  String get connection_timeout =>
-      "Connection timeout. Please check your internet.";
-  String get receive_timeout => "Request timeout. Please try again.";
-  String get send_timeout => "Upload timeout. Please try again.";
-  String get no_internet =>
-      "No internet connection. Please check your network.";
-  String get unknown_network => "Network error occurred. Please try again.";
+      "リクエストの処理中にエラーが発生しました。ご不便をおかけして申し訳ありません。しばらくしてからもう一度お試しいただくか、問題が続く場合はサポートにお問い合わせください。";
+  String get page_not_found => "ページが見つかりません";
+  String get page_not_found_description => "お探しのページは存在しません。";
+  String get unexpected_error => "予期しないエラーが発生しました。";
+  String get redirect_error => "リダイレクトエラー";
+  String get bad_request => "無効なリクエストです。入力内容を確認してください。";
+  String get unauthorized => "認証が必要です。もう一度ログインしてください。";
+  String get forbidden => "アクセスが拒否されました。権限がありません。";
+  String get not_found => "リクエストされたリソースが見つかりません。";
+  String get conflict => "データが競合しています。更新してもう一度お試しください。";
+  String get unprocessable_entity => "データの形式が無効です。入力内容を確認してください。";
+  String get internal_server_error => "サーバーエラーです。しばらくしてからお試しください。";
+  String get connection_timeout => "接続がタイムアウトしました。インターネット接続を確認してください。";
+  String get receive_timeout => "リクエストがタイムアウトしました。もう一度お試しください。";
+  String get send_timeout => "アップロードがタイムアウトしました。もう一度お試しください。";
+  String get no_internet => "インターネットに接続されていません。ネットワークを確認してください。";
+  String get unknown_network => "ネットワークエラーが発生しました。もう一度お試しください。";
   String format_exception_message(String code, String postfix) =>
-      "This data is wearing the wrong costume, I don't recognize it [$code] $postfix";
+      "このデータは見慣れない姿をしていて、認識できません [$code] $postfix";
   String type_error_message(String code, String postfix) =>
-      "This data is not what I expected, I can't process it [$code] $postfix";
+      "想定と違うデータのため、処理できません [$code] $postfix";
   String index_error_message(String code, String postfix) =>
-      "Hmm, I can't seem to find that item in the list [$code] $postfix";
+      "うーん、その項目がリストに見つかりません [$code] $postfix";
   String range_error_message(String code, String postfix) =>
-      "Oops! That number is way out of my comfort zone [$code] $postfix";
+      "おっと!その数値は範囲外です [$code] $postfix";
   String argument_error_message(String code, String postfix) =>
-      "Hey! Something's not right with what you gave me [$code] $postfix";
+      "渡された内容に何か問題があります [$code] $postfix";
   String state_error_message(String code, String postfix) =>
-      "I'm a bit confused about what I should be doing right now [$code] $postfix";
+      "今何をすべきか、少し混乱しています [$code] $postfix";
   String unimplemented_error_message(String code, String postfix) =>
-      "This feature is still under construction [$code] $postfix";
+      "この機能はまだ準備中です [$code] $postfix";
   String unsupported_error_message(String code, String postfix) =>
-      "Sorry, I don't know how to do that yet [$code] $postfix";
+      "すみません、それにはまだ対応していません [$code] $postfix";
   String concurrent_modification_error_message(String code, String postfix) =>
-      "Whoa! Too many things happening at once [$code] $postfix";
+      "おっと!一度にいろいろ起きすぎています [$code] $postfix";
   String out_of_memory_error_message(String code, String postfix) =>
-      "My brain is full! Need to clear some space [$code] $postfix";
+      "メモリがいっぱいです!少し空きが必要です [$code] $postfix";
   String stack_overflow_error_message(String code, String postfix) =>
-      "I'm stuck in a loop and getting dizzy [$code] $postfix";
+      "ループから抜け出せず、目が回っています [$code] $postfix";
   String unknown_error_message(String code, String postfix) =>
-      "Something unexpected happened, but don't worry [$code] $postfix";
+      "予期しないことが起きましたが、ご心配なく [$code] $postfix";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -543,20 +534,20 @@ class ErrorsMessages implements i69n.I69nMessageBundle {
       case 'unknown_error_message':
         return unknown_error_message;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ValidationMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ValidationMessages(this._parent);
-  String get required_field => "This field is required";
-  String get invalid_email => "Please enter a valid email address";
-  String get password_too_short => "Password must be at least 8 characters";
-  String get passwords_dont_match => "Passwords do not match";
+class ValidationMessages_ja extends ValidationMessages {
+  final Messages_ja _parent;
+  const ValidationMessages_ja(this._parent) : super(_parent);
+  String get required_field => "この項目は必須です";
+  String get invalid_email => "有効なメールアドレスを入力してください";
+  String get password_too_short => "パスワードは8文字以上にしてください";
+  String get passwords_dont_match => "パスワードが一致しません";
   String invalid_key_config(String of, String key) =>
-      "Invalid configuration for $key in $of. Please check your settings.";
+      "$of の $key の設定が無効です。設定を確認してください。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -575,24 +566,24 @@ class ValidationMessages implements i69n.I69nMessageBundle {
       case 'invalid_key_config':
         return invalid_key_config;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class FilesMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const FilesMessages(this._parent);
-  String get info_title => "File Information";
-  String get name => "File Name";
-  String get type => "File Type";
-  String get extension => "File Extension";
-  String get size => "File Size";
-  String get path => "File Path";
-  String get copy_hint => "Tap any field to copy to clipboard";
-  String copied(String field) => "$field copied to clipboard";
-  String image_type(String format) => "$format image";
-  String get image_file => "Image file";
+class FilesMessages_ja extends FilesMessages {
+  final Messages_ja _parent;
+  const FilesMessages_ja(this._parent) : super(_parent);
+  String get info_title => "ファイル情報";
+  String get name => "ファイル名";
+  String get type => "ファイルの種類";
+  String get extension => "拡張子";
+  String get size => "ファイルサイズ";
+  String get path => "ファイルパス";
+  String get copy_hint => "項目をタップしてクリップボードにコピー";
+  String copied(String field) => "$field をクリップボードにコピーしました";
+  String image_type(String format) => "$format 画像";
+  String get image_file => "画像ファイル";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -621,15 +612,15 @@ class FilesMessages implements i69n.I69nMessageBundle {
       case 'image_file':
         return image_file;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class DeveloperMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const DeveloperMessages(this._parent);
-  String get no_viewer => "This logger has no interactive viewer.";
+class DeveloperMessages_ja extends DeveloperMessages {
+  final Messages_ja _parent;
+  const DeveloperMessages_ja(this._parent) : super(_parent);
+  String get no_viewer => "このロガーには対話型ビューアがありません。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -640,235 +631,228 @@ class DeveloperMessages implements i69n.I69nMessageBundle {
       case 'no_viewer':
         return no_viewer;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class ClockMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const ClockMessages(this._parent);
-  String get clock => "Clock";
-  String get stopwatch => "Stopwatch";
-  String get modes => "Mode";
-  String get settings => "Settings";
-  String get times_up => "Time's up";
-  String get timer_finished_title => "Time's up";
-  String get timer_finished_body => "Your QuietFlip timer has finished.";
-  String get alerts_channel => "Timer alerts";
-  String get show_controls => "Tap or move the mouse to show controls";
-  String get theme => "Theme";
-  String get theme_light => "Light";
-  String get use_24h => "24-hour time";
-  String get show_seconds => "Show seconds";
-  String get sound_tick_group => "Tick";
-  String get sound_tick_hint => "plays on every flip";
-  String get sound_alarm_group => "Alarm";
-  String get sound_alarm_hint => "loops until dismissed, 60 s max";
-  String get tick_sound => "Tick sound";
-  String get tick_sound_description => "A soft sound each time a card flips";
-  String get alarm_sound => "Alarm sound";
-  String get alarm_sound_description =>
-      "Plays when a timer or Pomodoro phase ends";
-  String get tick_classic => "Classic";
-  String get tick_classic_mood => "soft click";
-  String get tick_split_flap => "Split-flap";
-  String get tick_split_flap_mood => "flaps patter";
-  String get tick_clockwork => "Clockwork";
-  String get tick_clockwork_mood => "watch tick";
-  String get tick_woodblock => "Woodblock";
-  String get tick_woodblock_mood => "hollow knock";
-  String get tick_digital => "Digital";
-  String get tick_digital_mood => "clean blip";
-  String get alarm_chime => "Chime";
-  String get alarm_chime_mood => "two tones";
-  String get alarm_bell => "Bell";
-  String get alarm_bell_mood => "struck bell";
-  String get alarm_beeps => "Beeps";
-  String get alarm_beeps_mood => "bedside";
-  String get alarm_rising => "Rising";
-  String get alarm_rising_mood => "marimba";
-  String get alarm_ring => "Ring";
-  String get alarm_ring_mood => "twin bells";
-  String get system_notifications => "System notifications";
+class ClockMessages_ja extends ClockMessages {
+  final Messages_ja _parent;
+  const ClockMessages_ja(this._parent) : super(_parent);
+  String get clock => "時計";
+  String get stopwatch => "ストップウォッチ";
+  String get modes => "モード";
+  String get settings => "設定";
+  String get times_up => "時間です";
+  String get timer_finished_title => "時間です";
+  String get timer_finished_body => "QuietFlip のタイマーが終了しました。";
+  String get alerts_channel => "タイマーのアラート";
+  String get show_controls => "タップまたはマウスを動かして操作ボタンを表示";
+  String get theme => "テーマ";
+  String get theme_light => "ライト";
+  String get use_24h => "24時間表示";
+  String get show_seconds => "秒を表示";
+  String get sound_tick_group => "めくり音";
+  String get sound_tick_hint => "めくるたびに鳴ります";
+  String get sound_alarm_group => "アラーム";
+  String get sound_alarm_hint => "止めるまで繰り返し、最大60秒";
+  String get tick_sound => "めくり音";
+  String get tick_sound_description => "カードがめくれるたびに鳴る控えめな音";
+  String get alarm_sound => "アラーム音";
+  String get alarm_sound_description => "タイマーやポモドーロの区切りで鳴ります";
+  String get tick_classic => "クラシック";
+  String get tick_classic_mood => "やわらかなクリック";
+  String get tick_split_flap => "パタパタ";
+  String get tick_split_flap_mood => "フラップの音";
+  String get tick_clockwork => "ぜんまい";
+  String get tick_clockwork_mood => "時計の秒音";
+  String get tick_woodblock => "木魚";
+  String get tick_woodblock_mood => "乾いたノック";
+  String get tick_digital => "デジタル";
+  String get tick_digital_mood => "澄んだ電子音";
+  String get alarm_chime => "チャイム";
+  String get alarm_chime_mood => "2つの音";
+  String get alarm_bell => "ベル";
+  String get alarm_bell_mood => "鐘の音";
+  String get alarm_beeps => "ビープ";
+  String get alarm_beeps_mood => "目覚まし時計";
+  String get alarm_rising => "だんだん大きく";
+  String get alarm_rising_mood => "マリンバ";
+  String get alarm_ring => "リング";
+  String get alarm_ring_mood => "ツインベル";
+  String get system_notifications => "システム通知";
   String get system_notifications_description =>
-      "Get a notification when a timer finishes, even if QuietFlip is in the background.";
+      "QuietFlip がバックグラウンドにあっても、タイマー終了時に通知します。";
   String get permission_denied =>
-      "Notifications are turned off for QuietFlip. You will still see and hear the alert while the app is open.";
-  String get web_closed_tab_note =>
-      "In a browser, alerts only work while this tab stays open.";
-  String get keep_screen_awake => "Keep screen awake";
-  String get keep_screen_awake_description =>
-      "Stop the screen from sleeping while the clock is showing.";
-  String current_time(String time) => "Current time $time";
-  String time_remaining(String time) => "Time remaining $time";
-  String elapsed(String time) => "Elapsed time $time";
-  String get digit_brightness => "Digit brightness";
+      "QuietFlip の通知はオフです。アプリを開いている間はアラートが表示され、音も鳴ります。";
+  String get web_closed_tab_note => "ブラウザでは、このタブを開いている間だけアラートが動作します。";
+  String get keep_screen_awake => "画面をオンのままにする";
+  String get keep_screen_awake_description => "時計の表示中は画面がスリープしないようにします。";
+  String current_time(String time) => "現在時刻 $time";
+  String time_remaining(String time) => "残り時間 $time";
+  String elapsed(String time) => "経過時間 $time";
+  String get digit_brightness => "数字の明るさ";
   String percent(String value) => "$value%";
-  String get subtle_movement => "Subtle movement";
+  String get subtle_movement => "わずかに動かす";
   String get subtle_movement_description =>
-      "In full screen, move the clock a few pixels each minute so the same pixels are not lit all night. Lowers, but does not prevent, burn-in risk.";
+      "全画面表示中、時計を毎分数ピクセルずつ動かし、同じピクセルが一晩中点灯し続けないようにします。焼き付きのリスクを減らしますが、完全には防げません。";
   String get full_screen_note =>
-      "Full screen hides the controls while QuietFlip stays open. The app must stay open. It is not a lock screen or screensaver.";
-  String get show_date => "Show date";
-  String current_time_and_date(String time, String date) =>
-      "Current time $time, $date";
-  String get orientation => "Orientation";
-  String get orientation_auto => "Auto";
-  String get orientation_landscape => "Landscape";
-  String get orientation_portrait => "Portrait";
-  String get settings_card_size => "Card size";
-  String get card_size_small => "Small";
-  String get card_size_medium => "Medium";
-  String get card_size_large => "Large";
-  String get settings_corners => "Corners";
-  String get corners_square => "Square";
-  String get corners_round => "Round";
+      "全画面表示では、QuietFlip を開いている間は操作ボタンが隠れます。アプリは開いたままにする必要があります。ロック画面やスクリーンセーバーではありません。";
+  String get show_date => "日付を表示";
+  String current_time_and_date(String time, String date) => "現在時刻 $time、$date";
+  String get orientation => "画面の向き";
+  String get orientation_auto => "自動";
+  String get orientation_landscape => "横向き";
+  String get orientation_portrait => "縦向き";
+  String get settings_card_size => "カードのサイズ";
+  String get card_size_small => "小";
+  String get card_size_medium => "中";
+  String get card_size_large => "大";
+  String get settings_corners => "角";
+  String get corners_square => "四角";
+  String get corners_round => "丸";
   String corners_value(String value) => "$value px";
-  String get pomodoro => "Pomodoro";
-  String pomodoro_focus(int round) => "Focus · Round $round";
-  String pomodoro_break(int round) => "Break · Round $round";
-  String get pomodoro_focus_done => "Focus done. Time for a break.";
-  String get pomodoro_break_done => "Break over. Back to focus.";
-  String get start_focus => "Start focus";
-  String get start_break => "Start break";
-  String get skins_title => "Skins";
-  String get skins_customize => "Customize";
-  String skins_customize_named(String name) => "Customize $name";
-  String get skins_done => "Done";
-  String get skins_in_use => "In use";
-  String get skins_yours => "Your skins";
-  String get skins_classic => "Classic";
-  String get skins_bold => "Bold";
-  String get skins_type => "Type";
-  String get skins_new => "New skin";
-  String get skins_from_current => "From current";
-  String get customize_title => "Customize skin";
-  String get customize_name => "Name";
-  String customize_copy_name(String name) => "$name copy";
-  String get customize_font => "Font";
-  String get customize_digits => "Digits";
-  String get customize_card => "Card";
-  String get customize_ground => "Background";
-  String get customize_custom_colour => "Custom colour";
-  String get customize_hex_hint => "Hex, for example #FF7A00";
-  String get customize_hex_invalid => "Enter six hex digits, like #FF7A00.";
-  String get customize_apply => "Apply";
-  String get customize_low_contrast => "Digits may be hard to read.";
-  String get customize_details => "Details";
-  String get customize_seconds => "Seconds";
-  String get customize_seconds_off => "Off";
-  String get customize_seconds_badge => "Small";
-  String get customize_seconds_cards => "Cards";
+  String get pomodoro => "ポモドーロ";
+  String pomodoro_focus(int round) => "集中 · ラウンド $round";
+  String pomodoro_break(int round) => "休憩 · ラウンド $round";
+  String get pomodoro_focus_done => "集中終了。休憩しましょう。";
+  String get pomodoro_break_done => "休憩終了。集中に戻りましょう。";
+  String get start_focus => "集中を開始";
+  String get start_break => "休憩を開始";
+  String get skins_title => "スキン";
+  String get skins_customize => "カスタマイズ";
+  String skins_customize_named(String name) => "$name をカスタマイズ";
+  String get skins_done => "完了";
+  String get skins_in_use => "使用中";
+  String get skins_yours => "マイスキン";
+  String get skins_classic => "クラシック";
+  String get skins_bold => "ボールド";
+  String get skins_type => "書体";
+  String get skins_new => "新しいスキン";
+  String get skins_from_current => "現在のスキンから";
+  String get customize_title => "スキンをカスタマイズ";
+  String get customize_name => "名前";
+  String customize_copy_name(String name) => "$name のコピー";
+  String get customize_font => "フォント";
+  String get customize_digits => "数字";
+  String get customize_card => "カード";
+  String get customize_ground => "背景";
+  String get customize_custom_colour => "カスタムカラー";
+  String get customize_hex_hint => "16進数(例: #FF7A00)";
+  String get customize_hex_invalid => "#FF7A00 のように16進数を6桁で入力してください。";
+  String get customize_apply => "適用";
+  String get customize_low_contrast => "数字が読みにくい可能性があります。";
+  String get customize_details => "詳細";
+  String get customize_seconds => "秒";
+  String get customize_seconds_off => "オフ";
+  String get customize_seconds_badge => "小さく";
+  String get customize_seconds_cards => "カード";
   String get customize_meridiem => "AM / PM";
-  String get customize_meridiem_hidden => "Hidden";
-  String get customize_meridiem_left => "Inside";
-  String get customize_meridiem_right => "Beside";
-  String get customize_save => "Save skin";
-  String get customize_reset => "Reset";
-  String get customize_delete => "Delete skin";
-  String get skin_mono => "Mono";
-  String get skin_paper => "Paper";
-  String get skin_rose => "Rose";
-  String get skin_violet => "Violet";
-  String get skin_amber => "Amber";
-  String get skin_signal => "Signal";
-  String get skin_field => "Field";
-  String get skin_mint => "Mint";
-  String get skin_cyan => "Cyan";
-  String get skin_taxi => "Taxi";
+  String get customize_meridiem_hidden => "非表示";
+  String get customize_meridiem_left => "内側";
+  String get customize_meridiem_right => "横";
+  String get customize_save => "スキンを保存";
+  String get customize_reset => "リセット";
+  String get customize_delete => "スキンを削除";
+  String get skin_mono => "モノ";
+  String get skin_paper => "ペーパー";
+  String get skin_rose => "ローズ";
+  String get skin_violet => "バイオレット";
+  String get skin_amber => "アンバー";
+  String get skin_signal => "シグナル";
+  String get skin_field => "フィールド";
+  String get skin_mint => "ミント";
+  String get skin_cyan => "シアン";
+  String get skin_taxi => "タクシー";
   String get skin_bebas => "Bebas";
   String get skin_anton => "Anton";
   String get skin_oswald => "Oswald";
   String get skin_shoulders => "Shoulders";
-  String get skin_poster => "Poster";
+  String get skin_poster => "ポスター";
   String get skin_terminal => "Terminal";
   String get skin_grotesk => "Grotesk";
-  String get skin_serif => "Serif";
-  String get skin_orbit => "Orbit";
-  String get skin_nightstand => "Nightstand";
-  String get skin_studio => "Studio";
-  String get skin_arcade => "Arcade";
-  String get skin_railway => "Railway";
-  String get skin_desk => "Desk";
-  String get skin_neon => "Neon";
-  String get skin_minimal => "Minimal";
-  String get mode_pomodoro => "Pomodoro";
-  String get mode_clock => "Clock";
-  String get mode_stopwatch => "Stopwatch";
-  String get action_start => "Start";
-  String get action_pause => "Pause";
-  String get action_resume => "Resume";
-  String get action_reset => "Reset";
-  String get action_restart => "Restart";
-  String get action_done => "Done";
-  String get action_skins => "Skins";
-  String get action_settings => "Settings";
-  String get action_rotation => "Screen rotation";
-  String get action_timer_settings => "Timer settings";
-  String preset_minutes(int minutes) => "${minutes}m";
+  String get skin_serif => "セリフ";
+  String get skin_orbit => "オービット";
+  String get skin_nightstand => "ベッドサイド";
+  String get skin_studio => "スタジオ";
+  String get skin_arcade => "アーケード";
+  String get skin_railway => "駅";
+  String get skin_desk => "デスク";
+  String get skin_neon => "ネオン";
+  String get skin_minimal => "ミニマル";
+  String get mode_pomodoro => "ポモドーロ";
+  String get mode_clock => "時計";
+  String get mode_stopwatch => "ストップウォッチ";
+  String get action_start => "開始";
+  String get action_pause => "一時停止";
+  String get action_resume => "再開";
+  String get action_reset => "リセット";
+  String get action_restart => "やり直す";
+  String get action_done => "完了";
+  String get action_skins => "スキン";
+  String get action_settings => "設定";
+  String get action_rotation => "画面の回転";
+  String get action_timer_settings => "タイマー設定";
+  String preset_minutes(int minutes) => "${minutes}分";
   String preset_minutes_seconds(int minutes, String seconds) =>
       "$minutes:$seconds";
-  String get preset_pomodoro => "Pomodoro";
-  String preset_spoken_minutes(int minutes) => "$minutes minute timer";
-  String preset_spoken_seconds(int seconds) => "$seconds second timer";
+  String get preset_pomodoro => "ポモドーロ";
+  String preset_spoken_minutes(int minutes) => "${minutes}分のタイマー";
+  String preset_spoken_seconds(int seconds) => "${seconds}秒のタイマー";
   String preset_spoken_both(int minutes, int seconds) =>
-      "$minutes minute $seconds second timer";
-  String get action_lap => "Lap";
-  String lap_label(int number, String time) => "Lap $number  $time";
+      "${minutes}分${seconds}秒のタイマー";
+  String get action_lap => "ラップ";
+  String lap_label(int number, String time) => "ラップ $number  $time";
   String brightness_value(String percent) => "$percent%";
-  String get settings_appearance => "Appearance";
-  String get settings_clock => "Clock";
-  String get settings_gestures => "Gestures";
-  String get settings_timers => "Timers";
-  String get settings_sound => "Sound & alerts";
-  String get settings_awake => "Keep awake";
-  String get settings_shortcuts => "Shortcuts";
-  String get settings_about => "About";
-  String get theme_dark => "Dark";
-  String get theme_system => "Match system";
-  String get gesture_swipes => "Swipes";
-  String get gesture_brightness => "Swipe up or down for brightness";
-  String get gesture_modes => "Swipe sideways to change mode";
+  String get settings_appearance => "外観";
+  String get settings_clock => "時計";
+  String get settings_gestures => "ジェスチャ";
+  String get settings_timers => "タイマー";
+  String get settings_sound => "サウンドとアラート";
+  String get settings_awake => "スリープしない";
+  String get settings_shortcuts => "ショートカット";
+  String get settings_about => "このアプリについて";
+  String get theme_dark => "ダーク";
+  String get theme_system => "システムに合わせる";
+  String get gesture_swipes => "スワイプ";
+  String get gesture_brightness => "上下にスワイプで明るさ調整";
+  String get gesture_modes => "左右にスワイプでモード切替";
   String get gesture_footer =>
-      "Swipe anywhere on the clock. On Mac, Windows and the web, brightness dims the digits instead of the screen.";
-  String get gesture_controls => "Controls";
-  String get gesture_tap => "Tap to show controls";
-  String get gesture_idle => "Hide controls after";
-  String gesture_idle_seconds(int seconds) => "${seconds}s";
-  String get gesture_idle_never => "Never";
-  String get gesture_controls_footer =>
-      "Controls shrink to a dot, then disappear.";
-  String get timers_default => "Default timer";
-  String get timers_start_runs => "Start runs";
-  String get timers_presets => "Presets";
-  String get timers_add => "Add timer";
-  String get timers_limit_footer =>
-      "Six timers fit the island. Delete one to add another.";
-  String timers_delete(String timer) => "Delete $timer";
-  String get timers_duplicate => "You already have this timer.";
-  String get timers_picker_minutes => "Minutes";
-  String get timers_picker_seconds => "Seconds";
-  String get skins_view_all => "View all";
-  String get timers_pomodoro_focus => "Focus";
-  String get timers_pomodoro_break => "Break";
-  String timers_minutes(int minutes) => "$minutes min";
-  String get sound_footer =>
-      "The in-app alert always plays, even with notifications off.";
-  String get shortcuts_touch => "Touch";
-  String get shortcuts_keyboard => "Keyboard";
-  String get touch_controls => "Show or hide controls";
-  String get shortcut_off => "Off";
-  String get key_start_pause => "Start or pause";
-  String get key_change_mode => "Change mode";
-  String get key_brightness => "Brightness";
-  String get key_show_seconds => "Show seconds";
-  String get key_full_screen => "Full screen";
-  String get key_hide_controls => "Hide controls";
-  String get key_dim => "Dim the digits";
-  String get key_lap => "Lap (stopwatch)";
-  String get key_rotation => "Screen rotation";
-  String get keycap_space => "Space";
+      "時計のどこでもスワイプできます。Mac、Windows、Web では画面ではなく数字の明るさが変わります。";
+  String get gesture_controls => "操作ボタン";
+  String get gesture_tap => "タップで操作ボタンを表示";
+  String get gesture_idle => "操作ボタンを隠すまで";
+  String gesture_idle_seconds(int seconds) => "${seconds}秒";
+  String get gesture_idle_never => "なし";
+  String get gesture_controls_footer => "操作ボタンは点になってから消えます。";
+  String get timers_default => "デフォルトのタイマー";
+  String get timers_start_runs => "開始で実行";
+  String get timers_presets => "プリセット";
+  String get timers_add => "タイマーを追加";
+  String get timers_limit_footer => "アイランドに入るタイマーは6つまでです。追加するには1つ削除してください。";
+  String timers_delete(String timer) => "$timer を削除";
+  String get timers_duplicate => "このタイマーはすでにあります。";
+  String get timers_picker_minutes => "分";
+  String get timers_picker_seconds => "秒";
+  String get skins_view_all => "すべて表示";
+  String get timers_pomodoro_focus => "集中";
+  String get timers_pomodoro_break => "休憩";
+  String timers_minutes(int minutes) => "${minutes}分";
+  String get sound_footer => "通知がオフでも、アプリ内のアラートは必ず鳴ります。";
+  String get shortcuts_touch => "タッチ";
+  String get shortcuts_keyboard => "キーボード";
+  String get touch_controls => "操作ボタンの表示/非表示";
+  String get shortcut_off => "オフ";
+  String get key_start_pause => "開始/一時停止";
+  String get key_change_mode => "モード切替";
+  String get key_brightness => "明るさ";
+  String get key_show_seconds => "秒を表示";
+  String get key_full_screen => "全画面表示";
+  String get key_hide_controls => "操作ボタンを隠す";
+  String get key_dim => "数字を暗くする";
+  String get key_lap => "ラップ(ストップウォッチ)";
+  String get key_rotation => "画面の回転";
+  String get keycap_space => "スペース";
   String get keycap_left_right => "← →";
   String get keycap_up_down => "↑ ↓";
   String get keycap_s => "S";
@@ -877,10 +861,9 @@ class ClockMessages implements i69n.I69nMessageBundle {
   String get keycap_d => "D";
   String get keycap_l => "L";
   String get keycap_r => "R";
-  String get about_licenses => "Licenses";
-  String get about_privacy => "Privacy";
-  String get about_privacy_value =>
-      "No ads. No tracking. An account is optional.";
+  String get about_licenses => "ライセンス";
+  String get about_privacy => "プライバシー";
+  String get about_privacy_value => "広告なし。トラッキングなし。アカウントは任意です。";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1325,57 +1308,50 @@ class ClockMessages implements i69n.I69nMessageBundle {
       case 'about_privacy_value':
         return about_privacy_value;
       default:
-        return key;
+        return super[key];
     }
   }
 }
 
-class SyncMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const SyncMessages(this._parent);
-  String get account => "Account";
-  String get card_title_signed_out => "Your settings stay on this device";
-  String get card_body_signed_out =>
-      "Sign in only if you want them on your other devices.";
-  String get card_title_on => "Sync is on";
-  String get card_title_off => "Sync is off";
-  String card_last_synced(String when) => "Last synced $when";
-  String get headline => "Your settings stay on this device";
+class SyncMessages_ja extends SyncMessages {
+  final Messages_ja _parent;
+  const SyncMessages_ja(this._parent) : super(_parent);
+  String get account => "アカウント";
+  String get card_title_signed_out => "設定はこのデバイスに保存されます";
+  String get card_body_signed_out => "他のデバイスでも使いたい場合のみログインしてください。";
+  String get card_title_on => "同期はオンです";
+  String get card_title_off => "同期はオフです";
+  String card_last_synced(String when) => "最終同期 $when";
+  String get headline => "設定はこのデバイスに保存されます";
   String get body =>
-      "QuietFlip never needs an account. Sign in only if you want your clock, skins and sounds on your other devices.";
-  String get sign_in => "Sign in to sync";
-  String get sign_in_reason =>
-      "Only needed to sync your settings across devices.";
-  String get what_syncs => "What syncs";
-  String get what_syncs_body =>
-      "Theme, skins, sounds, clock and timer settings.";
-  String get stays_body =>
-      "Stays on this device: brightness, rotation, notifications and a running timer.";
-  String get sync_header => "Sync";
-  String get sync_settings => "Sync settings";
-  String get sync_settings_note =>
-      "Your settings follow you to every device you sign in on.";
-  String get last_synced => "Last synced";
-  String get just_now => "Just now";
-  String minutes_ago(int n) => "$n min ago";
-  String today_at(String time) => "Today at $time";
-  String get never => "Not yet";
-  String get syncing => "Syncing…";
-  String get waiting => "Waiting for a connection";
-  String get off_note => "Sync is off. Changes stay on this device.";
-  String get failed_offline =>
-      "Couldn't sync: no connection. It will try again when you're back online.";
-  String get failed_denied => "Couldn't sync: sign in again.";
-  String get failed_unknown => "Couldn't sync. Try again.";
-  String get try_again => "Try again";
-  String get sign_out_note => "Signing out keeps your settings on this device.";
-  String get delete_account => "Delete account";
-  String get delete_title => "Delete your account?";
-  String get delete_body =>
-      "Your synced settings are removed from the cloud. Settings on this device stay.";
-  String get delete_recent_login => "Sign in again to delete your account";
-  String get delete_failed => "Couldn't delete your account. Try again.";
-  String get provider_email => "Email";
+      "QuietFlip にアカウントは不要です。時計、スキン、サウンドを他のデバイスでも使いたい場合のみログインしてください。";
+  String get sign_in => "ログインして同期";
+  String get sign_in_reason => "デバイス間で設定を同期する場合のみ必要です。";
+  String get what_syncs => "同期される項目";
+  String get what_syncs_body => "テーマ、スキン、サウンド、時計とタイマーの設定。";
+  String get stays_body => "このデバイスのみ: 明るさ、回転、通知、実行中のタイマー。";
+  String get sync_header => "同期";
+  String get sync_settings => "設定を同期";
+  String get sync_settings_note => "ログインしたすべてのデバイスに設定が反映されます。";
+  String get last_synced => "最終同期";
+  String get just_now => "たった今";
+  String minutes_ago(int n) => "${n}分前";
+  String today_at(String time) => "今日 $time";
+  String get never => "未同期";
+  String get syncing => "同期中…";
+  String get waiting => "接続を待っています";
+  String get off_note => "同期はオフです。変更はこのデバイスにのみ保存されます。";
+  String get failed_offline => "同期できませんでした: 接続がありません。オンラインに戻ると再試行します。";
+  String get failed_denied => "同期できませんでした: もう一度ログインしてください。";
+  String get failed_unknown => "同期できませんでした。もう一度お試しください。";
+  String get try_again => "再試行";
+  String get sign_out_note => "ログアウトしても、設定はこのデバイスに残ります。";
+  String get delete_account => "アカウントを削除";
+  String get delete_title => "アカウントを削除しますか?";
+  String get delete_body => "同期した設定はクラウドから削除されます。このデバイスの設定は残ります。";
+  String get delete_recent_login => "アカウントを削除するには、もう一度ログインしてください";
+  String get delete_failed => "アカウントを削除できませんでした。もう一度お試しください。";
+  String get provider_email => "メール";
   String get provider_google => "Google";
   String get provider_apple => "Apple";
   Object operator [](String key) {
@@ -1460,7 +1436,7 @@ class SyncMessages implements i69n.I69nMessageBundle {
       case 'provider_apple':
         return provider_apple;
       default:
-        return key;
+        return super[key];
     }
   }
 }

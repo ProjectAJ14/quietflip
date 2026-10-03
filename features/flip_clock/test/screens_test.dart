@@ -27,6 +27,7 @@ import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -77,8 +78,16 @@ class Harness {
     bool reduceMotion = false,
     ThemeData? appTheme,
     bool orientationSupported = false,
+    Locale? locale,
   }) => MaterialApp(
     theme: appTheme ?? theme,
+    locale: locale,
+    supportedLocales: locale == null
+        ? const [Locale('en', 'US')]
+        : LocalizationProvider.locales,
+    localizationsDelegates: locale == null
+        ? null
+        : GlobalMaterialLocalizations.delegates,
     builder: reduceMotion
         ? (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
@@ -178,6 +187,7 @@ void main() {
   testWidgets('opens on the clock in 24h without seconds; settings toggle it', (
     tester,
   ) async {
+    deviceOn24h(tester);
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await showChrome(tester);
@@ -201,6 +211,7 @@ void main() {
   testWidgets('date line shows above the clock and rolls over at midnight', (
     tester,
   ) async {
+    deviceOn24h(tester);
     final h = Harness();
     h.wall.now = DateTime(2026, 9, 29, 23, 59, 59);
     await tester.pumpWidget(h.screen());
@@ -611,6 +622,7 @@ void main() {
   });
 
   testWidgets('S toggles seconds in Clock mode only', (tester) async {
+    deviceOn24h(tester);
     final h = Harness();
     await tester.pumpWidget(h.screen());
     await tester.pump();

@@ -238,7 +238,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() {});
                 },
               ),
-              SyncCard(sync: sync, now: widget.now, use24h: uses24h(context, s)),
+              SyncCard(
+                sync: sync,
+                now: widget.now,
+                use24h: uses24h(context, s),
+              ),
             )),
           );
         },
