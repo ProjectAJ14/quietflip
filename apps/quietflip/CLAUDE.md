@@ -139,6 +139,111 @@ lib/
   circle. If the master changes, redo both at those sizes;
   `launch_screen_test.dart` checks them.
 
+## Store screenshots (`store_screenshots/`)
+
+`flutter test store_screenshots/` (from this folder; run
+`dart run tool/fetch_store_fonts.dart` from the root once first) renders
+every store image into `build/store_screenshots/`, shaped for fastlane:
+`app_store/<ASC locale>/NN_<card>_iphone.png` and `_ipad.png`,
+`mac_app_store/<ASC locale>/NN_<card>.png`,
+`google_play/<Play locale>/images/{phone,sevenInch,tenInch}Screenshots/N_<card>.png`
+and `featureGraphic.png`, `microsoft_store/<locale>/NN_<card>.png`,
+`web/og_image.png` (English) and `contact/<language>.png` (every image of a
+language on one page, for review). Nothing imports this folder; it is not
+under `test/`, so `melos run test` and the coverage gate skip it, and
+`tool/check.dart` lints it.
+
+| File | Owns |
+|---|---|
+| `targets.dart` | `slots` (pixel size, captured `Device`: logical size, ratio, safe-area insets, platform, frame; output path), `storeLocales` (app language -> App Store / Play / Microsoft codes), `cards` (the ordered card ids), `landscapeCards` |
+| `scenarios.dart` | `capture()`: boots the real app (`startApp` with the real `bootstrap.init`, Firebase off through `defaultFirebaseOptions`, `clock_support.dart`'s in-memory storage) as a device, seeds `flip_clock.settings`, then rewires `di` after bootstrap (`ClockController` and `CountdownController` at `frozenNow` 10:09:30, a fixed `Stopwatch`), drives the UI to the card's screen (a tap on the clock, the Skins button, Customize) with `find` ready-checks that name card + language, and returns `RepaintBoundary.toImage` at the device ratio |
+| `card.dart` | `StoreCard` (headline over a `DeviceFrame` on the Mono Dark ground, large-title token scaled to the card) and `WordmarkCard` (launch logo, app name, one line: feature graphic and `og:image`); a headline that does not fit three lines in its box throws, naming the slot, card and language |
+| `device_frame.dart` | Drawn phone (iPhone pill or Android punch-hole), tablet, laptop and monitor around a capture; Mono tokens, no frame art |
+| `contact_sheet.dart` | A row per slot at 360px thumbnails |
+| `fonts.dart` | `loadFonts(language)`: every FontManifest font (Material icons etc.), google_fonts fetching off, and the language's script font |
+| `render.dart` | `renderLocale(language)`: one test per slot x card, the wordmarks, the contact sheet, then a check that every file exists at its exact pixel size |
+| `locales/<code>_test.dart` | One file per app language (its own process, see Gotchas) |
+| `copy/<code>.yaml` | Headlines; `en.yaml` is the source. `copy_test.dart` checks every app language has a copy file with exactly the English keys, a locale test and store codes |
+
+- **Add a card:** a scenario case in `_act` (and its settings in
+  `_settings`), its id in `cards`, a line in every `copy/*.yaml`.
+- **Add a language:** `copy/<code>.yaml`, `locales/<code>_test.dart`, a row
+  in `storeLocales`; a script with no glyphs in Geist also needs a font in
+  `tool/fetch_store_fonts.dart` and `fonts.dart`. `copy_test.dart` fails
+  until all three exist.
+- **Add a store slot:** a `Slot` in `slots` (pixels even on both sides; cards
+  are laid out at half the pixels).
+- Every claim on a card must be true of the shipped build.
+
+### CI and store upload (`.github/workflows/store-screenshots.yml`)
+
+A manual run (Actions > Store screenshots) renders everything and uploads
+one artifact per store folder (`store-app_store`, `store-mac_app_store`,
+`store-google_play`, `store-microsoft_store`, `store-web`,
+`store-contact-sheets`). Ticking **upload**, or pushing a `v*` tag, also
+uploads, after the render passes, to every store whose secrets are all set.
+A store missing any of them is skipped with a notice naming what is missing;
+the run stays green. fastlane is pinned by `Gemfile` / `Gemfile.lock` here;
+there is no Fastfile.
+
+| Store | Needs (repository secrets unless marked) | Tool |
+|---|---|---|
+| App Store (iPhone + iPad) | `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY` | `fastlane run upload_to_app_store` (deliver), `platform:ios` |
+| Mac App Store | the same three + variable `MAC_APP_STORE_ENABLED` = `true` | same, `platform:osx` |
+| Google Play | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; optional variable `GOOGLE_PLAY_TRACK` (default `internal`) | `fastlane supply` |
+| Microsoft Store | none: never uploaded automatically | manual, from `store-microsoft_store` |
+
+Formats: `APP_STORE_CONNECT_API_KEY` is the whole `.p8` file text,
+`-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines
+included (an App Store Connect team key with the App Manager role); the key
+ID and issuer ID are as shown in App Store Connect > Users and Access >
+Integrations. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is the whole service account
+key JSON file. CI writes both to `$RUNNER_TEMP` and deletes them after.
+
+Before each store's upload can succeed:
+
+- **App Store / Mac App Store:** the platform needs a version in an editable
+  state (Prepare for Submission, or Rejected / Developer Rejected); with none,
+  the job fails with "Could not find a version to edit". The upload replaces
+  every screenshot of each language it has images for, creates missing
+  languages on that version, touches no text or build, and never submits.
+- **Google Play:** the app exists in Play Console with at least one build
+  uploaded (the API cannot edit an app with none); the service account is
+  invited in Play Console > Users and permissions with permission to edit the
+  store listing; the track in `GOOGLE_PLAY_TRACK` has exactly one release
+  (supply looks one up even for images). Each language folder replaces that
+  language's phone, 7", 10" screenshots and feature graphic. Languages with
+  no translation added in Play Console may be rejected; add them first.
+- **Microsoft Store:** no supported route changes only the listing images:
+  the msstore CLI uploads packages and listing JSON but no image files, and
+  the Partner Center submission API takes images only inside a new
+  submission, which goes to certification when committed. Upload the
+  artifact by hand in Partner Center > the app's Store listings, per language.
+
+Gotchas:
+
+- `flutter test` has no system font fallback. google_fonts gives every
+  style `fontFamilyFallback: [<family without spaces>]` (`Geist`,
+  `BarlowCondensed` ...) but registers only `<family>_<variant>`, so
+  `fonts.dart` registers the script font under those plain names: Noto
+  Sans JP/KR/SC/Devanagari (downloaded) and, for Arabic, the bundled Noto
+  Sans Arabic (the digit faces draw AM/PM as ص / م). A real phone uses its
+  own system font there, so ja/ko/zh/hi captures show Noto where a device
+  shows its own font. Fonts cannot be unregistered, hence one test file
+  (process) per language.
+- `FontLoader` takes ownership of the bytes it is given: register a copy
+  per family, or every family after the first gets nothing.
+- The bootstrap's own `CountdownController` reads the real clock, so a
+  seeded countdown is saved after bootstrap (in `_freeze`), never before:
+  seeded first, it loads as "finished while away".
+- audioplayers listens and cancels on per-player event channels after the
+  test that made the player; `answerAudioChannels()` answers them for the
+  whole file.
+- Phones stay upright on the nightstand card (a sideways phone leaves half a
+  portrait card empty); tablets turn landscape.
+- On phones the expanded island covers the top card (the chrome is an
+  overlay, as shipped), so the pomodoro and stopwatch cards show it there.
+
 ## Tests
 
 | File | Covers |

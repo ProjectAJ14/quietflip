@@ -35,6 +35,39 @@ App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
 because the only encryption is Firebase's TLS and sign-in, which is exempt.
 
+## Store screenshots
+
+Every store image (App Store iPhone and iPad, Mac App Store, Google Play
+phone, 7" and 10" tablets and feature graphic, Microsoft Store, and the web
+`og:image`) in all 14 languages comes from the app itself:
+
+```sh
+dart run tool/fetch_store_fonts.dart     # from the repository root, once
+cd apps/quietflip && flutter test store_screenshots/
+```
+
+Output lands in `build/store_screenshots/`, one folder per store and
+language in the layout fastlane `deliver` / `supply` expect, plus
+`contact/<language>.png` to review a language at a glance. Headlines are in
+`store_screenshots/copy/` (English is the source). See `CLAUDE.md` to add a
+card, a language or a store size.
+
+CI does the same on GitHub: Actions > **Store screenshots** > Run workflow
+renders every image into downloadable artifacts (one per store). Tick
+**upload**, or push a `v*` tag, to also send them to the stores. A store is
+uploaded to only when all of its secrets exist; until then it is skipped
+with a notice, never a failure:
+
+| Store | Turn it on by adding |
+|---|---|
+| App Store (iPhone, iPad) | secrets `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY` (the `.p8` file's full text) |
+| Mac App Store | the same three, plus the repository variable `MAC_APP_STORE_ENABLED` = `true` |
+| Google Play | secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (the key file's full JSON) |
+| Microsoft Store | nothing: upload the `store-microsoft_store` artifact by hand |
+
+Apple uploads into the version being prepared for submission, so one must
+exist. Store-side setup for each is in `CLAUDE.md`.
+
 ## Launch screen
 
 The logo shows on black from the moment the app opens (iOS, Android,

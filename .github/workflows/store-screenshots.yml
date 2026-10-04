@@ -1,0 +1,280 @@
+name: Store screenshots
+# Renders every store image from the app (apps/quietflip/store_screenshots/)
+# and, when asked, uploads them to each store whose secrets are all set.
+# A store with a missing secret is skipped with a notice, never failed.
+# Gating table and store-side prerequisites: apps/quietflip/CLAUDE.md.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload to every store whose secrets are set
+        type: boolean
+        default: false
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+# Never two uploads at once; a second run waits instead of cancelling one
+# that may be half way through replacing a store's screenshots.
+concurrency:
+  group: store-screenshots
+  cancel-in-progress: false
+env:
+  LC_ALL: en_US.UTF-8 # fastlane warns and can mis-handle text otherwise
+  LANG: en_US.UTF-8
+  FASTLANE_SKIP_UPDATE_CHECK: 'true'
+  FASTLANE_HIDE_CHANGELOG: 'true'
+
+jobs:
+  render:
+    name: Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - uses: actions/cache@v4
+        with:
+          path: .dart_tool/store_fonts
+          key: store-fonts-${{ hashFiles('tool/fetch_store_fonts.dart') }}
+      - run: dart run tool/fetch_store_fonts.dart
+      - run: flutter test store_screenshots/
+        working-directory: apps/quietflip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-app_store
+          path: apps/quietflip/build/store_screenshots/app_store
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-mac_app_store
+          path: apps/quietflip/build/store_screenshots/mac_app_store
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-google_play
+          path: apps/quietflip/build/store_screenshots/google_play
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-microsoft_store
+          path: apps/quietflip/build/store_screenshots/microsoft_store
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-web
+          path: apps/quietflip/build/store_screenshots/web
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-contact-sheets
+          path: apps/quietflip/build/store_screenshots/contact
+          if-no-files-found: error
+
+  # Secrets cannot appear in a job-level `if:`, so this job turns "every
+  # secret of store X is non-empty" into an output per store. Only names are
+  # printed, never values.
+  secrets:
+    name: Store credentials present
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      app_store: ${{ steps.check.outputs.app_store }}
+      mac_app_store: ${{ steps.check.outputs.mac_app_store }}
+      google_play: ${{ steps.check.outputs.google_play }}
+    steps:
+      - id: check
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          MAC_APP_STORE_ENABLED: ${{ vars.MAC_APP_STORE_ENABLED }}
+        run: |
+          # present <output> <store> <variable>...: true when all are non-empty.
+          present() {
+            local output=$1 store=$2 missing=() name
+            shift 2
+            for name in "$@"; do
+              [ -n "${!name}" ] || missing+=("$name")
+            done
+            if [ ${#missing[@]} -eq 0 ]; then
+              echo "$output=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$output=false" >> "$GITHUB_OUTPUT"
+              local list="${missing[*]}"
+              echo "::notice title=$store upload skipped::missing ${list// /, }"
+            fi
+          }
+          asc=(APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_API_KEY)
+          present app_store 'App Store' "${asc[@]}"
+          [ "$MAC_APP_STORE_ENABLED" = true ] || MAC_APP_STORE_ENABLED=
+          present mac_app_store 'Mac App Store' "${asc[@]}" MAC_APP_STORE_ENABLED
+          present google_play 'Google Play' GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+
+  # deliver edits the app's editable version ("Prepare for Submission"); with
+  # none it fails with "Could not find a version to edit". It replaces the
+  # screenshots of every language it uploads, touches nothing else, and
+  # never submits. `force` only skips the interactive HTML preview.
+  # `fastlane run upload_to_app_store` instead of `fastlane deliver`: the
+  # latter asks to set up a Deliverfile, which fails without a terminal.
+  app_store:
+    name: Upload (App Store)
+    needs: [render, secrets]
+    if: needs.secrets.outputs.app_store == 'true' && (github.event_name == 'push' || inputs.upload)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/quietflip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: apps/quietflip
+      - uses: actions/download-artifact@v4
+        with:
+          name: store-app_store
+          path: ${{ runner.temp }}/screenshots
+      - name: Write App Store Connect API key
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          umask 077
+          jq -n '{key_id: env.KEY_ID, issuer_id: env.ISSUER_ID, key: env.KEY, in_house: false}' \
+            > "$RUNNER_TEMP/asc_api_key.json"
+      - run: >-
+          bundle exec fastlane run upload_to_app_store
+          api_key_path:"$RUNNER_TEMP/asc_api_key.json"
+          app_identifier:live.iajaykumar.quietflip
+          platform:ios
+          screenshots_path:"$RUNNER_TEMP/screenshots"
+          overwrite_screenshots:true
+          skip_binary_upload:true
+          skip_metadata:true
+          skip_app_version_update:true
+          force:true
+          run_precheck_before_submit:false
+          submit_for_review:false
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/asc_api_key.json"
+
+  # Same key as the App Store, plus the repository variable
+  # MAC_APP_STORE_ENABLED=true: the iOS key exists before the Mac listing
+  # (and its editable version) does.
+  mac_app_store:
+    name: Upload (Mac App Store)
+    needs: [render, secrets]
+    if: needs.secrets.outputs.mac_app_store == 'true' && (github.event_name == 'push' || inputs.upload)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/quietflip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: apps/quietflip
+      - uses: actions/download-artifact@v4
+        with:
+          name: store-mac_app_store
+          path: ${{ runner.temp }}/screenshots
+      - name: Write App Store Connect API key
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          umask 077
+          jq -n '{key_id: env.KEY_ID, issuer_id: env.ISSUER_ID, key: env.KEY, in_house: false}' \
+            > "$RUNNER_TEMP/asc_api_key.json"
+      - run: >-
+          bundle exec fastlane run upload_to_app_store
+          api_key_path:"$RUNNER_TEMP/asc_api_key.json"
+          app_identifier:live.iajaykumar.quietflip
+          platform:osx
+          screenshots_path:"$RUNNER_TEMP/screenshots"
+          overwrite_screenshots:true
+          skip_binary_upload:true
+          skip_metadata:true
+          skip_app_version_update:true
+          force:true
+          run_precheck_before_submit:false
+          submit_for_review:false
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/asc_api_key.json"
+
+  # supply replaces the listing's screenshots and feature graphic per
+  # language folder and commits the edit; no binary, text or changelog.
+  # It still looks up one release on a track (GOOGLE_PLAY_TRACK, default
+  # internal) and fails if that track has none or several.
+  google_play:
+    name: Upload (Google Play)
+    needs: [render, secrets]
+    if: needs.secrets.outputs.google_play == 'true' && (github.event_name == 'push' || inputs.upload)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/quietflip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: apps/quietflip
+      - uses: actions/download-artifact@v4
+        with:
+          name: store-google_play
+          path: ${{ runner.temp }}/google_play
+      - name: Write service account key
+        env:
+          JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$JSON" > "$RUNNER_TEMP/play_service_account.json"
+      - env:
+          TRACK: ${{ vars.GOOGLE_PLAY_TRACK || 'internal' }}
+        run: >-
+          bundle exec fastlane supply
+          --package_name live.iajaykumar.quietflip
+          --json_key "$RUNNER_TEMP/play_service_account.json"
+          --metadata_path "$RUNNER_TEMP/google_play"
+          --track "$TRACK"
+          --skip_upload_apk true
+          --skip_upload_aab true
+          --skip_upload_metadata true
+          --skip_upload_changelogs true
+          --skip_upload_images false
+          --skip_upload_screenshots false
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/play_service_account.json"
+
+  # No supported route updates Microsoft Store listing images alone: the
+  # msstore CLI uploads packages and listing JSON, not image files, and the
+  # Partner Center submission API only takes images inside a new submission
+  # that goes to certification when committed. Upload by hand from the
+  # store-microsoft_store artifact (see apps/quietflip/CLAUDE.md).
+  microsoft_store:
+    name: Microsoft Store (manual upload)
+    needs: [render]
+    if: github.event_name == 'push' || inputs.upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: >-
+          echo "::notice title=Microsoft Store not uploaded::No automated
+          screenshot upload exists. Download the store-microsoft_store artifact
+          of this run and upload it in Partner Center > Store listings."

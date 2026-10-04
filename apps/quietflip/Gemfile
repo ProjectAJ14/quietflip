@@ -1,0 +1,6 @@
+# fastlane for the store screenshot upload jobs in
+# .github/workflows/store-screenshots.yml (deliver and supply, screenshots
+# only). Gemfile.lock pins the exact version CI installs.
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.228"

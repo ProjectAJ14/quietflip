@@ -688,6 +688,41 @@ void main() {
       await close(tester);
     });
 
+    testWidgets('a long Customize label wraps inside the narrowest tile', (
+      tester,
+    ) async {
+      // Hindi's label is the widest; the store screenshots caught it
+      // overflowing the In use tile on a Mac window.
+      LocalizationProvider.select([const Locale('hi')]);
+      addTearDown(() => LocalizationProvider.select(const []));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(colorScheme: DesignSystem.blackScheme()),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: SkinPicker.minTileWidth,
+                child: SkinTile(
+                  skin: Skins.builtIn().first,
+                  selected: true,
+                  now: now,
+                  use24h: false,
+                  onTap: () {},
+                  onCustomize: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      final button = tester.getRect(find.byType(AppButton));
+      final tile = tester.getRect(find.byType(SkinTile));
+      expect(button.right, lessThanOrEqualTo(tile.right));
+      expect(button.left, greaterThanOrEqualTo(tile.left));
+      await close(tester);
+    });
+
     testWidgets(
       'tap selects; Customize sits on the In use tile only and opens it',
       (tester) async {

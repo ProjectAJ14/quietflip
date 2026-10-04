@@ -34,6 +34,9 @@ Future<void> main() async {
     for (final package in directory.listSync().whereType<Directory>()) {
       collect(Directory(p.join(package.path, 'lib')));
       collect(Directory(p.join(package.path, 'test')));
+      // The app's store screenshot renderer (not under test/, so coverage
+      // skips it, but it is linted like everything else).
+      collect(Directory(p.join(package.path, 'store_screenshots')));
     }
   }
   sources.sort();

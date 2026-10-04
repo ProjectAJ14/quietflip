@@ -301,7 +301,9 @@ lib/
   ring, the check and, in place of the face name, a Customize button (pencil
   + label, its own focusable button spoken "Customize <name>"; the tile is
   "<name>, selected"), which opens the customizer on that skin (custom
-  skins with Delete). The sheet header keeps only Done and the title. The
+  skins with Delete). The button is capped at the caption's width, so a
+  long label (Hindi) wraps inside the narrowest tile instead of
+  overflowing (`skin_sheets_test.dart`). The sheet header keeps only Done and the title. The
   Appearance strip uses the same tile. The sheet opens on an "In use"
   section (`skins_in_use`): one tile, the selected skin (built-in or custom,
   via `Skins.resolve`) at the grid's tile width, the only tile in the sheet
