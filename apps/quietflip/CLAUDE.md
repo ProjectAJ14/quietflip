@@ -139,6 +139,17 @@ lib/
   circle. If the master changes, redo both at those sizes;
   `launch_screen_test.dart` checks them.
 
+## Android release signing
+
+Release builds (`flutter build appbundle|apk --release`) are signed with your
+own upload key, never the debug key. Without credentials they fail with a
+message naming what is missing; debug builds and `flutter run` are unaffected
+(so `flutter run --release` also needs the key).
+
+- **Local:** create the key once with `keytool -genkey -v -keystore "$HOME/Documents/My Apps/QuietFlip/upload-keystore.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias upload`, keep the keystore in `~/Documents/My Apps/QuietFlip/` (iCloud-synced, outside the repo, so every machine has it), and write `key.properties` there with `storeFile` (a name relative to that folder, or absolute), `storePassword`, `keyAlias`, `keyPassword`.
+- **CI:** set the environment variables `ANDROID_KEYSTORE_FILE` (path of the decoded keystore), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; store the keystore base64-encoded as a secret and decode it in the job. Never commit a keystore or `key.properties`.
+- **Check the result:** `keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab` (or `apksigner verify --print-certs` for an APK) must show your upload certificate, not `CN=Android Debug`.
+
 ## Store screenshots (`store_screenshots/`)
 
 `flutter test store_screenshots/` (from this folder; run

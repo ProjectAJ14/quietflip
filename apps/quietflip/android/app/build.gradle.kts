@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -6,6 +8,28 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Release signing: key.properties in the private folder outside the repo
+// (iCloud-synced ~/Documents/My Apps/QuietFlip), or the same keys as
+// environment variables (CI). Keys: storeFile (relative to that folder or
+// absolute), storePassword, keyAlias, keyPassword (env: ANDROID_KEYSTORE_FILE,
+// ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD).
+val secretsDir = File(System.getProperty("user.home"), "Documents/My Apps/QuietFlip")
+val keyProps = Properties().apply {
+    val f = File(secretsDir, "key.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun signingValue(prop: String, env: String): String? =
+    (keyProps.getProperty(prop) ?: System.getenv(env))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingValue("storeFile", "ANDROID_KEYSTORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "ANDROID_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "ANDROID_KEY_PASSWORD")
+val hasReleaseSigning = listOf(
+    releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword,
+).all { it != null }
 
 android {
     namespace = "live.iajaykumar.quietflip"
@@ -34,12 +58,40 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = secretsDir.resolve(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Never the debug key: without credentials the build fails (below).
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val releaseTask = allTasks.firstOrNull {
+        it.project == project &&
+            it.name.matches(Regex("(assemble|bundle|package)\\w*Release"))
+    }
+    if (releaseTask != null && !hasReleaseSigning) {
+        throw GradleException(
+            "Release signing is not configured. Create ~/Documents/My Apps/QuietFlip/key.properties " +
+                "(storeFile, storePassword, keyAlias, keyPassword) or set " +
+                "ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, " +
+                "ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. " +
+                "See apps/quietflip/CLAUDE.md, Android release signing.",
+        )
     }
 }
 
