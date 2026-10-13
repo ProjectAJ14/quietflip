@@ -17,7 +17,7 @@ Then from this folder:
 
 | Platform | Run | Build |
 |---|---|---|
-| Android | `flutter run -d android` | `flutter build appbundle` |
+| Android | `flutter run -d android` | `flutter build appbundle` (needs the upload key, see `CLAUDE.md`, Android release signing) |
 | iOS | `flutter run -d ios` | `flutter build ipa` (macOS + Xcode) |
 | Web | `flutter run -d chrome` | `flutter build web --no-web-resources-cdn` (bundles the renderer; nothing loads from a CDN) |
 | macOS | `flutter run -d macos` | `flutter build macos` |

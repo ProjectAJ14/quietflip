@@ -139,6 +139,17 @@ lib/
   circle. If the master changes, redo both at those sizes;
   `launch_screen_test.dart` checks them.
 
+## Android release signing
+
+Release builds (`flutter build appbundle|apk --release`) are signed with your
+own upload key, never the debug key. Without credentials they fail with a
+message naming what is missing; debug builds and `flutter run` are unaffected
+(so `flutter run --release` also needs the key).
+
+- **Local:** create the key once with `keytool -genkey -v -keystore "$HOME/Documents/My Apps/QuietFlip/upload-keystore.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias upload`, keep the keystore in `~/Documents/My Apps/QuietFlip/` (iCloud-synced, outside the repo, so every machine has it), and write `key.properties` there with `storeFile` (a name relative to that folder, or absolute), `storePassword`, `keyAlias`, `keyPassword`.
+- **Another machine without that folder (or CI):** set the environment variables `ANDROID_KEYSTORE_FILE` (path of the decoded keystore), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; store the keystore base64-encoded as a secret and decode it in the job. Never commit a keystore or `key.properties`.
+- **Check the result:** `keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab` (or `apksigner verify --print-certs` for an APK) must show your upload certificate, not `CN=Android Debug`.
+
 ## Store screenshots (`store_screenshots/`)
 
 `flutter test store_screenshots/` (from this folder; run
@@ -256,6 +267,7 @@ Gotchas:
 | `notification_lifecycle_test.dart` | init after first frame, init again and badge on resume, no badge after dispose, errors logged, null client |
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
 | `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |
+| `android_release_signing_test.dart` | the Gradle release config never uses the debug key, fails release tasks without credentials, reads the private folder or `ANDROID_*` env vars, and `android/.gitignore` keeps keystores and `key.properties` out of git |
 | `export_compliance_test.dart` | iOS and macOS `Info.plist` declare `ITSAppUsesNonExemptEncryption` = `false` |
 | `splash_screen_test.dart` | `SplashScreen` draws the launch logo at `logoWidth`, centred, on black even in a light theme, labelled with the app name, then opens the clock |
 | `launch_screen_test.dart` | the generated launch screens agree with `SplashScreen`: logo 4x of `logoWidth` (iOS @3x, web 1x), Android 12+ icon 1152px with the logo inside the 192dp circle, black Android 12+ backgrounds, web splash removed on the first frame |
