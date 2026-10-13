@@ -50,6 +50,41 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
       - run: git push origin HEAD:main "refs/tags/v${{ steps.next.outputs.version }}"
 
+  # A store whose secrets are not all set is skipped with a notice, never
+  # failed, so a release can ship the platforms that are ready.
+  credentials:
+    name: Store credentials present
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      android: ${{ steps.check.outputs.android }}
+    steps:
+      - id: check
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # present <output> <store> <variable>...: true when all are non-empty.
+          present() {
+            local output=$1 store=$2 missing=() name
+            shift 2
+            for name in "$@"; do
+              [ -n "${!name}" ] || missing+=("$name")
+            done
+            if [ ${#missing[@]} -eq 0 ]; then
+              echo "$output=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$output=false" >> "$GITHUB_OUTPUT"
+              local list="${missing[*]}"
+              echo "::notice title=$store release skipped::missing ${list// /, }"
+            fi
+          }
+          present android 'Google Play' ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD \
+            ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+
   # Builds the tagged commit and publishes it to the live site, with the
   # release version and build number baked in.
   web:
@@ -78,3 +113,72 @@ jobs:
           projectId: quietflip
           entryPoint: apps/quietflip
           channelId: live
+
+  # Signed app bundle to the Google Play track in GOOGLE_PLAY_TRACK (default
+  # internal); promotion to production stays a click in the Play Console. The
+  # first upload of a brand-new app must be done by hand in the console.
+  android:
+    name: Android (Google Play)
+    needs: [version, credentials]
+    if: needs.credentials.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - name: Write upload keystore and Play key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PLAY_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          printf '%s' "$PLAY_JSON" > "$RUNNER_TEMP/play_service_account.json"
+      - name: Build app bundle
+        working-directory: apps/quietflip
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >-
+          flutter build appbundle --release
+          --build-name=${{ needs.version.outputs.version }}
+          --build-number=${{ needs.version.outputs.build_number }}
+          --obfuscate --split-debug-info=build/symbols/android
+      # Needed to read obfuscated stack traces of this exact build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-symbols-${{ needs.version.outputs.version }}
+          path: apps/quietflip/build/symbols/android
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: apps/quietflip
+      - name: Upload to Google Play
+        working-directory: apps/quietflip
+        env:
+          TRACK: ${{ vars.GOOGLE_PLAY_TRACK || 'internal' }}
+        run: >-
+          bundle exec fastlane supply
+          --package_name live.iajaykumar.quietflip
+          --json_key "$RUNNER_TEMP/play_service_account.json"
+          --aab build/app/outputs/bundle/release/app-release.aab
+          --track "$TRACK"
+          --skip_upload_metadata true
+          --skip_upload_changelogs true
+          --skip_upload_images true
+          --skip_upload_screenshots true
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/play_service_account.json"
