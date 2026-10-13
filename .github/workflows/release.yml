@@ -59,6 +59,7 @@ jobs:
     outputs:
       android: ${{ steps.check.outputs.android }}
       ios: ${{ steps.check.outputs.ios }}
+      macos: ${{ steps.check.outputs.macos }}
     steps:
       - id: check
         env:
@@ -70,6 +71,7 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MAC_APP_STORE_ENABLED: ${{ vars.MAC_APP_STORE_ENABLED }}
         run: |
           # present <output> <store> <variable>...: true when all are non-empty.
           present() {
@@ -88,8 +90,11 @@ jobs:
           }
           present android 'Google Play' ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD \
             ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
-          present ios 'TestFlight' APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID \
-            APP_STORE_CONNECT_API_KEY
+          asc=(APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_API_KEY)
+          present ios 'TestFlight' "${asc[@]}"
+          # The iOS key exists before the Mac app record does.
+          [ "$MAC_APP_STORE_ENABLED" = true ] || MAC_APP_STORE_ENABLED=
+          present macos 'Mac App Store' "${asc[@]}" MAC_APP_STORE_ENABLED
 
   # Builds the tagged commit and publishes it to the live site, with the
   # release version and build number baked in.
@@ -289,3 +294,85 @@ jobs:
           skip_waiting_for_build_processing:true
       - if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/asc_api_key.json"
+
+  # Signed pkg to App Store Connect (TestFlight for Mac); `destination:
+  # upload` in the export options makes xcodebuild upload it, so no separate
+  # upload tool. Same signing approach and prerequisites as the iOS job, with
+  # a Mac registered on the team, plus the repository variable
+  # MAC_APP_STORE_ENABLED=true once the Mac app record exists.
+  macos:
+    name: macOS (Mac App Store)
+    needs: [version, credentials]
+    if: needs.credentials.outputs.macos == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - name: Write App Store Connect API key
+        env:
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+      - name: Configure build
+        working-directory: apps/quietflip
+        run: >-
+          flutter build macos --config-only --release
+          --build-name=${{ needs.version.outputs.version }}
+          --build-number=${{ needs.version.outputs.build_number }}
+          --obfuscate --split-debug-info=build/symbols/macos
+      - name: Archive
+        working-directory: apps/quietflip/macos
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: >-
+          xcodebuild archive
+          -workspace Runner.xcworkspace -scheme Runner -configuration Release
+          -archivePath "$RUNNER_TEMP/Runner.xcarchive"
+          -allowProvisioningUpdates
+          -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8"
+          -authenticationKeyID "$KEY_ID"
+          -authenticationKeyIssuerID "$ISSUER_ID"
+      # Kept first: it is what reads obfuscated stack traces of this build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-symbols-${{ needs.version.outputs.version }}
+          path: |
+            apps/quietflip/build/symbols/macos
+            ${{ runner.temp }}/Runner.xcarchive/dSYMs
+      - name: Export and upload
+        working-directory: apps/quietflip/macos
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>QAL4T5U87S</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>upload</string>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

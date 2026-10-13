@@ -108,6 +108,14 @@ least one registered device on the team (Xcode refuses to create a
 development profile without one). Skipped with a notice when a secret is
 missing.
 
+macOS ships from the `macos` job the same way (archive, then `-exportArchive`
+with `destination: upload` so xcodebuild sends the pkg to App Store Connect),
+with the same three secrets. It also needs the repository variable
+`MAC_APP_STORE_ENABLED=true`, set once the Mac app record exists, and a Mac
+registered on the team. `Info.plist` carries `LSApplicationCategoryType`
+(utilities), which the Mac App Store requires; change it to match the listing
+category.
+
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run
 workflow renders every image into artifacts (tick **upload** to also send
