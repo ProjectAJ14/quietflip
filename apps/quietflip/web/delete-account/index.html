@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="How to delete your QuietFlip account and the settings synced with it.">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <title>Delete your QuietFlip account</title>
+  <style>
+    :root { --bg:#000; --fg:#f2f2f2; --muted:#a8a8a8; --card:#141414; --line:#2a2a2a; --accent:#ffb347; --on-accent:#000; }
+    @media (prefers-color-scheme: light) {
+      :root { --bg:#fafafa; --fg:#111; --muted:#555; --card:#fff; --line:#ddd; --accent:#9a4d00; --on-accent:#fff; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    main { max-width:42rem; margin:0 auto; padding:2rem 1rem 4rem; }
+    h1 { font-size:1.9rem; line-height:1.2; margin:0 0 .5rem; }
+    h2 { font-size:1.2rem; margin:2rem 0 .5rem; }
+    p, li { margin:.4rem 0; }
+    .muted { color:var(--muted); }
+    section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:.25rem 1.25rem 1rem; margin-top:1.25rem; }
+    a { color:var(--accent); }
+    .button { display:inline-block; margin-top:.5rem; padding:.8rem 1.25rem; border-radius:10px; background:var(--accent); color:var(--on-accent); font-weight:600; text-decoration:none; }
+    a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .warn { border-left:4px solid var(--accent); padding-left:.75rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Delete your QuietFlip account</h1>
+  <p class="muted">QuietFlip is an ad-free flip clock, countdown timer and stopwatch. You do not need an account to use it. An account only syncs your settings between your devices.</p>
+
+  <section>
+    <h2>Option 1: delete it in the app (instant)</h2>
+    <p>Open QuietFlip and go to <strong>Settings &gt; Account &gt; Delete account</strong>, then confirm. If the app asks you to sign in again first, do that and repeat the steps.</p>
+  </section>
+
+  <section>
+    <h2>Option 2: request deletion by email</h2>
+    <p>Use this if you can no longer open the app. Send the request <strong>from the email address of your QuietFlip account</strong>, so we can match it to the account.</p>
+    <p><a class="button" href="mailto:ajaymail2114@gmail.com?subject=QuietFlip%20account%20deletion%20request&amp;body=Please%20delete%20my%20QuietFlip%20account%20and%20its%20synced%20data.%0A%0A(Send%20this%20from%20the%20email%20address%20of%20your%20account.)">Email a deletion request</a></p>
+    <p class="muted">Or write to <a href="mailto:ajaymail2114@gmail.com">ajaymail2114@gmail.com</a> with the subject "QuietFlip account deletion request".</p>
+    <p class="warn"><strong>We will never ask for your password.</strong> If we cannot tell the request came from the account owner, we will reply with a question that only the owner can answer, and we will not delete anything until it is answered.</p>
+    <p>We aim to reply within 7 days and to finish deleting within 30 days of a verified request.</p>
+  </section>
+
+  <section>
+    <h2>What is deleted</h2>
+    <ul>
+      <li>Your sign-in account (Firebase Authentication), including your email address.</li>
+      <li>Your synced settings stored in the cloud (Firestore), under your account only.</li>
+      <li>Your device's push-notification registration, when you delete from the app.</li>
+    </ul>
+    <p>Settings stored on your own device stay there until you clear the app's data or uninstall it. Deleting your account does not remove them.</p>
+  </section>
+
+  <section>
+    <h2>What is kept</h2>
+    <ul>
+      <li>Anonymous usage statistics (Google Analytics for Firebase) and crash reports (Firebase Crashlytics). QuietFlip does not link these to your account. Deleting your account does not remove them, and they expire under Google's own retention rules. Analytics keeps user-level data for 2 or 14 months, depending on the project setting.</li>
+      <li>Routine backups and logs held by Google for Firebase, which age out on Google's schedule.</li>
+    </ul>
+    <p class="muted">See <a href="https://firebase.google.com/support/privacy">Firebase privacy and security</a> for Google's details.</p>
+  </section>
+</main>
+</body>
+</html>
