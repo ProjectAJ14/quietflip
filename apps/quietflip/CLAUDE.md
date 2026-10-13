@@ -257,6 +257,7 @@ Gotchas:
 | `startup_test.dart` | cold-start route queued until router exists; later routes navigate directly |
 | `app_identity_test.dart` | Android, iOS, macOS and the Windows toast id all carry `live.iajaykumar.quietflip`; none still says `io.nonstop` |
 | `export_compliance_test.dart` | iOS and macOS `Info.plist` declare `ITSAppUsesNonExemptEncryption` = `false` |
+| `delete_account_page_test.dart` | `web/delete-account/index.html` (the Play Console data-deletion URL): names QuietFlip, one support email used by every `mailto:`, the in-app path matches the real `Settings`/`Account`/`Delete account` strings, asks for no password and loads no script, `firebase.json` publishes `build/web` and leaves the page out of the ignore list |
 | `splash_screen_test.dart` | `SplashScreen` draws the launch logo at `logoWidth`, centred, on black even in a light theme, labelled with the app name, then opens the clock |
 | `launch_screen_test.dart` | the generated launch screens agree with `SplashScreen`: logo 4x of `logoWidth` (iOS @3x, web 1x), Android 12+ icon 1152px with the logo inside the 192dp circle, black Android 12+ backgrounds, web splash removed on the first frame |
 
@@ -293,6 +294,15 @@ Pattern: hand-written `_Logger`/`_Client` fakes, `mocktail` + `MockPlatformInter
   `index.html` (`firebase.json`); any other host needs the same rewrite or
   a reload of `/clock` returns 404. Old `/#/...` links still load the app
   and land on the clock.
+- **Account deletion page.** `web/delete-account/index.html` is plain HTML,
+  copied into `build/web` by the build and served at
+  `https://quietflip.web.app/delete-account/` (Hosting serves a real file
+  before the `**` rewrite, so the clock never answers there; `/delete-account`
+  redirects to the slash form). It is the data-deletion URL for Google Play.
+  Email requests are handled by hand: confirm the sender matches the account
+  email, then in the Firebase console delete the user (Authentication) and the
+  `users/<uid>` documents (Firestore), and reply. Keep the page's promises
+  (7-day reply, 30-day deletion, what is kept) in line with what you do.
 
 - `App(face:)` sets the whole app in the selected skin's face
   (`flip_clock.appFace()`); null keeps Geist.

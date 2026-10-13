@@ -31,6 +31,9 @@ so a returning visitor gets a new release on the next load. CI does this for
 you: once its checks pass, a push to `main` goes live and a pull request gets a
 preview link (see the root `CLAUDE.md`).
 
+The account-deletion page for Google Play lives at
+`https://quietflip.web.app/delete-account/` (`web/delete-account/index.html`).
+
 App Store uploads (iOS and macOS) skip the encryption-documentation question:
 both `Info.plist` files declare `ITSAppUsesNonExemptEncryption` = `false`,
 because the only encryption is Firebase's TLS and sign-in, which is exempt.

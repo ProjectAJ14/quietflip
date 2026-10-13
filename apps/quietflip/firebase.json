@@ -47,10 +47,6 @@
     ],
     "rewrites": [
       {
-        "source": "/delete-account",
-        "destination": "/delete-account/index.html"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
