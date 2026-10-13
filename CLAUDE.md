@@ -85,6 +85,18 @@ committed. The version push needs the `main` branch to accept pushes from
 workflow token do not start other workflows, so deploy jobs live in
 `release.yml` itself and read the `version` job outputs.
 
+Android ships from the `android` job: a signed, obfuscated app bundle to the
+Play track in the `GOOGLE_PLAY_TRACK` variable (default `internal`), uploaded
+with fastlane `supply`; the symbol files are kept as a workflow artifact.
+Secrets (repository secrets, never in git): `ANDROID_KEYSTORE_BASE64`
+(`base64 -i upload.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+`ANDROID_KEY_PASSWORD`, and `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (shared with the
+screenshot upload). With any of them missing the job is skipped with a
+notice. One-time console work: create the app in Play Console, upload the
+first bundle by hand, and give the service account release permission.
+`build.gradle.kts` reads the keystore from the `ANDROID_*` variables the job
+exports (see `apps/quietflip/CLAUDE.md`, Android release signing).
+
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run
 workflow renders every image into artifacts (tick **upload** to also send
