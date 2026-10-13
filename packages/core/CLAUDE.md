@@ -19,7 +19,7 @@ Exported from `package:core/core.dart` unless noted.
 | `registerLoggerWithDI()` | function | `di.register<Logger>(TalkerLoggerImpl(TalkerFlutter.init()))` |
 | `TalkerLoggerImpl` | implementation | Not in the barrel; import `package:core/logger/talker_logger_impl.dart` |
 | `Environment` | constants | `useEmulators` (`USE_EMULATORS`), `baseUrl` (`BASE_URL`, default `https://api.example.com`) |
-| `CoreRoutes`, `Keys`, `Defaults` | constants | Shell paths, query/extra keys, `defaultPageSize` |
+| `CoreRoutes`, `Keys`, `Defaults` | constants | Shell paths, query/extra keys, `defaultPageSize`, `privacyPolicyUrl` (the hosted policy; served from `apps/quietflip/web/privacy.html`) |
 | `CoreRouter` | `abstract interface class` | `List<RouteBase> get routes`; feature/package routers `implements` it |
 | `CoreBlocObserver`, `CoreRouteObserver` | observers | Optional `logger:`; fall back to `di.get<Logger>()` |
 | `GlobalEventChannel({required maxRecentEvents, Logger? logger})` + `GlobalEventChannelProvider/Builder/Listener/Consumer` | bloc | App-wide events; `context.fire(GlobalEventType)` extension |

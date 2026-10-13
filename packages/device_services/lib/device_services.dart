@@ -1,5 +1,5 @@
 /// Platform adapters behind small contracts: full screen, screen wake,
-/// orientation lock, screen brightness, local alerts, sounds and key-value storage.
+/// orientation lock, screen brightness, local alerts, sounds, key-value storage and opening web links.
 library;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -18,6 +18,7 @@ import 'package:device_services/src/orientation/system_orientation_lock.dart';
 import 'package:device_services/src/screen_wake/wakelock_screen_wake.dart';
 import 'package:device_services/src/sound/audio_sound_player.dart';
 import 'package:device_services/src/storage/preferences_key_value_store.dart';
+import 'package:device_services/src/url/launcher_url_opener.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:di/di.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:screen_brightness/screen_brightness.dart' as plugin;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart' as launcher;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -54,6 +56,7 @@ Future<void> init({
   Future<double> Function()? readBrightness,
   Future<void> Function(double)? writeBrightness,
   Future<void> Function()? restoreBrightness,
+  Future<bool> Function(Uri url)? launch,
 }) async {
   final logger = di.get<Logger>();
   final target = platform ?? defaultTargetPlatform;
@@ -116,6 +119,17 @@ Future<void> init({
     PreferencesKeyValueStore(
       preferences: preferences ?? SharedPreferencesAsync(),
       logger: logger,
+    ),
+  );
+  di.register<UrlOpener>(
+    LauncherUrlOpener(
+      logger: logger,
+      launch:
+          launch ??
+          (url) => launcher.launchUrl(
+            url,
+            mode: launcher.LaunchMode.externalApplication,
+          ),
     ),
   );
   logger.i('device_services initialized');

@@ -5,3 +5,4 @@ export 'orientation_lock.dart';
 export 'screen_brightness.dart';
 export 'screen_wake.dart';
 export 'sound_player.dart';
+export 'url_opener.dart';

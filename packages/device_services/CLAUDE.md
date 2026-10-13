@@ -1,7 +1,7 @@
 # Quietflip: `packages/device_services`
 
 Platform adapters behind small contracts: full screen, screen wake,
-orientation lock, screen brightness, local (non-FCM) notifications, bundled sounds and key-value storage. It knows nothing
+orientation lock, screen brightness, local (non-FCM) notifications, bundled sounds, key-value storage and opening web links. It knows nothing
 about clocks or timers and holds no product copy: callers pass titles and
 bodies. Layer 2 (see `packages/CLAUDE.md`): depends on `core`, `di`.
 
@@ -17,6 +17,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | `ScreenBrightness`, `ScreenBrightnessException` | contract: `bool supported`, `current()`, `set(double)`, `reset()`; exception `(operation, [cause])` | `PluginScreenBrightness` over `screen_brightness` app-scoped calls (`application`, `setApplicationScreenBrightness`, `resetApplicationScreenBrightness`; no permissions). Supported on Android and iOS only; elsewhere `current` is 1.0 and `set`/`reset` are no-ops. `set` clamps to 0..1. A failing call is logged and rethrown as `ScreenBrightnessException` so the caller can dim the app instead |
 | `LocalAlerts` | contract: `requestPermission()`, `schedule({id, at, title, body})`, `cancel(id)`, `showNow({title, body})` | `NotificationLocalAlerts`: `flutter_local_notifications` on every platform (web through its service-worker plugin), initialised lazily on first call so no prompt at startup. `zonedSchedule` in `tz.UTC`; Android `exactAllowWhileIdle` when `canScheduleExactNotifications`, else `inexactAllowWhileIdle`. Web: `schedule` is a no-op, `showNow` works while the tab is open |
 | `SoundPlayer`, `TickSound`, `AlarmSound` | contract: `playTick(TickSound)`, `warmTick(TickSound)`, `playAlarm(AlarmSound)`, `stopAlarm()`, `previewAlarm(AlarmSound)`, `stopPreview()`; enums naming the bundled files (`.file`) | `AudioSoundPlayer` over `assets/sounds/` (table below), one shared `AudioCache`. Ticks: one `audioplayers` `AudioPool` per `TickSound` (`maxPlayers` 2), created on the first `playTick` or `warmTick` of that sound and kept, so a tick never reloads its file; `playTick` is `pool.start()`, run one after another, and switching to a different sound stops the last one first, so ticks never layer. `warmTick` loads the pool and plays nothing. A failed pool load is logged and dropped, so the next tick retries. The pool factory is constructor-injected (`AudioPool.createFromAsset` by default). Alarm: one `AudioPlayer`; loops until `stopAlarm` or 60 s, and a new `playAlarm` while one loops stops it first, so two never stack. Preview: a second `AudioPlayer` with the same loop and limit, so stopping a preview never touches the alarm. The real alarm wins: `playAlarm` stops a preview first, and `previewAlarm` is a no-op while the alarm loops. `dispose` releases both players and every pool |
+| `UrlOpener` | contract: `open(Uri)` -> `bool` | `LauncherUrlOpener` over `url_launcher` `launchUrl` in an external application (a new tab on web). A failure is logged and returns false; never throws. The app's Settings > About > Privacy opens `Defaults.privacyPolicyUrl` through it |
 | `KeyValueStore` | contract: `read`, `write`, `delete` | `shared_preferences` (`SharedPreferencesAsync`) |
 | `init({alerts})` | function | Registers every implementation with `di` (disposables via `dispose:`). The app passes `LocalAlertsConfig` (app name, Android channel name, Windows toast id); other named parameters exist only to inject fakes in tests |
 | `LocalAlertsConfig` | config | Notification identity; defaults are generic, not product copy |
@@ -26,7 +27,7 @@ Read the root `CLAUDE.md` and `packages/CLAUDE.md` first.
 | Path | Responsibility |
 |---|---|
 | `lib/device_services.dart` | Barrel + `init()` |
-| `lib/src/contracts/` | The seven `abstract interface class` contracts + `index.dart` |
+| `lib/src/contracts/` | The eight `abstract interface class` contracts + `index.dart` |
 | `lib/src/<role>/` | One folder per implementation (web variants via conditional imports) |
 | `assets/sounds/` | Bundled sounds; load with `AssetSource` under `packages/device_services/...` |
 

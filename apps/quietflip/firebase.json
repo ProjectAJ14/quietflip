@@ -45,6 +45,7 @@
       "**/.*",
       "**/*.symbols"
     ],
+    "cleanUrls": true,
     "rewrites": [
       {
         "source": "**",

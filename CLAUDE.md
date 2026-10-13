@@ -56,7 +56,7 @@ firebase deploy --only firestore:rules --project quietflip # after editing fires
 The web app is served by Firebase Hosting at `https://quietflip.web.app`
 (`hosting` in `firebase.json`: `build/web`, every path rewritten to
 `index.html` so deep links load, and `Cache-Control: no-cache` on every file
-because Flutter's output names are not content-hashed). CI deploys it: the
+because Flutter's output names are not content-hashed). The privacy policy is the static page `apps/quietflip/web/privacy.html`, served at `https://quietflip.web.app/privacy` (`cleanUrls`; a real file beats the rewrite, so crawlers and store reviewers get plain HTML); use that URL in the Play Console and App Store Connect, and update the page (and its date) whenever data collection changes. CI deploys it: the
 `Deploy` job in `.github/workflows/quality.yml` runs after Lint, Tests and Web
 build pass, publishes pull requests to a 7-day preview channel (link commented
 on the PR) and pushes to `main` to the live site, through

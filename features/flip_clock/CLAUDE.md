@@ -123,7 +123,7 @@ lib/
                                            listed, "Off" while the setting is off; no double
                                            tap), then keycaps; Touch / Keyboard headers only
                                            when both show; touch_app icon when Touch leads,
-                                           else keyboard) / About (licences, privacy); Done
+                                           else keyboard) / About (licences; privacy opens the hosted policy via `UrlOpener`); Done
   ui/components/                           GestureLayer (one RawGestureDetector: tap, double tap,
                                            axis-locked brightness drag and page swipe),
                                            FlipDisplay (cards + badge + AM/PM, styled by a Skin),
