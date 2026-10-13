@@ -67,14 +67,14 @@ jobs:
           path: apps/quietflip/build/web
           retention-days: 1
 
-  # Ships the Web build job's output only after every check passes: a pull
-  # request gets a preview channel (link commented on the PR, expires after
-  # 7 days), a push to main goes live at https://quietflip.web.app. Pull
-  # requests from forks have no secrets, so they skip it.
+  # Ships the Web build job's output to a preview channel once every check
+  # passes (link commented on the PR, expires after 7 days). The live site
+  # at https://quietflip.web.app is deployed only by the Release workflow.
+  # Pull requests from forks have no secrets, so they skip it.
   deploy:
     name: Deploy (Firebase Hosting)
     needs: [lint, coverage, web]
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -93,4 +93,3 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_QUIETFLIP }}
           projectId: quietflip
           entryPoint: apps/quietflip
-          channelId: ${{ github.event_name == 'push' && 'live' || '' }}

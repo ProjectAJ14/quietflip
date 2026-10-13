@@ -49,3 +49,32 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
       - run: git push origin HEAD:main "refs/tags/v${{ steps.next.outputs.version }}"
+
+  # Builds the tagged commit and publishes it to the live site, with the
+  # release version and build number baked in.
+  web:
+    name: Web (Firebase Hosting)
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - run: >
+          flutter build web --release --no-web-resources-cdn
+          --build-name=${{ needs.version.outputs.version }}
+          --build-number=${{ needs.version.outputs.build_number }}
+        working-directory: apps/quietflip
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_QUIETFLIP }}
+          projectId: quietflip
+          entryPoint: apps/quietflip
+          channelId: live
