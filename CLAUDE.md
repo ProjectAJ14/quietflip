@@ -21,6 +21,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
 | `apps/quietflip/store_screenshots/` | Store screenshot renderer: boots the real app in `flutter test`, composes store cards, writes every store/locale PNG to `apps/quietflip/build/store_screenshots/` (see `apps/quietflip/CLAUDE.md`). Not under `test/`, so `melos run test` and coverage skip it; nothing imports it | the app |
 | `tool/fetch_store_fonts.dart` | Downloads the pinned, sha256-checked Noto Sans JP/KR/SC/Devanagari the screenshots need into `.dart_tool/store_fonts/` (never shipped in the app) | - |
+| `.github/workflows/release.yml` | Manual "Release": gates on `quality.yml` (lint + 100% coverage), then `melos version` bumps every member to one version from conventional commits, writes the changelogs and pushes the commit and a `vX.Y.Z` tag. Exposes `version` and `build_number` (`github.run_number`) for per-platform deploy jobs | - |
 | `.github/workflows/store-screenshots.yml` | Renders the store screenshots on demand or on a `v*` tag and uploads them to each store whose GitHub secrets are all set (fastlane pinned in `apps/quietflip/Gemfile.lock`; gating table in `apps/quietflip/CLAUDE.md`) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
@@ -73,6 +74,16 @@ cd apps/quietflip
 flutter build web --release --no-web-resources-cdn
 firebase deploy --only hosting --project quietflip
 ```
+
+Releases: Actions > Release > Run workflow, on `main` only. `melos version`
+(config under `melos: command: version:` in the root `pubspec.yaml`, fixed
+mode) turns `fix:` into a patch, `feat:` into a minor and `!` or
+`BREAKING CHANGE:` into a major, for the whole workspace at once. The
+store build number is `github.run_number`, passed as `--build-number`, never
+committed. The version push needs the `main` branch to accept pushes from
+`github-actions[bot]` (allow it in branch protection). Pushes made with the
+workflow token do not start other workflows, so deploy jobs live in
+`release.yml` itself and read the `version` job outputs.
 
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run

@@ -6,6 +6,7 @@ on:
     paths-ignore: ['**.md']
   pull_request:
     paths-ignore: ['**.md']
+  workflow_call: # the Release workflow gates on these jobs
 permissions:
   contents: read
 # A new push to the same branch or PR cancels the run it replaces.

@@ -1,6 +1,7 @@
 name: quietflip_workspace
 description: "An ad-free flip clock, countdown timer, and stopwatch."
 publish_to: 'none'
+repository: https://github.com/ProjectAJ14/quietflip
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -32,6 +33,19 @@ workspace:
   - features/flip_clock
 
 melos:
+  # One version for the whole workspace, derived from conventional commits
+  # (fix: patch, feat: minor, ! or BREAKING CHANGE: major) and tagged `vX.Y.Z`.
+  # Every member is private, so they must be versioned explicitly.
+  command:
+    version:
+      mode: fixed
+      workspaceTag: true
+      workspaceChangelog: true
+      versionPrivatePackages: true
+      linkToCommits: true
+      branch: main
+      message: "chore(release): {new_package_versions}"
+
   scripts:
     clean:flutter:
       description: "Run flutter clean in all Flutter packages"

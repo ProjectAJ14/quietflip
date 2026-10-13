@@ -1,0 +1,51 @@
+name: Release
+# Manual: Actions > Release > Run workflow. Versions the workspace from the
+# conventional commits since the last tag, tags it, and exposes the version and
+# build number the per-platform deploy jobs use.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  # Nothing ships unless lint and 100% coverage pass.
+  gate:
+    name: Gate
+    uses: ./.github/workflows/quality.yml
+
+  version:
+    name: Version
+    needs: gate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # push the version commit and tag
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      # Strictly increasing integer for CFBundleVersion, Play versionCode and
+      # the MSIX build; never committed.
+      build_number: ${{ github.run_number }}
+      tag: ${{ steps.next.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # melos reads commits since the last tag
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: dart run melos version --yes
+      - id: next
+        run: |
+          version=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' apps/quietflip/pubspec.yaml)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+      - run: git push origin HEAD:main "refs/tags/v${{ steps.next.outputs.version }}"
