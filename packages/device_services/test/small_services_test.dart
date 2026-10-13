@@ -5,6 +5,7 @@ import 'package:device_services/src/full_screen/window_full_screen_listener.dart
 import 'package:device_services/src/orientation/system_orientation_lock.dart';
 import 'package:device_services/src/screen_wake/wakelock_screen_wake.dart';
 import 'package:device_services/src/storage/preferences_key_value_store.dart';
+import 'package:device_services/src/url/launcher_url_opener.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +18,35 @@ class _MockPreferences extends Mock implements SharedPreferencesAsync {}
 void main() {
   late FakeLogger logger;
   setUp(() => logger = FakeLogger());
+
+  group('LauncherUrlOpener', () {
+    final url = Uri.parse('https://example.com/privacy');
+
+    test('returns what the launcher says', () async {
+      final seen = <Uri>[];
+      for (final result in [true, false]) {
+        final opener = LauncherUrlOpener(
+          logger: logger,
+          launch: (u) async {
+            seen.add(u);
+            return result;
+          },
+        );
+        expect(await opener.open(url), result);
+      }
+      expect(seen, [url, url]);
+      expect(logger.errors, isEmpty);
+    });
+
+    test('a throwing launcher is logged and returns false', () async {
+      final opener = LauncherUrlOpener(
+        logger: logger,
+        launch: (_) => Future.error(StateError('no browser')),
+      );
+      expect(await opener.open(url), isFalse);
+      expect(logger.errors, hasLength(1));
+    });
+  });
 
   group('PlatformFullScreenController', () {
     test('toggle applies and flips active; exit leaves', () async {

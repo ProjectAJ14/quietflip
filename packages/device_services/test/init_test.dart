@@ -45,7 +45,9 @@ void main() {
     Future<void> Function(List<DeviceOrientation>)? orientations,
     Future<bool> Function()? isIPad,
     List<String>? brightness,
+    Future<bool> Function(Uri)? launch,
   }) => init(
+    launch: launch,
     orientations: orientations ?? (_) async {},
     isIPad: isIPad ?? () async => false,
     readBrightness: () async {
@@ -77,6 +79,7 @@ void main() {
     expect(di.get<KeyValueStore>(), isNotNull);
     expect(di.get<OrientationLock>(), isNotNull);
     expect(di.get<ScreenBrightness>(), isNotNull);
+    expect(di.get<UrlOpener>(), isNotNull);
     await di.get<ScreenWake>().setEnabled(true);
     await di.reset();
     di.register<Logger>(logger);
@@ -85,6 +88,27 @@ void main() {
       verify(player.dispose).called(1);
     }
   });
+
+  test(
+    'UrlOpener launches externally; no browser plugin means false',
+    () async {
+      await run();
+      // Real launchUrl has no plugin in a unit test: contained, logged, false.
+      expect(await di.get<UrlOpener>().open(Uri.parse('https://a.b')), isFalse);
+      expect(logger.errors, hasLength(1));
+      await di.reset();
+      di.register<Logger>(logger);
+      final seen = <Uri>[];
+      await run(
+        launch: (u) async {
+          seen.add(u);
+          return true;
+        },
+      );
+      await di.get<UrlOpener>().open(Uri.parse('https://a.b'));
+      expect(seen, [Uri.parse('https://a.b')]);
+    },
+  );
 
   test('orientation lock is supported only on Android and iOS', () async {
     final applied = <List<DeviceOrientation>>[];

@@ -122,6 +122,9 @@ class FlipClockRouter implements CoreRouter {
         final delete? => () => delete(context),
         null => null,
       },
+      onOpenPrivacy: () => unawaited(
+        di.get<UrlOpener>().open(Uri.parse(Defaults.privacyPolicyUrl)),
+      ),
       now: () => di.get<ClockController>().state,
       orientationSupported: di.get<OrientationLock>().supported,
       touchShortcuts: shortcuts.touch,

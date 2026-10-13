@@ -1046,6 +1046,7 @@ void main() {
   testWidgets('the settings route passes the shortcut groups, on resize too', (
     tester,
   ) async {
+    final urls = FakeUrlOpener();
     di
       ..register<KeyValueStore>(FakeStore())
       ..register<LocalAlerts>(FakeAlerts())
@@ -1053,7 +1054,8 @@ void main() {
       ..register<FullScreenController>(FakeFullScreen())
       ..register<ScreenWake>(FakeWake())
       ..register<OrientationLock>(FakeOrientation())
-      ..register<ScreenBrightness>(FakeScreenBrightness());
+      ..register<ScreenBrightness>(FakeScreenBrightness())
+      ..register<UrlOpener>(urls);
     await flip_clock.init();
     // defaultTargetPlatform is iOS on an iPhone, in the app or a browser.
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
@@ -1074,6 +1076,8 @@ void main() {
       (screen().touchShortcuts, screen().keyboardShortcuts),
       (true, false),
     );
+    screen().onOpenPrivacy!();
+    expect(urls.opened, [Uri.parse(core.Defaults.privacyPolicyUrl)]);
     // Turned into an iPad-sized window: keys join the touch gestures.
     tester.view.physicalSize = const Size(820, 1180);
     await tester.pumpAndSettle();

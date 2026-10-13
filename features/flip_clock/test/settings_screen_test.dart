@@ -43,6 +43,7 @@ void main() {
   var done = 0;
   var skins = 0;
   var customized = 0;
+  var privacy = 0;
 
   Future<void> open(
     WidgetTester tester, {
@@ -65,6 +66,7 @@ void main() {
     done = 0;
     skins = 0;
     customized = 0;
+    privacy = 0;
     await tester.pumpWidget(
       DesignSystemWrapper(
         mode: mode,
@@ -81,6 +83,7 @@ void main() {
             onDone: () => done++,
             onSkins: () => skins++,
             onCustomize: () => customized++,
+            onOpenPrivacy: () => privacy++,
             category: category,
             now: () => DateTime(2026, 9, 29, 9, 41),
           ),
@@ -455,6 +458,14 @@ void main() {
     await tap(tester, strings.clock.theme_dark);
     expect(settings.appearance.value, AppearanceMode.black);
     expect(page(), DesignColors.dark.bg);
+    await close(tester);
+  });
+
+  testWidgets('About > Privacy opens the privacy policy', (tester) async {
+    await open(tester);
+    await tap(tester, strings.clock.settings_about);
+    await tester.tap(find.text(strings.clock.about_privacy));
+    expect(privacy, 1);
     await close(tester);
   });
 

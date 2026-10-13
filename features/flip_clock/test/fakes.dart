@@ -337,3 +337,13 @@ class FakeAnalyticsClient implements AnalyticsClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+class FakeUrlOpener implements UrlOpener {
+  final List<Uri> opened = [];
+
+  @override
+  Future<bool> open(Uri url) async {
+    opened.add(url);
+    return true;
+  }
+}

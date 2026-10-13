@@ -44,6 +44,7 @@ class SettingsScreen extends StatefulWidget {
     this.onSignIn,
     this.onSignOut,
     this.onDeleteAccount,
+    this.onOpenPrivacy,
   });
 
   final SettingsController settings;
@@ -93,6 +94,9 @@ class SettingsScreen extends StatefulWidget {
 
   /// Deletes the synced documents and the account, after the user confirmed.
   final Future<AccountDeletion> Function()? onDeleteAccount;
+
+  /// Opens the hosted privacy policy (About > Privacy); null: not tappable.
+  final VoidCallback? onOpenPrivacy;
 
   /// Skin thumbnails in Appearance before "View all".
   static const int skinStrip = 5;
@@ -741,6 +745,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SettingsValueRow(
               label: c.about_privacy,
               value: c.about_privacy_value,
+              onTap: widget.onOpenPrivacy,
             ),
           ],
         ),
