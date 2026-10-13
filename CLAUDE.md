@@ -21,7 +21,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
 | `apps/quietflip/store_screenshots/` | Store screenshot renderer: boots the real app in `flutter test`, composes store cards, writes every store/locale PNG to `apps/quietflip/build/store_screenshots/` (see `apps/quietflip/CLAUDE.md`). Not under `test/`, so `melos run test` and coverage skip it; nothing imports it | the app |
 | `tool/fetch_store_fonts.dart` | Downloads the pinned, sha256-checked Noto Sans JP/KR/SC/Devanagari the screenshots need into `.dart_tool/store_fonts/` (never shipped in the app) | - |
-| `.github/workflows/release.yml` | Manual "Release": gates on `quality.yml` (lint + 100% coverage), then `melos version` bumps every member to one version from conventional commits, writes the changelogs and pushes the commit and a `vX.Y.Z` tag. Exposes `version` and `build_number` (`github.run_number`) for per-platform deploy jobs | - |
+| `.github/workflows/release.yml` | Manual "Release": gates on `quality.yml` (lint + 100% coverage), then `melos version` bumps every member to one version from conventional commits, writes the changelogs and pushes the commit and a `vX.Y.Z` tag. Exposes `version` and `build_number` (`github.run_number`) to the per-platform deploy jobs; the `web` job publishes the tagged build to the live Firebase Hosting site | - |
 | `.github/workflows/store-screenshots.yml` | Renders the store screenshots on demand or on a `v*` tag and uploads them to each store whose GitHub secrets are all set (fastlane pinned in `apps/quietflip/Gemfile.lock`; gating table in `apps/quietflip/CLAUDE.md`) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
@@ -59,8 +59,8 @@ The web app is served by Firebase Hosting at `https://quietflip.web.app`
 `index.html` so deep links load, and `Cache-Control: no-cache` on every file
 because Flutter's output names are not content-hashed). The privacy policy is the static page `apps/quietflip/web/privacy.html`, served at `https://quietflip.web.app/privacy` (`cleanUrls`; a real file beats the rewrite, so crawlers and store reviewers get plain HTML); use that URL in the Play Console and App Store Connect, and update the page (and its date) whenever data collection changes. CI deploys it: the
 `Deploy` job in `.github/workflows/quality.yml` runs after Lint, Tests and Web
-build pass, publishes pull requests to a 7-day preview channel (link commented
-on the PR) and pushes to `main` to the live site, through
+build pass and publishes pull requests to a 7-day preview channel (link commented
+on the PR); the live site is deployed only by the Release workflow's `web` job, through
 `FirebaseExtended/action-hosting-deploy` with the
 `FIREBASE_SERVICE_ACCOUNT_QUIETFLIP` repository secret (a service-account JSON
 key; create it with `firebase init hosting:github` in `apps/quietflip`, never
