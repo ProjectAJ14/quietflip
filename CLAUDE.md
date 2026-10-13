@@ -97,6 +97,17 @@ first bundle by hand, and give the service account release permission.
 `build.gradle.kts` reads the keystore from the `ANDROID_*` variables the job
 exports (see `apps/quietflip/CLAUDE.md`, Android release signing).
 
+iOS ships from the `ios` job on a macOS runner: `xcodebuild archive` and
+`-exportArchive` with automatic, cloud-managed signing through the App Store
+Connect API key (`APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
+`APP_STORE_CONNECT_API_KEY`, the same secrets as the screenshot upload; no
+certificate or profile secrets), then fastlane `pilot` uploads to TestFlight.
+The dSYMs and symbol files are kept as a workflow artifact. Needs the App ID
+`live.iajaykumar.quietflip` and its App Store Connect app record, and at
+least one registered device on the team (Xcode refuses to create a
+development profile without one). Skipped with a notice when a secret is
+missing.
+
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run
 workflow renders every image into artifacts (tick **upload** to also send
