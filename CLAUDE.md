@@ -21,7 +21,7 @@ agent (or person) changing this repository. Before editing, read the nested
 | `tool/coverage.dart` | Runs every suite (one package per CPU in parallel), merges LCOV, requires 100% line coverage (skips generated files; web-only `*_web.dart` files run in Chrome from `test/web/` and fail the gate without one) | - |
 | `apps/quietflip/store_screenshots/` | Store screenshot renderer: boots the real app in `flutter test`, composes store cards, writes every store/locale PNG to `apps/quietflip/build/store_screenshots/` (see `apps/quietflip/CLAUDE.md`). Not under `test/`, so `melos run test` and coverage skip it; nothing imports it | the app |
 | `tool/fetch_store_fonts.dart` | Downloads the pinned, sha256-checked Noto Sans JP/KR/SC/Devanagari the screenshots need into `.dart_tool/store_fonts/` (never shipped in the app) | - |
-| `.github/workflows/release.yml` | Manual "Release": gates on `quality.yml` (lint + 100% coverage), then `melos version` bumps every member to one version from conventional commits, writes the changelogs and pushes the commit and a `vX.Y.Z` tag. Exposes `version` and `build_number` (`github.run_number`) to the per-platform deploy jobs; the `web` job publishes the tagged build to the live Firebase Hosting site | - |
+| `.github/workflows/release.yml` | Manual "Release": gates on `quality.yml` (lint + 100% coverage), then `melos version` bumps every member to one version from conventional commits, writes the changelogs and pushes the commit and a `vX.Y.Z` tag. Exposes `version` and `build_number` (`github.run_number`) to one deploy job per platform (web, android, ios, macos, windows), each skipped with a notice when its secrets are missing | - |
 | `.github/workflows/store-screenshots.yml` | Renders the store screenshots on demand or on a `v*` tag and uploads them to each store whose GitHub secrets are all set (fastlane pinned in `apps/quietflip/Gemfile.lock`; gating table in `apps/quietflip/CLAUDE.md`) | - |
 | `tool/generate_sounds.dart` | Synthesises the bundled tick and alarm WAVs into `packages/device_services/assets/sounds/` (standard library only, deterministic) | - |
 | `docs/architecture.md` | SOLID boundaries, failure and privacy policy | - |
@@ -96,6 +96,36 @@ notice. One-time console work: create the app in Play Console, upload the
 first bundle by hand, and give the service account release permission.
 `build.gradle.kts` reads the keystore from the `ANDROID_*` variables the job
 exports (see `apps/quietflip/CLAUDE.md`, Android release signing).
+
+iOS ships from the `ios` job on a macOS runner: `xcodebuild archive` and
+`-exportArchive` with automatic, cloud-managed signing through the App Store
+Connect API key (`APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
+`APP_STORE_CONNECT_API_KEY`, the same secrets as the screenshot upload; no
+certificate or profile secrets), then fastlane `pilot` uploads to TestFlight.
+The dSYMs and symbol files are kept as a workflow artifact. Needs the App ID
+`live.iajaykumar.quietflip` and its App Store Connect app record, and at
+least one registered device on the team (Xcode refuses to create a
+development profile without one). Skipped with a notice when a secret is
+missing.
+
+macOS ships from the `macos` job the same way (archive, then `-exportArchive`
+with `destination: upload` so xcodebuild sends the pkg to App Store Connect),
+with the same three secrets. It also needs the repository variable
+`MAC_APP_STORE_ENABLED=true`, set once the Mac app record exists, and a Mac
+registered on the team. `Info.plist` carries `LSApplicationCategoryType`
+(utilities), which the Mac App Store requires; change it to match the listing
+category.
+
+Windows ships from the `windows` job: the `msix` tool (installed globally,
+pinned) builds a Store MSIX at version `X.Y.Z.0`, kept as a workflow artifact,
+and the Microsoft Store Developer CLI submits it. Secrets:
+`PARTNER_CENTER_TENANT_ID`, `PARTNER_CENTER_SELLER_ID`,
+`PARTNER_CENTER_CLIENT_ID`, `PARTNER_CENTER_CLIENT_SECRET` (Partner Center >
+Account settings > Users > Microsoft Entra apps). Repository variables (not
+secret): `MS_STORE_APP_ID` (the Store product id), `MS_STORE_IDENTITY_NAME`,
+`MS_STORE_PUBLISHER`, `MS_STORE_PUBLISHER_DISPLAY_NAME` (Partner Center >
+Product identity). Skipped with a notice when any is missing. The first
+submission of a new product must be done by hand in Partner Center.
 
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run

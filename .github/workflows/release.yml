@@ -58,6 +58,9 @@ jobs:
     timeout-minutes: 2
     outputs:
       android: ${{ steps.check.outputs.android }}
+      ios: ${{ steps.check.outputs.ios }}
+      macos: ${{ steps.check.outputs.macos }}
+      windows: ${{ steps.check.outputs.windows }}
     steps:
       - id: check
         env:
@@ -66,6 +69,18 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MAC_APP_STORE_ENABLED: ${{ vars.MAC_APP_STORE_ENABLED }}
+          PARTNER_CENTER_TENANT_ID: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          PARTNER_CENTER_SELLER_ID: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
+          PARTNER_CENTER_CLIENT_ID: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+          MS_STORE_APP_ID: ${{ vars.MS_STORE_APP_ID }}
+          MS_STORE_IDENTITY_NAME: ${{ vars.MS_STORE_IDENTITY_NAME }}
+          MS_STORE_PUBLISHER: ${{ vars.MS_STORE_PUBLISHER }}
+          MS_STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.MS_STORE_PUBLISHER_DISPLAY_NAME }}
         run: |
           # present <output> <store> <variable>...: true when all are non-empty.
           present() {
@@ -84,6 +99,14 @@ jobs:
           }
           present android 'Google Play' ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD \
             ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+          asc=(APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_API_KEY)
+          present ios 'TestFlight' "${asc[@]}"
+          # The iOS key exists before the Mac app record does.
+          [ "$MAC_APP_STORE_ENABLED" = true ] || MAC_APP_STORE_ENABLED=
+          present macos 'Mac App Store' "${asc[@]}" MAC_APP_STORE_ENABLED
+          present windows 'Microsoft Store' PARTNER_CENTER_TENANT_ID PARTNER_CENTER_SELLER_ID \
+            PARTNER_CENTER_CLIENT_ID PARTNER_CENTER_CLIENT_SECRET MS_STORE_APP_ID \
+            MS_STORE_IDENTITY_NAME MS_STORE_PUBLISHER MS_STORE_PUBLISHER_DISPLAY_NAME
 
   # Builds the tagged commit and publishes it to the live site, with the
   # release version and build number baked in.
@@ -182,3 +205,244 @@ jobs:
           --skip_upload_screenshots true
       - if: always()
         run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/play_service_account.json"
+
+  # Signed ipa to TestFlight; promotion to the App Store stays a click in App
+  # Store Connect. Signing is automatic and cloud-managed through the API key
+  # (no certificate or profile secrets): the team needs at least one
+  # registered device, and the first build of a brand-new app record must
+  # exist in App Store Connect.
+  ios:
+    name: iOS (TestFlight)
+    needs: [version, credentials]
+    if: needs.credentials.outputs.ios == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - name: Write App Store Connect API key
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+          jq -n '{key_id: env.KEY_ID, issuer_id: env.ISSUER_ID, key: env.KEY, in_house: false}' \
+            > "$RUNNER_TEMP/asc_api_key.json"
+      # Writes the version, build number and obfuscation settings into the
+      # Xcode project's config; xcodebuild below does the actual build.
+      - name: Configure build
+        working-directory: apps/quietflip
+        run: >-
+          flutter build ios --config-only --release --no-codesign
+          --build-name=${{ needs.version.outputs.version }}
+          --build-number=${{ needs.version.outputs.build_number }}
+          --obfuscate --split-debug-info=build/symbols/ios
+      - name: Archive
+        working-directory: apps/quietflip/ios
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: >-
+          xcodebuild archive
+          -workspace Runner.xcworkspace -scheme Runner -configuration Release
+          -archivePath "$RUNNER_TEMP/Runner.xcarchive"
+          -allowProvisioningUpdates
+          -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8"
+          -authenticationKeyID "$KEY_ID"
+          -authenticationKeyIssuerID "$ISSUER_ID"
+      - name: Export ipa
+        working-directory: apps/quietflip/ios
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>QAL4T5U87S</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>export</string>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+      # Needed to read obfuscated stack traces of this exact build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-symbols-${{ needs.version.outputs.version }}
+          path: |
+            apps/quietflip/build/symbols/ios
+            ${{ runner.temp }}/Runner.xcarchive/dSYMs
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: apps/quietflip
+      - name: Upload to TestFlight
+        working-directory: apps/quietflip
+        run: >-
+          bundle exec fastlane run upload_to_testflight
+          api_key_path:"$RUNNER_TEMP/asc_api_key.json"
+          app_identifier:live.iajaykumar.quietflip
+          ipa:"$(ls "$RUNNER_TEMP"/ipa/*.ipa)"
+          skip_waiting_for_build_processing:true
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/asc_api_key.json"
+
+  # Signed pkg to App Store Connect (TestFlight for Mac); `destination:
+  # upload` in the export options makes xcodebuild upload it, so no separate
+  # upload tool. Same signing approach and prerequisites as the iOS job, with
+  # a Mac registered on the team, plus the repository variable
+  # MAC_APP_STORE_ENABLED=true once the Mac app record exists.
+  macos:
+    name: macOS (Mac App Store)
+    needs: [version, credentials]
+    if: needs.credentials.outputs.macos == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      - name: Write App Store Connect API key
+        env:
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+      - name: Configure build
+        working-directory: apps/quietflip
+        run: >-
+          flutter build macos --config-only --release
+          --build-name=${{ needs.version.outputs.version }}
+          --build-number=${{ needs.version.outputs.build_number }}
+          --obfuscate --split-debug-info=build/symbols/macos
+      - name: Archive
+        working-directory: apps/quietflip/macos
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: >-
+          xcodebuild archive
+          -workspace Runner.xcworkspace -scheme Runner -configuration Release
+          -archivePath "$RUNNER_TEMP/Runner.xcarchive"
+          -allowProvisioningUpdates
+          -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8"
+          -authenticationKeyID "$KEY_ID"
+          -authenticationKeyIssuerID "$ISSUER_ID"
+      # Kept first: it is what reads obfuscated stack traces of this build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-symbols-${{ needs.version.outputs.version }}
+          path: |
+            apps/quietflip/build/symbols/macos
+            ${{ runner.temp }}/Runner.xcarchive/dSYMs
+      - name: Export and upload
+        working-directory: apps/quietflip/macos
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>QAL4T5U87S</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>upload</string>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+
+  # MSIX for the Microsoft Store, submitted with the Store Developer CLI. The
+  # Store signs the package, so no certificate is needed; identity name and
+  # publisher come from Partner Center > Product identity (repository
+  # variables, not secrets). The Store version is `X.Y.Z.0` (the last part is
+  # reserved); each release has a new X.Y.Z, so it always increases.
+  windows:
+    name: Windows (Microsoft Store)
+    needs: [version, credentials]
+    if: needs.credentials.outputs.windows == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          cache: true
+      - run: dart pub get
+      # A global tool, like flutter_launcher_icons: it would conflict with the
+      # workspace lock as a dev_dependency.
+      - run: dart pub global activate msix 3.18.0
+      - name: Build MSIX
+        working-directory: apps/quietflip
+        env:
+          IDENTITY_NAME: ${{ vars.MS_STORE_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.MS_STORE_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ vars.MS_STORE_PUBLISHER_DISPLAY_NAME }}
+        run: >-
+          dart pub global run msix:create --store
+          --display-name QuietFlip
+          --identity-name "$IDENTITY_NAME"
+          --publisher "$PUBLISHER"
+          --publisher-display-name "$PUBLISHER_DISPLAY_NAME"
+          --version "${{ needs.version.outputs.version }}.0"
+          --logo-path assets/icon/quietflip-master.png
+          --output-path build/msix --output-name quietflip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-${{ needs.version.outputs.version }}
+          path: apps/quietflip/build/msix/quietflip.msix
+      - uses: microsoft/microsoft-store-apppublisher@v1.4
+      - name: Submit to the Microsoft Store
+        env:
+          APP_ID: ${{ vars.MS_STORE_APP_ID }}
+        run: |
+          msstore reconfigure \
+            --tenantId "${{ secrets.PARTNER_CENTER_TENANT_ID }}" \
+            --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}" \
+            --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" \
+            --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
+          msstore publish apps/quietflip --appId "$APP_ID" \
+            --inputDirectory apps/quietflip/build/msix
