@@ -84,10 +84,15 @@ committed. The version push needs the `main` branch to accept pushes from
 `github-actions[bot]` (allow it in branch protection). Pushes made with the
 workflow token do not start other workflows, so deploy jobs live in
 `release.yml` itself and read the `version` job outputs.
+For the same reason the `v*` tag a release pushes does not start the store
+screenshot workflow; run it by hand (Actions > Store screenshots, tick
+**upload**) after a release.
 
 Android ships from the `android` job: a signed, obfuscated app bundle to the
-Play track in the `GOOGLE_PLAY_TRACK` variable (default `internal`), uploaded
-with fastlane `supply`; the symbol files are kept as a workflow artifact.
+Play track in the `GOOGLE_PLAY_TRACK` variable (default `internal`), with the
+release status in `GOOGLE_PLAY_RELEASE_STATUS` (default `completed`; use
+`draft` until the app has been published once), uploaded with fastlane
+`supply`; the symbol files are kept as a workflow artifact.
 Secrets (repository secrets, never in git): `ANDROID_KEYSTORE_BASE64`
 (`base64 -i upload.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEY_PASSWORD`, and `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (shared with the

@@ -14,6 +14,12 @@ jobs:
   # Nothing ships unless lint and 100% coverage pass.
   gate:
     name: Gate
+    # quality.yml's preview Deploy job asks for these; a called workflow may
+    # not exceed its caller's permissions, even for a job that is skipped.
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/quality.yml
 
   version:
@@ -115,6 +121,9 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      checks: write # the deploy action reports a status check
     steps:
       - uses: actions/checkout@v4
         with:
@@ -193,12 +202,16 @@ jobs:
         working-directory: apps/quietflip
         env:
           TRACK: ${{ vars.GOOGLE_PLAY_TRACK || 'internal' }}
+          # Play refuses a `completed` release while the app has never been
+          # published; set the variable to `draft` until then.
+          RELEASE_STATUS: ${{ vars.GOOGLE_PLAY_RELEASE_STATUS || 'completed' }}
         run: >-
           bundle exec fastlane supply
           --package_name live.iajaykumar.quietflip
           --json_key "$RUNNER_TEMP/play_service_account.json"
           --aab build/app/outputs/bundle/release/app-release.aab
           --track "$TRACK"
+          --release_status "$RELEASE_STATUS"
           --skip_upload_metadata true
           --skip_upload_changelogs true
           --skip_upload_images true
@@ -438,11 +451,12 @@ jobs:
       - name: Submit to the Microsoft Store
         env:
           APP_ID: ${{ vars.MS_STORE_APP_ID }}
+          TENANT_ID: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          SELLER_ID: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
+          CLIENT_ID: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
         run: |
-          msstore reconfigure \
-            --tenantId "${{ secrets.PARTNER_CENTER_TENANT_ID }}" \
-            --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}" \
-            --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" \
-            --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
+          msstore reconfigure --tenantId "$TENANT_ID" --sellerId "$SELLER_ID" \
+            --clientId "$CLIENT_ID" --clientSecret "$CLIENT_SECRET"
           msstore publish apps/quietflip --appId "$APP_ID" \
             --inputDirectory apps/quietflip/build/msix

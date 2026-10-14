@@ -11,7 +11,9 @@ permissions:
   contents: read
 # A new push to the same branch or PR cancels the run it replaces.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # The event name keeps a release's gate from cancelling (or being
+  # cancelled by) the push run on the same ref.
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
