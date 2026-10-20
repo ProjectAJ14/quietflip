@@ -458,5 +458,7 @@ jobs:
         run: |
           msstore reconfigure --tenantId "$TENANT_ID" --sellerId "$SELLER_ID" \
             --clientId "$CLIENT_ID" --clientSecret "$CLIENT_SECRET"
-          msstore publish apps/quietflip --appId "$APP_ID" \
-            --inputDirectory apps/quietflip/build/msix
+          # --noCommit uploads the package into a draft submission; sending
+          # it to certification stays a click in Partner Center.
+          msstore publish apps/quietflip --appId "$APP_ID" --noCommit \
+            --inputFile apps/quietflip/build/msix/quietflip.msix

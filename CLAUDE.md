@@ -129,8 +129,11 @@ and the Microsoft Store Developer CLI submits it. Secrets:
 Account settings > Users > Microsoft Entra apps). Repository variables (not
 secret): `MS_STORE_APP_ID` (the Store product id), `MS_STORE_IDENTITY_NAME`,
 `MS_STORE_PUBLISHER`, `MS_STORE_PUBLISHER_DISPLAY_NAME` (Partner Center >
-Product identity). Skipped with a notice when any is missing. The first
-submission of a new product must be done by hand in Partner Center.
+Product identity). Skipped with a notice when any is missing. The job leaves
+a draft submission (`msstore publish --noCommit`); submit it for certification
+in Partner Center. The CLI cannot do a product's first publication: do that by
+hand and wait until it is published before the first Release run. Free
+products only.
 
 Store screenshots have their own workflow,
 `.github/workflows/store-screenshots.yml`: Actions > Store screenshots > Run
