@@ -246,13 +246,18 @@ lib/
   (`shadeOf` 0.85, the flap's underside 0.002h above it at 0.4), the lip
   (`lightOf` 0.45), the notch cavities, then the metal pins (a specular band
   at 22%, bright end caps, a dark outline). A flip is `DesignMotion.flip`
-  (360 ms), mapped by `FlipDisplay.turnAt`: a `fallDuration` (300 ms) fall
-  under gravity (an exact u squared; `Curves.easeIn` is solved only to 0.001
-  and its speed wobbles), the old value on the top flap until pi/2 and the
-  new one on the bottom flap after, then a 60 ms `bounce` that lifts the
-  landed flap 0.06 rad and settles. Both flaps turn about the axle (a
-  `Transform` origin on it, centred across) with perspective 0.4 / card
-  height, passing between the pins. The falling flap moves toward
+  (360 ms), mapped by `FlipDisplay.turnAt`: the flap is let go moving
+  (`push` 0.35 of the turn at that speed) and gravity speeds it up all the
+  way down (an exact quadratic; `Curves.easeIn` is solved only to 0.001 and
+  its speed wobbles), so it moves from the first frame and the bottom flap
+  gets about 7 frames at 60 Hz. It lands once: no bounce (in 60 ms that was
+  three frames of twitch). The old value is on the top flap until pi/2 and
+  the new one on the bottom flap after. Both flaps turn about the axle (a
+  `Transform` origin on it, centred across) toward the viewer (negative
+  perspective, 0.2 / card height), passing between the pins, so the moving
+  flap is slightly wider than the card and covers the half it lands on edge
+  to edge; never flip that sign (a flap swinging away shrinks inside the
+  card and shows a border of the half under it). The falling flap moves toward
   `shadeOf(card, 0.5)` by sin(turn), digits included, and casts a shadow of
   that colour (`castShadow` 0.45 x sin(turn), clear by 60% of the half) on
   the bottom half; the landing flap's face lifts toward `lightOf(card, 0.12)`.
@@ -599,7 +604,7 @@ Rules:
 
 `press_rule_test.dart` is the press gate (above) plus a check that it catches every pattern, formatter-split calls included, and ignores comments and theme config. No ink after a tap on a tray action (`screens_test.dart`), a sidebar row and a sound tile (`settings_screen_test.dart`), a skin tile and the sheet's Done (`skin_sheets_test.dart`), read from every `Material`'s ink features by `test/ink.dart` (which a stock `InkWell` in the default theme is shown to trip).
 
-`flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` fall and bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
+`flip_card_geometry_test.dart` checks every part against the icon at h = 608, pins flush and inside their notches with the stated clearance, the crack ending at the notches, the 80px threshold, half paths (axle, notches, corners, fillets) and empty sizes. `flip_display_test.dart` covers the digits centred on the axle in every face (real fonts, shrunk too), pins inside the card and the exact display width, the painters (crack, underside, lip, cavities, pins in order; none under 80px; dark crack on Mono and Paper; lit halves and the top rim; `shouldRepaint`) and the motion (`turnAt` push and fall, no bounce, flaps about the axle, shade, light and cast shadow, interrupts, reduced motion). `flip_card_probe.dart` reads a card's corner off its clip and finds halves by card colour.
 
 `clock_analytics_test.dart` covers the user properties (defaults, every choice, Firebase length limits), the settle (one event per burst, nothing for a change undone, `close` flushing then ignoring), every kind of settings change, every countdown and stopwatch transition with ticks ignored, the permission answer, full screen and sync followers until `close`, no uid or email in anything logged, the no-client no-op, and the real controllers: `load` identifying, a cloud copy, a cloud or app change in the middle of a settling user change, a restored countdown not logged, and `init` wiring it all (`FakeAnalyticsClient` in `fakes.dart`).
 
