@@ -3,7 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum _Variant { text, filled, outlined, icon }
 

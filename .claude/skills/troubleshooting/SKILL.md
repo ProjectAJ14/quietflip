@@ -12,8 +12,8 @@ coverage bar, or adding `// ignore:` without an explanation.
 
 ## Triage in this order
 
-1. `flutter --version`: must be **3.47.5 or newer** (members declare
-   `flutter: ">=3.47.5"`). With FVM, run `fvm use` and prefix commands
+1. `flutter --version`: must be **3.50.0 or newer** (members declare
+   `flutter: ">=3.50.0"`). With FVM, run `fvm use` and prefix commands
    with `fvm`.
 2. `git status`: is the failure caused by an uncommitted change?
 3. `dart pub get` at the root: does the workspace resolve?
@@ -24,7 +24,7 @@ coverage bar, or adding `// ignore:` without an explanation.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `requires Flutter SDK version >=3.47.5` | Old SDK on `PATH` | Upgrade Flutter or switch FVM version |
+| `requires Flutter SDK version >=3.50.0` | Old SDK on `PATH` | Upgrade Flutter or switch FVM version |
 | `... is not a workspace member` / package resolved separately | Missing `resolution: workspace` or not listed under root `workspace:` | Add both (see `melos-workspace` skill) |
 | `version solving failed` after adding a dep | Two members need incompatible versions | Align constraints; one version per package in a workspace |
 | Stale imports / `Target of URI doesn't exist` | Links out of date | `dart pub get && dart run melos bootstrap`; restart the analysis server |

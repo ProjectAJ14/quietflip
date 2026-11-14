@@ -1,5 +1,5 @@
 import 'package:design_system/design_system.dart' as ds;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -520,11 +520,11 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.byTooltip('Delete'));
+    await tester.tap(_byTooltip('Delete'));
     expect(taps, 1);
     expect(find.bySemanticsLabel('5 minute timer'), findsOneWidget);
     expect(
-      tester.getTopRight(find.byTooltip('Delete')).dx,
+      tester.getTopRight(_byTooltip('Delete')).dx,
       greaterThan(tester.getTopRight(find.text('5m')).dx),
     );
   });
@@ -1101,3 +1101,8 @@ BorderSide _cardSide(WidgetTester tester) =>
 Rect _cell(WidgetTester tester, String text) => tester.getRect(
   find.ancestor(of: find.text(text), matching: find.byType(Material)).first,
 );
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

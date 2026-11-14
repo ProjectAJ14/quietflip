@@ -12,7 +12,7 @@ import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/components/sound_wave.dart';
 import 'package:flip_clock/ui/screens/index.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -584,8 +584,8 @@ void main() {
       (
         'value',
         c.settings_timers,
-        find.byTooltip(c.timers_delete(presetSpoken(m * 5))),
-        find.byTooltip(c.timers_delete(presetSpoken(m * 15))),
+        _byTooltip(c.timers_delete(presetSpoken(m * 5))),
+        _byTooltip(c.timers_delete(presetSpoken(m * 15))),
         () => !settings.state.timerPresets.contains(m * 5),
         () => !settings.state.timerPresets.contains(m * 15),
       ),
@@ -622,7 +622,7 @@ void main() {
       matching: find.text(label),
     );
     Finder delete(Duration preset) =>
-        find.byTooltip(c.timers_delete(presetSpoken(preset)));
+        _byTooltip(c.timers_delete(presetSpoken(preset)));
 
     for (final width in [375.0, 820.0, 1280.0]) {
       testWidgets('default choice, delete, default falls back ($width)', (
@@ -1093,3 +1093,8 @@ void main() {
     });
   });
 }
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

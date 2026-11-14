@@ -15,7 +15,7 @@ import 'package:flip_clock/ui/components/sound_wave.dart';
 import 'package:flip_clock/ui/components/sync_card.dart';
 import 'package:flip_clock/ui/components/timer_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:localization/localization.dart';

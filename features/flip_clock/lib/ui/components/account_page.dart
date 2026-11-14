@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/ui/components/sync_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:localization/localization.dart';
 
 /// How deleting the account ended, as the app reports it.

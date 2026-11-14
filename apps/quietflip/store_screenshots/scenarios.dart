@@ -24,7 +24,7 @@ import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -310,7 +310,7 @@ Future<void> _act(
     case 'skins':
     case 'customize':
       await _showControls(tester);
-      await tester.tap(find.byTooltip(c.action_skins));
+      await tester.tap(_byTooltip(c.action_skins));
       await tester.pumpAndSettle();
       expect(find.byType(SkinPicker), findsOneWidget, reason: why);
       if (card == 'customize') {
@@ -322,3 +322,8 @@ Future<void> _act(
       fail('No scenario for card "$card"');
   }
 }
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

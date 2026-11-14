@@ -2,7 +2,7 @@ import 'package:core/core.dart' as core;
 import 'package:developer/developer.dart';
 import 'package:di/di.dart';
 import 'package:feature_flags/feature_flags.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
@@ -40,7 +40,10 @@ void main() {
 
   testWidgets('a custom logger does not need to expose Talker', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: DeveloperScreen(logger: _PlainLogger())),
+      MaterialApp(
+        builder: _bridge,
+        home: DeveloperScreen(logger: _PlainLogger()),
+      ),
     );
     expect(find.text(strings.developer.no_viewer), findsOneWidget);
   });
@@ -74,7 +77,9 @@ void main() {
         ],
       );
       addTearDown(router.dispose);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        MaterialApp.router(builder: _bridge, routerConfig: router),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Home'), findsOneWidget);
       expect(find.byType(TalkerScreen), findsNothing);
@@ -110,7 +115,9 @@ void main() {
         ],
       );
       addTearDown(router.dispose);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        MaterialApp.router(builder: _bridge, routerConfig: router),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Open tools'));
       await tester.pump(const Duration(seconds: 3));
@@ -126,3 +133,9 @@ void main() {
     });
   }
 }
+
+/// talker_flutter builds in-framework Material widgets; the app bridges them
+/// the same way (deprecated as a temporary migration aid).
+Widget _bridge(BuildContext context, Widget? child) =>
+    // ignore: deprecated_member_use
+    MaterialUiCompatibilityBridge(child: child!);

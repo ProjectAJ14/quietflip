@@ -1,10 +1,10 @@
 import 'dart:ui' show Tristate;
 
 import 'package:design_system/design_system.dart' as ds;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 const _tabs = ['Clock', 'Timer', 'Stopwatch'];
 
@@ -291,7 +291,7 @@ void main() {
           ds.Island.trayHeight,
         );
         for (final label in ['Start', 'Reset', 'Timers']) {
-          expect(find.byTooltip(label), findsOneWidget, reason: label);
+          expect(_byTooltip(label), findsOneWidget, reason: label);
         }
         expect(find.text('5m'), findsOneWidget);
         // An abbreviated chip is spoken in full; others by their label.
@@ -535,8 +535,8 @@ void main() {
         matching: find.byType(ds.Pressable),
       ),
     );
-    final start = tester.getRect(find.byTooltip('Start'));
-    final reset = tester.getRect(find.byTooltip('Reset'));
+    final start = tester.getRect(_byTooltip('Start'));
+    final reset = tester.getRect(_byTooltip('Reset'));
     final chip = tester.getRect(
       find.ancestor(of: find.text('5m'), matching: find.byType(ds.Pressable)),
     );
@@ -809,7 +809,7 @@ void main() {
       ) async {
         await _pump(tester, mode, corner(ds.ChromeState.expanded));
         expect(tester.getSize(box), const Size(44, 44));
-        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(_byTooltip('Settings'), findsOneWidget);
         await tester.tap(find.byIcon(Icons.settings_outlined));
         expect(presses, 1);
 
@@ -1091,7 +1091,15 @@ void main() {
 
     testWidgets('tabs are measured again once the fonts load', (tester) async {
       await _pump(tester, ds.AppearanceMode.black, _island(), width: 800);
-      await tester.runAsync(GoogleFonts.pendingFonts);
+      // The fonts are preloaded (flutter_test_config.dart): announce a load
+      // the way the engine does once one finishes.
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.system.name,
+        SystemChannels.system.codec.encodeMessage(<String, Object?>{
+          'type': 'fontsChange',
+        }),
+        (_) {},
+      );
       await tester.pump();
       expect(
         _tabRect(tester, 'Clock').width,
@@ -1181,3 +1189,8 @@ void main() {
     });
   });
 }
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

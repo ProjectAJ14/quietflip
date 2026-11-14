@@ -6,7 +6,7 @@ import 'package:design_system/design_system.dart';
 import 'package:di/di.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart' as ui;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:localization/localization.dart';
 import 'package:flutter_test/flutter_test.dart';

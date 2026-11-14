@@ -4,7 +4,7 @@ import 'package:design_system/components/app_button.dart';
 import 'package:design_system/components/pressable.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One entry of a [SettingsShell]: a sidebar or root row, and the detail
 /// page of [groups] it opens.

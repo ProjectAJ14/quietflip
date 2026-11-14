@@ -28,7 +28,7 @@ Everything, including `Toast`, is exported from
 | `Pressable({child, onTap, onLongPress, semanticsLabel, selected, role, focusRadius})` | widget | The one tap: shrinks on pointer down (no tap delay), fires on release inside the tap slop, moving past the slop (drag off, a scroll) releases without firing; long press; focusable, Enter/Space fire with a `pressIn` press-and-release; keyboard focus draws a 2px `accent` ring outside the child at `focusRadius` (default `sm`); click cursor on hover, no wash; null `onTap` = disabled (no press, not focusable, `enabled: false`); semantics `button` (or `role`, which also speaks `selected: false`), label, tap/long-press actions, `selected`; reduced motion dips opacity, no scale; nested, only the innermost enabled one under the finger presses (a tile around its Customize button stays still) |
 | `AppButton.text` / `.filled` / `.outlined({label, onPressed, icon, semanticsLabel})`, `AppButton.text(danger:)`, `AppButton.icon({icon, tooltip, onPressed})` | widget | Every button: a `Pressable` around a `ShapeDecoration` box with the Material 3 values the old button themes gave (filled: `primary` fill, `onPrimary` text; text and outlined: `primary` text, outlined adds a 1.5px `primary` side in every state; icon: `onSurfaceVariant`, 24px glyph, 8 padding, 44 square, `forHeight(44, role: sm)`; disabled `onSurface` at 38% text and 12% fill), `labelLarge` w600, Material's text-scaled padding and icon gap (18px icon), `sm` corner, min 64 x 44 (`DesignSize.cornerButton`). `danger` colours a text button `DesignColors.danger`; `semanticsLabel` replaces the spoken label; the icon variant's `tooltip` is its tooltip and spoken name |
 | `SpringCurve`, `DesignMotion.islandCurve` | curve | A `SpringDescription` played over a `Duration` as a `Curve` (overshoots, ends at exactly 1); `islandCurve` is the island spring over `islandMorph` |
-| `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; `arabic` (Noto Sans Arabic) and `arabicWeights`, and `withArabic(style)`, which appends it at the nearest bundled weight (400-700) to a style's `fontFamilyFallback` (every `monoTextTheme` role gets it, with or without a `face`, only with `arabic: true`: building it loads ~1 MB of fonts, so the app sets it only while in Arabic); the ten bundled digit faces (family, weight, `style()`, `assetName`, `digitCentre`: the digits' vertical centre above the baseline in em, measured from each `.ttf`'s `0`-`9` glyph bounds, so a caller can centre digits on a line by baseline whatever the leading) |
+| `DesignFonts`, `DisplayFace` | constants / enum | Geist (`ui`) weights; `arabic` (Noto Sans Arabic) and `arabicWeights`, `loadAll()`, which loads every bundled face (each package's `test/flutter_test_config.dart` awaits it once), and `withArabic(style)`, which appends it at the nearest bundled weight (400-700) to a style's `fontFamilyFallback` (every `monoTextTheme` role gets it, with or without a `face`, only with `arabic: true`: building it loads ~1 MB of fonts, so the app sets it only while in Arabic); the ten bundled digit faces (family, weight, `style()`, `assetName`, `digitCentre`: the digits' vertical centre above the baseline in em, measured from each `.ttf`'s `0`-`9` glyph bounds, so a caller can centre digits on a line by baseline whatever the leading) |
 | `MaterialTheme` | generated | Color schemes (light, dark, contrast variants) |
 | `NavigationIcons` | constants | Every navigation icon; one edit re-skins the shell |
 | `Toast` | static API | `notification`, `error`, `success`, `warning` |
@@ -152,6 +152,17 @@ Run `dart run melos exec --scope=design_system -- flutter test`. Keep
 `dart run melos run coverage` at 100%.
 
 ## Gotchas
+
+- Material comes from `package:material_ui` (Flutter 3.50 deprecated
+  `package:flutter/material.dart`). Its `Tooltip` is not the framework's, so
+  `find.byTooltip` misses tooltips built with `excludeFromSemantics: true`
+  (island actions, corner buttons, `AppButton.icon`); tests match
+  `w is Tooltip && w.message == ...` instead (`_byTooltip`).
+- Tests preload every bundled face (`test/flutter_test_config.dart` ->
+  `DesignFonts.loadAll`). Since Flutter 3.50 a font finishing its load
+  mid-test leaves a relayout frame pending and fails the test with "An
+  animation is still running". `island_test` sends the engine's
+  `fontsChange` message itself to test re-measuring.
 
 - Geist 400/500/600/700, Noto Sans Arabic 400/500/600/700 (the Arabic
   fallback; static instances from the notofonts repository) and one weight

@@ -34,7 +34,7 @@ import 'package:flip_clock/ui/screens/index.dart';
 import 'package:cloud_sync/cloud_sync.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_test/flutter_test.dart';

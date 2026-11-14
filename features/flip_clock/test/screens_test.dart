@@ -27,8 +27,7 @@ import 'package:flip_clock/ui/components/subtle_movement.dart';
 import 'package:flip_clock/ui/screens/index.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -163,7 +162,7 @@ ChromeState chromeOf(WidgetTester tester) =>
     tester.widget<Island>(find.byType(Island)).state;
 
 /// An island tray action by its label (tooltip).
-Finder action(String label) => find.byTooltip(label);
+Finder action(String label) => _byTooltip(label);
 
 /// Taps the tray action [label].
 Future<void> tapAction(WidgetTester tester, String label) async {
@@ -1779,16 +1778,16 @@ void main() {
       }
       // Skins top-left, Settings top-right, clear of the island; no
       // Rotation where the screen cannot be locked.
-      final skins = tester.getRect(find.byTooltip(strings.clock.action_skins));
+      final skins = tester.getRect(_byTooltip(strings.clock.action_skins));
       final settings = tester.getRect(
-        find.byTooltip(strings.clock.action_settings),
+        _byTooltip(strings.clock.action_settings),
       );
       expect(skins.left, lessThan(width / 4));
       expect(settings.right, greaterThan(width * 3 / 4));
       expect(skins.top, settings.top);
       expect(skins.overlaps(island), isFalse);
       expect(settings.overlaps(island), isFalse);
-      expect(find.byTooltip(strings.clock.action_rotation), findsNothing);
+      expect(_byTooltip(strings.clock.action_rotation), findsNothing);
       // Tabs are laid out at full size (the callout line is 20px); the
       // painted size is checked with the real fonts under 'corner chrome'.
       expect(
@@ -2314,7 +2313,7 @@ void main() {
     ChromeState cornerOf(WidgetTester tester, String tooltip) => tester
         .widget<CornerButton>(
           find.ancestor(
-            of: find.byTooltip(tooltip),
+            of: _byTooltip(tooltip),
             matching: find.byType(CornerButton),
           ),
         )
@@ -2374,8 +2373,8 @@ void main() {
         await tester.runAsync(GoogleFonts.pendingFonts);
         await tester.pumpAndSettle();
         final island = tester.getRect(find.byType(Island));
-        final skins = tester.getRect(find.byTooltip(c.action_skins));
-        final settings = tester.getRect(find.byTooltip(c.action_settings));
+        final skins = tester.getRect(_byTooltip(c.action_skins));
+        final settings = tester.getRect(_byTooltip(c.action_settings));
         // Painted, not just laid out: never scaled down to squeeze in.
         final tab = find
             .ancestor(
@@ -2412,11 +2411,11 @@ void main() {
       await tester.pumpWidget(h.screen());
       await showChrome(tester);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip(c.action_settings));
+      await tester.tap(_byTooltip(c.action_settings));
       await tester.pump();
       expect(h.settingsOpened, 1);
       expect(chromeOf(tester), ChromeState.expanded);
-      await tester.tap(find.byTooltip(c.action_skins));
+      await tester.tap(_byTooltip(c.action_skins));
       await tester.pumpAndSettle();
       expect(find.text(c.skins_title), findsOne);
       await h.dispose(tester);
@@ -2429,7 +2428,7 @@ void main() {
       await tester.pumpWidget(h.screen(orientationSupported: true));
       await showChrome(tester);
       await tester.pumpAndSettle();
-      final rotation = find.byTooltip(c.action_rotation);
+      final rotation = _byTooltip(c.action_rotation);
       // Bottom right.
       final box = tester.getRect(rotation);
       final screen = tester.getRect(find.byType(FlipClockScreen));
@@ -2495,7 +2494,7 @@ void main() {
       final h = Harness();
       await tester.pumpWidget(h.screen());
       await tester.pumpAndSettle();
-      expect(find.byTooltip(c.action_rotation), findsNothing);
+      expect(_byTooltip(c.action_rotation), findsNothing);
       await key(tester, LogicalKeyboardKey.keyR);
       expect(h.settings.state.orientation, ClockOrientation.auto);
       await h.dispose(tester);
@@ -2847,3 +2846,8 @@ void main() {
     });
   });
 }
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

@@ -2,7 +2,7 @@ import 'package:auth/constants/index.dart';
 import 'package:core/logger/logger.dart';
 import 'package:design_system/design_system.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 

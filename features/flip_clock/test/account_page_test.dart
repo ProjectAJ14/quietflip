@@ -8,7 +8,7 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/ui/components/account_page.dart';
 import 'package:flip_clock/ui/components/sync_card.dart';
 import 'package:flip_clock/ui/screens/index.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';

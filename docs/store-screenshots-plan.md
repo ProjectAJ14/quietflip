@@ -233,7 +233,7 @@ tool/fetch_store_fonts.dart     downloads and verifies the CJK/Devanagari fonts
 | Push of a `v*` tag | Full set from the exact release commit |
 | PR, later and optional | English-only contact sheet, commented on the PR like the hosting preview |
 
-One `ubuntu-latest` job, Flutter pinned to `3.47.5` as in `quality.yml`:
+One `ubuntu-latest` job, Flutter pinned to `3.50.0` as in `quality.yml`:
 checkout, `flutter pub get`, fetch fonts (cached), run the capture, upload one
 ZIP per store plus the contact sheets as artifacts. Expected size: ~6 cards x
 ~7 slots x 15 locales, about 600 PNGs.

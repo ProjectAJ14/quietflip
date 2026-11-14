@@ -1,8 +1,7 @@
 import 'package:core/core.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 
@@ -83,6 +82,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             supportedLocales: LocalizationProvider.locales,
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             routerConfig: widget.router,
+            // FirebaseUI and talker_flutter still build in-framework
+            // Material widgets: hand them the theme and localizations. The
+            // bridge is deprecated as a temporary migration aid; drop it once
+            // both depend on material_ui.
+            builder: (context, child) =>
+                // ignore: deprecated_member_use
+                MaterialUiCompatibilityBridge(child: child!),
           ),
         ),
       ),

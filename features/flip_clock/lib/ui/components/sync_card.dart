@@ -1,7 +1,7 @@
 import 'package:cloud_sync/cloud_sync.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';
 

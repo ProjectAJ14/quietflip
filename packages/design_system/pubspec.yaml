@@ -5,14 +5,14 @@ publish_to: 'none'
 
 environment:
   sdk: ^3.8.0
-  flutter: ">=3.47.5"
+  flutter: ">=3.50.0"
 
 dependencies:
   flutter:
     sdk: flutter
   cached_network_image: ^4.0.0
   flutter_svg: ^2.2.0
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
   iconsax_flutter: ^1.0.1
   loader_overlay: ^5.0.0
   toastification: ^3.0.3
@@ -24,6 +24,7 @@ dependencies:
     path: ../localization
   network:
     path: ../network
+  material_ui: ^1.11.0
 
 dev_dependencies:
   mocktail: ^1.0.4

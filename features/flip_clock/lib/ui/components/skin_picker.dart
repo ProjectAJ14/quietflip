@@ -5,7 +5,7 @@ import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/data/skins.dart';
 import 'package:flip_clock/ui/components/display_value.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:localization/localization.dart';
 
 /// The Skins sheet: live tiles of every skin, drawn with the user's

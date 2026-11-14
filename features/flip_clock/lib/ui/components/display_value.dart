@@ -1,6 +1,6 @@
 import 'package:flip_clock/data/models/clock_settings.dart';
 import 'package:flip_clock/data/models/skin.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:localization/localization.dart';
 import 'package:timekeeping/timekeeping.dart';

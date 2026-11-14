@@ -31,6 +31,21 @@ abstract final class DesignFonts {
       fontFamilyFallback: [...?style.fontFamilyFallback, arabicFamily],
     );
   }
+
+  /// Loads every bundled face: Geist and Noto Sans Arabic at each weight and
+  /// each [DisplayFace]. Tests await it once, since Flutter 3.50: a face that
+  /// finishes loading mid-test leaves a relayout frame pending, which fails
+  /// the test with "An animation is still running".
+  static Future<void> loadAll() {
+    for (final weight in uiWeights) {
+      GoogleFonts.getFont(ui, fontWeight: weight);
+      GoogleFonts.getFont(arabic, fontWeight: weight);
+    }
+    for (final face in DisplayFace.values) {
+      GoogleFonts.getFont(face.family, fontWeight: face.weight);
+    }
+    return GoogleFonts.pendingFonts();
+  }
 }
 
 /// The bundled digit faces, one weight each. Every file ships in
