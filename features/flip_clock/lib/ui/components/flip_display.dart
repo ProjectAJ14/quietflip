@@ -4,7 +4,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flip_clock/data/models/skin.dart';
 import 'package:flip_clock/ui/components/flip_card_geometry.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Split-flap cards styled entirely by [skin]: one card per entry of
 /// [cards] (usually a pair of digits). Every card is shaped as on the app

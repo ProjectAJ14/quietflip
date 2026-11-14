@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Thumbnail height on the sheet, in pixels.
 const double thumbHeight = 360;

@@ -3,7 +3,7 @@ import 'package:device_services/device_services.dart';
 import 'package:flip_clock/flip_clock.dart';
 import 'package:di/di.dart';
 import 'package:flip_clock/ui/screens/index.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';

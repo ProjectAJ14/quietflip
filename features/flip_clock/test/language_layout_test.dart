@@ -10,9 +10,8 @@ import 'package:flip_clock/state/settings_controller.dart';
 import 'package:flip_clock/ui/components/flip_display.dart';
 import 'package:flip_clock/ui/components/skin_picker.dart';
 import 'package:flip_clock/ui/screens/index.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localization/localization.dart';
@@ -233,15 +232,15 @@ void main() {
       final c = strings.clock;
       // Skins and Rotation on the right, Settings on the left.
       expect(
-        tester.getCenter(find.byTooltip(c.action_skins)).dx,
+        tester.getCenter(_byTooltip(c.action_skins)).dx,
         greaterThan(844 / 2),
       );
       expect(
-        tester.getCenter(find.byTooltip(c.action_settings)).dx,
+        tester.getCenter(_byTooltip(c.action_settings)).dx,
         lessThan(844 / 2),
       );
       expect(
-        tester.getCenter(find.byTooltip(c.action_rotation)).dx,
+        tester.getCenter(_byTooltip(c.action_rotation)).dx,
         lessThan(844 / 2),
       );
       // The mode tabs run right to left, as the pages do.
@@ -281,7 +280,7 @@ void main() {
       tester,
     ) async {
       final h = await clock(tester);
-      await tester.tap(find.byTooltip(strings.clock.action_skins));
+      await tester.tap(_byTooltip(strings.clock.action_skins));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       final check = find.byType(SelectionCheck).first;
@@ -295,3 +294,8 @@ void main() {
     });
   });
 }
+
+/// `find.byTooltip` matches the in-framework `Tooltip` only, when
+/// `excludeFromSemantics` is set; the app's tooltips come from material_ui.
+Finder _byTooltip(String message) =>
+    find.byWidgetPredicate((w) => w is Tooltip && w.message == message);

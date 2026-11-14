@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:design_system/components/settings_shell.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The touch gesture a [GestureGlyph] acts out.
 enum GestureKind {

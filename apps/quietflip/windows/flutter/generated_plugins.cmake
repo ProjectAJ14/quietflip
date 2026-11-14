@@ -5,15 +5,15 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   audioplayers_windows
-  cloud_firestore
   desktop_webview_auth
-  firebase_auth
   firebase_core
+  cloud_firestore
+  firebase_auth
   firebase_remote_config
   screen_brightness_windows
   screen_retriever_windows
-  share_plus
   url_launcher_windows
+  share_plus
   window_manager
 )
 

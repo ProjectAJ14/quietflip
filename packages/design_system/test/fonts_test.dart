@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Every face ships in the app with its licence; nothing downloads.

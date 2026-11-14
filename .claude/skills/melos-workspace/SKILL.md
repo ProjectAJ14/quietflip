@@ -45,7 +45,7 @@ root `workspace:` list and sets `resolution: workspace` in its pubspec. Then:
    publish_to: 'none'
    environment:
      sdk: ^3.8.0
-     flutter: ">=3.47.5"
+     flutter: ">=3.50.0"
    # ...dependencies...
    resolution: workspace   # added by nonstop create
    ```

@@ -33,7 +33,7 @@ that points the other way is a design error, not a shortcut. Fix the boundary.
 
 ## First-time setup
 
-Requires Flutter **3.47.5 or newer** (`flutter --version`). With FVM: `fvm use 3.47.5`.
+Requires Flutter **3.50.0 or newer** (`flutter --version`). With FVM: `fvm use 3.50.0`.
 
 ```sh
 dart pub get                  # resolves the whole workspace, one pubspec.lock
@@ -221,7 +221,9 @@ stop and say so instead of working around it.
 6. **Colors, typography and spacing come from the design system.**
    `Theme.of(context)` roles and `design_system` components; no raw
    `Color(0x...)` or font sizes. Load the `design-system` skill before any UI
-   work.
+   work. Material and Cupertino come from `package:material_ui` /
+   `package:cupertino_ui`, never `package:flutter/material.dart` or
+   `cupertino.dart` (deprecated in Flutter 3.50; the analyzer fails on them).
 7. **Every package has tests, and coverage stays at 100%.** The gate fails a
    package with no tests. Tests never hit the network or a real Firebase
    project; inject fakes against the same contracts.

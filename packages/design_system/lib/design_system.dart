@@ -2,7 +2,7 @@ import 'package:design_system/generated/theme.dart';
 import 'package:design_system/constants/design_fonts.dart';
 import 'package:design_system/constants/design_shape.dart';
 import 'package:design_system/constants/design_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 export 'components/index.dart';

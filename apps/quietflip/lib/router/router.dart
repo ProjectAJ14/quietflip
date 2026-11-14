@@ -10,7 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flip_clock/flip_clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 import 'package:notifications/notifications.dart';

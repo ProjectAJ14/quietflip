@@ -5,7 +5,7 @@ publish_to: 'none'
 
 environment:
   sdk: ^3.8.0
-  flutter: ">=3.47.5"
+  flutter: ">=3.50.0"
 
 dependencies:
   flutter:
@@ -17,6 +17,7 @@ dependencies:
     path: ../../packages/localization
   developer:
     path: ../../packages/developer
+  material_ui: ^1.11.0
 
 dev_dependencies:
   flutter_test:
