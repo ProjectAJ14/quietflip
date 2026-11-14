@@ -367,31 +367,30 @@ void main() {
     expect(find.byKey(FlipDisplay.hingeKey), findsOneWidget);
   });
 
-  test('the flap falls under gravity, then bounces once, barely', () {
-    const fallEnd = 300 / 360;
+  test('the flap is let go moving, speeds up all the way and lands once', () {
     expect(FlipDisplay.turnAt(0), 0);
-    expect(FlipDisplay.turnAt(fallEnd), math.pi);
-    // Speeds up all the way down: increasing, and each step bigger.
+    expect(FlipDisplay.turnAt(1), math.pi);
+    // Moving from the first frame: the push alone covers this much.
+    final first = FlipDisplay.turnAt(1 / 60);
+    expect(first, greaterThan(FlipDisplay.push * math.pi / 60));
+    // Speeds up all the way down (each step bigger) and never lifts again:
+    // no bounce.
     var last = 0.0;
     var step = 0.0;
     for (var i = 1; i <= 60; i++) {
-      final turn = FlipDisplay.turnAt(fallEnd * i / 60);
-      expect(turn - last, greaterThan(0));
-      expect(turn - last, greaterThanOrEqualTo(step - 1e-9), reason: '$i');
+      final turn = FlipDisplay.turnAt(i / 60);
+      expect(turn - last, greaterThan(step), reason: '$i');
       step = turn - last;
       last = turn;
     }
-    // The bounce lifts 0.06 rad at its middle and settles flat.
-    for (var i = 0; i <= 60; i++) {
-      final t = fallEnd + (1 - fallEnd) * i / 60;
-      expect(
-        FlipDisplay.turnAt(t),
-        greaterThanOrEqualTo(math.pi - 0.06 - 1e-9),
-      );
-      expect(FlipDisplay.turnAt(t), lessThanOrEqualTo(math.pi));
-    }
-    expect(FlipDisplay.turnAt(330 / 360), closeTo(math.pi - 0.06, 1e-12));
-    expect(FlipDisplay.turnAt(1), math.pi);
+    // The landing half gets a third of the flip, not a quarter: at 60
+    // frames a second that is 7 frames for the bottom flap.
+    final ms = FlipDisplay.flipDuration.inMilliseconds;
+    final landing = [
+      for (var at = 0; at < ms; at += 1000 ~/ 60)
+        if (FlipDisplay.turnAt(at / ms) >= math.pi / 2) at,
+    ];
+    expect(landing.length, greaterThanOrEqualTo(7));
   });
 
   testWidgets('both flaps turn about the axle, shaded and lit as they turn', (
@@ -407,7 +406,7 @@ void main() {
     final height = tester.getSize(cards.first).height;
     final ms = FlipDisplay.flipDuration.inMilliseconds;
     var elapsed = 0;
-    // Mid-fall, mid-landing, and the top of the bounce.
+    // Mid-fall, mid-landing, and just before it lands.
     for (final at in const [90, 270, 330]) {
       await tester.pump(Duration(milliseconds: at - elapsed));
       elapsed = at;
@@ -418,11 +417,24 @@ void main() {
       // centred across so the perspective stays symmetric.
       expect(fold.alignment, Alignment.topCenter);
       expect(fold.origin, Offset(0, falling ? height / 2 : 0));
-      // Perspective follows the card height (the rotation scales it by cos).
+      // Perspective follows the card height (the rotation scales it by
+      // cos), toward the viewer: negative, so the flap's free edge is wider
+      // than the card and covers the half it lands on.
       final angle = falling ? turn : math.pi - turn;
       expect(
         fold.transform.entry(3, 2),
-        closeTo(FlipDisplay.perspective / height * math.cos(angle), 1e-9),
+        closeTo(-FlipDisplay.perspective / height * math.cos(angle), 1e-9),
+      );
+      final box = tester.renderObject<RenderBox>(
+        find.descendant(
+          of: find.byKey(FlipDisplay.flapKey),
+          matching: find.byType(ClipPath),
+        ),
+      );
+      final free = falling ? Offset.zero : Offset(0, box.size.height);
+      expect(
+        box.localToGlobal(free).dx,
+        lessThan(tester.getTopLeft(cards.first).dx),
       );
       // The flap shows the old value while falling and the new one landing.
       final digits = find.descendant(

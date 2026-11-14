@@ -10,10 +10,11 @@ import 'package:material_ui/material_ui.dart';
 /// [cards] (usually a pair of digits). Every card is shaped as on the app
 /// icon ([FlipCardGeometry]): a crack across the middle and a hinge pin in a
 /// notch at each end, inside the card edge. Only cards whose value changed
-/// fold like a real split-flap ([turnAt]): the top flap falls under gravity
-/// about the axle, between the pins, and slaps onto the bottom half with a
-/// small bounce, shaded as it turns from the light and lit as it lands; the
-/// new value is authoritative at once. Reduced motion swaps instantly.
+/// fold like a real split-flap ([turnAt]): the top flap is let go and falls
+/// toward the viewer about the axle, between the pins, speeding up until it
+/// lands flat on the bottom half, shaded as it turns from the light and lit
+/// as it lands; the new value is authoritative at once. Reduced motion
+/// swaps instantly.
 ///
 /// Card height fills the space given, times [size]; digits are
 /// [digitScale] x card height and never text-scaled, so the display never
@@ -66,30 +67,28 @@ class FlipDisplay extends StatefulWidget {
   /// the 15% band stops flicker near square windows and during a resize.
   static const double stackGain = 1.15;
 
-  /// One card flip: the fall, then the bounce.
+  /// One card flip, upright to landed.
   static const Duration flipDuration = DesignMotion.flip;
 
-  /// The fall from upright to landed, the first part of [flipDuration].
-  static const Duration fallDuration = Duration(milliseconds: 300);
-
-  /// How far the landed flap lifts again on the bounce, in radians (3.4
-  /// degrees): a slap, not a wobble, at one flip a second.
-  static const double bounce = 0.06;
+  /// The share of the fall the flap covers at the speed it is let go with;
+  /// gravity adds the rest. Zero is a fall from rest: nothing moves for the
+  /// first frames, then the bottom half is over in five. More spreads the
+  /// turn over the frames, less slaps harder.
+  static const double push = 0.35;
 
   /// The flap's angle at [t] (0..1) of a flip: 0 upright, pi/2 edge-on, pi
-  /// landed. It falls under gravity over [fallDuration], then lifts by
-  /// [bounce] and settles. The fall is an exact u squared (constant
-  /// acceleration), not `Curves.easeIn`, whose cubic is only solved to
-  /// 0.001, so its speed wobbles from frame to frame.
-  static double turnAt(double t) {
-    final fall = fallDuration.inMicroseconds / flipDuration.inMicroseconds;
-    if (t <= fall) return math.pow(t / fall, 2) * math.pi;
-    return math.pi - bounce * math.sin(math.pi * (t - fall) / (1 - fall));
-  }
+  /// landed. Let go at a speed ([push]) and sped up by gravity all the way
+  /// down, it lands once and stays: no bounce, which at this length is three
+  /// frames of the flap twitching. An exact quadratic, not `Curves.easeIn`,
+  /// whose cubic is only solved to 0.001, so its speed wobbles from frame to
+  /// frame.
+  static double turnAt(double t) => (push * t + (1 - push) * t * t) * math.pi;
 
   /// Perspective strength times the card height, so every card size bends
-  /// the same (0.002 on a 200px card).
-  static const double perspective = 0.4;
+  /// the same (0.001 on a 200px card). The flaps swing toward the viewer,
+  /// so the moving flap looks a little wider than the card and always
+  /// covers the half it lands on, edge to edge.
+  static const double perspective = 0.2;
 
   /// Strongest shadow the falling flap casts on the half below (edge-on).
   static const double castShadow = 0.45;
@@ -447,7 +446,8 @@ class _FlipCardState extends State<_FlipCard>
 
 /// The moving flap, turning about the axle at [axisY] of the card: the top
 /// half's bottom edge, the bottom half's top edge, centred across so the
-/// perspective is symmetric. Perspective follows the card height.
+/// perspective is symmetric. Perspective follows the card height, toward
+/// the viewer.
 class _Fold extends StatelessWidget {
   const _Fold({
     required this.angle,
@@ -469,7 +469,8 @@ class _Fold extends StatelessWidget {
     alignment: Alignment.topCenter,
     origin: Offset(0, top ? axisY : 0),
     transform: Matrix4.identity()
-      ..setEntry(3, 2, axisY > 0 ? FlipDisplay.perspective / (2 * axisY) : 0)
+      // Negative: the flap's free edge comes out of the screen.
+      ..setEntry(3, 2, axisY > 0 ? -FlipDisplay.perspective / (2 * axisY) : 0)
       ..rotateX(top ? -angle : angle),
     child: child,
   );

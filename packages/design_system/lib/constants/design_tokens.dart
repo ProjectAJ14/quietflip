@@ -299,7 +299,7 @@ abstract final class DesignSize {
 
 /// Chrome and gesture timing (`dur-*`) and the island spring.
 abstract final class DesignMotion {
-  /// One card flip: top fold then bottom fold, 50/50.
+  /// One card flip, from upright to landed.
   static const Duration flip = Duration(milliseconds: 360);
 
   /// Island size/shape morph on the web curve; Flutter uses [islandSpring].
