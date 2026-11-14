@@ -92,7 +92,9 @@ Android ships from the `android` job: a signed, obfuscated app bundle to the
 Play track in the `GOOGLE_PLAY_TRACK` variable (default `internal`), with the
 release status in `GOOGLE_PLAY_RELEASE_STATUS` (default `completed`; use
 `draft` until the app has been published once), uploaded with fastlane
-`supply`; the symbol files are kept as a workflow artifact.
+`supply`; the symbol files are kept as a workflow artifact and sent to
+Crashlytics (pinned `firebase-tools`, `crashlytics:symbols:upload`, keyed by
+the app id in `firebase.json`, no secret) before the store upload.
 Secrets (repository secrets, never in git): `ANDROID_KEYSTORE_BASE64`
 (`base64 -i upload.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEY_PASSWORD`, and `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (shared with the
@@ -107,7 +109,10 @@ iOS ships from the `ios` job on a macOS runner: `xcodebuild archive` and
 Connect API key (`APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
 `APP_STORE_CONNECT_API_KEY`, the same secrets as the screenshot upload; no
 certificate or profile secrets), then fastlane `pilot` uploads to TestFlight.
-The dSYMs and symbol files are kept as a workflow artifact. Needs the App ID
+The dSYMs and symbol files are kept as a workflow artifact, and the dSYMs are
+sent to Crashlytics before the store upload (iOS and macOS jobs alike) with
+the `upload-symbols` tool from the Firebase SDK checkout in Xcode's
+DerivedData, using the committed `GoogleService-Info.plist`, no secret. Needs the App ID
 `live.iajaykumar.quietflip` and its App Store Connect app record, and at
 least one registered device on the team (Xcode refuses to create a
 development profile without one). Skipped with a notice when a secret is
