@@ -309,7 +309,15 @@ class _FlipCardState extends State<_FlipCard>
     duration: FlipDisplay.flipDuration,
     value: 1,
   );
-  late String _previous = widget.value;
+  // Set in initState, not as a `late` initializer: that ran only on a read
+  // before the first flip (never), so coverage of the line was flaky.
+  late String _previous;
+
+  @override
+  void initState() {
+    super.initState();
+    _previous = widget.value;
+  }
 
   @override
   void didUpdateWidget(_FlipCard oldWidget) {
