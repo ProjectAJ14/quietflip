@@ -80,13 +80,19 @@ Releases: Actions > Release > Run workflow, on `main` only. `melos version`
 mode) turns `fix:` into a patch, `feat:` into a minor and `!` or
 `BREAKING CHANGE:` into a major, for the whole workspace at once. The
 store build number is `github.run_number`, passed as `--build-number`, never
-committed. The version push needs the `main` branch to accept pushes from
-`github-actions[bot]` (allow it in branch protection). Pushes made with the
-workflow token do not start other workflows, so deploy jobs live in
-`release.yml` itself and read the `version` job outputs.
-For the same reason the `v*` tag a release pushes does not start the store
-screenshot workflow; run it by hand (Actions > Store screenshots, tick
-**upload**) after a release.
+committed. `main` requires a pull request and passing checks, and a
+personal-account repository cannot exempt `github-actions[bot]`, so the
+version push is made as the owner: the `RELEASE_PUSH_TOKEN` repository secret
+(a fine-grained personal access token for this repository only, Contents:
+Read and write) with "Do not allow bypassing the above settings" unticked on
+the `main` rule. Without the secret the job falls back to the workflow token,
+which only works where `main` is unprotected. Replace the token when it
+expires. Deploy jobs live in `release.yml` itself and read the `version` job
+outputs. Because the push is made with a personal token, the `v*` tag it
+pushes also starts the store screenshot workflow, which renders and uploads
+to every store whose secrets are set; with the fallback workflow token it
+does not, so run it by hand then (Actions > Store screenshots, tick
+**upload**).
 
 Android ships from the `android` job: a signed, obfuscated app bundle to the
 Play track in the `GOOGLE_PLAY_TRACK` variable (default `internal`), with the

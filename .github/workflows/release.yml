@@ -40,6 +40,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # melos reads commits since the last tag
+          # main requires a pull request and passing checks, which the
+          # workflow's own token cannot bypass; the owner's token can. Falls
+          # back to the workflow token where main is not protected.
+          token: ${{ secrets.RELEASE_PUSH_TOKEN || github.token }}
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.50.0'
