@@ -193,6 +193,15 @@ jobs:
         with:
           name: android-symbols-${{ needs.version.outputs.version }}
           path: apps/quietflip/build/symbols/android
+      # Crashlytics needs the Dart symbols to show readable stack traces for
+      # this build. Before the store upload, so a failure here can be re-run.
+      # No credentials: the upload is keyed by the public Firebase app id.
+      - name: Upload symbols to Crashlytics
+        working-directory: apps/quietflip
+        run: >-
+          npx --yes firebase-tools@15.28.1 crashlytics:symbols:upload
+          --app="$(jq -er '.flutter.platforms.android.default.appId' firebase.json)"
+          build/symbols/android
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4'
@@ -304,6 +313,17 @@ jobs:
           path: |
             apps/quietflip/build/symbols/ios
             ${{ runner.temp }}/Runner.xcarchive/dSYMs
+      # Crashlytics needs the dSYMs to show readable stack traces for this
+      # build. Before the store upload, so a failure here can be re-run. The
+      # uploader ships inside the Firebase SDK that Xcode just checked out,
+      # and needs no credentials beyond the committed plist.
+      - name: Upload dSYMs to Crashlytics
+        run: |
+          uploader=$(find ~/Library/Developer/Xcode/DerivedData \
+            -path '*/firebase-ios-sdk/Crashlytics/upload-symbols' -print -quit)
+          [ -n "$uploader" ] || { echo '::error::Crashlytics upload-symbols not found'; exit 1; }
+          "$uploader" -gsp apps/quietflip/ios/Runner/GoogleService-Info.plist \
+            -p ios "$RUNNER_TEMP/Runner.xcarchive/dSYMs"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4'
@@ -373,6 +393,14 @@ jobs:
           path: |
             apps/quietflip/build/symbols/macos
             ${{ runner.temp }}/Runner.xcarchive/dSYMs
+      # Same as the iOS job: dSYMs to Crashlytics before the store upload.
+      - name: Upload dSYMs to Crashlytics
+        run: |
+          uploader=$(find ~/Library/Developer/Xcode/DerivedData \
+            -path '*/firebase-ios-sdk/Crashlytics/upload-symbols' -print -quit)
+          [ -n "$uploader" ] || { echo '::error::Crashlytics upload-symbols not found'; exit 1; }
+          "$uploader" -gsp apps/quietflip/macos/Runner/GoogleService-Info.plist \
+            -p mac "$RUNNER_TEMP/Runner.xcarchive/dSYMs"
       - name: Export and upload
         working-directory: apps/quietflip/macos
         env:
